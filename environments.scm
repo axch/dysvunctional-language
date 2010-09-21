@@ -14,6 +14,11 @@
 	       (cdr binding)
 	       (ad-lookup symbol (ad-environment-parent env)))))))
 
+(define (ad-extend-environment env formals arguments)
+  (make-ad-environment
+   (map cons formals arguments)
+   env))
+
 ;;; This AD global environment has no initial bindings, and indirects
 ;;; to the enclosing Scheme environment for lookups.
 (define (make-ad-global-environment)
