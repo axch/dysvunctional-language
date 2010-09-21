@@ -16,7 +16,7 @@
 	 (scheme-value->ad-eval-value form))))
 
 (define (eval-ad-application form env)
-  (let ((procedure (ad-eval form env))
+  (let ((procedure (ad-eval (car form) env))
 	(arguments (map (lambda (subform)
 			  (ad-eval subform env))
 			(cdr form))))
