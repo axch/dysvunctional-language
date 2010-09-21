@@ -130,13 +130,14 @@
 		 (apply (jacobian (primal* procedure)) (map primal* arguments))
 		 (map perturbation arguments))))
 	      ((ad-compound? (primal* procedure))
-	       (perturbed-eval
-		(ad-compound-body procedure)
-		(ad-extend-environment
-		 (ad-compound-env procedure)
-		 (ad-compound-formals procedure)
-		 arguments)
-		perturbation-type))
+	       (let ((procedure (primal* procedure)))
+		 (perturbed-eval
+		  (ad-compound-body procedure)
+		  (ad-extend-environment
+		   (ad-compound-env procedure)
+		   (ad-compound-formals procedure)
+		   arguments)
+		  perturbation-type)))
 	      ((perturbing-compound? procedure)
 	       (let ((perturbation-type (perturbing-compound-perturbation-type procedure)))
 		 (let ((make-dual (perturbation-type-dual perturbation-type))

@@ -1,5 +1,4 @@
-(define-structure
-  ad-compound
+(define-structure (ad-compound (safe-accessors #t))
   body
   env
   formals)
@@ -8,8 +7,7 @@
 ;;; accept the AD-eval objects that are their arguments and return the
 ;;; AD-eval object that is the result.  Any representation conversions
 ;;; need to be done elsewhere.
-(define-structure
-  ad-primitive
+(define-structure (ad-primitive (safe-accessors #t))
   implementation
   made-from)
 
@@ -34,8 +32,7 @@
 	(ad-apply x (map scheme-value->ad-eval-value args)))
       x))
 
-(define-structure
-  perturbation-type
+(define-structure (perturbation-type (safe-accessors #t))
   dual
   primal
   perturbation
@@ -68,8 +65,8 @@
 
 (define (gen-primal? count)
   (lambda (thing)
-    (and (perturbed? thing)
-	 (= count (perturbed-count thing)))))
+    (not (and (perturbed? thing)
+	      (= count (perturbed-count thing))))))
 
 (define (gen-make-dual count)
   (lambda (primal perturbation)

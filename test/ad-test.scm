@@ -22,7 +22,8 @@
    (= 7 (fad-eval '(+ 2 5)))
    (equal? '(13 24) (fad-eval '(map + '(3 4) '(10 20))))
    (equal? '(25 36) (fad-eval '(map (lambda (x) (* x x)) '(5 6))))
-   (equal? '(0 . 1) (fad-eval '((j* sin) 0 1))))
+   (equal? '(0 . 1) (fad-eval '((j* sin) 0 1)))
+   (equal? '(0 . 1) (fad-eval '((j* (lambda (x) (sin x))) 0 1))))
 
 )
 
