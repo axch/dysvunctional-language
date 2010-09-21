@@ -33,18 +33,20 @@
       x))
 
 (define-structure (perturbation-type (safe-accessors #t))
+  count
   dual
   primal
   perturbation
   primal?
   parent)
 
-(define the-non-perturbation (make-perturbation-type #f #f #f #f #f))
+(define *perturbation-type-count* 0)
+
+(define the-non-perturbation (make-perturbation-type *perturbation-type-count* #f #f #f #f #f))
 
 (define (non-perturbation? thing)
   (eq? thing the-non-perturbation))
 
-(define perturbation-type-count 0)
 
 (define-structure (perturbed (safe-accessors #t))
   primal
@@ -73,12 +75,13 @@
     (make-perturbed primal perturbation count)))
 
 (define (make-fresh-perturbation-type parent)
-  (set! perturbation-type-count (+ perturbation-type-count 1))
+  (set! *perturbation-type-count* (+ *perturbation-type-count* 1))
   (make-perturbation-type
-   (gen-make-dual perturbation-type-count)
-   (gen-primal perturbation-type-count)
-   (gen-perturbation perturbation-type-count)
-   (gen-primal? perturbation-type-count)
+   *perturbation-type-count*
+   (gen-make-dual *perturbation-type-count*)
+   (gen-primal *perturbation-type-count*)
+   (gen-perturbation *perturbation-type-count*)
+   (gen-primal? *perturbation-type-count*)
    parent))
 
 (define (primal* thing)
@@ -92,11 +95,14 @@
   (eq? j* thing))
 
 (define (jacobian procedure)
+  (define (zero arg)
+    0)
   (let ((candidate
 	 (assq (ad-primitive-made-from procedure)
 	       `((,sin . ,cos)
 		 (,*   . ,(lambda (x y)
-			    (list y x)))))))
+			    (list y x)))
+		 (,cdr . ,zero)))))
     (if candidate
 	(cdr candidate)
 	(error "Unsupported primitive primal procedure" procedure))))

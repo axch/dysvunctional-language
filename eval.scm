@@ -101,15 +101,17 @@
 			  arguments)
 			 the-non-perturbation))
 	((perturbing-compound? procedure)
-	 (let ((perturbation-type (perturbing-compound-perturbation-type procedure)))
-	   (let ((make-dual (perturbation-type-dual perturbation-type))
-		 (primal (perturbation-type-primal perturbation-type))
-		 (perturbation (perturbation-type-perturbation perturbation-type)))
+	 (let ((perturbation-type* (perturbing-compound-perturbation-type procedure)))
+	   (let ((make-dual (perturbation-type-dual perturbation-type*))
+		 (primal (perturbation-type-primal perturbation-type*))
+		 (perturbation (perturbation-type-perturbation perturbation-type*)))
 	     (let ((answer
-		    (perturbed-apply (make-dual (perturbing-compound-base procedure) 0)
+		    (perturbed-apply (inject (perturbing-compound-base procedure) perturbation-type*)
 				     (list (make-dual (car arguments) (cadr arguments)))
-				     perturbation-type)))
-	       (cons (primal answer) (perturbation answer))))))
+				     perturbation-type*)))
+	       (ensure-correctly-perturbed
+		(cons (primal answer) (perturbation answer))
+		the-non-perturbation)))))
 	(else
 	 (error "Not an ad-procedure" procedure))))
 
@@ -140,15 +142,16 @@
 		   arguments)
 		  perturbation-type)))
 	      ((perturbing-compound? procedure)
-	       (let ((perturbation-type (perturbing-compound-perturbation-type procedure)))
-		 (let ((make-dual (perturbation-type-dual perturbation-type))
-		       (primal (perturbation-type-primal perturbation-type))
-		       (perturbation (perturbation-type-perturbation perturbation-type)))
+	       (let ((perturbation-type* (perturbing-compound-perturbation-type procedure)))
+		 (let ((make-dual (perturbation-type-dual perturbation-type*))
+		       (primal (perturbation-type-primal perturbation-type*))
+		       (perturbation (perturbation-type-perturbation perturbation-type*)))
 		   (let ((answer
-			  (perturbed-apply (make-dual (perturbing-compound-base procedure) 0)
+			  (perturbed-apply (inject (perturbing-compound-base procedure) perturbation-type*)
 					   (list (make-dual (car arguments) (cadr arguments)))
-					   perturbation-type)))
-		     (cons (primal answer) (perturbation answer))))))
+					   perturbation-type*)))
+		     (ensure-correctly-perturbed (cons (primal answer) (perturbation answer))
+						 perturbation-type)))))
 	      (else
 	       (error "Not an ad-procedure" procedure))))))
 
@@ -156,8 +159,33 @@
   (if (number? J)
       (if (not (= (length perturbation) 1))
 	  (error "Size mismatch" J perturbation)
-	  (* J (car perturbation)))
-      (apply + (map * J perturbation))))
+	  (times-perturbation J (car perturbation)))
+      (apply plus-perturbation (map times-perturbation J perturbation))))
+
+(define (times-perturbation scalar perturbation)
+  (cond ((number? perturbation)
+	 (* scalar perturbation))
+	((perturbed? perturbation)
+	 (make-perturbed
+	  (times-perturbation scalar (perturbed-primal perturbation))
+	  (times-perturbation scalar (perturbed-perturbation perturbation))
+	  (perturbed-count perturbation)))
+	(else (error "Ack!  times-perturbation can't handle" scalar perturbation))))
+
+(define (plus-perturbation . args)
+  (cond ((every number? args)
+	 (apply + args))
+	((every perturbed? args)
+	 (let ((count (perturbed-count (car args))))
+	   (if (every (lambda (arg)
+			(= count (perturbed-count arg)))
+		      args)
+	       (make-perturbed
+		(apply plus-perturbation (map perturbed-primal args))
+		(apply plus-perturbation (map perturbed-perturbation args))
+		count)
+	       (error "Ack!! plus-perturbation can't handle" args))))
+	(else (error "Ack!  plus-perturbation can't handle" args))))
 
 (define (eval-perturbed-if form env perturbation-type)
   (let ((predicate (cadr form))
@@ -171,21 +199,29 @@
   (error "TODO definitions not supported in perturbed-eval yet"))
 
 (define (scheme-value->perturbed-eval-value thing perturbation-type)
-  (if (non-perturbation? perturbation-type)
-      (scheme-value->ad-eval-value thing)
-      ((perturbation-type-dual perturbation-type)
-       (scheme-value->perturbed-eval-value thing (perturbation-type-parent perturbation-type))
-       0)))
+  (inject (scheme-value->ad-eval-value thing) perturbation-type))
 
 (define (perturbed-lookup symbol env perturbation-type)
+  (ensure-correctly-perturbed (ad-lookup symbol env) perturbation-type))
+
+(define (ensure-correctly-perturbed answer perturbation-type)
   (if (non-perturbation? perturbation-type)
-      (ad-lookup symbol env)
+      answer
       (let ((make-dual (perturbation-type-dual perturbation-type))
-	    (primal? (perturbation-type-primal? perturbation-type)))
-	(let ((answer (perturbed-lookup symbol env (perturbation-type-parent perturbation-type))))
-	  (if (primal? answer)
-	      (make-dual answer 0)
-	      answer)))))
+	    (primal? (perturbation-type-primal? perturbation-type))
+	    (parent (perturbation-type-parent perturbation-type)))
+	(if (primal? answer)
+	    (make-dual (ensure-correctly-perturbed answer parent) 0)
+	    answer))))
+;;; TODO Do I also need to ensure that all the 0 perturbations are
+;;; correctly perturbed?
+
+(define (inject primal perturbation-type)
+  (if (non-perturbation? perturbation-type)
+      primal
+      ((perturbation-type-dual perturbation-type)
+       (inject primal (perturbation-type-parent perturbation-type))
+       0)))
 
 (define (apply-j* procedure parent-perturbation-type)
   (make-perturbing-compound
