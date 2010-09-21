@@ -23,7 +23,7 @@
 ;;; to the enclosing Scheme environment for lookups.
 (define (make-ad-global-environment)
   (make-ad-environment
-   '()
+   `((j* . ,j*))
    (nearest-repl/environment)))
 
 (define (make-ad-user-environment)
