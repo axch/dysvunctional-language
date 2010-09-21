@@ -94,7 +94,9 @@
 (define (jacobian procedure)
   (let ((candidate
 	 (assq (ad-primitive-made-from procedure)
-	       `((,sin . ,cos)))))
+	       `((,sin . ,cos)
+		 (,*   . ,(lambda (x y)
+			    (list y x)))))))
     (if candidate
 	(cdr candidate)
 	(error "Unsupported primitive primal procedure" procedure))))
