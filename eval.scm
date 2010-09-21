@@ -94,11 +94,12 @@
 	((ad-primitive? procedure)
 	 (apply (ad-primitive-implementation procedure) arguments))
 	((ad-compound? procedure)
-	 (ad-eval (ad-compound-body procedure)
-		  (ad-extend-environment
-		   (ad-compound-env procedure)
-		   (ad-compound-formals procedure)
-		   arguments)))
+	 (perturbed-eval (ad-compound-body procedure)
+			 (ad-extend-environment
+			  (ad-compound-env procedure)
+			  (ad-compound-formals procedure)
+			  arguments)
+			 the-non-perturbation))
 	((perturbing-compound? procedure)
 	 (let ((perturbation-type (perturbing-compound-perturbation-type procedure)))
 	   (let ((make-dual (perturbation-type-dual perturbation-type))

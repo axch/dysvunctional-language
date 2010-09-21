@@ -24,7 +24,9 @@
    (equal? '(25 36) (fad-eval '(map (lambda (x) (* x x)) '(5 6))))
    (equal? '(0 . 1) (fad-eval '((j* sin) 0 1)))
    (equal? '(0 . 1) (fad-eval '((j* (lambda (x) (sin x))) 0 1)))
-   (equal? '(36 . 12) (fad-eval '((j* (lambda (x) (* x x))) 6 1))))
+   (equal? '(36 . 12) (fad-eval '((j* (lambda (x) (* x x))) 6 1)))
+   (equal? 12 (fad-eval '((lambda (y) (cdr ((j* (lambda (x) (* x (* x x)))) y 1))) 2)))
+   )
 
 )
 
