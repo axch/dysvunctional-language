@@ -1,4 +1,11 @@
-(define-structure (ad-compound (safe-accessors #t))
+(define-structure
+  (ad-compound
+   (safe-accessors #t)
+   (print-procedure
+    (simple-unparser-method 'ad-compound
+      (lambda (ad-compound)
+	(list (ad-compound-formals ad-compound)
+	      (ad-compound-body ad-compound))))))
   body
   env
   formals)
@@ -7,7 +14,13 @@
 ;;; accept the AD-eval objects that are their arguments and return the
 ;;; AD-eval object that is the result.  Any representation conversions
 ;;; need to be done elsewhere.
-(define-structure (ad-primitive (safe-accessors #t))
+(define-structure
+  (ad-primitive
+   (safe-accessors #t)
+   (print-procedure
+    (simple-unparser-method 'ad-primitive
+      (lambda (ad-primitive)
+	(list (ad-primitive-made-from ad-primitive))))))
   implementation
   made-from)
 
@@ -39,7 +52,14 @@
 (define (non-perturbation? thing)
   (= thing 0))
 
-(define-structure (perturbed (safe-accessors #t))
+(define-structure
+  (perturbed (safe-accessors #t)
+	     (print-procedure
+	      (simple-unparser-method 'p
+		(lambda (perturbed)
+		  (list (perturbed-primal perturbed)
+			(perturbed-perturbation perturbed)
+			(perturbed-epsilon perturbed))))))
   primal
   perturbation
   epsilon)

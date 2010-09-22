@@ -54,6 +54,10 @@
 
 (define ad-user-environment #f)
 
+(define (start-ad)
+  (set! *epsilon-count* 0)
+  (run-ad))
+
 (define (run-ad)
   (if (not ad-user-environment)
       (set! ad-user-environment (make-ad-user-environment)))
@@ -148,10 +152,10 @@
 	((or (perturbed? number) (perturbed? perturbation))
 	 (let ((epsilon (max (perturbed-epsilon number) (perturbed-epsilon perturbation))))
 	   (let ((primal (gen-primal epsilon))
-		 (perturbation (gen-perturbation epsilon)))
+		 (pert (gen-perturbation epsilon)))
 	     ((gen-make-dual epsilon)
 	      (times-perturbation (primal number) (primal perturbation))
-	      (times-perturbation (primal number) (perturbation perturbation))))))
+	      (times-perturbation (primal number) (pert perturbation))))))
 	(else (error "Ack!  times-perturbation can't handle" number perturbation))))
 
 (define (plus-perturbation . args)
