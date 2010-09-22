@@ -32,57 +32,57 @@
 	(ad-apply x (map scheme-value->ad-eval-value args)))
       x))
 
-(define-structure (perturbation-type (safe-accessors #t))
-  count
-  dual
-  primal
-  perturbation
-  primal?
-  parent)
+(define *epsilon-count* 0)
 
-(define *perturbation-type-count* 0)
-
-(define the-non-perturbation (make-perturbation-type *perturbation-type-count* #f #f #f #f #f))
+(define the-non-perturbation 0)
 
 (define (non-perturbation? thing)
-  (eq? thing the-non-perturbation))
-
+  (= thing 0))
 
 (define-structure (perturbed (safe-accessors #t))
   primal
   perturbation
-  count)
+  epsilon)
 
-(define (gen-primal count)
+(define perturbed-epsilon
+  (let ((perturbed-epsilon perturbed-epsilon))
+    (lambda (thing)
+      (if (perturbed? thing)
+	  (perturbed-epsilon thing)
+	  0))))
+
+(define (gen-primal epsilon)
   (lambda (perturbed)
-    (if (= count (perturbed-count perturbed))
-	(perturbed-primal perturbed)
-	(error "Wrong type of perturbation" perturbed count))))
+    (cond ((= epsilon (perturbed-epsilon perturbed))
+	   (perturbed-primal perturbed))
+	  ((> epsilon (perturbed-epsilon perturbed))
+	   perturbed)
+	  (else
+	   (error "Wrong type of perturbation" perturbed epsilon)))))
 
-(define (gen-perturbation count)
+(define (gen-perturbation epsilon)
   (lambda (perturbed)
-    (if (= count (perturbed-count perturbed))
-	(perturbed-perturbation perturbed)
-	(error "Wrong type of perturbation" perturbed count))))
+    (cond ((= epsilon (perturbed-epsilon perturbed))
+	   (perturbed-perturbation perturbed))
+	  ((> epsilon (perturbed-epsilon perturbed))
+	   0)
+	  (else
+	   (error "Wrong type of perturbation" perturbed epsilon)))))
 
-(define (gen-primal? count)
-  (lambda (thing)
-    (not (and (perturbed? thing)
-	      (= count (perturbed-count thing))))))
-
-(define (gen-make-dual count)
+(define (gen-make-dual epsilon)
   (lambda (primal perturbation)
-    (make-perturbed primal perturbation count)))
+    (if (and (number? perturbation)
+	     (= 0 perturbation))
+	primal
+	(make-perturbed primal perturbation epsilon))))
 
-(define (make-fresh-perturbation-type parent)
-  (set! *perturbation-type-count* (+ *perturbation-type-count* 1))
-  (make-perturbation-type
-   *perturbation-type-count*
-   (gen-make-dual *perturbation-type-count*)
-   (gen-primal *perturbation-type-count*)
-   (gen-perturbation *perturbation-type-count*)
-   (gen-primal? *perturbation-type-count*)
-   parent))
+;;; TODO Do I want to turn the epsilons into a skip list?
+(define (make-fresh-epsilon parent-epsilon)
+  (set! *epsilon-count* (+ *epsilon-count* 1))
+  *epsilon-count*)
+
+(define (epsilon-parent epsilon)
+  (- epsilon 1))
 
 (define (primal* thing)
   (if (perturbed? thing)
