@@ -3,7 +3,7 @@
   bindings
   parent)
 
-(define (ad-lookup symbol env epsilon)
+(define (perturbed-lookup symbol env epsilon)
   (cond ((null? env)
 	 (error "Unbound ad-symbol" symbol))
 	((environment? env) ; Indirection to Scheme
@@ -12,7 +12,7 @@
 	 (let ((binding (assq symbol (ad-environment-bindings env))))
 	   (if binding
 	       (cdr binding)
-	       (ad-lookup symbol (ad-environment-parent env) epsilon))))))
+	       (perturbed-lookup symbol (ad-environment-parent env) epsilon))))))
 
 (define (ad-extend-environment env formals arguments)
   (make-ad-environment

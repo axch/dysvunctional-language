@@ -134,9 +134,6 @@
 (define (eval-perturbed-definition form env)
   (error "TODO definitions not supported in perturbed-eval yet"))
 
-(define (perturbed-lookup symbol env epsilon)
-  (ad-lookup symbol env epsilon))
-
 (define (apply-j* procedure parent-epsilon)
   (make-perturbing-compound
    procedure
