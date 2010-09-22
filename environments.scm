@@ -7,7 +7,7 @@
   (cond ((null? env)
 	 (error "Unbound ad-symbol" symbol))
 	((environment? env) ; Indirection to Scheme
-	 ((scheme-value->ad-eval-value epsilon) (eval symbol env)))
+	 (scheme-value->perturbed-eval-value (eval symbol env) epsilon))
 	((ad-environment? env)
 	 (let ((binding (assq symbol (ad-environment-bindings env))))
 	   (if binding

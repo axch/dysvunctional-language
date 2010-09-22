@@ -134,9 +134,6 @@
 (define (eval-perturbed-definition form env)
   (error "TODO definitions not supported in perturbed-eval yet"))
 
-(define (scheme-value->perturbed-eval-value thing epsilon)
-  ((scheme-value->ad-eval-value epsilon) thing))
-
 (define (perturbed-lookup symbol env epsilon)
   (ad-lookup symbol env epsilon))
 

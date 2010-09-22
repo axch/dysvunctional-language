@@ -44,6 +44,9 @@
       (lambda args
 	(perturbed-apply x (map (scheme-value->ad-eval-value epsilon) args) epsilon))
       x))
+
+(define (scheme-value->perturbed-eval-value thing epsilon)
+  ((scheme-value->ad-eval-value epsilon) thing))
 
 (define *epsilon-count* 0)
 
