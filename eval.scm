@@ -155,7 +155,9 @@
 		 (pert (gen-perturbation epsilon)))
 	     ((gen-make-dual epsilon)
 	      (times-perturbation (primal number) (primal perturbation))
-	      (times-perturbation (primal number) (pert perturbation))))))
+	      (plus-perturbation
+	       (times-perturbation (primal number) (pert perturbation))
+	       (times-perturbation (pert number) (primal perturbation)))))))
 	(else (error "Ack!  times-perturbation can't handle" number perturbation))))
 
 (define (plus-perturbation . args)

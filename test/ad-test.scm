@@ -6,6 +6,7 @@
       (ad-eval form env))))
 
 (define (fad-eval form)
+  (set! *epsilon-count* 0)
   (perturbed-eval form (make-ad-user-environment) the-non-perturbation))
 
 (in-test-group
@@ -26,8 +27,7 @@
    (equal? '(0 . 1) (fad-eval '((j* (lambda (x) (sin x))) 0 1)))
    (equal? '(36 . 12) (fad-eval '((j* (lambda (x) (* x x))) 6 1)))
    (equal? 12 (fad-eval '((lambda (y) (cdr ((j* (lambda (x) (* x (* x x)))) y 1))) 2)))
-   ; ((j* (lambda (y) (cdr ((j* (lambda (x) (* x (* x x)))) y 1)))) 2 1)
-   ; still doesn't work, and I don't know why
+   (equal? '(12 . 12) (fad-eval '((j* (lambda (y) (cdr ((j* (lambda (x) (* x (* x x)))) y 1)))) 2 1)))
    )
 
 )
