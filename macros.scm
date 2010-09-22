@@ -13,9 +13,34 @@
   (set! *ad-macros* (cons (cons name transformer)
 			  *ad-macros*)))
 
+(define (normal-let-transform form)
+  (let ((bindings (cadr form))
+	(body (cddr form)))
+    `((lambda ,(map car bindings)
+	,@body)
+      ,@(map cadr bindings))))
+
+(define (loopy-let-transform form)
+  (let ((name (cadr form))
+	(bindings (caddr form))
+	(body (cdddr form)))
+    `(letrec ((,name (lambda ,(map car bindings)
+		       ,@body)))
+       (,name ,@(map cadr bindings)))))
+
 (define-ad-macro 'let
+  (lambda (form)
+    (if (symbol? (cadr form))
+	(loopy-let-transform form)
+	(normal-let-transform form))))
+
+(define-ad-macro 'let*
   (lambda (form)
     (let ((bindings (cadr form))
 	  (body (cddr form)))
-      `((lambda ,(map car bindings) ,@body)
-	,@(map cadr bindings)))))
+      (if (not (null? bindings))
+	  `(let (,(car bindings))
+	     (let* ,(cdr bindings)
+	       ,@body))
+	  `(let ()
+	     ,@body)))))
