@@ -94,15 +94,18 @@
 (define (j*? thing)
   (eq? j* thing))
 
+(define (zero . args)
+  (map (lambda (x) 0) args))
+
 (define (jacobian procedure)
-  (define (zero arg)
-    0)
   (let ((candidate
 	 (assq (ad-primitive-made-from procedure)
-	       `((,sin . ,cos)
-		 (,*   . ,(lambda (x y)
-			    (list y x)))
-		 (,cdr . ,zero)))))
+	       `((,sin . cos)
+		 (,*   . (lambda (x y)
+			   (list y x)))
+		 (,cdr . zero)
+		 (,list . zero)
+		 (,zero . zero)))))
     (if candidate
-	(cdr candidate)
+	(perturbed-eval (cdr candidate) (make-ad-user-environment) the-non-perturbation)
 	(error "Unsupported primitive primal procedure" procedure))))
