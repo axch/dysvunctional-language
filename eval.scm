@@ -95,7 +95,7 @@
     (cond ((j*? (primal* procedure))
 	   (apply-j* (car arguments) epsilon))
 	  ((ad-primitive? (primal* procedure))
-	   (if (non-perturbation? epsilon)
+	   (if (or (not (numeric? procedure)) (non-perturbation? epsilon))
 	       (apply (ad-primitive-implementation procedure) arguments)
 	       (make-dual
 		(perturbed-apply
