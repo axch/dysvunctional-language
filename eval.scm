@@ -23,13 +23,15 @@
 	 (cond ((eq? (car form) 'quote)
 		(scheme-value->perturbed-eval-value (cadr form) epsilon))
 	       ((eq? (car form) 'lambda)
-		(eval-ad-lambda form env)) ;; Really?
+		(eval-ad-lambda form env)) ;; Really? No epsilon?
 	       ((eq? (car form) 'define)
 		(eval-perturbed-definition form env))
 	       ((eq? (car form) 'if)
 		(eval-perturbed-if form env epsilon))
 	       (else
-		(eval-perturbed-application form env epsilon))))
+		(if (ad-macro? form)
+		    (perturbed-eval (ad-transform form) env epsilon)
+		    (eval-perturbed-application form env epsilon)))))
 	(else
 	 (scheme-value->perturbed-eval-value form epsilon))))
 

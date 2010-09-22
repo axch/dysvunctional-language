@@ -25,4 +25,5 @@
  load-relative
  '("datastructures"
    "environments"
-   "eval"))
+   "eval"
+   "macros"))
