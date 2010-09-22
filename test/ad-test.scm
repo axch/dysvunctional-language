@@ -17,7 +17,9 @@
    (equal? '(0 . 1) (fad-eval '((j* (lambda (x) (sin x))) 0 1)))
    (equal? '(36 . 12) (fad-eval '((j* (lambda (x) (* x x))) 6 1)))
    (equal? 12 (fad-eval '((lambda (y) (cdr ((j* (lambda (x) (* x (* x x)))) y 1))) 2)))
+   (equal? '(27 48) (fad-eval '(map (lambda (y) (cdr ((j* (lambda (x) (* x (* x x)))) y 1))) '(3 4))))
    (equal? '(12 . 12) (fad-eval '((j* (lambda (y) (cdr ((j* (lambda (x) (* x (* x x)))) y 1)))) 2 1)))
+   (equal? '(48 . 24) (fad-eval '((j* (lambda (z) (cadr (map (lambda (y) (cdr ((j* (lambda (x) (* x (* x x)))) y 1))) (list 3 z))))) 4 1)))
    )
 
 )
