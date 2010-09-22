@@ -31,18 +31,18 @@
 ;;; This defines the representation of ad-eval objects as Scheme
 ;;; objects and vice versa.  At the moment, that representation is not
 ;;; very complicated.
-(define (scheme-value->ad-eval-value x)
+(define ((scheme-value->ad-eval-value epsilon) x)
   (if (procedure? x)
       (make-ad-primitive
        (lambda args
-	 (apply x (map ad-eval-value->scheme-value args)))
+	 (apply x (map (ad-eval-value->scheme-value epsilon) args)))
        x)
       x))
 
-(define (ad-eval-value->scheme-value x)
+(define ((ad-eval-value->scheme-value epsilon) x)
   (if (ad-procedure? x)
       (lambda args
-	(ad-apply x (map scheme-value->ad-eval-value args)))
+	(perturbed-apply x (map (scheme-value->ad-eval-value epsilon) args) epsilon))
       x))
 
 (define *epsilon-count* 0)
