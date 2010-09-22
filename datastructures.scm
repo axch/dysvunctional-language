@@ -101,6 +101,7 @@
   (let ((candidate
 	 (assq (ad-primitive-made-from procedure)
 	       `((,sin . cos)
+		 (,cos . sin)
 		 (,*   . (lambda (x y)
 			   (list y x)))
 		 (,cdr . zero)
