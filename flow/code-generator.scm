@@ -100,3 +100,11 @@
 	  (else
 	   (error "Invalid operator in code generation"
 		  exp abstract-env analysis)))))
+
+(define (try-compile program)
+  (set! *symbol-count* 0)
+  (let ((analysis (analyze program)))
+    (pp analysis)
+    (compile (macroexpand program)
+	     (env->abstract-env (initial-flow-user-env))
+	     analysis)))
