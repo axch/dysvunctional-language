@@ -25,6 +25,9 @@
 (define (vl-variable->scheme-record-access var)
   `(record-get the-closure ',(vl-variable->scheme-field-name var)))
 
+(define (fresh-temporary)
+  (make-name 'temp-))
+
 ;; TODO This is really part of the "runtime system".
 ;; TODO I can get rid of the awful record access mechanism for getting
 ;; at closure-converted variables by passing an extra bit of data
@@ -91,9 +94,15 @@
 (define (compile-apply exp full-env free-list analysis)
   (let ((operator (refine-eval-once (car exp) full-env analysis))
 	(operands (refine-eval-once (cadr exp) full-env analysis)))
+    (define (primitive-application body)
+      (if (primitive-unary? operator)
+	  `(,(primitive-name operator) ,body)
+	  (let ((temp (fresh-temporary)))
+	    `(let ((,temp ,body))
+	       (,(primitive-name operator) (car ,temp) (cdr ,temp))))))
     (cond ((primitive? operator)
-	   `(,(primitive-name operator)
-	     ,(compile (cadr exp) full-env free-list analysis)))
+	   (primitive-application
+	    (compile (cadr exp) full-env free-list analysis)))
 	  ((closure? operator)
 	   `(,(call-site->scheme-function-name operator operands)
 	     ,(compile (car exp) full-env free-list analysis)
@@ -181,10 +190,12 @@
   (filter (lambda (x) x)
 	  (map maybe-pocedure-definition (analysis-bindings analysis))))
 
-(define (try-compile program)
+(define (compile-to-scheme program #!optional print-analysis?)
   (set! *symbol-count* 0)
   (let ((analysis (analyze program)))
-    (pp analysis)
+    (if (and (not (default-object? print-analysis?))
+	     print-analysis?)
+	(pp analysis))
     `(begin ,@(structure-definitions analysis)
 	    ,@(procedure-definitions analysis)
 	    ,(compile (macroexpand program)

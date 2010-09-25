@@ -7,6 +7,9 @@
 	       program)
 	(caddr candidate))))
 
+(define (eval-through-scheme program)
+  (eval (compile-to-scheme program) (nearest-repl/environment)))
+
 (define (determined-form-breakage value form)
   (cond ((not (equal? (macroexpand form) (macroexpand (macroexpand form))))
 	 `(not (equal? ,(macroexpand form) ,(macroexpand (macroexpand form)))))
@@ -14,6 +17,9 @@
 	 `(not (equal? ,value (interpreted ,(flow-eval form)))))
 	((not (equal? value (analyzed-answer form)))
 	 `(not (equal? ,value (analyzed ,(analyzed-answer form)))))
+	((not (equal? value (eval-through-scheme form)))
+	 `(not (equal? ,value (evaluated-through-scheme
+			       ,(eval-through-scheme form)))))
 	(else #f)))
 
 (in-test-group
