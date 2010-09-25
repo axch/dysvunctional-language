@@ -147,6 +147,8 @@
 	       (refine-analysis analysis)
 	       (expand-analysis analysis))))
 
+(define *analyze-wallp* #f)
+
 (define (analyze program)
   (let* ((program (macroexpand program))
 	 (env (env->abstract-env (initial-flow-user-env)))
@@ -155,7 +157,8 @@
 	   `((,program ,env ,abstract-all)))))
     (let loop ((old-analysis initial-analysis)
 	       (new-analysis (step-analysis initial-analysis)))
-      (pp new-analysis)
+      (if *analyze-wallp*
+	  (pp new-analysis))
       (if (same-analysis? old-analysis new-analysis)
 	  new-analysis
 	  (loop new-analysis (step-analysis new-analysis))))))

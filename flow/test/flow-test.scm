@@ -1,3 +1,12 @@
+(define (analyzed-answer program)
+  (let ((candidate
+	 (assoc (macroexpand program)
+		(analysis-bindings (analyze program)))))
+    (if (not candidate)
+	(error "Analysis makes no binding for the original program"
+	       program)
+	(caddr candidate))))
+
 (in-test-group
  flow
 
@@ -25,4 +34,6 @@
 					(lambda (x) (f (g x))))))
 			 (cons ((compose double square) 2)
 			       ((compose square double) 2)))))
+
+   (equal? 2 (analyzed-answer '((lambda (x) 2) 3)))
    ))
