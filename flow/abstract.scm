@@ -48,7 +48,7 @@
 				   (caddr exp) abstract-env analysis)))
 		  (if (and (not (abstract-all? car-answer))
 			   (not (abstract-all? cdr-answer)))
-		      `(cons ,car-answer ,cdr-answer)
+		      (cons car-answer cdr-answer)
 		      abstract-all)))
 	       (else
 		(refine-apply

@@ -36,4 +36,7 @@
 			       ((compose square double) 2)))))
 
    (equal? 2 (analyzed-answer '((lambda (x) 2) 3)))
+   (equal? 2 (analyzed-answer '((lambda (x y) 2) 3 4)))
+   (equal? 3 (analyzed-answer '((lambda (x y) x) 3 4)))
+   (equal? 4 (analyzed-answer '((lambda (x y) y) 3 4)))
    ))
