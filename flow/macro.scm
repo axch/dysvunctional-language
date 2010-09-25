@@ -19,22 +19,31 @@
 	 (error "Invalid expression syntax" exp))))
 
 (define (macroexpand-operands operands)
-  (if (null? operands)
-      '()
-      `(cons ,(macroexpand (car operands))
-	     ,(macroexpand-operands (cdr operands)))))
+  (cond ((null? operands)
+	 '())
+	((null? (cdr operands))
+	 (macroexpand (car operands)))
+	(else
+	 `(cons ,(macroexpand (car operands))
+		,(macroexpand-operands (cdr operands))))))
 
 (define (macroexpand-formals formals)
   (cond ((null? formals)
 	 formals)
-	((symbol? formals)
+	((and (pair? formals) (null? (cdr formals)))
 	 formals)
 	((pair? formals)
-	 (if (eq? (car formals) 'cons)
-	     (cons (macroexpand-formals (cadr formals))
-		   (macroexpand-formals (caddr formals)))
-	     (cons (macroexpand-formals (car formals))
-		   (macroexpand-formals (cdr formals)))))
+	 (list
+	  (let walk ((formals (apply cons* formals)))
+	    (cond ((symbol? formals) formals)
+		  ((pair? formals)
+		   (if (eq? (car formals) 'cons)
+		       `(cons ,(walk (cadr formals))
+			      ,(walk (caddr formals)))
+		       `(cons ,(walk (car formals))
+			      ,(walk (cdr formals)))))
+		  (else
+		   (error "Invalid formal parameter tree" formals))))))
 	(else
 	 (error "Invalid formal parameter tree" formals))))
 

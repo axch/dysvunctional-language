@@ -31,19 +31,22 @@
 	'()
 	(append-bindings (env-bindings env) (loop (env-parent env))))))
 
-(define (formal-bindings formal-tree arg)
-  (let walk ((name-tree formal-tree)
+(define (formal-bindings formal arg)
+  (let walk ((name-tree (car formal))
 	     (value-tree arg))
     (cond ((null? name-tree)
 	   '())
 	  ((symbol? name-tree)
 	   (list (cons name-tree value-tree)))
 	  ((and (pair? name-tree) (pair? value-tree))
-	   (append (walk (car name-tree) (car value-tree))
-		   (walk (cdr name-tree) (cdr value-tree))))
+	   (if (eq? (car name-tree) 'cons)
+	       (append (walk (cadr name-tree) (car value-tree))
+		       (walk (caddr name-tree) (cdr value-tree)))
+	       (append (walk (car name-tree) (car value-tree))
+		       (walk (cdr name-tree) (cdr value-tree)))))
 	  (else
 	   (error "Mismatched formal and actual parameter trees"
-		  formal-tree arg)))))
+		  formal arg)))))
 
 (define (extend-env env formal-tree arg)
   (make-env (formal-bindings formal-tree arg) env))
@@ -66,12 +69,12 @@
   (make-primitive
    name
    (lambda (arg)
-     (base (car arg) (cadr arg)))
+     (base (car arg) (cdr arg)))
    (lambda (arg)
      (if (abstract-all? arg)
 	 abstract-all
 	 (let ((first-arg (car arg))
-	       (second-arg (cadr arg)))
+	       (second-arg (cdr arg)))
 	   (if (or (abstract-real? first-arg)
 		   (abstract-real? second-arg))
 	       abstract-real
@@ -85,10 +88,8 @@
   (lambda (x) x)
   (lambda (x)
     (cond ((abstract-all? x) abstract-all)
-	  ((pair? x)
-	   (cond ((abstract-real? (car x)) abstract-real)
-		 ((number? (car x)) abstract-real)
-		 (else (error "Something known not to be a real number is declared real" x))))
+	  ((abstract-real? x) abstract-real)
+	  ((number? x) abstract-real)
 	  (else (error "Something known not to be a real number is declared real" x))))))
 
 (define (initial-flow-user-env)
