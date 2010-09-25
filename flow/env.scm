@@ -68,6 +68,7 @@
 (define (binary-numeric-primitive name base)
   (make-primitive
    name
+   2
    (lambda (arg)
      (base (car arg) (cdr arg)))
    (lambda (arg)
@@ -80,12 +81,18 @@
 	       abstract-real
 	       (base first-arg second-arg)))))))
 
+(define (real x)
+  (if (real? x)
+      x
+      (error "A non-real object is asserted to be real" x)))
+
 (add-primitive! (binary-numeric-primitive '+ +))
 (add-primitive! (binary-numeric-primitive '* *))
 (add-primitive!
  (make-primitive
   'real
-  (lambda (x) x)
+  1
+  real
   (lambda (x)
     (cond ((abstract-all? x) abstract-all)
 	  ((abstract-real? x) abstract-real)

@@ -14,8 +14,12 @@
 
 (define-structure (primitive (safe-accessors #t))
   name
+  arity
   implementation
   abstract-implementation)
 
 (define (flow-value->scheme-value thing)
   thing)
+
+(define (primitive-unary? primitive)
+  (= 1 (primitive-arity primitive)))
