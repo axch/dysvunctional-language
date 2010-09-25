@@ -144,9 +144,9 @@
 
 (define (step-analysis analysis)
   (make-analysis
-   (apply lset-union same-analysis-binding?
-	  (refine-analysis analysis)
-	  (expand-analysis analysis))))
+   (lset-union same-analysis-binding?
+	       (refine-analysis analysis)
+	       (expand-analysis analysis))))
 
 (define (analyze program)
   (let* ((program (macroexpand program))
@@ -156,7 +156,7 @@
 	   `((,program ,env ,abstract-all)))))
     (let loop ((old-analysis initial-analysis)
 	       (new-analysis (step-analysis initial-analysis)))
-      (pp old-analysis)
+      (pp new-analysis)
       (if (same-analysis? old-analysis new-analysis)
 	  old-analysis
 	  (loop new-analysis (step-analysis new-analysis))))))
