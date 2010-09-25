@@ -11,4 +11,7 @@
 	   (macroexpand '(lambda ((cons x y)) x)))
    (equal? 3 (flow-eval '((lambda ((cons x y)) 3) (cons 1 2))))
    (equal? 2 (flow-eval '((lambda ((cons x y)) y) (cons 1 2))))
+   (equal? '(1 . 3) (flow-eval '((lambda (x (y . z) w)
+				   (cons x z))
+				 1 (cons 2 3) 4)))
    ))
