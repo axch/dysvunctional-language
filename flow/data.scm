@@ -13,7 +13,8 @@
   env)
 
 (define-structure (primitive (safe-accessors #t))
-  implementation)
+  implementation
+  abstract-implementation)
 
 (define (flow-value->scheme-value thing)
   thing)

@@ -48,6 +48,6 @@
 	(make-env
 	 (map (lambda (pair)
 		(cons (car pair)
-		      (make-primitive (cdr pair))))
+		      (make-primitive (cdr pair) #f)))
 	      concrete-top-level)
 	 #f)))
