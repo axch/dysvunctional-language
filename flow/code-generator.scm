@@ -63,45 +63,44 @@
        (hash-table/put! *call-site-names* (cons closure abstract-arg) answer)
        answer))))
 
-(define (compile exp abstract-env analysis)
+(define (compile exp full-env free-list analysis)
   (cond ((constant? exp) exp)
 	((null? exp) ''())
 	((variable? exp)
-	 (abstract-lookup exp abstract-env
-	  (lambda (v) (vl-variable->scheme-variable exp))
-          (lambda ()
-	    (vl-variable->scheme-record-access exp))))
+	 (if (memq exp free-list)
+	     (vl-variable->scheme-record-access exp)
+	     (vl-variable->scheme-variable exp)))
 	((pair? exp)
 	 (cond ((eq? (car exp) 'lambda)
 		;; TODO I can eliminate void formals between here
 		;; and making structure definitions for closures
 		(cons (abstract-closure->scheme-constructor-name
-		       (refine-eval-once exp abstract-env analysis))
+		       (refine-eval-once exp full-env analysis))
 		      (map (lambda (var)
-			     (compile var abstract-env analysis))
+			     (compile var full-env free-list analysis))
 			   (free-variables exp))))
 	       ((eq? (car exp) 'cons)
-		`(cons ,(compile (cadr exp) abstract-env analysis)
-		       ,(compile (caddr exp) abstract-env analysis)))
+		`(cons ,(compile (cadr exp) full-env free-list analysis)
+		       ,(compile (caddr exp) full-env free-list analysis)))
 	       (else
-		(compile-apply exp abstract-env analysis))))
+		(compile-apply exp full-env free-list analysis))))
 	(else
 	 (error "Invaid expression in code generation"
-		exp abstract-env analysis))))
+		exp full-env free-list analysis))))
 
-(define (compile-apply exp abstract-env analysis)
-  (let ((operator (refine-eval-once (car exp) abstract-env analysis))
-	(operands (refine-eval-once (cadr exp) abstract-env analysis)))
+(define (compile-apply exp full-env free-list analysis)
+  (let ((operator (refine-eval-once (car exp) full-env analysis))
+	(operands (refine-eval-once (cadr exp) full-env analysis)))
     (cond ((primitive? operator)
 	   `(,(primitive-name operator)
-	     ,(compile (cadr exp) abstract-env analysis)))
+	     ,(compile (cadr exp) full-env free-list analysis)))
 	  ((closure? operator)
 	   `(,(call-site->scheme-function-name operator operands)
-	     ,(compile (car exp) abstract-env analysis)
-	     ,(compile (cadr exp) abstract-env analysis)))
+	     ,(compile (car exp) full-env free-list analysis)
+	     ,(compile (cadr exp) full-env free-list analysis)))
 	  (else
 	   (error "Invalid operator in code generation"
-		  exp abstract-env analysis)))))
+		  exp full-env analysis)))))
 
 (define (needs-structure-definition? abstract-value)
   (closure? abstract-value))
@@ -155,6 +154,9 @@
 				    (closure-formal operator)
 				    operands
 				    (closure-env operator))
+				   (free-variables
+				    `(lambda ,(closure-formal operator)
+				       ,(closure-body operator)))
 				   analysis)))))))))
   (filter (lambda (x) x)
 	  (map maybe-pocedure-definition (analysis-bindings analysis))))
@@ -167,4 +169,5 @@
 	    ,@(procedure-definitions analysis)
 	    ,(compile (macroexpand program)
 		      (env->abstract-env (initial-flow-user-env))
+		      '()
 		      analysis))))
