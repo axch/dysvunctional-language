@@ -18,10 +18,10 @@
   (make-env
    (let walk ((name-tree formal-tree)
 	      (value-tree arg))
-     (cond ((and (null? name-tree) (null? value-tree))
+     (cond ((null? name-tree)
 	    '())
 	   ((symbol? name-tree)
-	    (list (cons name-tree) value-tree))
+	    (list (cons name-tree value-tree)))
 	   ((and (pair? name-tree) (pair? value-tree))
 	    (append (walk (car name-tree) (car value-tree))
 		    (walk (cdr name-tree) (cdr value-tree))))

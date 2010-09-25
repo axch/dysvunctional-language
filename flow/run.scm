@@ -9,3 +9,7 @@
     (write answer)
     (newline))
   (run-flow))
+
+(define (flow-eval form)
+  (initialize-flow-user-env)
+  (concrete-eval (macroexpand form) flow-user-env))
