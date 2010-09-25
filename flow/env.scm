@@ -79,6 +79,17 @@
 
 (add-primitive! (binary-numeric-primitive '+ +))
 (add-primitive! (binary-numeric-primitive '* *))
+(add-primitive!
+ (make-primitive
+  'real
+  (lambda (x) x)
+  (lambda (x)
+    (cond ((abstract-all? x) abstract-all)
+	  ((pair? x)
+	   (cond ((abstract-real? (car x)) abstract-real)
+		 ((number? (car x)) abstract-real)
+		 (else (error "Something known not to be a real number is declared real" x))))
+	  (else (error "Something known not to be a real number is declared real" x))))))
 
 (define (initial-flow-user-env)
   (make-env
