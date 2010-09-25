@@ -14,4 +14,5 @@
    (equal? '(1 . 3) (flow-eval '((lambda (x (y . z) w)
 				   (cons x z))
 				 1 (cons 2 3) 4)))
+   (equal? 4 (flow-eval '(+ 1 3)))
    ))

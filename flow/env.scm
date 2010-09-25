@@ -35,5 +35,19 @@
 
 (define flow-user-env #f)
 
+(define (uncurry f)
+  (lambda (lst)
+    (f (car lst) (cadr lst))))
+
+(define concrete-top-level
+  `((+ . ,(uncurry +))
+    (* . ,(uncurry *))))
+
 (define (initialize-flow-user-env)
-  'ok)
+  (set! flow-user-env
+	(make-env
+	 (map (lambda (pair)
+		(cons (car pair)
+		      (make-primitive (cdr pair))))
+	      concrete-top-level)
+	 #f)))

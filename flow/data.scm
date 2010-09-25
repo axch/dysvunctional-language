@@ -15,5 +15,5 @@
 (define-structure (primitive (safe-accessors #t))
   implementation)
 
-(define (object-value->scheme-value thing)
+(define (flow-value->scheme-value thing)
   thing)
