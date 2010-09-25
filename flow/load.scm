@@ -29,4 +29,5 @@
    "macro"
    "run"
    "abstract"
-   "abstract-data"))
+   "abstract-data"
+   "code-generator"))
