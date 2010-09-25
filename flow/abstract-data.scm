@@ -11,6 +11,12 @@
     (lambda (binding1 binding2)
       (symbol<? (car binding1) (car binding2))))))
 
+(define (abstract-lookup symbol env)
+  (let ((answer (assq symbol (abstract-env-bindings env))))
+    (if answer
+	(cdr answer)
+	(error "Unbound variable detected in abstract analysis" symbol env))))
+
 (define (env->abstract-env env)
   (make-abstract-env (flat-bindings env)))
 
@@ -90,3 +96,7 @@
 
 (define (same-analysis-binding? binding1 binding2)
   (abstract-equal? binding1 binding2))
+
+(define (same-analysis? ana1 ana2)
+  (lset= same-analysis-binding? (analysis-bindings ana1)
+	 (analysis-bindings ana2)))

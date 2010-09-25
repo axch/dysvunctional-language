@@ -36,7 +36,7 @@
 
 (define (refine-eval exp abstract-env analysis)
   (cond ((variable? exp)
-	 (lookup exp abstract-env))
+	 (abstract-lookup exp abstract-env))
 	((null? exp)
 	 '())
 	((pair? exp)
@@ -64,6 +64,12 @@
   (let ((exp (car binding))
 	(env (cadr binding)))
     (list (list exp env (refine-eval exp env analysis)))))
+
+(define (refine-analysis analysis)
+  (apply lset-union same-analysis-binding?
+	 (map (lambda (binding)
+		(refine-analysis-binding binding analysis))
+	      (analysis-bindings analysis))))
 
 ;;; Given a particular abstract analysis, and a particular expression
 ;;; EXP and abstract environment ENV, the trio EXPAND-EVAL,
@@ -130,14 +136,17 @@
 	(env (cadr binding)))
     (expand-eval exp env analysis)))
 
+(define (expand-analysis analysis)
+  (apply lset-union same-analysis-binding?
+	 (map (lambda (binding)
+		(expand-analysis-binding binding analysis))
+	      (analysis-bindings analysis))))
+
 (define (step-analysis analysis)
   (make-analysis
    (apply lset-union same-analysis-binding?
-	  (map (lambda (binding)
-		 (lset-union same-analysis-binding?
-			     (refine-analysis-binding binding analysis)
-			     (expand-analysis-binding binding analysis)))
-	       (analysis-bindings analysis)))))
+	  (refine-analysis analysis)
+	  (expand-analysis analysis))))
 
 (define (analyze program)
   (let* ((program (macroexpand program))
@@ -145,4 +154,9 @@
 	 (initial-analysis
 	  (make-analysis
 	   `((,program ,env ,abstract-all)))))
-    (step-analysis initial-analysis)))
+    (let loop ((old-analysis initial-analysis)
+	       (new-analysis (step-analysis initial-analysis)))
+      (pp old-analysis)
+      (if (same-analysis? old-analysis new-analysis)
+	  old-analysis
+	  (loop new-analysis (step-analysis new-analysis))))))
