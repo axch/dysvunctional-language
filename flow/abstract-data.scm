@@ -22,7 +22,7 @@
 
 (define (free-variables exp)
   (sort
-   (cond ((symbol? exp) exp)
+   (cond ((symbol? exp) (list exp))
 	 ((pair? exp)
 	  (cond ((eq? (car exp) 'lambda)
 		 (lset-difference eq? (free-variables (caddr exp))
@@ -40,7 +40,7 @@
   (make-abstract-env
    (filter (lambda (binding)
 	     (memq (car binding) symbols))
-	   (abstract-env-bindings))))
+	   (abstract-env-bindings abstract-env))))
 
 ;;; An abstract closure is just a normal closure with an abstract
 ;;; environment that is correctly restricted to include only the free
