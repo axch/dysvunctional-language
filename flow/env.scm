@@ -62,8 +62,23 @@
 (define (add-primitive! primitive)
   (set! *primitives* (cons primitive *primitives*)))
 
-(add-primitive! (make-primitive '+ (uncurry +) #f))
-(add-primitive! (make-primitive '* (uncurry *) #f))
+(define (binary-numeric-primitive name base)
+  (make-primitive
+   name
+   (lambda (arg)
+     (base (car arg) (cadr arg)))
+   (lambda (arg)
+     (if (abstract-all? arg)
+	 abstract-all
+	 (let ((first-arg (car arg))
+	       (second-arg (cadr arg)))
+	   (if (or (abstract-real? first-arg)
+		   (abstract-real? second-arg))
+	       abstract-real
+	       (base first-arg second-arg)))))))
+
+(add-primitive! (binary-numeric-primitive '+ +))
+(add-primitive! (binary-numeric-primitive '* *))
 
 (define (initial-flow-user-env)
   (make-env

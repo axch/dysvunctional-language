@@ -77,7 +77,11 @@
   (error "abstract-union unimplemented"))
 
 (define abstract-boolean (list 'abstract-boolean))
+(define (abstract-boolean? thing)
+  (eq? thing abstract-boolean))
 (define abstract-real (list 'abstract-real))
+(define (abstract-real? thing)
+  (eq? thing abstract-real))
 (define abstract-all (list 'abstract-all))
 (define (abstract-all? thing)
   (eq? thing abstract-all))
