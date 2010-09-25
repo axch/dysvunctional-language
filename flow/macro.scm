@@ -29,13 +29,14 @@
 
 (define (macroexpand-formals formals)
   (cond ((null? formals)
-	 formals)
+	 (list formals))
 	((and (pair? formals) (null? (cdr formals)))
 	 formals)
 	((pair? formals)
 	 (list
 	  (let walk ((formals (apply cons* formals)))
 	    (cond ((symbol? formals) formals)
+		  ((null? formals) formals)
 		  ((pair? formals)
 		   (if (eq? (car formals) 'cons)
 		       `(cons ,(walk (cadr formals))

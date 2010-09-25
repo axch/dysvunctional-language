@@ -7,17 +7,67 @@
 	       program)
 	(caddr candidate))))
 
+(define (determined-form-breakage value form)
+  (cond ((not (equal? (macroexpand form) (macroexpand (macroexpand form))))
+	 `(not (equal? ,(macroexpand form) ,(macroexpand (macroexpand form)))))
+	((not (equal? value (flow-eval form)))
+	 `(not (equal? ,value (interpreted ,(flow-eval form)))))
+	((not (equal? value (analyzed-answer form)))
+	 `(not (equal? ,value (analyzed ,(analyzed-answer form)))))
+	(else #f)))
+
 (in-test-group
  flow
 
  (define-each-check
-   (equal? 3 (flow-eval 3))
    (equal? '((lambda (x) 1) 3)
 	   (macroexpand '((lambda (x) 1) 3)))
-   (equal? 1 (flow-eval '((lambda (x) 1) 3)))
-   (equal? 3 (flow-eval '((lambda (x y) 3) 1 2)))
    (equal? '(lambda ((cons x y)) x)
 	   (macroexpand '(lambda ((cons x y)) x)))
+
+   (equal? '((lambda ((cons x y)) x) (cons 1 2))
+	   (macroexpand '((lambda (x y) x) (cons 1 2))))
+   (not (determined-form-breakage 1 '((lambda (x y) x) (cons 1 2))))
+   (not (determined-form-breakage 2 '((lambda (x y) y) (cons 1 2))))
+
+   (equal? '((lambda ((cons x y)) x) (cons 1 2))
+	   (macroexpand '((lambda (x y) x) 1 2)))
+   (not (determined-form-breakage 1 '((lambda (x y) x) 1 2)))
+   (not (determined-form-breakage 2 '((lambda (x y) y) 1 2)))
+
+   (equal? '((lambda ((cons x (cons y z))) x) (cons 1 (cons 2 3)))
+	   (macroexpand '((lambda (x y z) x) 1 2 3)))
+   (not (determined-form-breakage 1 '((lambda (x y z) x) 1 2 3)))
+   (not (determined-form-breakage 2 '((lambda (x y z) y) 1 2 3)))
+   (not (determined-form-breakage 3 '((lambda (x y z) z) 1 2 3)))
+
+   (equal? '((lambda ((cons (cons x y) z)) x) (cons (cons 1 2) 3))
+	   (macroexpand '((lambda ((cons x y) z) x) (cons 1 2) 3)))
+   (not (determined-form-breakage 1 '((lambda ((cons x y) z) x) (cons 1 2) 3)))
+   (not (determined-form-breakage 2 '((lambda ((cons x y) z) y) (cons 1 2) 3)))
+   (not (determined-form-breakage 3 '((lambda ((cons x y) z) z) (cons 1 2) 3)))
+
+   (equal? '((lambda ((cons (cons x (cons y ())) z)) x)
+	     (cons (cons 1 (cons 2 ())) 3))
+	   (macroexpand '((lambda ((x y) z) x)
+			  (cons 1 (cons 2 ())) 3)))
+   (not (determined-form-breakage 1
+         '((lambda ((x y) z) x)
+	   (cons 1 (cons 2 ())) 3)))
+   (not (determined-form-breakage 2
+         '((lambda ((x y) z) y)
+	   (cons 1 (cons 2 ())) 3)))
+   (not (determined-form-breakage 3
+         '((lambda ((x y) z) z)
+	   (cons 1 (cons 2 ())) 3)))
+
+   (equal? '((lambda (()) 1) ())
+	   (macroexpand '((lambda () 1))))
+   (not (determined-form-breakage 1 '((lambda () 1))))
+
+   (equal? 3 (flow-eval 3))
+   (equal? 1 (flow-eval '((lambda (x) 1) 3)))
+   (equal? 3 (flow-eval '((lambda (x y) 3) 1 2)))
    (equal? 3 (flow-eval '((lambda ((cons x y)) 3) (cons 1 2))))
    (equal? 2 (flow-eval '((lambda ((cons x y)) y) (cons 1 2))))
    (equal? '(1 . 3) (flow-eval '((lambda (x (y . z) w)
