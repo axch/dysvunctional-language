@@ -91,7 +91,7 @@
 
 (define (compile-apply exp abstract-env analysis)
   (let ((operator (refine-eval-once (car exp) abstract-env analysis))
-	(operands (refine-eval-once (cdr exp) abstract-env analysis)))
+	(operands (refine-eval-once (cadr exp) abstract-env analysis)))
     (cond ((primitive? operator)
 	   `(,(primitive-name operator)
 	     ,(compile (cadr exp) abstract-env analysis)))
@@ -109,7 +109,7 @@
 (define (structure-definitions analysis)
   (map abstract-value->structure-definition
        (filter needs-structure-definition?
-	   (map caddr (analysis-bindings analysis)))))
+	       (map caddr (analysis-bindings analysis)))))
 
 (define (abstract-value->structure-definition value)
   (cond ((closure? value)
@@ -136,10 +136,35 @@
 	  (else
 	   (error "Invalid formal parameter tree" (closure-formal closure))))))
 
+(define (procedure-definitions analysis)
+  (define (maybe-pocedure-definition binding)
+    (let ((exp (car binding))
+	  (env (cadr binding)))
+      (and (pair? exp)
+	   (not (eq? (car exp) 'cons))
+	   (not (eq? (car exp) 'lambda))
+	   (let ((operator (refine-eval-once (car exp) env analysis))
+		 (operands (refine-eval-once (cadr exp) env analysis)))
+	     (and (closure? operator)
+		  (let ((name (call-site->scheme-function-name operator operands)))
+		    `(define (,name the-closure the-formals)
+		       (let-destructure (,(car (closure-formal operator))
+					 the-formals)
+			 ,(compile (closure-body operator)
+				   (extend-abstract-env
+				    (closure-formal operator)
+				    operands
+				    (closure-env operator))
+				   analysis)))))))))
+  (filter (lambda (x) x)
+	  (map maybe-pocedure-definition (analysis-bindings analysis))))
+
 (define (try-compile program)
   (set! *symbol-count* 0)
   (let ((analysis (analyze program)))
     (pp analysis)
-    (compile (macroexpand program)
-	     (env->abstract-env (initial-flow-user-env))
-	     analysis)))
+    `(begin ,@(structure-definitions analysis)
+	    ,@(procedure-definitions analysis)
+	    ,(compile (macroexpand program)
+		      (env->abstract-env (initial-flow-user-env))
+		      analysis))))
