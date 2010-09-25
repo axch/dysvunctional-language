@@ -10,6 +10,8 @@
 	       ((eq? (car exp) 'cons)
 		`(cons ,(macroexpand (cadr exp))
 		       ,(macroexpand (caddr exp))))
+	       ((flow-macro? exp)
+		(macroexpand (expand-flow-macro exp)))
 	       (else
 		`(,(macroexpand (car exp))
 		  ,(macroexpand-operands (cdr exp))))))
@@ -35,3 +37,25 @@
 		   (macroexpand-formals (cdr formals)))))
 	(else
 	 (error "Invalid formal parameter tree" formals))))
+
+(define *flow-macros* '())
+
+(define (flow-macro? form)
+  (memq (car form) (map car *flow-macros*)))
+
+(define (expand-flow-macro form)
+  (let ((transformer (assq (car form) *flow-macros*)))
+    (if transformer
+	((cdr transformer) form)
+	(error "Undefined macro" form))))
+
+(define (define-flow-macro! name transformer)
+  (set! *flow-macros* (cons (cons name transformer) *flow-macros*)))
+
+(define-flow-macro! 'let
+  (lambda (form)
+    (let ((bindings (cadr form))
+	  (body (cddr form)))
+      `((lambda ,(map car bindings)
+	  ,@body)
+	,@(map cadr bindings)))))
