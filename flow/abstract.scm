@@ -35,10 +35,9 @@
 	 (error "Trying to refine the application of something that is known not to be a procedure" proc arg analysis))))
 
 (define (refine-eval exp abstract-env analysis)
-  (cond ((variable? exp)
-	 (abstract-lookup exp abstract-env))
-	((null? exp)
-	 '())
+  (cond ((constant? exp) exp)
+	((variable? exp) (abstract-lookup exp abstract-env))
+	((null? exp) '())
 	((pair? exp)
 	 (cond ((eq? (car exp) 'lambda)
 		(make-abstract-closure (cadr exp) (caddr exp) abstract-env))
