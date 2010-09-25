@@ -88,3 +88,5 @@
 	    (win (caddar bindings))
 	    (loop (cdr bindings))))))
 
+(define (same-analysis-binding? binding1 binding2)
+  (abstract-equal? binding1 binding2))
