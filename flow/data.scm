@@ -13,6 +13,7 @@
   env)
 
 (define-structure (primitive (safe-accessors #t))
+  name
   implementation
   abstract-implementation)
 

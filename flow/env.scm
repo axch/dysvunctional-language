@@ -57,16 +57,19 @@
   (lambda (lst)
     (f (car lst) (cadr lst))))
 
-(define concrete-top-level
-  `((+ . ,(uncurry +))
-    (* . ,(uncurry *))))
+(define *primitives* '())
+
+(define (add-primitive! primitive)
+  (set! *primitives* (cons primitive *primitives*)))
+
+(add-primitive! (make-primitive '+ (uncurry +) #f))
+(add-primitive! (make-primitive '* (uncurry *) #f))
 
 (define (initial-flow-user-env)
   (make-env
-   (map (lambda (pair)
-	  (cons (car pair)
-		(make-primitive (cdr pair) #f)))
-	concrete-top-level)
+   (map (lambda (primitive)
+	  (cons (primitive-name primitive) primitive))
+	*primitives*)
    #f))
 
 (define (initialize-flow-user-env)
