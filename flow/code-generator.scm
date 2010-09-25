@@ -73,6 +73,8 @@
 	    (vl-variable->scheme-record-access exp))))
 	((pair? exp)
 	 (cond ((eq? (car exp) 'lambda)
+		;; TODO I can eliminate void formals between here
+		;; and making structure definitions for closures
 		(cons (abstract-closure->scheme-constructor-name
 		       (refine-eval-once exp abstract-env analysis))
 		      (map (lambda (var)
@@ -100,6 +102,39 @@
 	  (else
 	   (error "Invalid operator in code generation"
 		  exp abstract-env analysis)))))
+
+(define (needs-structure-definition? abstract-value)
+  (closure? abstract-value))
+
+(define (structure-definitions analysis)
+  (map abstract-value->structure-definition
+       (filter needs-structure-definition?
+	   (map caddr (analysis-bindings analysis)))))
+
+(define (abstract-value->structure-definition value)
+  (cond ((closure? value)
+	 `(define-structure ,(abstract-closure->scheme-structure-name value)
+	    ,@(map vl-variable->scheme-field-name
+		   ;; TODO I can eliminate void formals between here
+		   ;; and compiling lambda expressions
+		   (free-variables `(lambda ,(closure-formal value)
+				      ,(closure-body value))))))
+	(else (error "Not compiling non-closure aggregates to Scheme structures" value))))
+#;
+(define (bound-variables closure)
+  (let walk ((tree (closure-formal closure)))
+    (cond ((null? tree)
+	   '())
+	  ((symbol? tree)
+	   (list tree))
+	  ((pair? tree)
+	   (if (eq? (car tree) 'cons)
+	       (append (walk (cadr tree))
+		       (walk (caddr tree)))
+	       (append (walk (car tree))
+		       (walk (cdr tree)))))
+	  (else
+	   (error "Invalid formal parameter tree" (closure-formal closure))))))
 
 (define (try-compile program)
   (set! *symbol-count* 0)
