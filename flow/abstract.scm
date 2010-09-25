@@ -23,11 +23,11 @@
 	((closure? proc)
 	 (if (abstract-all? arg)
 	     abstract-all
-	     (refine-eval-once (closure-body closure)
+	     (refine-eval-once (closure-body proc)
 			       (extend-abstract-env
-				(closure-formal closure)
+				(closure-formal proc)
 				arg
-				(closure-env closure))
+				(closure-env proc))
 			       analysis)))
 	((abstract-all? proc)
 	 abstract-all)
@@ -48,12 +48,12 @@
 				   (caddr exp) abstract-env analysis)))
 		  (if (and (not (abstract-all? car-answer))
 			   (not (abstract-all? cdr-answer)))
-		      (cons car-answer cdr-answer)
+		      `(cons ,car-answer ,cdr-answer)
 		      abstract-all)))
 	       (else
 		(refine-apply
 		 (refine-eval-once (car exp) abstract-env analysis)
-		 (refine-eval-once (cdr exp) abstract-env analysis)
+		 (refine-eval-once (cadr exp) abstract-env analysis)
 		 analysis))))
 	(else
 	 (error "Invalid expression in abstract refiner"
@@ -94,11 +94,11 @@
 	((closure? proc)
 	 (if (abstract-all? arg)
 	     '()
-	     (expand-eval-once (closure-body closure)
+	     (expand-eval-once (closure-body proc)
 			       (extend-abstract-env
-				(closure-formal closure)
+				(closure-formal proc)
 				arg
-				(closure-env closure))
+				(closure-env proc))
 			       analysis)))
 	((abstract-all? proc)
 	 '())
@@ -121,10 +121,10 @@
 		(lset-union
 		 same-analysis-binding?
 		 (expand-eval-once (car exp) abstract-env analysis)
-		 (expand-eval-once (cdr exp) abstract-env analysis)
+		 (expand-eval-once (cadr exp) abstract-env analysis)
 		 (expand-apply
 		  (refine-eval-once (car exp) abstract-env analysis)
-		  (refine-eval-once (cdr exp) abstract-env analysis)
+		  (refine-eval-once (cadr exp) abstract-env analysis)
 		  analysis)))))
 	(else
 	 (error "Invalid expression in abstract expander"
@@ -157,5 +157,5 @@
 	       (new-analysis (step-analysis initial-analysis)))
       (pp new-analysis)
       (if (same-analysis? old-analysis new-analysis)
-	  old-analysis
+	  new-analysis
 	  (loop new-analysis (step-analysis new-analysis))))))
