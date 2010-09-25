@@ -4,6 +4,20 @@
 (define-structure (abstract-env (safe-accessors #t))
   bindings)
 
+(define (env->abstract-env env)
+  (make-abstract-env
+   (sort
+    (delete-duplicates ;; TODO Will delete-duplicates do shadowing right?
+     (let loop ((env env))
+       (if (empty-env? env)
+	   '()
+	   (append (env-bindings env)
+		   (loop (env-parent env)))))
+     (lambda (binding1 binding2)
+       (eq? (car binding1) (car binding2))))
+    (lambda (binding1 binding2)
+      (symbol<? (car binding1) (car binding2))))))
+
 (define (free-variables exp)
   (sort
    (cond ((symbol? exp) exp)

@@ -43,11 +43,13 @@
   `((+ . ,(uncurry +))
     (* . ,(uncurry *))))
 
+(define (initial-flow-user-env)
+  (make-env
+   (map (lambda (pair)
+	  (cons (car pair)
+		(make-primitive (cdr pair) #f)))
+	concrete-top-level)
+   #f))
+
 (define (initialize-flow-user-env)
-  (set! flow-user-env
-	(make-env
-	 (map (lambda (pair)
-		(cons (car pair)
-		      (make-primitive (cdr pair) #f)))
-	      concrete-top-level)
-	 #f)))
+  (set! flow-user-env (initial-flow-user-env)))

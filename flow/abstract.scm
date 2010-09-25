@@ -47,3 +47,12 @@
 	(else
 	 (error "Invalid expression in abstract evaluator"
 		exp abstract-env analysis))))
+
+
+
+(define (analyze program)
+  (let* ((env (env->abstract-env (initial-flow-user-env)))
+	 (initial-analysis
+	  (make-analysis
+	   `((,program ,env ,abstract-all)))))
+    (abstract-eval (macroexpand program) env initial-analysis)))
