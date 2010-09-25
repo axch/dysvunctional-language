@@ -1,22 +1,18 @@
 ;; Abstract environments are just alists of bindings.  The
 ;; environments are expected to be flat, sorted, and precise, so that
 ;; they can be used effectively as keys in analysis bindings.
-(define-structure (abstract-env (safe-accessors #t))
+(define-structure (abstract-env (safe-accessors #t) (constructor %make-abstract-env))
   bindings)
 
-(define (env->abstract-env env)
-  (make-abstract-env
+(define (make-abstract-env bindings)
+  (%make-abstract-env
    (sort
-    (delete-duplicates ;; TODO Will delete-duplicates do shadowing right?
-     (let loop ((env env))
-       (if (empty-env? env)
-	   '()
-	   (append (env-bindings env)
-		   (loop (env-parent env)))))
-     (lambda (binding1 binding2)
-       (eq? (car binding1) (car binding2))))
+    bindings
     (lambda (binding1 binding2)
       (symbol<? (car binding1) (car binding2))))))
+
+(define (env->abstract-env env)
+  (make-abstract-env (flat-bindings env)))
 
 (define (free-variables exp)
   (sort
@@ -46,6 +42,11 @@
 (define (make-abstract-closure formal body abstract-env)
   (make-closure formal body
    (restrict-to (free-variables `(lambda ,formal ,body)) abstract-env)))
+
+(define (extend-abstract-env formal arg abstract-env)
+  (make-abstract-env
+   (append-bindings (formal-bindings formal arg)
+		    (abstract-env-bindings abstract-env))))
 
 (define (abstract-equal? thing1 thing2)
   (cond ((eqv? thing1 thing2)
