@@ -27,4 +27,6 @@
    "env"
    "eval"
    "macro"
-   "run"))
+   "run"
+   "abstract"
+   "abstract-data"))
