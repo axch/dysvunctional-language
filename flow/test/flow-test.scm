@@ -35,6 +35,7 @@
 			 (cons ((compose double square) 2)
 			       ((compose square double) 2)))))
 
+   (equal? '(3 . 2) (analyzed-answer '(cons 3 2)))
    (equal? 2 (analyzed-answer '((lambda (x) 2) 3)))
    (equal? 2 (analyzed-answer '((lambda (x y) 2) 3 4)))
    (equal? 3 (analyzed-answer '((lambda (x y) x) 3 4)))
