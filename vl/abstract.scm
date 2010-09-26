@@ -97,7 +97,13 @@
 
 (define (expand-apply proc arg analysis)
   (cond ((primitive? proc)
-	 '())  ; I think
+	 (if (or (abstract-all? arg) (not (eq? primitive-if proc)))
+	     '()
+	     (let ((consequent (cadr arg))
+		   (alternate (cddr arg)))
+	       (lset-union same-analysis-binding?
+			   (expand-apply consequent '() analysis)
+			   (expand-apply alternate '() analysis)))))
 	((closure? proc)
 	 (if (abstract-all? arg)
 	     '()
