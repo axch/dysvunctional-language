@@ -101,9 +101,12 @@
 	     '()
 	     (let ((consequent (cadr arg))
 		   (alternate (cddr arg)))
+	       (define (expand-thunk-application thunk)
+		 (expand-eval-once
+		  `(,(closure-expression thunk) ()) (closure-env thunk) analysis))
 	       (lset-union same-analysis-binding?
-			   (expand-thunk-application consequent analysis)
-			   (expand-thunk-application alternate analysis)))))
+			   (expand-thunk-application consequent)
+			   (expand-thunk-application alternate)))))
 	((closure? proc)
 	 (if (abstract-all? arg)
 	     '()
@@ -117,10 +120,6 @@
 	 '())
 	(else
 	 (error "Trying to expand on an application of something that is known not to be a procedure" proc arg analysis))))
-
-(define (expand-thunk-application thunk analysis)
-  (expand-eval-once
-   `(,(closure-expression thunk) ()) (closure-env thunk) analysis))
 
 (define (expand-eval exp abstract-env analysis)
   (cond ((variable? exp) '())
