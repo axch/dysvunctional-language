@@ -108,19 +108,8 @@
   (let ((operator (refine-eval-once (car exp) full-env analysis))
 	(operands (refine-eval-once (cadr exp) full-env analysis)))
     (cond ((eq? primitive-if operator)
-	   `(if ,(compile (cadr (cadr exp)) full-env enclosure analysis)
-		,(closure-application (cadr operands) '()
-		  (lambda ()
-		    (compile (if-procedure-expression-consequent exp)
-			     full-env enclosure analysis))
-		  (lambda ()
-		    (error "Lose!")))
-		,(closure-application (cddr operands) '()
-		  (lambda ()
-		    (compile (if-procedure-expression-alternate exp)
-			     full-env enclosure analysis))
-		  (lambda ()
-		    (error "Lose!")))))
+	   (generate-if-statement
+	    exp full-env enclosure analysis operator operands))
 	  ((primitive? operator)
 	   (primitive-application
 	    operator
@@ -134,6 +123,21 @@
 	  (else
 	   (error "Invalid operator in code generation"
 		  exp operator operands full-env analysis)))))
+
+(define (generate-if-statement exp full-env enclosure analysis operator operands)
+  `(if ,(compile (cadr (cadr exp)) full-env enclosure analysis)
+       ,(closure-application (cadr operands) '()
+	 (lambda ()
+	   (compile (if-procedure-expression-consequent exp)
+		    full-env enclosure analysis))
+	 (lambda ()
+	   (error "Lose!")))
+       ,(closure-application (cddr operands) '()
+	 (lambda ()
+	   (compile (if-procedure-expression-alternate exp)
+		    full-env enclosure analysis))
+	 (lambda ()
+	   (error "Lose!")))))
 
 (define (if-procedure-expression-consequent exp)
   (cadr (caddr (cadr exp))))
