@@ -97,6 +97,16 @@
 	       abstract-boolean
 	       (base first second)))))))
 
+(define (primitive-type-predicate name base)
+  (make-primitive
+   name
+   1
+   base
+   (lambda (arg)
+     (if (abstract-all? arg)
+	 abstract-all ; Not abstract-bool, we're union-free
+	 (base arg)))))
+
 (define (real x)
   (if (real? x)
       x
@@ -114,6 +124,9 @@
 (add-primitive! (RxR->bool-primitive '>  >))
 (add-primitive! (RxR->bool-primitive '>= >=))
 (add-primitive! (RxR->bool-primitive '=  =))
+;; TODO Do these really have to be primitive?
+(add-primitive! (primitive-type-predicate 'null? null?))
+(add-primitive! (primitive-type-predicate 'pair? pair?))
 (add-primitive!
  (make-primitive
   'real
