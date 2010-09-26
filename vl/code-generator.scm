@@ -32,7 +32,7 @@
 
 ;; TODO Should this really be an eq? hash table, or should I make an
 ;; abstract-equal? hash table for these?
-(define *closure-names* (make-eq-hash-table))
+(define *closure-names* (make-abstract-hash-table))
 
 (define (abstract-closure->scheme-structure-name closure)
   (hash-table/lookup *closure-names* closure

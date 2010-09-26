@@ -78,6 +78,23 @@
 			  (abstract-env-bindings thing2)))
 	(else #f)))
 
+(define (abstract-hash-mod thing modulus)
+  (cond ((closure? thing)
+	 (modulo (+ (equal-hash-mod (closure-body thing) modulus)
+		    (equal-hash-mod (closure-formal thing) modulus)
+		    (abstract-hash-mod (closure-env thing) modulus))
+		 modulus))
+	((pair? thing)
+	 (modulo (+ (abstract-hash-mod (car thing) modulus)
+		    (abstract-hash-mod (cdr thing) modulus))
+		 modulus))
+	((abstract-env? thing)
+	 (abstract-hash-mod (abstract-env-bindings thing) modulus))
+	(else (eqv-hash-mod thing modulus))))
+
+(define make-abstract-hash-table
+  (strong-hash-table/constructor abstract-hash-mod abstract-equal? #t))
+
 (define (abstract-union thing1 thing2)
   (error "abstract-union unimplemented"))
 
