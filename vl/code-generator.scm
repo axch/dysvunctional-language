@@ -46,8 +46,7 @@
 (define (abstract-closure->scheme-constructor-name closure)
   (symbol 'make- (abstract-closure->scheme-structure-name closure)))
 
-;; TODO Can I really get away with an equal? hash table here?
-(define *call-site-names* (make-equal-hash-table))
+(define *call-site-names* (make-abstract-hash-table))
 
 (define (call-site->scheme-function-name closure abstract-arg)
   (hash-table/lookup *call-site-names* (cons closure abstract-arg)
@@ -168,7 +167,25 @@
 	   (if (eq? (car formal-tree) 'cons)
 	       (xxx (cadr formal-tree) (caddr formal-tree))
 	       (xxx (car formal-tree) (cdr formal-tree))))))
-  (define (maybe-pocedure-definition binding)
+  (define (procedure-definition pair)
+    (let ((operator (car pair))
+	  (operands (cdr pair)))
+      (let ((name (call-site->scheme-function-name operator operands)))
+	`(define (,name ,@(if (solved-abstractly? operator)
+			      '()
+			      '(the-closure))
+			the-formals)
+	   (let ,(destructuring-let-bindings
+		  (car (closure-formal operator))
+		  operands)
+	     ,(compile (closure-body operator)
+		       (extend-abstract-env
+			(closure-formal operator)
+			operands
+			(closure-env operator))
+		       operator				   
+		       analysis))))))
+  (define (maybe-pocedure-request binding)
     (let ((exp (car binding))
 	  (env (cadr binding))
 	  (value (caddr binding)))
@@ -179,23 +196,12 @@
 	   (let ((operator (refine-eval-once (car exp) env analysis))
 		 (operands (refine-eval-once (cadr exp) env analysis)))
 	     (and (closure? operator)
-		  (let ((name (call-site->scheme-function-name operator operands)))
-		    `(define (,name ,@(if (solved-abstractly? operator)
-					  '()
-					  '(the-closure))
-				    the-formals)
-		       (let ,(destructuring-let-bindings
-			      (car (closure-formal operator))
-			      operands)
-			 ,(compile (closure-body operator)
-				   (extend-abstract-env
-				    (closure-formal operator)
-				    operands
-				    (closure-env operator))
-				   operator				   
-				   analysis)))))))))
-  (filter (lambda (x) x)
-	  (map maybe-pocedure-definition (analysis-bindings analysis))))
+		  (cons operator operands))))))
+  (map procedure-definition
+       (delete-duplicates
+	(filter (lambda (x) x)
+		(map maybe-pocedure-request (analysis-bindings analysis)))
+	abstract-equal?)))
 
 (define (compile-to-scheme program #!optional print-analysis?)
   (set! *symbol-count* 0)
