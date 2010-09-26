@@ -2,6 +2,12 @@
 
 (load-relative "../../rule-system/load-for-use.scm")
 
+(define (record-accessor-name? thing)
+  (and (symbol? thing)
+       (let ((name (symbol->string thing)))
+	 (and (> (string-length name) 8)
+	      (equal? (string-head name 8) "closure-")))))
+
 (define (safe-to-replicate? exp)
   (cond ((symbol? exp)
 	 ;; This should just be #t, but doing it this way is a hack to
@@ -11,6 +17,8 @@
 	((and (pair? exp) (eq? (car exp) 'cons))
 	 (and (safe-to-replicate? (cadr exp))
 	      (safe-to-replicate? (caddr exp))))
+	((and (pair? exp) (record-accessor-name? (car exp)))
+	 (safe-to-replicate? (cadr exp)))
 	(else #f)))
 
 (define peephole-optimizer
