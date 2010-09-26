@@ -30,4 +30,5 @@
    "run"
    "abstract"
    "abstract-data"
-   "code-generator"))
+   "code-generator"
+   "peephole-optimizer"))
