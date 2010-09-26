@@ -126,7 +126,7 @@
 	      (,(primitive-name primitive) (car ,temp) (cdr ,temp)))))
     ((3) (let ((temp (fresh-temporary)))
 	   `(let ((,temp ,arg-code))
-	      (,(primitive-name primitive) (car ,temp) (cadr ,temp) (caddr ,temp)))))
+	      (,(primitive-name primitive) (car ,temp) (cadr ,temp) (cddr ,temp)))))
     (else
      (error "Unsupported arity of primitive operation" primitive))))
 

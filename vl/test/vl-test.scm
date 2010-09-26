@@ -143,11 +143,11 @@
    (equal? 27
     (eval-through-scheme
      '(let ((cube (lambda (x)
-		    (* x (* x x))))
-	    (enlarge-upto (lambda (bound)
-			    (lambda (x)
-			      (if (< x bound)
-				  (cube x)
-				  x)))))
-	((enlarge-upto (real 20)) (real 3)))))
+		    (* x (* x x)))))
+	(let ((enlarge-upto (lambda (bound)
+			      (lambda (x)
+				(if (< x bound)
+				    (cube x)
+				    x)))))
+	  ((enlarge-upto (real 20)) (real 3))))))
    ))
