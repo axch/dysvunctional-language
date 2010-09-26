@@ -106,8 +106,14 @@
   (if p (c) (a)))
 
 (add-primitive! (binary-numeric-primitive '+ +))
+(add-primitive! (binary-numeric-primitive '- -))
 (add-primitive! (binary-numeric-primitive '* *))
-(add-primitive! (RxR->bool-primitive '< <))
+(add-primitive! (binary-numeric-primitive '/ /))
+(add-primitive! (RxR->bool-primitive '<  <))
+(add-primitive! (RxR->bool-primitive '<= <=))
+(add-primitive! (RxR->bool-primitive '>  >))
+(add-primitive! (RxR->bool-primitive '>= >=))
+(add-primitive! (RxR->bool-primitive '=  =))
 (add-primitive!
  (make-primitive
   'real
@@ -128,14 +134,13 @@
    (lambda (shape analysis)
      (if (abstract-all? shape)
 	 abstract-all
-	 (let ((predicate (car shape))
-	       (consequent (abstract-result-of (cadr shape) analysis))
-	       (alternate (abstract-result-of (cddr shape) analysis)))
-	   (if (abstract-boolean? predicate)
-	       (abstract-union consequent alternate)
+	 (let ((predicate (car shape)))
+	   (if (not (abstract-boolean? predicate))
 	       (if predicate
-		   consequent
-		   alternate)))))))
+		   (abstract-result-of (cadr shape) analysis)
+		   (abstract-result-of (cddr shape) analysis))
+	       (abstract-union (abstract-result-of (cadr shape) analysis)
+			       (abstract-result-of (cddr shape) analysis))))))))
 (add-primitive! primitive-if)
 
 (define (abstract-result-of thunk-shape analysis)
