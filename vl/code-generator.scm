@@ -128,7 +128,8 @@
 (define (structure-definitions analysis)
   (map abstract-value->structure-definition
        (filter needs-structure-definition?
-	       (map caddr (analysis-bindings analysis)))))
+	       (delete-duplicates (map caddr (analysis-bindings analysis))
+				  abstract-equal?))))
 
 (define (abstract-value->structure-definition value)
   (cond ((closure? value)
