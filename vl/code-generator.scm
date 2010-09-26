@@ -116,14 +116,19 @@
 	      (compile (cadr exp) full-env enclosure analysis))))
 	  (else
 	   (error "Invalid operator in code generation"
-		  exp full-env analysis)))))
+		  exp operator operands full-env analysis)))))
 
 (define (primitive-application primitive arg-code)
-  (if (primitive-unary? primitive)
-      `(,(primitive-name primitive) ,arg-code)
-      (let ((temp (fresh-temporary)))
-	`(let ((,temp ,arg-code))
-	   (,(primitive-name primitive) (car ,temp) (cdr ,temp))))))
+  (case (primitive-arity primitive)
+    ((1) `(,(primitive-name primitive) ,arg-code))
+    ((2) (let ((temp (fresh-temporary)))
+	   `(let ((,temp ,arg-code))
+	      (,(primitive-name primitive) (car ,temp) (cdr ,temp)))))
+    ((3) (let ((temp (fresh-temporary)))
+	   `(let ((,temp ,arg-code))
+	      (,(primitive-name primitive) (car ,temp) (cadr ,temp) (caddr ,temp)))))
+    (else
+     (error "Unsupported arity of primitive operation" primitive))))
 
 (define (closure-application closure arg-shape compile-closure compile-arg)
   (let ((call-name (call-site->scheme-function-name closure arg-shape)))

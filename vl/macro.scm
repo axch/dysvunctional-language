@@ -69,3 +69,10 @@
       `((lambda ,(map car bindings)
 	  ,@body)
 	,@(map cadr bindings)))))
+
+(define-vl-macro! 'if
+  (lambda (form)
+    `(if-procedure
+      ,(cadr form)
+      (lambda () ,(caddr form))
+      (lambda () ,(cadddr form)))))

@@ -12,6 +12,10 @@
   body
   env)
 
+(define (closure-expression closure)
+  `(lambda ,(closure-formal closure)
+     ,(closure-body closure)))
+
 (define-structure (primitive (safe-accessors #t))
   name
   arity

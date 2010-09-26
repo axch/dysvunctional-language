@@ -37,9 +37,7 @@
    symbol<?))
 
 (define (closure-free-variables closure)
-  (free-variables
-   `(lambda ,(closure-formal closure)
-      ,(closure-body closure))))
+  (free-variables (closure-expression closure)))
 
 (define (restrict-to symbols abstract-env)
   (make-abstract-env
@@ -63,11 +61,9 @@
   (cond ((eqv? thing1 thing2)
 	 #t)
 	((and (closure? thing1) (closure? thing2))
-	 (and (equal? (closure-body thing1)
-		      (closure-body thing2))
-	      ;; TODO alpha-renaming closures?
-	      (equal? (closure-formal thing1)
-		      (closure-formal thing2))
+	 (and ;; TODO alpha-renaming?
+	      (equal? (closure-expression thing1)
+		      (closure-expression thing2))
 	      (abstract-equal? (closure-env thing1)
 			       (closure-env thing2))))
 	((and (pair? thing1) (pair? thing2))
@@ -96,7 +92,29 @@
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #t))
 
 (define (abstract-union thing1 thing2)
-  (error "abstract-union unimplemented"))
+  (cond ((abstract-equal? thing1 thing2)
+	 thing1)
+	((and (some-boolean? thing1) (some-boolean? thing2))
+	 abstract-boolean)
+	((and (some-real? thing1) (some-real? thing2))
+	 abstract-real)
+	((and (closure? thing1) (closure? thing2)
+	      (equal? (closure-expression thing1)
+		      (closure-expression thing2)))
+	 (make-closure (closure-formal thing1)
+		       (closure-body thing1)
+		       (abstract-union (closure-env thing1)
+				       (closure-env thing2))))
+	((and (pair? thing1) (pair? thing2))
+	 (cons (abstract-union (car thing1) (car thing2))
+	       (abstract-union (cdr thing1) (cdr thing2))))
+	((and (abstract-env? thing1)
+	      (abstract-env? thing2))
+	 (make-abstract-env
+	  (abstract-union (abstract-env-bindings thing1)
+			  (abstract-env-bindings thing2))))
+	(else
+	 abstract-all)))
 
 (define (solved-abstractly? thing)
   (cond ((null? thing) #t)
@@ -132,9 +150,17 @@
 (define abstract-boolean (list 'abstract-boolean))
 (define (abstract-boolean? thing)
   (eq? thing abstract-boolean))
+(define (some-boolean? thing)
+  (or (boolean? thing)
+      (abstract-boolean? thing)))
+
 (define abstract-real (list 'abstract-real))
 (define (abstract-real? thing)
   (eq? thing abstract-real))
+(define (some-real? thing)
+  (or (real? thing)
+      (abstract-real? thing)))
+
 (define abstract-all (list 'abstract-all))
 (define (abstract-all? thing)
   (eq? thing abstract-all))

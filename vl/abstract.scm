@@ -19,7 +19,8 @@
 
 (define (refine-apply proc arg analysis)
   (cond ((primitive? proc)
-	 ((primitive-abstract-implementation proc) arg))
+	 ;; Only if needs the analysis
+	 ((primitive-abstract-implementation proc) arg analysis))
 	((closure? proc)
 	 (if (abstract-all? arg)
 	     abstract-all

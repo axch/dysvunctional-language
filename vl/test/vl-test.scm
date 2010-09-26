@@ -140,4 +140,14 @@
      '(let ((addn (lambda (n) (lambda (x) (+ n x)))))
 	(let ((add5 (addn 5)))
 	  (add5 (real 3))))))
+   (equal? 27
+    (eval-through-scheme
+     '(let ((cube (lambda (x)
+		    (* x (* x x))))
+	    (enlarge-upto (lambda (bound)
+			    (lambda (x)
+			      (if (< x bound)
+				  (cube x)
+				  x)))))
+	((enlarge-upto (real 20)) (real 3)))))
    ))

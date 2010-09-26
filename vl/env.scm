@@ -71,7 +71,7 @@
    2
    (lambda (arg)
      (base (car arg) (cdr arg)))
-   (lambda (arg)
+   (lambda (arg analysis)
      (if (abstract-all? arg)
 	 abstract-all
 	 (let ((first-arg (car arg))
@@ -81,23 +81,64 @@
 	       abstract-real
 	       (base first-arg second-arg)))))))
 
+(define (RxR->bool-primitive name base)
+  (make-primitive
+   name
+   2
+   (lambda (arg)
+     (base (car arg) (cdr arg)))
+   (lambda (arg analysis)
+     (if (abstract-all? arg)
+	 abstract-all
+	 (let ((first (car arg))
+	       (second (cdr arg)))
+	   (if (or (abstract-real? first)
+		   (abstract-real? second))
+	       abstract-boolean
+	       (base first second)))))))
+
 (define (real x)
   (if (real? x)
       x
       (error "A non-real object is asserted to be real" x)))
 
+(define (if-procedure p c a)
+  (if p (c) (a)))
+
 (add-primitive! (binary-numeric-primitive '+ +))
 (add-primitive! (binary-numeric-primitive '* *))
+(add-primitive! (RxR->bool-primitive '< <))
 (add-primitive!
  (make-primitive
   'real
   1
   real
-  (lambda (x)
+  (lambda (x analysis)
     (cond ((abstract-all? x) abstract-all)
 	  ((abstract-real? x) abstract-real)
 	  ((number? x) abstract-real)
 	  (else (error "Something known not to be a real number is declared real" x))))))
+
+(add-primitive!
+ (make-primitive
+  'if-procedure
+  3
+  (lambda (arg)
+    (if-procedure (car arg) (cadr arg) (cddr arg)))
+  (lambda (shape analysis)
+    (if (abstract-all? shape)
+	abstract-all
+	(let ((predicate (car shape))
+	      (consequent (abstract-result-of (cadr shape) analysis))
+	      (alternate (abstract-result-of (cddr shape) analysis)))
+	  (if (abstract-boolean? predicate)
+	      (abstract-union consequent alternate)
+	      (if predicate
+		  consequent
+		  alternate)))))))
+
+(define (abstract-result-of thunk-shape analysis)
+  (refine-apply thunk-shape '() analysis))
 
 (define (initial-vl-user-env)
   (make-env
