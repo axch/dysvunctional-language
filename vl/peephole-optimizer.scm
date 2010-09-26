@@ -1,21 +1,15 @@
-(define (record-accessor-name? thing)
+(define (symbol-with-prefix? thing prefix)
   (and (symbol? thing)
        (let ((name (symbol->string thing)))
-	 (and (> (string-length name) 8)
-	      (equal? (string-head name 8) "closure-")))))
+	 (and (> (string-length name) (string-length prefix))
+	      (equal? (string-head name (string-length prefix))
+		      prefix)))))
 
-(define (safe-to-replicate? exp)
-  (cond ((symbol? exp)
-	 ;; This should just be #t, but doing it this way is a hack to
-	 ;; get the peephole optimizer to expand things the way I
-	 ;; want.
-	 (not (eq? 'the-formals exp)))
-	((and (pair? exp) (eq? (car exp) 'cons))
-	 (and (safe-to-replicate? (cadr exp))
-	      (safe-to-replicate? (caddr exp))))
-	((and (pair? exp) (record-accessor-name? (car exp)))
-	 (safe-to-replicate? (cadr exp)))
-	(else #f)))
+(define (record-accessor-name? thing)
+  (symbol-with-prefix? thing "closure-"))
+
+(define (generated-temporary? thing)
+  (symbol-with-prefix? thing "temp-"))
 
 (define peephole-optimize
   (rule-simplifier
@@ -33,7 +27,11 @@
 	  `(define ,formals
 	     ,@body))
 
-    (rule (let (((? name ,symbol?) (? exp ,safe-to-replicate?)))
+    (rule (let (((? name ,generated-temporary?) (cons (? a) (? d))))
+	    (? body))
+	  (replace-in-tree name `(cons ,a ,d) body))
+
+    (rule (let (((? name ,generated-temporary?) (? exp ,symbol?)))
 	    (? body))
 	  (replace-in-tree name exp body))
 
