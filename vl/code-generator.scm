@@ -60,7 +60,7 @@
 (define (compile exp full-env enclosure analysis)
   (let ((value (refine-eval-once exp full-env analysis)))
     (if (solved-abstractly? value)
-	(list 'quasiquote (solved-abstract-value->constant value))
+	(solved-abstract-value->constant value)
 	(cond ((constant? exp) exp)
 	      ((null? exp) ''())
 	      ((variable? exp)
@@ -100,14 +100,9 @@
 (define (compile-apply exp full-env enclosure analysis)
   (let ((operator (refine-eval-once (car exp) full-env analysis))
 	(operands (refine-eval-once (cadr exp) full-env analysis)))
-    (define (primitive-application body)
-      (if (primitive-unary? operator)
-	  `(,(primitive-name operator) ,body)
-	  (let ((temp (fresh-temporary)))
-	    `(let ((,temp ,body))
-	       (,(primitive-name operator) (car ,temp) (cdr ,temp))))))
     (cond ((primitive? operator)
 	   (primitive-application
+	    operator
 	    (compile (cadr exp) full-env enclosure analysis)))
 	  ((closure? operator)
 	   (if (solved-abstractly? operator)
@@ -119,6 +114,13 @@
 	  (else
 	   (error "Invalid operator in code generation"
 		  exp full-env analysis)))))
+
+(define (primitive-application primitive arg-code)
+  (if (primitive-unary? primitive)
+      `(,(primitive-name primitive) ,arg-code)
+      (let ((temp (fresh-temporary)))
+	`(let ((,temp ,arg-code))
+	   (,(primitive-name primitive) (car ,temp) (cdr ,temp))))))
 
 (define (needs-structure-definition? abstract-value)
   (and (closure? abstract-value)

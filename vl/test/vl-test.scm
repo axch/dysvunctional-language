@@ -17,8 +17,7 @@
 	 `(not (equal? ,value (interpreted ,(vl-eval form)))))
 	((not (equal? value (analyzed-answer form)))
 	 `(not (equal? ,value (analyzed ,(analyzed-answer form)))))
-	((not (equal? `(begin ,(list 'quasiquote value))
-		      (compile-to-scheme form)))
+	((not (equal? `(begin ,value) (compile-to-scheme form)))
 	 `(not (equal? ,value (compiled ,(compile-to-scheme form)))))
 	(else #f)))
 
