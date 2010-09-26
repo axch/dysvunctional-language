@@ -67,29 +67,40 @@
        answer))))
 
 (define (compile exp full-env free-list analysis)
-  (cond ((constant? exp) exp)
-	((null? exp) ''())
-	((variable? exp)
-	 (if (memq exp free-list)
-	     (vl-variable->scheme-record-access exp)
-	     (vl-variable->scheme-variable exp)))
-	((pair? exp)
-	 (cond ((eq? (car exp) 'lambda)
-		;; TODO I can eliminate void formals between here
-		;; and making structure definitions for closures
-		(cons (abstract-closure->scheme-constructor-name
-		       (refine-eval-once exp full-env analysis))
-		      (map (lambda (var)
-			     (compile var full-env free-list analysis))
-			   (free-variables exp))))
-	       ((eq? (car exp) 'cons)
-		`(cons ,(compile (cadr exp) full-env free-list analysis)
-		       ,(compile (caddr exp) full-env free-list analysis)))
-	       (else
-		(compile-apply exp full-env free-list analysis))))
-	(else
-	 (error "Invaid expression in code generation"
-		exp full-env free-list analysis))))
+  (let ((value (refine-eval-once exp full-env analysis)))
+    (if (solved-abstractly? value)
+	(list 'quasiquote (solved-abstract-value->constant value))
+	(cond ((constant? exp) exp)
+	      ((null? exp) ''())
+	      ((variable? exp)
+	       (if (memq exp free-list)
+		   (vl-variable->scheme-record-access exp)
+		   (vl-variable->scheme-variable exp)))
+	      ((pair? exp)
+	       (cond ((eq? (car exp) 'lambda)
+		      ;; TODO I can eliminate void formals between here
+		      ;; and making structure definitions for closures
+		      (cons (abstract-closure->scheme-constructor-name
+			     (refine-eval-once exp full-env analysis))
+			    (map (lambda (var)
+				   (compile var full-env free-list analysis))
+				 (free-variables exp))))
+		     ((eq? (car exp) 'cons)
+		      (let ((first (cadr exp))
+			    (second (caddr exp)))
+			(let ((first-shape (refine-eval-once first full-env analysis))
+			      (second-shape (refine-eval-once second full-env analysis)))
+			  `(cons ,(if (solved-abstractly? first-shape)
+				      ''void
+				      (compile first full-env free-list analysis))
+				 ,(if (solved-abstractly? second-shape)
+				      ''void
+				      (compile second full-env free-list analysis))))))
+		     (else
+		      (compile-apply exp full-env free-list analysis))))
+	      (else
+	       (error "Invaid expression in code generation"
+		      exp full-env free-list analysis))))))
 
 (define (compile-apply exp full-env free-list analysis)
   (let ((operator (refine-eval-once (car exp) full-env analysis))
@@ -104,15 +115,19 @@
 	   (primitive-application
 	    (compile (cadr exp) full-env free-list analysis)))
 	  ((closure? operator)
-	   `(,(call-site->scheme-function-name operator operands)
-	     ,(compile (car exp) full-env free-list analysis)
-	     ,(compile (cadr exp) full-env free-list analysis)))
+	   (if (solved-abstractly? operator)
+	       `(,(call-site->scheme-function-name operator operands)
+		 ,(compile (cadr exp) full-env free-list analysis))
+	       `(,(call-site->scheme-function-name operator operands)
+		 ,(compile (car exp) full-env free-list analysis)
+		 ,(compile (cadr exp) full-env free-list analysis))))
 	  (else
 	   (error "Invalid operator in code generation"
 		  exp full-env analysis)))))
 
 (define (needs-structure-definition? abstract-value)
-  (closure? abstract-value))
+  (and (closure? abstract-value)
+       (not (solved-abstractly? abstract-value))))
 
 (define (structure-definitions analysis)
   (map abstract-value->structure-definition
@@ -145,7 +160,7 @@
 	   (error "Invalid formal parameter tree" (closure-formal closure))))))
 
 (define (procedure-definitions analysis)
-  (define (destructuring-let-bindings formal-tree)
+  (define (destructuring-let-bindings formal-tree arg-tree)
     (define (replace old new structure)
       (cond ((eq? structure old) new)
 	    ((pair? structure)
@@ -154,30 +169,38 @@
 	    (else structure)))
     (define (xxx part1 part2)
       (append (replace 'the-formals '(car the-formals)
-		       (destructuring-let-bindings part1))
+		       (destructuring-let-bindings part1 (car arg-tree)))
 	      (replace 'the-formals '(cdr the-formals)
-		       (destructuring-let-bindings part2))))
+		       (destructuring-let-bindings part2 (cdr arg-tree)))))
     (cond ((null? formal-tree)
 	   '())
 	  ((symbol? formal-tree)
-	   `((,formal-tree the-formals)))
+	   (if (solved-abstractly? arg-tree)
+	       '()
+	       `((,formal-tree the-formals))))
 	  ((pair? formal-tree)
 	   (if (eq? (car formal-tree) 'cons)
 	       (xxx (cadr formal-tree) (caddr formal-tree))
 	       (xxx (car formal-tree) (cdr formal-tree))))))
   (define (maybe-pocedure-definition binding)
     (let ((exp (car binding))
-	  (env (cadr binding)))
-      (and (pair? exp)
+	  (env (cadr binding))
+	  (value (caddr binding)))
+      (and (not (solved-abstractly? value))
+	   (pair? exp)
 	   (not (eq? (car exp) 'cons))
 	   (not (eq? (car exp) 'lambda))
 	   (let ((operator (refine-eval-once (car exp) env analysis))
 		 (operands (refine-eval-once (cadr exp) env analysis)))
 	     (and (closure? operator)
 		  (let ((name (call-site->scheme-function-name operator operands)))
-		    `(define (,name the-closure the-formals)
+		    `(define (,name ,@(if (solved-abstractly? operator)
+					  '()
+					  '(the-closure))
+				    the-formals)
 		       (let ,(destructuring-let-bindings
-			      (car (closure-formal operator)))
+			      (car (closure-formal operator))
+			      operands)
 			 ,(compile (closure-body operator)
 				   (extend-abstract-env
 				    (closure-formal operator)

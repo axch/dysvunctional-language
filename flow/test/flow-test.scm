@@ -17,9 +17,9 @@
 	 `(not (equal? ,value (interpreted ,(flow-eval form)))))
 	((not (equal? value (analyzed-answer form)))
 	 `(not (equal? ,value (analyzed ,(analyzed-answer form)))))
-	((not (equal? value (eval-through-scheme form)))
-	 `(not (equal? ,value (evaluated-through-scheme
-			       ,(eval-through-scheme form)))))
+	((not (equal? `(begin ,(list 'quasiquote value))
+		      (compile-to-scheme form)))
+	 `(not (equal? ,value (compiled ,(compile-to-scheme form)))))
 	(else #f)))
 
 (in-test-group
@@ -108,6 +108,16 @@
 		     ((compose square double) 2)))))
    (equal? '((abstract-real) . (abstract-real))
     (analyzed-answer
+     '(let ((double (lambda (x)
+		      (+ x x)))
+	    (square (lambda (x)
+		      (* x x)))
+	    (compose (lambda (f g)
+		       (lambda (x) (f (g x))))))
+	(cons ((compose double square) (real 2))
+	      ((compose square double) (real 2))))))
+   (equal? '(8 . 16) 
+    (eval-through-scheme
      '(let ((double (lambda (x)
 		      (+ x x)))
 	    (square (lambda (x)
