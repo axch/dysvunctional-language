@@ -86,10 +86,10 @@
 			(let ((first-shape (refine-eval-once first full-env analysis))
 			      (second-shape (refine-eval-once second full-env analysis)))
 			  `(cons ,(if (solved-abstractly? first-shape)
-				      ''void
+				      (solved-abstract-value->constant first-shape)
 				      (compile first full-env enclosure analysis))
 				 ,(if (solved-abstractly? second-shape)
-				      ''void
+				      (solved-abstract-value->constant second-shape)
 				      (compile second full-env enclosure analysis))))))
 		     (else
 		      (compile-apply exp full-env enclosure analysis))))
