@@ -151,21 +151,6 @@
 			   (free-variables `(lambda ,(closure-formal value)
 					      ,(closure-body value)))))))
 	(else (error "Not compiling non-closure aggregates to Scheme structures" value))))
-#;
-(define (bound-variables closure)
-  (let walk ((tree (closure-formal closure)))
-    (cond ((null? tree)
-	   '())
-	  ((symbol? tree)
-	   (list tree))
-	  ((pair? tree)
-	   (if (eq? (car tree) 'cons)
-	       (append (walk (cadr tree))
-		       (walk (caddr tree)))
-	       (append (walk (car tree))
-		       (walk (cdr tree)))))
-	  (else
-	   (error "Invalid formal parameter tree" (closure-formal closure))))))
 
 (define (procedure-definitions analysis)
   (define (destructuring-let-bindings formal-tree arg-tree)
