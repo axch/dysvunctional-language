@@ -117,7 +117,7 @@
 (define (solved-abstract-value->constant thing)
   (cond ((or (null? thing) (boolean? thing) (real? thing))
 	 thing)
-	((primitive? thing) ',(primitive-name thing))
+	((primitive? thing) (primitive-name thing))
 	((pair? thing)
 	 (list 'cons (solved-abstract-value->constant (car thing))
 	       (solved-abstract-value->constant (cdr thing))))
