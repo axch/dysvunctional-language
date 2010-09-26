@@ -123,6 +123,12 @@
 	       (solved-abstract-value->constant (cdr thing))))
 	(else ''void)))
 
+(define (interesting-variable? env)
+  (lambda (var)
+    (abstract-lookup var env
+     (lambda (shape) (not (solved-abstractly? shape)))
+     (lambda () #t))))
+
 (define abstract-boolean (list 'abstract-boolean))
 (define (abstract-boolean? thing)
   (eq? thing abstract-boolean))

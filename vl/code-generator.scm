@@ -73,12 +73,7 @@
 			     (refine-eval-once exp full-env analysis))
 			    (map (lambda (var)
 				   (compile var full-env enclosure analysis))
-				 (filter (lambda (var)
-					   (abstract-lookup var full-env
-					    (lambda (shape)
-					      (not (solved-abstractly? shape)))
-					    (lambda ()
-					      #t)))
+				 (filter (interesting-variable? full-env)
 					 (free-variables exp)))))
 		     ((eq? (car exp) 'cons)
 		      (let ((first (cadr exp))
@@ -137,23 +132,19 @@
 
 (define (structure-definitions analysis)
   (map abstract-value->structure-definition
-       (filter needs-structure-definition?
-	       (delete-duplicates (map caddr (analysis-bindings analysis))
-				  abstract-equal?))))
+       (delete-duplicates
+	(filter needs-structure-definition?
+		(map caddr (analysis-bindings analysis)))
+	abstract-equal?)))
 
 (define (abstract-value->structure-definition value)
   (cond ((closure? value)
 	 `(define-structure ,(abstract-closure->scheme-structure-name value)
 	    ,@(map vl-variable->scheme-field-name
-		   (filter (lambda (var)
-			     (abstract-lookup var (closure-env value)
-			      (lambda (val)
-				(not (solved-abstractly? val)))
-			      (lambda ()
-				#t)))
-			   (free-variables `(lambda ,(closure-formal value)
-					      ,(closure-body value)))))))
-	(else (error "Not compiling non-closure aggregates to Scheme structures" value))))
+		   (filter (interesting-variable? (closure-env value))
+			   (closure-free-variables value)))))
+	(else (error "Not compiling non-closure aggregates to Scheme structures"
+		     value))))
 
 (define (procedure-definitions analysis)
   (define (destructuring-let-bindings formal-tree arg-tree)
