@@ -126,4 +126,11 @@
 		       (lambda (x) (f (g x))))))
 	(cons ((compose double square) (real 2))
 	      ((compose square double) (real 2))))))
+   (equal? 8
+    (eval-through-scheme
+     '(let ((addn (lambda (n)
+		    (lambda (x)
+		      (+ n x)))))
+	(let ((add5 (addn (real 5))))
+	  (add5 (real 3))))))
    ))

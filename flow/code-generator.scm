@@ -78,13 +78,17 @@
 		   (vl-variable->scheme-variable exp)))
 	      ((pair? exp)
 	       (cond ((eq? (car exp) 'lambda)
-		      ;; TODO I can eliminate void formals between here
-		      ;; and making structure definitions for closures
 		      (cons (abstract-closure->scheme-constructor-name
 			     (refine-eval-once exp full-env analysis))
 			    (map (lambda (var)
 				   (compile var full-env free-list analysis))
-				 (free-variables exp))))
+				 (filter (lambda (var)
+					   (abstract-lookup var full-env
+					    (lambda (shape)
+					      (not (solved-abstractly? shape)))
+					    (lambda ()
+					      #t)))
+					 (free-variables exp)))))
 		     ((eq? (car exp) 'cons)
 		      (let ((first (cadr exp))
 			    (second (caddr exp)))
@@ -138,10 +142,14 @@
   (cond ((closure? value)
 	 `(define-structure ,(abstract-closure->scheme-structure-name value)
 	    ,@(map vl-variable->scheme-field-name
-		   ;; TODO I can eliminate void formals between here
-		   ;; and compiling lambda expressions
-		   (free-variables `(lambda ,(closure-formal value)
-				      ,(closure-body value))))))
+		   (filter (lambda (var)
+			     (abstract-lookup var (closure-env value)
+			      (lambda (val)
+				(not (solved-abstractly? val)))
+			      (lambda ()
+				#t)))
+			   (free-variables `(lambda ,(closure-formal value)
+					      ,(closure-body value)))))))
 	(else (error "Not compiling non-closure aggregates to Scheme structures" value))))
 #;
 (define (bound-variables closure)
