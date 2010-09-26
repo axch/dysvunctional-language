@@ -99,14 +99,19 @@
   (cond ((primitive? proc)
 	 (if (or (abstract-all? arg) (not (eq? primitive-if proc)))
 	     '()
-	     (let ((consequent (cadr arg))
+	     (let ((predicate (car arg))
+		   (consequent (cadr arg))
 		   (alternate (cddr arg)))
 	       (define (expand-thunk-application thunk)
 		 (expand-eval-once
 		  `(,(closure-expression thunk) ()) (closure-env thunk) analysis))
-	       (lset-union same-analysis-binding?
-			   (expand-thunk-application consequent)
-			   (expand-thunk-application alternate)))))
+	       (if (not (abstract-boolean? predicate))
+		   (if predicate
+		       (expand-thunk-application consequent)
+		       (expand-thunk-application alternate))
+		   (lset-union same-analysis-binding?
+			       (expand-thunk-application consequent)
+			       (expand-thunk-application alternate))))))
 	((closure? proc)
 	 (if (abstract-all? arg)
 	     '()
