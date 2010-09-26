@@ -1,7 +1,3 @@
-(define *peephole-optimizer-available?* #f)
-
-(load-relative "../../rule-system/load-for-use.scm")
-
 (define (record-accessor-name? thing)
   (and (symbol? thing)
        (let ((name (symbol->string thing)))
@@ -21,7 +17,7 @@
 	 (safe-to-replicate? (cadr exp)))
 	(else #f)))
 
-(define peephole-optimizer
+(define peephole-optimize
   (rule-simplifier
    (list
 

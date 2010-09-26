@@ -218,9 +218,13 @@
     (if (and (not (default-object? print-analysis?))
 	     print-analysis?)
 	(pp analysis))
-    `(begin ,@(structure-definitions analysis)
-	    ,@(procedure-definitions analysis)
-	    ,(compile (macroexpand program)
-		      (env->abstract-env (initial-vl-user-env))
-		      #f
-		      analysis))))
+    (let ((answer
+	   `(begin ,@(structure-definitions analysis)
+		   ,@(procedure-definitions analysis)
+		   ,(compile (macroexpand program)
+			     (env->abstract-env (initial-vl-user-env))
+			     #f
+			     analysis))))
+      (if peephole-optimize
+	  (peephole-optimize answer)
+	  answer))))

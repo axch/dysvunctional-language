@@ -30,5 +30,14 @@
    "run"
    "abstract"
    "abstract-data"
-   "code-generator"
-   "peephole-optimizer"))
+   "code-generator"))
+
+(define peephole-optimize #f)
+
+(let ((rule-system "../../rule-system/load-for-use.scm"))
+ (self-relatively
+  (lambda ()
+    (if (file-exists? rule-system)
+	(begin (load rule-system)
+	       (load "peephole-optimizer"))
+	(warn "Did not find the rule-simplification engine, peephole optimizer disabled")))))
