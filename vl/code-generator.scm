@@ -157,17 +157,13 @@
 
 (define (procedure-definitions analysis)
   (define (destructuring-let-bindings formal-tree arg-tree)
-    (define (replace old new structure)
-      (cond ((eq? structure old) new)
-	    ((pair? structure)
-	     (cons (replace old new (car structure))
-		   (replace old new (cdr structure))))
-	    (else structure)))
     (define (xxx part1 part2)
-      (append (replace 'the-formals '(car the-formals)
-		       (destructuring-let-bindings part1 (car arg-tree)))
-	      (replace 'the-formals '(cdr the-formals)
-		       (destructuring-let-bindings part2 (cdr arg-tree)))))
+      (append (replace-in-tree
+	       'the-formals '(car the-formals)
+	       (destructuring-let-bindings part1 (car arg-tree)))
+	      (replace-in-tree
+	       'the-formals '(cdr the-formals)
+	       (destructuring-let-bindings part2 (cdr arg-tree)))))
     (cond ((null? formal-tree)
 	   '())
 	  ((symbol? formal-tree)

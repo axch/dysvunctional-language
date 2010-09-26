@@ -23,3 +23,10 @@
 
 (define (primitive-unary? primitive)
   (= 1 (primitive-arity primitive)))
+
+(define (replace-in-tree old new structure)
+  (cond ((eq? structure old) new)
+	((pair? structure)
+	 (cons (replace-in-tree old new (car structure))
+	       (replace-in-tree old new (cdr structure))))
+	(else structure)))
