@@ -36,6 +36,11 @@
 	 (else '()))
    symbol<?))
 
+(define (closure-free-variables closure)
+  (free-variables
+   `(lambda ,(closure-formal closure)
+      ,(closure-body closure))))
+
 (define (restrict-to symbols abstract-env)
   (make-abstract-env
    (filter (lambda (binding)

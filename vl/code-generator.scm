@@ -66,14 +66,14 @@
        (hash-table/put! *call-site-names* (cons closure abstract-arg) answer)
        answer))))
 
-(define (compile exp full-env free-list analysis)
+(define (compile exp full-env enclosure analysis)
   (let ((value (refine-eval-once exp full-env analysis)))
     (if (solved-abstractly? value)
 	(list 'quasiquote (solved-abstract-value->constant value))
 	(cond ((constant? exp) exp)
 	      ((null? exp) ''())
 	      ((variable? exp)
-	       (if (memq exp free-list)
+	       (if (memq exp (closure-free-variables enclosure))
 		   (vl-variable->scheme-record-access exp)
 		   (vl-variable->scheme-variable exp)))
 	      ((pair? exp)
@@ -81,7 +81,7 @@
 		      (cons (abstract-closure->scheme-constructor-name
 			     (refine-eval-once exp full-env analysis))
 			    (map (lambda (var)
-				   (compile var full-env free-list analysis))
+				   (compile var full-env enclosure analysis))
 				 (filter (lambda (var)
 					   (abstract-lookup var full-env
 					    (lambda (shape)
@@ -96,17 +96,17 @@
 			      (second-shape (refine-eval-once second full-env analysis)))
 			  `(cons ,(if (solved-abstractly? first-shape)
 				      ''void
-				      (compile first full-env free-list analysis))
+				      (compile first full-env enclosure analysis))
 				 ,(if (solved-abstractly? second-shape)
 				      ''void
-				      (compile second full-env free-list analysis))))))
+				      (compile second full-env enclosure analysis))))))
 		     (else
-		      (compile-apply exp full-env free-list analysis))))
+		      (compile-apply exp full-env enclosure analysis))))
 	      (else
 	       (error "Invaid expression in code generation"
-		      exp full-env free-list analysis))))))
+		      exp full-env enclosure analysis))))))
 
-(define (compile-apply exp full-env free-list analysis)
+(define (compile-apply exp full-env enclosure analysis)
   (let ((operator (refine-eval-once (car exp) full-env analysis))
 	(operands (refine-eval-once (cadr exp) full-env analysis)))
     (define (primitive-application body)
@@ -117,14 +117,14 @@
 	       (,(primitive-name operator) (car ,temp) (cdr ,temp))))))
     (cond ((primitive? operator)
 	   (primitive-application
-	    (compile (cadr exp) full-env free-list analysis)))
+	    (compile (cadr exp) full-env enclosure analysis)))
 	  ((closure? operator)
 	   (if (solved-abstractly? operator)
 	       `(,(call-site->scheme-function-name operator operands)
-		 ,(compile (cadr exp) full-env free-list analysis))
+		 ,(compile (cadr exp) full-env enclosure analysis))
 	       `(,(call-site->scheme-function-name operator operands)
-		 ,(compile (car exp) full-env free-list analysis)
-		 ,(compile (cadr exp) full-env free-list analysis))))
+		 ,(compile (car exp) full-env enclosure analysis)
+		 ,(compile (cadr exp) full-env enclosure analysis))))
 	  (else
 	   (error "Invalid operator in code generation"
 		  exp full-env analysis)))))
@@ -199,9 +199,7 @@
 				    (closure-formal operator)
 				    operands
 				    (closure-env operator))
-				   (free-variables
-				    `(lambda ,(closure-formal operator)
-				       ,(closure-body operator)))
+				   operator				   
 				   analysis)))))))))
   (filter (lambda (x) x)
 	  (map maybe-pocedure-definition (analysis-bindings analysis))))
@@ -216,5 +214,5 @@
 	    ,@(procedure-definitions analysis)
 	    ,(compile (macroexpand program)
 		      (env->abstract-env (initial-vl-user-env))
-		      '()
+		      #f
 		      analysis))))
