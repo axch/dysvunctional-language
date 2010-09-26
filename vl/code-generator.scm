@@ -107,7 +107,21 @@
 (define (compile-apply exp full-env enclosure analysis)
   (let ((operator (refine-eval-once (car exp) full-env analysis))
 	(operands (refine-eval-once (cadr exp) full-env analysis)))
-    (cond ((primitive? operator)
+    (cond ((eq? primitive-if operator)
+	   `(if ,(compile (cadr (cadr exp)) full-env enclosure analysis)
+		,(closure-application (cadr operands) '()
+		  (lambda ()
+		    (compile (if-procedure-expression-consequent exp)
+			     full-env enclosure analysis))
+		  (lambda ()
+		    (error "Lose!")))
+		,(closure-application (cddr operands) '()
+		  (lambda ()
+		    (compile (if-procedure-expression-alternate exp)
+			     full-env enclosure analysis))
+		  (lambda ()
+		    (error "Lose!")))))
+	  ((primitive? operator)
 	   (primitive-application
 	    operator
 	    (compile (cadr exp) full-env enclosure analysis)))
@@ -121,17 +135,21 @@
 	   (error "Invalid operator in code generation"
 		  exp operator operands full-env analysis)))))
 
+(define (if-procedure-expression-consequent exp)
+  (cadr (caddr (cadr exp))))
+
+(define (if-procedure-expression-alternate exp)
+  (caddr (caddr (cadr exp))))
+
 (define (primitive-application primitive arg-code)
-  (case (primitive-arity primitive)
-    ((1) `(,(primitive-name primitive) ,arg-code))
-    ((2) (let ((temp (fresh-temporary)))
+  (cond ((= 1 (primitive-arity primitive))
+	 `(,(primitive-name primitive) ,arg-code))
+	((= 2 (primitive-arity primitive))
+	 (let ((temp (fresh-temporary)))
 	   `(let ((,temp ,arg-code))
 	      (,(primitive-name primitive) (car ,temp) (cdr ,temp)))))
-    ((3) (let ((temp (fresh-temporary)))
-	   `(let ((,temp ,arg-code))
-	      (,(primitive-name primitive) (car ,temp) (cadr ,temp) (cddr ,temp)))))
-    (else
-     (error "Unsupported arity of primitive operation" primitive))))
+	(else
+	 (error "Unsupported arity of primitive operation" primitive))))
 
 (define (closure-application closure arg-shape compile-closure compile-arg)
   (let ((call-name (call-site->scheme-function-name closure arg-shape)))
