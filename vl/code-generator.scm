@@ -22,8 +22,10 @@
 (define (vl-variable->scheme-field-name var)
   var)
 
-(define (vl-variable->scheme-record-access var)
-  `(record-get the-closure ',(vl-variable->scheme-field-name var)))
+(define (vl-variable->scheme-record-access var closure)
+  `(,(symbol (abstract-closure->scheme-structure-name closure)
+	     '- (vl-variable->scheme-field-name var))
+    the-closure))
 
 (define (fresh-temporary)
   (make-name 'temp-))
@@ -74,7 +76,7 @@
 	      ((null? exp) ''())
 	      ((variable? exp)
 	       (if (memq exp (closure-free-variables enclosure))
-		   (vl-variable->scheme-record-access exp)
+		   (vl-variable->scheme-record-access exp enclosure)
 		   (vl-variable->scheme-variable exp)))
 	      ((pair? exp)
 	       (cond ((eq? (car exp) 'lambda)
