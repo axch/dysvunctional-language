@@ -139,11 +139,17 @@
 	     (compile branch-exp full-env enclosure analysis))
 	   (lambda ()
 	     (error "Lose!"))))))
-  `(if ,(compile (cadr (cadr exp)) full-env enclosure analysis)
-       ,(generate-if-branch
-	 (cadr operands) (if-procedure-expression-consequent exp))
-       ,(generate-if-branch
-	 (cddr operands) (if-procedure-expression-alternate exp))))
+  (if (solved-abstractly? (car operands))
+      (if (car operands)
+	  (generate-if-branch
+	   (cadr operands) (if-procedure-expression-consequent exp))
+	  (generate-if-branch
+	   (cddr operands) (if-procedure-expression-alternate exp)))
+      `(if ,(compile (cadr (cadr exp)) full-env enclosure analysis)
+	   ,(generate-if-branch
+	     (cadr operands) (if-procedure-expression-consequent exp))
+	   ,(generate-if-branch
+	     (cddr operands) (if-procedure-expression-alternate exp)))))
 
 (define (primitive-application primitive arg-code)
   (cond ((= 1 (primitive-arity primitive))
