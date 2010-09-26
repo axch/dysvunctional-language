@@ -105,12 +105,11 @@
 	    operator
 	    (compile (cadr exp) full-env enclosure analysis)))
 	  ((closure? operator)
-	   (if (solved-abstractly? operator)
-	       `(,(call-site->scheme-function-name operator operands)
-		 ,(compile (cadr exp) full-env enclosure analysis))
-	       `(,(call-site->scheme-function-name operator operands)
-		 ,(compile (car exp) full-env enclosure analysis)
-		 ,(compile (cadr exp) full-env enclosure analysis))))
+	   (closure-application operator operands
+	    (lambda ()
+	      (compile (car exp) full-env enclosure analysis))
+	    (lambda ()
+	      (compile (cadr exp) full-env enclosure analysis))))
 	  (else
 	   (error "Invalid operator in code generation"
 		  exp full-env analysis)))))
@@ -121,6 +120,14 @@
       (let ((temp (fresh-temporary)))
 	`(let ((,temp ,arg-code))
 	   (,(primitive-name primitive) (car ,temp) (cdr ,temp))))))
+
+(define (closure-application closure arg-shape compile-closure compile-arg)
+  (if (solved-abstractly? closure)
+      `(,(call-site->scheme-function-name closure arg-shape)
+	,(compile-arg))
+      `(,(call-site->scheme-function-name closure arg-shape)
+	,(compile-closure)
+	,(compile-arg))))
 
 (define (needs-structure-definition? abstract-value)
   (and (closure? abstract-value)
