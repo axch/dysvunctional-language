@@ -100,6 +100,22 @@
 			  ,bound-form))))
 		  ,@body))))
 	  (else
-	   (error "Crap out!")))))
+	   (let ((names (map car bindings))
+		 (forms (map cadr bindings)))
+	     (define (recursive-variant name)
+	       `(,name ,@(map (lambda (name-1)
+				`(lambda (y)
+				   (Z* ,@names
+				       (lambda (,@names)
+					 (,name-1 y)))))
+			      names)))
+	     `(letrec ((Z* (lambda (,@names Z*-k)
+			     (Z*-k ,@(map recursive-variant names)))))
+		(Z* ,@(map (lambda (form)
+			     `(lambda (,@names)
+				,form))
+			   forms)
+		    (lambda (,@names)
+		      ,@body))))))))
 
 (define-vl-macro! 'letrec letrec-transformer)
