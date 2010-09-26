@@ -93,3 +93,7 @@
 		     (even? (- n 1))))))
   (even? (real 5)))
 
+(let loop ((count (real 0)))
+  (if (< count 10)
+      (loop (+ count 1))
+      count))

@@ -62,13 +62,26 @@
 (define (define-vl-macro! name transformer)
   (set! *vl-macros* (cons (cons name transformer) *vl-macros*)))
 
+(define (normal-let-transformer form)
+  (let ((bindings (cadr form))
+	(body (cddr form)))
+    `((lambda ,(map car bindings)
+	,@body)
+      ,@(map cadr bindings))))
+
+(define (named-let-transformer form)
+  (let ((name (cadr form))
+	(bindings (caddr form))
+	(body (cdddr form)))
+    `(letrec ((,name (lambda ,(map car bindings)
+		       ,@body)))
+       (,name ,@(map cadr bindings)))))
+
 (define-vl-macro! 'let
   (lambda (form)
-    (let ((bindings (cadr form))
-	  (body (cddr form)))
-      `((lambda ,(map car bindings)
-	  ,@body)
-	,@(map cadr bindings)))))
+    (if (symbol? (cadr form))
+	(named-let-transformer form)
+	(normal-let-transformer form))))
 
 (define-vl-macro! 'if
   (lambda (form)

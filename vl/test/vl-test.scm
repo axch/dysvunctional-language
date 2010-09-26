@@ -164,4 +164,10 @@
 			   1
 			   (* n (fact (- n 1)))))))
 	(fact (real 5)))))
+   (equal? 10
+    (eval-through-scheme
+     '(let loop ((count (real 0)))
+	(if (< count 10)
+	    (loop (+ count 1))
+	    count))))
    ))
