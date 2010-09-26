@@ -30,16 +30,6 @@
 (define (fresh-temporary)
   (make-name 'temp-))
 
-;; TODO This is really part of the "runtime system".
-;; TODO I can get rid of the awful record access mechanism for getting
-;; at closure-converted variables by passing an extra bit of data
-;; through the code generator, which is some ID for the type of the
-;; closure record that obtains in this place.
-(define (record-get record field-name)
-  ((record-accessor (record-type-descriptor record)
-		    field-name)
-   record))
-
 ;; TODO Should this really be an eq? hash table, or should I make an
 ;; abstract-equal? hash table for these?
 (define *closure-names* (make-eq-hash-table))
