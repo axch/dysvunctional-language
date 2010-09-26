@@ -156,7 +156,7 @@
 
 (define (analyze program)
   (let* ((program (macroexpand program))
-	 (env (env->abstract-env (initial-flow-user-env)))
+	 (env (env->abstract-env (initial-vl-user-env)))
 	 (initial-analysis
 	  (make-analysis
 	   `((,program ,env ,abstract-all)))))

@@ -18,7 +18,7 @@
   implementation
   abstract-implementation)
 
-(define (flow-value->scheme-value thing)
+(define (vl-value->scheme-value thing)
   thing)
 
 (define (primitive-unary? primitive)

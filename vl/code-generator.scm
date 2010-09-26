@@ -230,6 +230,6 @@
     `(begin ,@(structure-definitions analysis)
 	    ,@(procedure-definitions analysis)
 	    ,(compile (macroexpand program)
-		      (env->abstract-env (initial-flow-user-env))
+		      (env->abstract-env (initial-vl-user-env))
 		      '()
 		      analysis))))

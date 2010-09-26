@@ -54,7 +54,7 @@
 (define (empty-env? thing)
   (eq? thing #f))
 
-(define flow-user-env #f)
+(define vl-user-env #f)
 
 (define (uncurry f)
   (lambda (lst)
@@ -99,12 +99,12 @@
 	  ((number? x) abstract-real)
 	  (else (error "Something known not to be a real number is declared real" x))))))
 
-(define (initial-flow-user-env)
+(define (initial-vl-user-env)
   (make-env
    (map (lambda (primitive)
 	  (cons (primitive-name primitive) primitive))
 	*primitives*)
    #f))
 
-(define (initialize-flow-user-env)
-  (set! flow-user-env (initial-flow-user-env)))
+(define (initialize-vl-user-env)
+  (set! vl-user-env (initial-vl-user-env)))

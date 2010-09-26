@@ -36,4 +36,4 @@
 	 (error "Invalid procedure type" proc))))
 
 (define (apply-primitive proc arg)
-  ((primitive-implementation proc) (flow-value->scheme-value arg)))
+  ((primitive-implementation proc) (vl-value->scheme-value arg)))
