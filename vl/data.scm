@@ -23,6 +23,16 @@
   abstract-implementation)
 
 (define (vl-value->scheme-value thing)
+  (cond ((pair? thing)
+	 (cons (vl-value->scheme-value (car thing))
+	       (vl-value->scheme-value (cdr thing))))
+	((closure? thing)
+	 (lambda args
+	   (concrete-apply thing (map scheme-value->vl-value args))))
+	(else
+	 thing)))
+
+(define (scheme-value->vl-value thing)
   thing)
 
 (define (primitive-unary? primitive)
