@@ -31,7 +31,7 @@
 
 ;;;; Closures
 
-(define-structure (closure (safe-accessors #t))
+(define-structure (closure (safe-accessors #t) (constructor %make-closure))
   formal
   body
   env)
@@ -42,6 +42,10 @@
 
 (define (closure-free-variables closure)
   (free-variables (closure-expression closure)))
+
+(define (make-closure formal body abstract-env)
+  (%make-closure formal body
+   (env-slice abstract-env (free-variables `(lambda ,formal ,body)))))
 
 ;;;; "Foreign Interface"
 ;;; such as it is

@@ -20,10 +20,10 @@
 (define (env->abstract-env env)
   (make-abstract-env (env-bindings env)))
 
-(define (restrict-to symbols env)
+(define (env-slice env symbols)
   (define (restrict-bindings bindings)
     (filter (lambda (binding)
-	     (memq (car binding) symbols))
+	      (memq (car binding) symbols))
 	    bindings))
   (if (env? env)
       (make-env (restrict-bindings (env-bindings env)))
@@ -32,9 +32,7 @@
 ;;; An abstract closure is just a normal closure with an abstract
 ;;; environment that is correctly restricted to include only the free
 ;;; variables in that closure's body.
-(define (make-abstract-closure formal body abstract-env)
-  (make-closure formal body
-   (restrict-to (free-variables `(lambda ,formal ,body)) abstract-env)))
+(define make-abstract-closure make-closure)
 
 (define (extend-abstract-env formal arg abstract-env)
   (make-abstract-env
