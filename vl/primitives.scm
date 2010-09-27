@@ -1,3 +1,9 @@
+(define-structure (primitive (safe-accessors #t))
+  name
+  arity
+  implementation
+  abstract-implementation)
+
 (define (uncurry f)
   (lambda (lst)
     (f (car lst) (cadr lst))))

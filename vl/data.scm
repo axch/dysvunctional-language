@@ -15,12 +15,6 @@
   `(lambda ,(closure-formal closure)
      ,(closure-body closure)))
 
-(define-structure (primitive (safe-accessors #t))
-  name
-  arity
-  implementation
-  abstract-implementation)
-
 (define (vl-value->scheme-value thing)
   (cond ((pair? thing)
 	 (cons (vl-value->scheme-value (car thing))
