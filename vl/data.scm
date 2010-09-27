@@ -41,6 +41,12 @@
   `(lambda ,(closure-formal closure)
      ,(closure-body closure)))
 
+(define (env-slice env symbols)
+  (make-env
+   (filter (lambda (binding)
+	     (memq (car binding) symbols))
+	   (env-bindings env))))
+
 ;;; To keep environments in canonical form, closures only keep the
 ;;; variables they want.
 (define (make-closure formal body env)

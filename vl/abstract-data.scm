@@ -1,12 +1,3 @@
-(define (env-slice env symbols)
-  (define (restrict-bindings bindings)
-    (filter (lambda (binding)
-	      (memq (car binding) symbols))
-	    bindings))
-  (if (env? env)
-      (make-env (restrict-bindings (env-bindings env)))
-      (make-env (restrict-bindings (env-bindings env)))))
-
 (define (interesting-variable? env)
   (lambda (var)
     (not (solved-abstractly? (lookup var env)))))
