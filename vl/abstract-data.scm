@@ -11,11 +11,13 @@
     (lambda (binding1 binding2)
       (symbol<? (car binding1) (car binding2))))))
 
-(define (abstract-lookup symbol env win lose)
-  (let ((answer (assq symbol (abstract-env-bindings env))))
-    (if answer
-	(win (cdr answer))
-	(lose))))
+(define (abstract-lookup exp env)
+  (if (constant? exp)
+      exp
+      (let ((answer (assq exp (abstract-env-bindings env))))
+	(if answer
+	    (cdr answer)
+	    (error "Variable not found" exp env)))))
 
 (define (env->abstract-env env)
   (make-abstract-env (env-bindings env)))
@@ -36,9 +38,7 @@
 
 (define (interesting-variable? env)
   (lambda (var)
-    (abstract-lookup var env
-     (lambda (shape) (not (solved-abstractly? shape)))
-     (lambda () #t))))
+    (not (solved-abstractly? (abstract-lookup var env)))))
 
 (define-structure (analysis (safe-accessors #t))
   bindings)

@@ -39,11 +39,7 @@
 (define (refine-eval exp abstract-env analysis)
   (cond ((constant? exp) exp)
 	((variable? exp)
-	 (abstract-lookup exp abstract-env
-          (lambda (v) v)
-	  (lambda ()
-	    (error "Unbound variable detected in abstract analysis"
-		   exp abstract-env))))
+	 (abstract-lookup exp abstract-env))
 	((null? exp) '())
 	((pair? exp)
 	 (cond ((eq? (car exp) 'lambda)
