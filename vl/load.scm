@@ -27,7 +27,6 @@
    "env"
    "eval"
    "macro"
-   "run"
    "abstract"
    "abstract-data"
    "code-generator"))
