@@ -1,11 +1,10 @@
-(define (variable? thing)
-  (or (symbol? thing)
-      (boolean? thing)
-      (number? thing)))
-
 (define (constant? thing)
-  (and (variable? thing)
-       (not (symbol? thing))))
+  (or (number? thing)
+      (boolean? thing)))
+
+(define (variable? thing)
+  (or (constant? thing)
+      (symbol? thing)))
 
 (define-structure (closure (safe-accessors #t))
   formal
