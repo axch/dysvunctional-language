@@ -55,7 +55,7 @@
        (hash-table/put! *call-site-names* (cons closure abstract-arg) answer)
        answer))))
 
-(define (initialize-name-cahces!)
+(define (initialize-name-caches!)
   (set! *symbol-count* 0)
   (set! *closure-names* (make-abstract-hash-table))
   (set! *call-site-names* (make-abstract-hash-table)))
@@ -251,7 +251,7 @@
 	abstract-equal?)))
 
 (define (compile-to-scheme program #!optional print-analysis?)
-  (initialize-name-cahces!)
+  (initialize-name-caches!)
   (let ((analysis (analyze program)))
     (if (and (not (default-object? print-analysis?))
 	     print-analysis?)
