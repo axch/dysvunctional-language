@@ -34,9 +34,6 @@
 (define (scheme-value->vl-value thing)
   thing)
 
-(define (primitive-unary? primitive)
-  (= 1 (primitive-arity primitive)))
-
 (define (replace-in-tree old new structure)
   (cond ((eq? structure old) new)
 	((pair? structure)
