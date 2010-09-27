@@ -10,8 +10,8 @@
 ;;; evaluates to in that environment, which can then be incorporated
 ;;; into an updated collection of available knowledge.
 
-(define (refine-eval-once exp abstract-env analysis)
-  (analysis-lookup exp abstract-env analysis
+(define (refine-eval-once exp env analysis)
+  (analysis-lookup exp env analysis
    (lambda (value)
      value)
    (lambda ()
@@ -26,7 +26,7 @@
 	 (if (abstract-all? arg)
 	     abstract-all
 	     (refine-eval-once (closure-body proc)
-			       (extend-abstract-env
+			       (extend-env
 				(closure-formal proc)
 				arg
 				(closure-env proc))
@@ -36,31 +36,31 @@
 	(else
 	 (error "Trying to refine the application of something that is known not to be a procedure" proc arg analysis))))
 
-(define (refine-eval exp abstract-env analysis)
+(define (refine-eval exp env analysis)
   (cond ((constant? exp) exp)
 	((variable? exp)
-	 (abstract-lookup exp abstract-env))
+	 (abstract-lookup exp env))
 	((null? exp) '())
 	((pair? exp)
 	 (cond ((eq? (car exp) 'lambda)
-		(make-closure (cadr exp) (caddr exp) abstract-env))
+		(make-closure (cadr exp) (caddr exp) env))
 	       ((eq? (car exp) 'cons)
 		(let ((car-answer (refine-eval-once
-				   (cadr exp) abstract-env analysis))
+				   (cadr exp) env analysis))
 		      (cdr-answer (refine-eval-once
-				   (caddr exp) abstract-env analysis)))
+				   (caddr exp) env analysis)))
 		  (if (and (not (abstract-all? car-answer))
 			   (not (abstract-all? cdr-answer)))
 		      (cons car-answer cdr-answer)
 		      abstract-all)))
 	       (else
 		(refine-apply
-		 (refine-eval-once (car exp) abstract-env analysis)
-		 (refine-eval-once (cadr exp) abstract-env analysis)
+		 (refine-eval-once (car exp) env analysis)
+		 (refine-eval-once (cadr exp) env analysis)
 		 analysis))))
 	(else
 	 (error "Invalid expression in abstract refiner"
-		exp abstract-env analysis))))
+		exp env analysis))))
 
 (define (refine-analysis-binding binding analysis)
   (let ((exp (car binding))
@@ -84,12 +84,12 @@
 ;;; In other words, these three expand the scope of which
 ;;; expression-environment pairs it appears are worth analyzing.
 
-(define (expand-eval-once exp abstract-env analysis)
-  (analysis-lookup exp abstract-env analysis
+(define (expand-eval-once exp env analysis)
+  (analysis-lookup exp env analysis
    (lambda (value)
      '())
    (lambda ()
-     (list (list exp abstract-env abstract-all)))))
+     (list (list exp env abstract-all)))))
 
 (define (expand-apply proc arg analysis)
   (cond ((primitive? proc)
@@ -112,7 +112,7 @@
 	 (if (abstract-all? arg)
 	     '()
 	     (expand-eval-once (closure-body proc)
-			       (extend-abstract-env
+			       (extend-env
 				(closure-formal proc)
 				arg
 				(closure-env proc))
@@ -122,7 +122,7 @@
 	(else
 	 (error "Trying to expand on an application of something that is known not to be a procedure" proc arg analysis))))
 
-(define (expand-eval exp abstract-env analysis)
+(define (expand-eval exp env analysis)
   (cond ((variable? exp) '())
 	((null? exp) '())
 	((constant? exp) '())
@@ -132,20 +132,20 @@
 	       ((eq? (car exp) 'cons)
 		(lset-union
 		 same-analysis-binding?
-		 (expand-eval-once (cadr exp) abstract-env analysis)
-		 (expand-eval-once (caddr exp) abstract-env analysis)))
+		 (expand-eval-once (cadr exp) env analysis)
+		 (expand-eval-once (caddr exp) env analysis)))
 	       (else
 		(lset-union
 		 same-analysis-binding?
-		 (expand-eval-once (car exp) abstract-env analysis)
-		 (expand-eval-once (cadr exp) abstract-env analysis)
+		 (expand-eval-once (car exp) env analysis)
+		 (expand-eval-once (cadr exp) env analysis)
 		 (expand-apply
-		  (refine-eval-once (car exp) abstract-env analysis)
-		  (refine-eval-once (cadr exp) abstract-env analysis)
+		  (refine-eval-once (car exp) env analysis)
+		  (refine-eval-once (cadr exp) env analysis)
 		  analysis)))))
 	(else
 	 (error "Invalid expression in abstract expander"
-		exp abstract-env analysis))))
+		exp env analysis))))
 
 (define (expand-analysis-binding binding analysis)
   (let ((exp (car binding))
@@ -168,7 +168,7 @@
 
 (define (analyze program)
   (let* ((program (macroexpand program))
-	 (env (env->abstract-env (initial-vl-user-env)))
+	 (env (env->env (initial-vl-user-env)))
 	 (initial-analysis
 	  (make-analysis
 	   `((,program ,env ,abstract-all)))))

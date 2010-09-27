@@ -54,9 +54,9 @@
 	((and (pair? thing1) (pair? thing2))
 	 (and (abstract-equal? (car thing1) (car thing2))
 	      (abstract-equal? (cdr thing1) (cdr thing2))))
-	((and (abstract-env? thing1) (abstract-env? thing2))
-	 (abstract-equal? (abstract-env-bindings thing1)
-			  (abstract-env-bindings thing2)))
+	((and (env? thing1) (env? thing2))
+	 (abstract-equal? (env-bindings thing1)
+			  (env-bindings thing2)))
 	(else #f)))
 
 (define (abstract-hash-mod thing modulus)
@@ -69,8 +69,8 @@
 	 (modulo (+ (abstract-hash-mod (car thing) modulus)
 		    (abstract-hash-mod (cdr thing) modulus))
 		 modulus))
-	((abstract-env? thing)
-	 (abstract-hash-mod (abstract-env-bindings thing) modulus))
+	((env? thing)
+	 (abstract-hash-mod (env-bindings thing) modulus))
 	(else (eqv-hash-mod thing modulus))))
 
 (define make-abstract-hash-table
@@ -94,11 +94,11 @@
 	((and (pair? thing1) (pair? thing2))
 	 (cons (abstract-union (car thing1) (car thing2))
 	       (abstract-union (cdr thing1) (cdr thing2))))
-	((and (abstract-env? thing1)
-	      (abstract-env? thing2))
-	 (make-abstract-env
-	  (abstract-union (abstract-env-bindings thing1)
-			  (abstract-env-bindings thing2))))
+	((and (env? thing1)
+	      (env? thing2))
+	 (make-env
+	  (abstract-union (env-bindings thing1)
+			  (env-bindings thing2))))
 	(else
 	 abstract-all)))
 
@@ -113,8 +113,8 @@
 	((closure? thing) (solved-abstractly? (closure-env thing)))
 	((pair? thing) (and (solved-abstractly? (car thing))
 			    (solved-abstractly? (cdr thing))))
-	((abstract-env? thing)
-	 (every solved-abstractly? (map cdr (abstract-env-bindings thing))))
+	((env? thing)
+	 (every solved-abstractly? (map cdr (env-bindings thing))))
 	(else
 	 (error "Invalid abstract value" thing))))
 

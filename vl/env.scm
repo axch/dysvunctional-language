@@ -54,8 +54,10 @@
 		  formal arg)))))
 
 (define (extend-env env formal-tree arg)
-  (make-env (append-bindings (formal-bindings formal-tree arg)
-			     (env-bindings env))))
+  (if (env? env)
+      (make-env (append-bindings (formal-bindings formal-tree arg)
+				 (env-bindings env)))
+      (extend-env arg env formal-tree)))
 
 (define vl-user-env #f)
 

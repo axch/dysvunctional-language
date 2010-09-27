@@ -226,7 +226,7 @@
 		  (car (closure-formal operator))
 		  operands)
 	     ,(compile (closure-body operator)
-		       (extend-abstract-env
+		       (extend-env
 			(closure-formal operator)
 			operands
 			(closure-env operator))
@@ -260,7 +260,7 @@
 	   `(begin ,@(structure-definitions analysis)
 		   ,@(procedure-definitions analysis)
 		   ,(compile (macroexpand program)
-			     (env->abstract-env (initial-vl-user-env))
+			     (env->env (initial-vl-user-env))
 			     #f
 			     analysis))))
       (if peephole-optimize
