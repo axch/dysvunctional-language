@@ -1,22 +1,16 @@
-;;; Given a particular abstract analysis, the trio REFINE-EVAL,
-;;; REFINE-APPLY, and ANALYSIS-GET will convert an expression
-;;; and an abstract environment into an abstract value.  This is
-;;; (possibly) a refinement of the knowledge in the analysis.
+;;; Given a particular abstract analysis, REFINE-EVAL and REFINE-APPLY
+;;; will convert an expression and an (abstract) environment into an
+;;; abstract value.  This is (presumably) a refinement of the knowledge
+;;; in the analysis.
 
 ;;; In other words, given the available knowledge about what various
-;;; expressions evaluate to in various environments, these three will
+;;; expressions evaluate to in various environments, these two will
 ;;; evaluate one expression in one environment to a depth of about 1,
 ;;; and maybe produce better knowledge about what that expression
 ;;; evaluates to in that environment, which can then be incorporated
 ;;; into an updated collection of available knowledge.
 
-(define (analysis-get exp env analysis)
-  (analysis-lookup exp env analysis
-   (lambda (value)
-     value)
-   (lambda ()
-     abstract-all)))
-
+;;; REFINE-APPLY is \bar A from the paper.
 (define (refine-apply proc arg analysis)
   (cond ((primitive? proc)
 	 (if (eq? proc primitive-if)
@@ -36,6 +30,7 @@
 	(else
 	 (error "Trying to refine the application of something that is known not to be a procedure" proc arg analysis))))
 
+;;; REFINE-EVAL is \bar E from the paper.
 (define (refine-eval exp env analysis)
   (cond ((constant? exp) exp)
 	((variable? exp) (lookup exp env))
@@ -83,6 +78,7 @@
 ;;; In other words, these three expand the scope of which
 ;;; expression-environment pairs it appears are worth analyzing.
 
+;;; EXPAND-EVAL-ONCE is \bar E_1' from the paper.
 (define (expand-eval-once exp env analysis)
   (analysis-lookup exp env analysis
    (lambda (value)
@@ -90,6 +86,7 @@
    (lambda ()
      (list (list exp env abstract-all)))))
 
+;;; EXPAND-APPLY is \bar A' from the paper.
 (define (expand-apply proc arg analysis)
   (cond ((primitive? proc)
 	 (if (or (abstract-all? arg) (not (eq? primitive-if proc)))
@@ -121,6 +118,7 @@
 	(else
 	 (error "Trying to expand on an application of something that is known not to be a procedure" proc arg analysis))))
 
+;;; EXPAND-EVAL is \bar E' from the paper.
 (define (expand-eval exp env analysis)
   (cond ((variable? exp) '())
 	((null? exp) '())

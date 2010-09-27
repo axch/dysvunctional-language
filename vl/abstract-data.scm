@@ -14,6 +14,14 @@
 	    (win (caddar bindings))
 	    (loop (cdr bindings))))))
 
+;;; ANALYSIS-GET is \bar E_1 from the paper.
+(define (analysis-get exp env analysis)
+  (analysis-lookup exp env analysis
+   (lambda (value)
+     value)
+   (lambda ()
+     abstract-all)))
+
 (define (same-analysis-binding? binding1 binding2)
   (abstract-equal? binding1 binding2))
 
