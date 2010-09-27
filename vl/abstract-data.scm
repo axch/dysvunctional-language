@@ -1,7 +1,3 @@
-(define (interesting-variable? env)
-  (lambda (var)
-    (not (solved-abstractly? (lookup var env)))))
-
 (define-structure (analysis (safe-accessors #t))
   bindings)
 

@@ -126,3 +126,7 @@
 	 (list 'cons (solved-abstract-value->constant (car thing))
 	       (solved-abstract-value->constant (cdr thing))))
 	(else ''void)))
+
+(define (interesting-variable? env)
+  (lambda (var)
+    (not (solved-abstractly? (lookup var env)))))
