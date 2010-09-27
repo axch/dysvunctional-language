@@ -20,15 +20,16 @@
 	 (if (abstract-all? arg)
 	     abstract-all
 	     (analysis-get (closure-body proc)
-			       (extend-env
-				(closure-formal proc)
-				arg
-				(closure-env proc))
-			       analysis)))
+			   (extend-env
+			    (closure-formal proc)
+			    arg
+			    (closure-env proc))
+			   analysis)))
 	((abstract-all? proc)
 	 abstract-all)
 	(else
-	 (error "Trying to refine the application of something that is known not to be a procedure" proc arg analysis))))
+	 (error "Trying to refine an application of something that is known not to be a procedure"
+		proc arg analysis))))
 
 ;;; REFINE-EVAL is \bar E from the paper.
 (define (refine-eval exp env analysis)
@@ -108,7 +109,8 @@
 	((abstract-all? proc)
 	 '())
 	(else
-	 (error "Trying to expand on an application of something that is known not to be a procedure" proc arg analysis))))
+	 (error "Trying to expand on an application of something that is known not to be a procedure"
+		proc arg analysis))))
 
 ;;; EXPAND-EVAL is \bar E' from the paper.
 (define (expand-eval exp env analysis)
