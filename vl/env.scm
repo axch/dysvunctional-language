@@ -1,5 +1,19 @@
-(define-structure (env (safe-accessors #t))
+;;;; Environments
+
+;;; In this code, environments are flat, restricted to the variables
+;;; actually referenced by the closure whose environment it is, and
+;;; sorted by the bound names.  This canonical form much simplifies
+;;; comparing and unioning them during the abstract analysis.
+
+(define-structure (env (safe-accessors #t) (constructor %make-env))
   bindings)
+
+(define (make-env bindings)
+  (%make-env
+   (sort
+    bindings
+    (lambda (binding1 binding2)
+      (symbol<? (car binding1) (car binding2))))))
 
 (define (lookup exp env)
   (if (constant? exp)
