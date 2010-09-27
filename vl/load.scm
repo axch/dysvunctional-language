@@ -28,9 +28,9 @@
    "primitives"
    "macro"
    "eval"
-   "abstract-data"
+   "analysis"
    "abstract-values"
-   "abstract"
+   "abstract-eval"
    "code-generator"))
 
 (define peephole-optimize #f)
