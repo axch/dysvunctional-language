@@ -1,3 +1,5 @@
+;;;; Concrete evaluator
+
 ;;; Functions take only one argument (which they may destructure
 ;;; inside).  Constants are (notionally) converted to variables and
 ;;; (notionally) looked up in environments.  CONS is a special form.
@@ -37,13 +39,16 @@
 
 (define (apply-primitive proc arg)
   ((primitive-implementation proc) (vl-value->scheme-value arg)))
-
+
 (define (vl-eval form)
-  (initialize-vl-user-env)
-  (concrete-eval (macroexpand form) vl-user-env))
+  (concrete-eval (macroexpand form) (initial-vl-user-env)))
+
+;;;; Concrete REPL
+
+(define vl-user-env #f)
 
 (define (start-vl)
-  (initialize-vl-user-env)
+  (set! vl-user-env (initial-vl-user-env))
   (run-vl))
 
 (define (run-vl)

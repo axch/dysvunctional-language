@@ -55,13 +55,8 @@
   (make-env (append-bindings (formal-bindings formal-tree arg)
 			     (env-bindings env))))
 
-(define vl-user-env #f)
-
 (define (initial-vl-user-env)
   (make-env
    (map (lambda (primitive)
 	  (cons (primitive-name primitive) primitive))
 	*primitives*)))
-
-(define (initialize-vl-user-env)
-  (set! vl-user-env (initial-vl-user-env)))
