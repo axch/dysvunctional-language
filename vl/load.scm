@@ -30,6 +30,7 @@
    "eval"
    "abstract"
    "abstract-data"
+   "abstract-values"
    "code-generator"))
 
 (define peephole-optimize #f)
