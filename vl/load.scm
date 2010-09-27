@@ -25,6 +25,7 @@
  load-relative
  '("data"
    "env"
+   "primitives"
    "macro"
    "eval"
    "abstract"
