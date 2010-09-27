@@ -25,8 +25,8 @@
  load-relative
  '("data"
    "env"
-   "eval"
    "macro"
+   "eval"
    "abstract"
    "abstract-data"
    "code-generator"))
