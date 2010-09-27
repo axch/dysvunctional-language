@@ -47,7 +47,7 @@
 	((null? exp) '())
 	((pair? exp)
 	 (cond ((eq? (car exp) 'lambda)
-		(make-abstract-closure (cadr exp) (caddr exp) abstract-env))
+		(make-closure (cadr exp) (caddr exp) abstract-env))
 	       ((eq? (car exp) 'cons)
 		(let ((car-answer (refine-eval-once
 				   (cadr exp) abstract-env analysis))

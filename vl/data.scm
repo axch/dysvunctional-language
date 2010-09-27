@@ -43,6 +43,8 @@
 (define (closure-free-variables closure)
   (free-variables (closure-expression closure)))
 
+;;; To keep environments in canonical form, closures only keep the
+;;; variables they want.
 (define (make-closure formal body abstract-env)
   (%make-closure formal body
    (env-slice abstract-env (free-variables `(lambda ,formal ,body)))))

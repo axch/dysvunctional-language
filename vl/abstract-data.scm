@@ -29,11 +29,6 @@
       (make-env (restrict-bindings (env-bindings env)))
       (make-abstract-env (restrict-bindings (abstract-env-bindings env)))))
 
-;;; An abstract closure is just a normal closure with an abstract
-;;; environment that is correctly restricted to include only the free
-;;; variables in that closure's body.
-(define make-abstract-closure make-closure)
-
 (define (extend-abstract-env formal arg abstract-env)
   (make-abstract-env
    (append-bindings (formal-bindings formal arg)
