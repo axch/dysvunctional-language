@@ -162,6 +162,6 @@
 	       (count 0))
       (if (and *analyze-wallp* (= 0 (modulo count *analyze-wallp*)))
 	  (pp new-analysis))
-      (if (same-analysis? old-analysis new-analysis)
-	  new-analysis
-	  (loop new-analysis (step-analysis new-analysis) (+ count 1))))))
+      (if (step-changed-analysis? old-analysis new-analysis)
+	  (loop new-analysis (step-analysis new-analysis) (+ count 1))
+	  new-analysis))))
