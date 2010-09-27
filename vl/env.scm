@@ -1,18 +1,15 @@
 (define-structure (env (safe-accessors #t))
-  bindings
-  parent)
+  bindings)
 
 (define (lookup exp env)
   (if (constant? exp)
       exp
-      (if (empty-env? env)
-	  (error "Variable not found" exp)
-	  (let scan ((bindings (env-bindings env)))
-	    (if (null? bindings)
-		(lookup exp (env-parent env))
-		(if (eq? exp (caar bindings))
-		    (cdar bindings)
-		    (scan (cdr bindings))))))))
+      (let scan ((bindings (env-bindings env)))
+	(if (null? bindings)
+	    (error "Variable not found" exp)
+	    (if (eq? exp (caar bindings))
+		(cdar bindings)
+		(scan (cdr bindings)))))))
 
 (define (append-bindings new-bindings old-bindings)
   (append new-bindings
@@ -26,10 +23,7 @@
 	  bindings))
 
 (define (flat-bindings env)
-  (let loop ((env env))
-    (if (empty-env? env)
-	'()
-	(append-bindings (env-bindings env) (loop (env-parent env))))))
+  (env-bindings env))
 
 (define (formal-bindings formal arg)
   (let walk ((name-tree (car formal))
@@ -49,10 +43,8 @@
 		  formal arg)))))
 
 (define (extend-env env formal-tree arg)
-  (make-env (formal-bindings formal-tree arg) env))
-
-(define (empty-env? thing)
-  (eq? thing #f))
+  (make-env (append-bindings (formal-bindings formal-tree arg)
+			     (env-bindings env))))
 
 (define vl-user-env #f)
 
@@ -60,8 +52,7 @@
   (make-env
    (map (lambda (primitive)
 	  (cons (primitive-name primitive) primitive))
-	*primitives*)
-   #f))
+	*primitives*)))
 
 (define (initialize-vl-user-env)
   (set! vl-user-env (initial-vl-user-env)))
