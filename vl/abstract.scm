@@ -87,7 +87,7 @@
 		   (consequent (cadr arg))
 		   (alternate (cddr arg)))
 	       (define (expand-thunk-application thunk)
-		 (expand-analysis
+		 (analysis-expand
 		  `(,(closure-expression thunk) ()) (closure-env thunk) analysis))
 	       (if (not (abstract-boolean? predicate))
 		   (if predicate
@@ -99,12 +99,12 @@
 	((closure? proc)
 	 (if (abstract-all? arg)
 	     '()
-	     (expand-analysis (closure-body proc)
-			       (extend-env
-				(closure-formal proc)
-				arg
-				(closure-env proc))
-			       analysis)))
+	     (analysis-expand (closure-body proc)
+			      (extend-env
+			       (closure-formal proc)
+			       arg
+			       (closure-env proc))
+			      analysis)))
 	((abstract-all? proc)
 	 '())
 	(else
@@ -121,13 +121,13 @@
 	       ((eq? (car exp) 'cons)
 		(lset-union
 		 same-analysis-binding?
-		 (expand-analysis (cadr exp) env analysis)
-		 (expand-analysis (caddr exp) env analysis)))
+		 (analysis-expand (cadr exp) env analysis)
+		 (analysis-expand (caddr exp) env analysis)))
 	       (else
 		(lset-union
 		 same-analysis-binding?
-		 (expand-analysis (car exp) env analysis)
-		 (expand-analysis (cadr exp) env analysis)
+		 (analysis-expand (car exp) env analysis)
+		 (analysis-expand (cadr exp) env analysis)
 		 (expand-apply
 		  (analysis-get (car exp) env analysis)
 		  (analysis-get (cadr exp) env analysis)
@@ -136,7 +136,7 @@
 	 (error "Invalid expression in abstract expander"
 		exp env analysis))))
 
-(define (expand-analysis-binding binding analysis)
+(define (analysis-expand-binding binding analysis)
   (let ((exp (car binding))
 	(env (cadr binding)))
     (expand-eval exp env analysis)))
@@ -144,7 +144,7 @@
 (define (expand-analysis analysis)
   (apply lset-union same-analysis-binding?
 	 (map (lambda (binding)
-		(expand-analysis-binding binding analysis))
+		(analysis-expand-binding binding analysis))
 	      (analysis-bindings analysis))))
 
 (define (step-analysis analysis)

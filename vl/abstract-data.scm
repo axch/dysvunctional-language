@@ -27,7 +27,7 @@
 ;;; a binding to be added to the new incarnation of ANALYSIS, should
 ;;; the current incarnation lack any binding already covering that
 ;;; question.
-(define (expand-analysis exp env analysis)
+(define (analysis-expand exp env analysis)
   (analysis-lookup exp env analysis
    (lambda (value)
      '())
