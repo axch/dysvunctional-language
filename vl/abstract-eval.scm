@@ -57,14 +57,11 @@
 	 (error "Invalid expression in abstract refiner"
 		exp env analysis))))
 
-(define (refine-analysis-binding binding analysis)
-  (let ((exp (car binding))
-	(env (cadr binding)))
-    (list exp env (refine-eval exp env analysis))))
-
 (define (refine-analysis analysis)
   (map (lambda (binding)
-	 (refine-analysis-binding binding analysis))
+	 (let ((exp (car binding))
+	       (env (cadr binding)))
+	   (list exp env (refine-eval exp env analysis))))
        (analysis-bindings analysis)))
 
 ;;; Given a particular abstract analysis, and a particular expression
