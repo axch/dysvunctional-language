@@ -1,3 +1,47 @@
+;;; An abstract value represents the "shape" that a concrete value may
+;;; take.  The following shapes are admitted: Known concrete scalars,
+;;; the "boolean" shape, the "real number" shape, pairs of shapes,
+;;; environments mapping variables to shapes, and closures with
+;;; fully-known expressions (and "environment" shapes for their
+;;; environments).  There is also an additional "completely unknown"
+;;; abstract value, which represents a thing whose shape is not known.
+;;; It is an invariant of the analysis that the "completely unknown"
+;;; abstract value does not occur inside any other shapes.
+
+;;; Shapes that have concrete counterparts (concrete scalars, pairs,
+;;; environments, and closures) are represented by themselves.  The
+;;; remaining three shapes are represented by unique defined objects.
+;;; For convenience of comparison, abstract environments are kept in a
+;;; canonical form: flattened, restricted to the variables actually
+;;; referenced by the closure whose environment it is, and sorted by
+;;; the bound names.  The flattening is ok because the language is
+;;; pure, so no new bindings are ever added to an environment after it
+;;; is first created.
+
+;;; The analysis has the further interesting property that the shape
+;;; of any particular thing ceases to be "completely unknown" only
+;;; when it is as determined as it is going to get.  In particular,
+;;; the "boolean" or "real" shapes are never refined to specific
+;;; concrete values.
+
+(define abstract-boolean (list 'abstract-boolean))
+(define (abstract-boolean? thing)
+  (eq? thing abstract-boolean))
+(define (some-boolean? thing)
+  (or (boolean? thing)
+      (abstract-boolean? thing)))
+
+(define abstract-real (list 'abstract-real))
+(define (abstract-real? thing)
+  (eq? thing abstract-real))
+(define (some-real? thing)
+  (or (real? thing)
+      (abstract-real? thing)))
+
+(define abstract-all (list 'abstract-all))
+(define (abstract-all? thing)
+  (eq? thing abstract-all))
+
 (define (abstract-equal? thing1 thing2)
   (cond ((eqv? thing1 thing2)
 	 #t)
@@ -32,6 +76,7 @@
 (define make-abstract-hash-table
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #t))
 
+;; ABSTRACT-UNION is only used on the return values of IF statements.
 (define (abstract-union thing1 thing2)
   (cond ((abstract-equal? thing1 thing2)
 	 thing1)
@@ -81,27 +126,3 @@
 	 (list 'cons (solved-abstract-value->constant (car thing))
 	       (solved-abstract-value->constant (cdr thing))))
 	(else ''void)))
-
-(define (interesting-variable? env)
-  (lambda (var)
-    (abstract-lookup var env
-     (lambda (shape) (not (solved-abstractly? shape)))
-     (lambda () #t))))
-
-(define abstract-boolean (list 'abstract-boolean))
-(define (abstract-boolean? thing)
-  (eq? thing abstract-boolean))
-(define (some-boolean? thing)
-  (or (boolean? thing)
-      (abstract-boolean? thing)))
-
-(define abstract-real (list 'abstract-real))
-(define (abstract-real? thing)
-  (eq? thing abstract-real))
-(define (some-real? thing)
-  (or (real? thing)
-      (abstract-real? thing)))
-
-(define abstract-all (list 'abstract-all))
-(define (abstract-all? thing)
-  (eq? thing abstract-all))

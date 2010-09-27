@@ -57,6 +57,12 @@
    (append-bindings (formal-bindings formal arg)
 		    (abstract-env-bindings abstract-env))))
 
+(define (interesting-variable? env)
+  (lambda (var)
+    (abstract-lookup var env
+     (lambda (shape) (not (solved-abstractly? shape)))
+     (lambda () #t))))
+
 (define-structure (analysis (safe-accessors #t))
   bindings)
 
