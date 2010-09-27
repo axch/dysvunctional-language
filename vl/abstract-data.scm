@@ -1,11 +1,3 @@
-(define (abstract-lookup exp env)
-  (if (constant? exp)
-      exp
-      (let ((answer (assq exp (env-bindings env))))
-	(if answer
-	    (cdr answer)
-	    (error "Variable not found" exp env)))))
-
 (define (env-slice env symbols)
   (define (restrict-bindings bindings)
     (filter (lambda (binding)
@@ -17,7 +9,7 @@
 
 (define (interesting-variable? env)
   (lambda (var)
-    (not (solved-abstractly? (abstract-lookup var env)))))
+    (not (solved-abstractly? (lookup var env)))))
 
 (define-structure (analysis (safe-accessors #t))
   bindings)

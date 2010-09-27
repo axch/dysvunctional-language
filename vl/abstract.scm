@@ -38,8 +38,7 @@
 
 (define (refine-eval exp env analysis)
   (cond ((constant? exp) exp)
-	((variable? exp)
-	 (abstract-lookup exp env))
+	((variable? exp) (lookup exp env))
 	((null? exp) '())
 	((pair? exp)
 	 (cond ((eq? (car exp) 'lambda)

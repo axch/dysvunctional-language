@@ -18,12 +18,10 @@
 (define (lookup exp env)
   (if (constant? exp)
       exp
-      (let scan ((bindings (env-bindings env)))
-	(if (null? bindings)
-	    (error "Variable not found" exp)
-	    (if (eq? exp (caar bindings))
-		(cdar bindings)
-		(scan (cdr bindings)))))))
+      (let ((answer (assq exp (env-bindings env))))
+	(if answer
+	    (cdr answer)
+	    (error "Variable not found" exp env)))))
 
 (define (append-bindings new-bindings old-bindings)
   (append new-bindings
