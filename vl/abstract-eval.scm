@@ -60,13 +60,12 @@
 (define (refine-analysis-binding binding analysis)
   (let ((exp (car binding))
 	(env (cadr binding)))
-    (list (list exp env (refine-eval exp env analysis)))))
+    (list exp env (refine-eval exp env analysis))))
 
 (define (refine-analysis analysis)
-  (apply lset-union same-analysis-binding?
-	 (map (lambda (binding)
-		(refine-analysis-binding binding analysis))
-	      (analysis-bindings analysis))))
+  (map (lambda (binding)
+	 (refine-analysis-binding binding analysis))
+       (analysis-bindings analysis)))
 
 ;;; Given a particular abstract analysis, and a particular expression
 ;;; EXP and abstract environment ENV, the pair EXPAND-EVAL and
