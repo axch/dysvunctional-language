@@ -1,5 +1,5 @@
 ;;; Given a particular abstract analysis, the trio REFINE-EVAL,
-;;; REFINE-APPLY, and REFINE-EVAL-ONCE will convert an expression
+;;; REFINE-APPLY, and ANALYSIS-GET will convert an expression
 ;;; and an abstract environment into an abstract value.  This is
 ;;; (possibly) a refinement of the knowledge in the analysis.
 
@@ -10,7 +10,7 @@
 ;;; evaluates to in that environment, which can then be incorporated
 ;;; into an updated collection of available knowledge.
 
-(define (refine-eval-once exp env analysis)
+(define (analysis-get exp env analysis)
   (analysis-lookup exp env analysis
    (lambda (value)
      value)
@@ -25,7 +25,7 @@
 	((closure? proc)
 	 (if (abstract-all? arg)
 	     abstract-all
-	     (refine-eval-once (closure-body proc)
+	     (analysis-get (closure-body proc)
 			       (extend-env
 				(closure-formal proc)
 				arg
@@ -44,9 +44,9 @@
 	 (cond ((eq? (car exp) 'lambda)
 		(make-closure (cadr exp) (caddr exp) env))
 	       ((eq? (car exp) 'cons)
-		(let ((car-answer (refine-eval-once
+		(let ((car-answer (analysis-get
 				   (cadr exp) env analysis))
-		      (cdr-answer (refine-eval-once
+		      (cdr-answer (analysis-get
 				   (caddr exp) env analysis)))
 		  (if (and (not (abstract-all? car-answer))
 			   (not (abstract-all? cdr-answer)))
@@ -54,8 +54,8 @@
 		      abstract-all)))
 	       (else
 		(refine-apply
-		 (refine-eval-once (car exp) env analysis)
-		 (refine-eval-once (cadr exp) env analysis)
+		 (analysis-get (car exp) env analysis)
+		 (analysis-get (cadr exp) env analysis)
 		 analysis))))
 	(else
 	 (error "Invalid expression in abstract refiner"
@@ -139,8 +139,8 @@
 		 (expand-eval-once (car exp) env analysis)
 		 (expand-eval-once (cadr exp) env analysis)
 		 (expand-apply
-		  (refine-eval-once (car exp) env analysis)
-		  (refine-eval-once (cadr exp) env analysis)
+		  (analysis-get (car exp) env analysis)
+		  (analysis-get (cadr exp) env analysis)
 		  analysis)))))
 	(else
 	 (error "Invalid expression in abstract expander"

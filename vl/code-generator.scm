@@ -61,7 +61,7 @@
   (set! *call-site-names* (make-abstract-hash-table)))
 
 (define (compile exp full-env enclosure analysis)
-  (let ((value (refine-eval-once exp full-env analysis)))
+  (let ((value (analysis-get exp full-env analysis)))
     (if (solved-abstractly? value)
 	(solved-abstract-value->constant value)
 	(cond ((constant? exp) exp)
@@ -86,7 +86,7 @@
 
 (define (compile-lambda exp full-env enclosure analysis)
   (cons (abstract-closure->scheme-constructor-name
-	 (refine-eval-once exp full-env analysis))
+	 (analysis-get exp full-env analysis))
 	(map (lambda (var)
 	       (compile var full-env enclosure analysis))
 	     (sort (filter (interesting-variable? full-env)
@@ -96,8 +96,8 @@
 (define (compile-cons exp full-env enclosure analysis)
   (let ((first (cadr exp))
 	(second (caddr exp)))
-    (let ((first-shape (refine-eval-once first full-env analysis))
-	  (second-shape (refine-eval-once second full-env analysis)))
+    (let ((first-shape (analysis-get first full-env analysis))
+	  (second-shape (analysis-get second full-env analysis)))
       `(cons ,(if (solved-abstractly? first-shape)
 		  (solved-abstract-value->constant first-shape)
 		  (compile first full-env enclosure analysis))
@@ -106,8 +106,8 @@
 		  (compile second full-env enclosure analysis))))))
 
 (define (compile-apply exp full-env enclosure analysis)
-  (let ((operator (refine-eval-once (car exp) full-env analysis))
-	(operands (refine-eval-once (cadr exp) full-env analysis)))
+  (let ((operator (analysis-get (car exp) full-env analysis))
+	(operands (analysis-get (cadr exp) full-env analysis)))
     (cond ((eq? primitive-if operator)
 	   (generate-if-statement
 	    exp full-env enclosure analysis operands))
@@ -240,8 +240,8 @@
 	   (pair? exp)
 	   (not (eq? (car exp) 'cons))
 	   (not (eq? (car exp) 'lambda))
-	   (let ((operator (refine-eval-once (car exp) env analysis))
-		 (operands (refine-eval-once (cadr exp) env analysis)))
+	   (let ((operator (analysis-get (car exp) env analysis))
+		 (operands (analysis-get (cadr exp) env analysis)))
 	     (and (closure? operator)
 		  (cons operator operands))))))
   (map procedure-definition
