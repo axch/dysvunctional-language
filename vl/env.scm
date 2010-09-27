@@ -22,9 +22,6 @@
 	    (not (memq (car binding) symbols)))
 	  bindings))
 
-(define (flat-bindings env)
-  (env-bindings env))
-
 (define (formal-bindings formal arg)
   (let walk ((name-tree (car formal))
 	     (value-tree arg))

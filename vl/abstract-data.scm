@@ -18,7 +18,7 @@
 	(lose))))
 
 (define (env->abstract-env env)
-  (make-abstract-env (flat-bindings env)))
+  (make-abstract-env (env-bindings env)))
 
 (define (restrict-to symbols abstract-env)
   (make-abstract-env
