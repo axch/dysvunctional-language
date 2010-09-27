@@ -109,7 +109,7 @@
 	(operands (refine-eval-once (cadr exp) full-env analysis)))
     (cond ((eq? primitive-if operator)
 	   (generate-if-statement
-	    exp full-env enclosure analysis operator operands))
+	    exp full-env enclosure analysis operands))
 	  ((primitive? operator)
 	   (primitive-application
 	    operator
@@ -124,7 +124,7 @@
 	   (error "Invalid operator in code generation"
 		  exp operator operands full-env analysis)))))
 
-(define (generate-if-statement exp full-env enclosure analysis operator operands)
+(define (generate-if-statement exp full-env enclosure analysis operands)
   (define (if-procedure-expression-consequent exp)
     (cadr (caddr (cadr exp))))
   (define (if-procedure-expression-alternate exp)
