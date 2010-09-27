@@ -5,7 +5,7 @@
 (define-structure (analysis (safe-accessors #t))
   bindings)
 
-(define (analysis-lookup exp env analysis win lose)
+(define (analysis-search exp env analysis win lose)
   (let loop ((bindings (analysis-bindings analysis)))
     (if (null? bindings)
 	(lose)
@@ -16,7 +16,7 @@
 
 ;;; ANALYSIS-GET is \bar E_1 from the paper.
 (define (analysis-get exp env analysis)
-  (analysis-lookup exp env analysis
+  (analysis-search exp env analysis
    (lambda (value)
      value)
    (lambda ()
@@ -28,7 +28,7 @@
 ;;; the current incarnation lack any binding already covering that
 ;;; question.
 (define (analysis-expand exp env analysis)
-  (analysis-lookup exp env analysis
+  (analysis-search exp env analysis
    (lambda (value)
      '())
    (lambda ()
