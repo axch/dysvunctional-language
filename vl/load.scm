@@ -31,6 +31,7 @@
    "analysis"
    "abstract-values"
    "abstract-eval"
+   "nomenclature"
    "code-generator"))
 
 (define peephole-optimize #f)
