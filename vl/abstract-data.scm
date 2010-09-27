@@ -22,6 +22,18 @@
    (lambda ()
      abstract-all)))
 
+;;; EXPAND-ANALYSIS is \bar E_1' from the paper.
+;;; It registers interest in the evaluation of EXP in ENV by producing
+;;; a binding to be added to the new incarnation of ANALYSIS, should
+;;; the current incarnation lack any binding already covering that
+;;; question.
+(define (expand-analysis exp env analysis)
+  (analysis-lookup exp env analysis
+   (lambda (value)
+     '())
+   (lambda ()
+     (list (list exp env abstract-all)))))
+
 (define (same-analysis-binding? binding1 binding2)
   (abstract-equal? binding1 binding2))
 

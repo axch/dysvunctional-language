@@ -68,23 +68,15 @@
 	      (analysis-bindings analysis))))
 
 ;;; Given a particular abstract analysis, and a particular expression
-;;; EXP and abstract environment ENV, the trio EXPAND-EVAL,
-;;; EXPAND-APPLY, and EXPAND-EVAL-ONCE will detect the set of
-;;; once-removed expression-environment pairs that would shed light on
-;;; the abstract evaluation of EXP in ENV but have not yet been
-;;; analyzed at all (and return that set as a list of abstract
-;;; bindings of those pairs to the abstract top value).
+;;; EXP and abstract environment ENV, the pair EXPAND-EVAL and
+;;; EXPAND-APPLY will detect the set of once-removed
+;;; expression-environment pairs that would shed light on the abstract
+;;; evaluation of EXP in ENV but have not yet been analyzed at all
+;;; (and return that set as a list of abstract bindings of those pairs
+;;; to the abstract top value).
 
-;;; In other words, these three expand the scope of which
+;;; In other words, these two expand the scope of which
 ;;; expression-environment pairs it appears are worth analyzing.
-
-;;; EXPAND-EVAL-ONCE is \bar E_1' from the paper.
-(define (expand-eval-once exp env analysis)
-  (analysis-lookup exp env analysis
-   (lambda (value)
-     '())
-   (lambda ()
-     (list (list exp env abstract-all)))))
 
 ;;; EXPAND-APPLY is \bar A' from the paper.
 (define (expand-apply proc arg analysis)
@@ -95,7 +87,7 @@
 		   (consequent (cadr arg))
 		   (alternate (cddr arg)))
 	       (define (expand-thunk-application thunk)
-		 (expand-eval-once
+		 (expand-analysis
 		  `(,(closure-expression thunk) ()) (closure-env thunk) analysis))
 	       (if (not (abstract-boolean? predicate))
 		   (if predicate
@@ -107,7 +99,7 @@
 	((closure? proc)
 	 (if (abstract-all? arg)
 	     '()
-	     (expand-eval-once (closure-body proc)
+	     (expand-analysis (closure-body proc)
 			       (extend-env
 				(closure-formal proc)
 				arg
@@ -129,13 +121,13 @@
 	       ((eq? (car exp) 'cons)
 		(lset-union
 		 same-analysis-binding?
-		 (expand-eval-once (cadr exp) env analysis)
-		 (expand-eval-once (caddr exp) env analysis)))
+		 (expand-analysis (cadr exp) env analysis)
+		 (expand-analysis (caddr exp) env analysis)))
 	       (else
 		(lset-union
 		 same-analysis-binding?
-		 (expand-eval-once (car exp) env analysis)
-		 (expand-eval-once (cadr exp) env analysis)
+		 (expand-analysis (car exp) env analysis)
+		 (expand-analysis (cadr exp) env analysis)
 		 (expand-apply
 		  (analysis-get (car exp) env analysis)
 		  (analysis-get (cadr exp) env analysis)
