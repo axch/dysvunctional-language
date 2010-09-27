@@ -29,9 +29,9 @@
 	 (apply-primitive proc arg))
 	((closure? proc)
 	 (concrete-eval (closure-body proc)
-			(extend-env (closure-env proc)
-				    (closure-formal proc)
-				    arg)))
+			(extend-env (closure-formal proc)
+				    arg
+				    (closure-env proc))))
 	(else
 	 (error "Invalid procedure type" proc))))
 

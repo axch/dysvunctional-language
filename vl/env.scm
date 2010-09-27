@@ -53,11 +53,9 @@
 	   (error "Mismatched formal and actual parameter trees"
 		  formal arg)))))
 
-(define (extend-env env formal-tree arg)
-  (if (env? env)
-      (make-env (append-bindings (formal-bindings formal-tree arg)
-				 (env-bindings env)))
-      (extend-env arg env formal-tree)))
+(define (extend-env formal-tree arg env)
+  (make-env (append-bindings (formal-bindings formal-tree arg)
+			     (env-bindings env))))
 
 (define vl-user-env #f)
 
