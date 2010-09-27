@@ -167,11 +167,9 @@
 (define *analyze-wallp* #f)
 
 (define (analyze program)
-  (let* ((program (macroexpand program))
-	 (env (env->env (initial-vl-user-env)))
-	 (initial-analysis
-	  (make-analysis
-	   `((,program ,env ,abstract-all)))))
+  (let ((initial-analysis
+	 (make-analysis
+	  `((,(macroexpand program) ,(initial-vl-user-env) ,abstract-all)))))
     (let loop ((old-analysis initial-analysis)
 	       (new-analysis (step-analysis initial-analysis))
 	       (count 0))

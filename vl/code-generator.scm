@@ -260,7 +260,7 @@
 	   `(begin ,@(structure-definitions analysis)
 		   ,@(procedure-definitions analysis)
 		   ,(compile (macroexpand program)
-			     (env->env (initial-vl-user-env))
+			     (initial-vl-user-env)
 			     #f
 			     analysis))))
       (if peephole-optimize

@@ -6,9 +6,6 @@
 	    (cdr answer)
 	    (error "Variable not found" exp env)))))
 
-(define (env->env env)
-  (make-env (env-bindings env)))
-
 (define (env-slice env symbols)
   (define (restrict-bindings bindings)
     (filter (lambda (binding)
