@@ -89,8 +89,9 @@
 	 (refine-eval-once exp full-env analysis))
 	(map (lambda (var)
 	       (compile var full-env enclosure analysis))
-	     (filter (interesting-variable? full-env)
-		     (free-variables exp)))))
+	     (sort (filter (interesting-variable? full-env)
+			   (free-variables exp))
+		   symbol<?))))
 
 (define (compile-cons exp full-env enclosure analysis)
   (let ((first (cadr exp))
@@ -186,8 +187,9 @@
   (cond ((closure? value)
 	 `(define-structure ,(abstract-closure->scheme-structure-name value)
 	    ,@(map vl-variable->scheme-field-name
-		   (filter (interesting-variable? (closure-env value))
-			   (closure-free-variables value)))))
+		   (sort (filter (interesting-variable? (closure-env value))
+				 (closure-free-variables value))
+			 symbol<?))))
 	(else (error "Not compiling non-closure aggregates to Scheme structures"
 		     value))))
 

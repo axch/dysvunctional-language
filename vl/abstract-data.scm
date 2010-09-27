@@ -21,20 +21,18 @@
   (make-abstract-env (flat-bindings env)))
 
 (define (free-variables exp)
-  (sort
-   (cond ((symbol? exp) (list exp))
-	 ((pair? exp)
-	  (cond ((eq? (car exp) 'lambda)
-		 (lset-difference eq? (free-variables (caddr exp))
-				  (free-variables (cadr exp))))
-		((eq? (car exp) 'cons)
-		 (lset-union eq? (free-variables (cadr exp))
-			     (free-variables (caddr exp))))
-		(else
-		 (lset-union eq? (free-variables (car exp))
-			     (free-variables (cdr exp))))))
-	 (else '()))
-   symbol<?))
+  (cond ((symbol? exp) (list exp))
+	((pair? exp)
+	 (cond ((eq? (car exp) 'lambda)
+		(lset-difference eq? (free-variables (caddr exp))
+				 (free-variables (cadr exp))))
+	       ((eq? (car exp) 'cons)
+		(lset-union eq? (free-variables (cadr exp))
+			    (free-variables (caddr exp))))
+	       (else
+		(lset-union eq? (free-variables (car exp))
+			    (free-variables (cdr exp))))))
+	(else '())))
 
 (define (closure-free-variables closure)
   (free-variables (closure-expression closure)))
