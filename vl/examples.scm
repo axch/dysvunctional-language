@@ -1,3 +1,25 @@
+;;;; Example VL programs
+
+;;; Adding 5 to 3
+
+(let ((addn (lambda (n)
+	      (lambda (x)
+		(+ n x)))))
+  (let ((add5 (addn (real 5))))
+    (add5 (real 3))))
+
+;;; Variations on IF
+
+(if (< (real 3) (real 6))
+    (real 4)
+    (real 3))
+
+(if (< 3 6)
+    (real 4)
+    (real 3))
+
+;;; Doubling and squaring do not commute under composition
+
 (let ((double (lambda (x)
 		(+ x x)))
       (square (lambda (x)
@@ -7,11 +29,7 @@
   (cons ((compose double square) (real 2))
 	((compose square double) (real 2))))
 
-(let ((addn (lambda (n)
-	      (lambda (x)
-		(+ n x)))))
-  (let ((add5 (addn (real 5))))
-    (add5 (real 3))))
+;;; Cubing 3 if it's less than 20
 
 (let ((cube (lambda (x)
 	      (* x (* x x)))))
@@ -21,6 +39,8 @@
 			      (cube x)
 			      x)))))
     ((enlarge-upto (real 20)) (real 3))))
+
+;;; Variations on destructuring
 
 (let ((my-add (lambda (x y)
 		(+ x y))))
@@ -35,28 +55,19 @@
   (my-add (cons 3 (real 6))))
 
 (let ((delay-add (lambda (x y)
-		(lambda ()
-		  (+ x y)))))
+		   (lambda ()
+		     (+ x y)))))
   ((delay-add (real 3) (real 6))))
 
-(let ((cube (lambda (x)
-	      (* x (* x x)))))
-  (let ((enlarge-upto (lambda (bound)
-			(lambda (x)
-			  (if (< x bound)
-			      (cube x)
-			      x)))))
-    ((enlarge-upto (real 20)) (real 3))))
-
-(if (< 3 6)
-    (real 4)
-    (real 3))
+;;; Factorial
 
 (letrec ((fact (lambda (n)
 		 (if (= n 1)
 		     1
 		     (* n (fact (- n 1)))))))
   (fact 5))
+
+;;; Factorial, with letrec manually macro expanded
 
 (let ((Z (lambda (f)
 	   ((lambda (x)
@@ -70,18 +81,9 @@
 		     (if (= n 1)
 			 1
 			 (* n (fact (- n 1)))))))))
-    (fact 5)))
+    (fact (real 5))))
 
-(let ((increment (lambda (x) (+ x 1)))
-      (double (lambda (x) (* x 2)))
-      (car (lambda ((cons x y)) x))
-      (cdr (lambda ((cons x y)) y)))
-  (letrec ((map (lambda (f lst)
-		  (if (null? lst)
-		      ()
-		      (cons (f (car lst)) (map f (cdr lst)))))))
-    (cons (map increment (real 1) (real 2) (real 3) ())
-	  (map double (real 4) (real 5) ()))))
+;;; Parity testing
 
 (letrec ((even? (lambda (n)
 		  (if (= n 0)
@@ -93,7 +95,22 @@
 		     (even? (- n 1))))))
   (even? (real 5)))
 
+;;; Counting to 10
+
 (let loop ((count (real 0)))
   (if (< count 10)
       (loop (+ count 1))
       count))
+
+;;; Mapping different functions over different length lists.
+
+(let ((increment (lambda (x) (+ x 1)))
+      (double (lambda (x) (* x 2)))
+      (car (lambda ((cons x y)) x))
+      (cdr (lambda ((cons x y)) y)))
+  (letrec ((map (lambda (f lst)
+		  (if (null? lst)
+		      ()
+		      (cons (f (car lst)) (map f (cdr lst)))))))
+    (cons (map increment (real 1) (real 2) (real 3) ())
+	  (map double (real 4) (real 5) ()))))
