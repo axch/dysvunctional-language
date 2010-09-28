@@ -1,0 +1,94 @@
+A VL interpreter and an aggressively optimizing VL->Scheme compiler.
+
+
+Why do you care?
+
+The compiler uses polyvariant union-free flow analysis to compile the
+higher-order functional language VL to efficient, Fortran-like Scheme
+code.  The purpose of this program is to illustrate and explain
+polyvariant union-free flow analysis.  The program follows Sections 5
+and 6 of [1].  The language VL is the language VLAD from same, but
+without the AD.
+
+
+What is polyvariant union-free flow analysis?
+
+"Flow analysis" is thinking about what kinds of values may flow where
+in a program.  For example, flow analysis will discover things like
+"this variable X always holds an integer", or "this variable F is
+always the function INCREMENT", or "this call site always calls the
+function MAP on the function DOUBLE" or etc.
+
+"Polyvariant" means that the flow analysis is willing to duplicate
+pieces of the program (namely, procedure definitions) in order to
+improve the precision of the analysis.  For example, if at one call
+site, MAP is always called with INCREMENT, and at another, it's always
+called with DOUBLE, the analysis is willing to generate two versions
+of MAP, in one of which the function being mapped is always INCREMENT
+and in the other always DOUBLE, instead of having only one copy of MAP
+which may be called upon to map either INCREMENT or DOUBLE on
+different occasions.  This allows analysing the bodies of those two
+copies of MAP more precisely than would be possible if they were not
+split apart.
+
+"Union-free" means that the analysis does not admit union types, and
+continues analysing the program until there are no more union types
+anywhere.  The only residual uncertainty this analysis admits is "this
+place gets some real number but I don't know which" and "this place
+gets some boolean but I don't know which".  The shapes of all data
+structures, including closures, are determined at analysis time.  The
+targets of all function calls are determined at analysis time.  Only
+numeric operations and conditional branches remain.  This has the
+consequence that the output will have a specialized version of MAP for
+every function that is mapped and every length of list that is mapped
+over.
+
+Going all the way to union-free is almost certainly overkill.  On the
+upside, it allows the compiler to completely unbox everything because
+no types of anything ever need to be checked at runtime.  On the
+downside, do you really want to unroll a MAP over a 100,000-element
+list into a straight-line sequence of 100,000 uses of the mapped
+function?  Probably not.  If nothing else, your instruction cache will
+cry bloody murder.  Also on the downside, the union-less-ness of the
+analysis produces a serious restriction on VL's expressivity: all
+legal VL programs must have completely statically determinable type
+structure.
+
+Nevertheless, [1] describes a union-free flow analysis, so this code
+implements a union-free flow analysis.  It seems reasonable to learn
+how to do union-free first, and then figure out how to judiciously add
+union types.
+
+
+What is VL?
+
+VL stands for Vunctional Language.  It is a higher-order functional
+programming language.  It is a reimplementation of VLAD from [1],
+without the automatic differentiation basis.  VL resembles Scheme,
+differing in the following respects:
+
+- The only Scheme datatypes supported are the empty list,
+  booleans, real numbers, pairs, and procedures.
+- Only a subset of the builtin Scheme procedures and syntax are
+  supported.
+- No rest arguments.
+- CONS is built-in syntax, not a procedure.
+- Procedure parameters p can be variables, () to indicate that an
+  argument should be ignored, or (cons p1 p2) to indicate the argument
+  should be destructured appropriately.
+- All procedures take exactly one argument and return exactly one
+  result.  Syntactically nary procedure applications and formal
+  parameter lists are supported by transformation to construction and
+  destructuring of compound data structures.
+
+In particular, VL is completely pure --- it supports neither mutation
+of VL variables, nor input from nor output to the outside world.  It
+is a vehicle for studying flow analyses.
+
+
+
+[1] Jeffrey Siskind and Barak Pearlmutter, "Using Ployvariant
+Union-Free Flow Analysis to Compile a Higher-Order Functional
+Programming Language with a First-Class Derivative Operator to
+Efficient Fortran-like Code."  Purdue University ECE Technical
+Report, 2008.  http://docs.lib.purdue.edu/ecetr/376
