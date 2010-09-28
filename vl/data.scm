@@ -28,7 +28,7 @@
 	 (cons (replace-in-tree old new (car structure))
 	       (replace-in-tree old new (cdr structure))))
 	(else structure)))
-
+
 ;;;; Closures
 
 (define-structure (closure (safe-accessors #t) (constructor %make-closure))

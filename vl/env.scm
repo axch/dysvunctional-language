@@ -23,16 +23,19 @@
 	    (cdr answer)
 	    (error "Variable not found" exp env)))))
 
-(define (append-bindings new-bindings old-bindings)
-  (append new-bindings
-	  (remove-from-bindings
-	   (map car new-bindings)
-	   old-bindings)))
+(define (initial-vl-user-env)
+  (make-env
+   (map (lambda (primitive)
+	  (cons (primitive-name primitive) primitive))
+	*primitives*)))
+
+;;; Extending a VL environment involves destructuring the incoming
+;;; argument structure according to the formal parameter tree of the
+;;; closure whose environment is being extended.
 
-(define (remove-from-bindings symbols bindings)
-  (filter (lambda (binding)
-	    (not (memq (car binding) symbols)))
-	  bindings))
+(define (extend-env formal-tree arg env)
+  (make-env (append-bindings (formal-bindings formal-tree arg)
+			     (env-bindings env))))
 
 (define (formal-bindings formal arg)
   (let walk ((name-tree (car formal))
@@ -51,12 +54,13 @@
 	   (error "Mismatched formal and actual parameter trees"
 		  formal arg)))))
 
-(define (extend-env formal-tree arg env)
-  (make-env (append-bindings (formal-bindings formal-tree arg)
-			     (env-bindings env))))
+(define (append-bindings new-bindings old-bindings)
+  (append new-bindings
+	  (remove-from-bindings
+	   (map car new-bindings)
+	   old-bindings)))
 
-(define (initial-vl-user-env)
-  (make-env
-   (map (lambda (primitive)
-	  (cons (primitive-name primitive) primitive))
-	*primitives*)))
+(define (remove-from-bindings symbols bindings)
+  (filter (lambda (binding)
+	    (not (memq (car binding) symbols)))
+	  bindings))

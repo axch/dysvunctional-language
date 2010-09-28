@@ -109,7 +109,7 @@
 			  (env-bindings thing2))))
 	(else
 	 abstract-all)))
-
+
 ;;; Is this shape completely determined?
 
 (define (solved-abstractly? thing)

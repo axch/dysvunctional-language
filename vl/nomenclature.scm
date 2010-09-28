@@ -1,14 +1,16 @@
+;;;; Scheme names for generated code pieces
+
+;;; Nothing to see here.
+
 (define *symbol-count* 0)
 
 (define (make-name prefix)
   (set! *symbol-count* (+ *symbol-count* 1))
   (symbol prefix *symbol-count*))
 
-(define (vl-variable->scheme-variable var)
-  var)
+(define (vl-variable->scheme-variable var) var)
 
-(define (vl-variable->scheme-field-name var)
-  var)
+(define (vl-variable->scheme-field-name var) var)
 
 (define (vl-variable->scheme-record-access var closure)
   `(,(symbol (abstract-closure->scheme-structure-name closure)
@@ -22,8 +24,7 @@
 
 (define (abstract-closure->scheme-structure-name closure)
   (hash-table/lookup *closure-names* closure
-   (lambda (value)
-     value)
+   (lambda (value) value)
    (lambda ()
      (let ((answer (make-name 'closure-)))
        (hash-table/put! *closure-names* closure answer)
@@ -36,8 +37,7 @@
 
 (define (call-site->scheme-function-name closure abstract-arg)
   (hash-table/lookup *call-site-names* (cons closure abstract-arg)
-   (lambda (value)
-     value)
+   (lambda (value) value)
    (lambda ()
      (let ((answer (make-name 'operation-)))
        (hash-table/put! *call-site-names* (cons closure abstract-arg) answer)

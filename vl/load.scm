@@ -1,3 +1,7 @@
+;;;; Loading the system
+
+;;; Why are you reading this file?  You already know what it does.
+
 (define (cf-conditionally filename)
   (fluid-let ((sf/default-syntax-table (nearest-repl/environment)))
     (sf-conditionally filename))
@@ -42,4 +46,5 @@
     (if (file-exists? rule-system)
 	(begin (load rule-system)
 	       (load "post-processor"))
-	(warn "Did not find the rule-simplification engine, post-processor disabled")))))
+	(begin (warn "Did not find the rule-simplification engine,")
+	       (warn "post-processor disabled"))))))
