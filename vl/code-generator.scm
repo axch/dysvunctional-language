@@ -10,8 +10,8 @@
 ;;; pile should have the property that all function calls are to known
 ;;; targets.
 
-(define (compile exp full-env enclosure analysis)
-  (let ((value (analysis-get exp full-env analysis)))
+(define (compile exp env enclosure analysis)
+  (let ((value (analysis-get exp env analysis)))
     (if (solved-abstractly? value)
 	(solved-abstract-value->constant value)
 	(cond ((constant? exp) exp)
@@ -20,62 +20,62 @@
 	       (compile-variable exp enclosure))
 	      ((pair? exp)
 	       (cond ((eq? (car exp) 'lambda)
-		      (compile-lambda exp full-env enclosure analysis))
+		      (compile-lambda exp env enclosure analysis))
 		     ((eq? (car exp) 'cons)
-		      (compile-cons exp full-env enclosure analysis))
+		      (compile-cons exp env enclosure analysis))
 		     (else
-		      (compile-apply exp full-env enclosure analysis))))
+		      (compile-apply exp env enclosure analysis))))
 	      (else
 	       (error "Invaid expression in code generation"
-		      exp full-env enclosure analysis))))))
+		      exp env enclosure analysis))))))
 
 (define (compile-variable exp enclosure)
   (if (memq exp (closure-free-variables enclosure))
       (vl-variable->scheme-record-access exp enclosure)
       (vl-variable->scheme-variable exp)))
 
-(define (compile-lambda exp full-env enclosure analysis)
+(define (compile-lambda exp env enclosure analysis)
   (cons (abstract-closure->scheme-constructor-name
-	 (analysis-get exp full-env analysis))
+	 (analysis-get exp env analysis))
 	(map (lambda (var)
-	       (compile var full-env enclosure analysis))
-	     (sort (filter (interesting-variable? full-env)
+	       (compile var env enclosure analysis))
+	     (sort (filter (interesting-variable? env)
 			   (free-variables exp))
 		   symbol<?))))
 
-(define (compile-cons exp full-env enclosure analysis)
+(define (compile-cons exp env enclosure analysis)
   (let ((first (cadr exp))
 	(second (caddr exp)))
-    (let ((first-shape (analysis-get first full-env analysis))
-	  (second-shape (analysis-get second full-env analysis)))
+    (let ((first-shape (analysis-get first env analysis))
+	  (second-shape (analysis-get second env analysis)))
       `(cons ,(if (solved-abstractly? first-shape)
 		  (solved-abstract-value->constant first-shape)
-		  (compile first full-env enclosure analysis))
+		  (compile first env enclosure analysis))
 	     ,(if (solved-abstractly? second-shape)
 		  (solved-abstract-value->constant second-shape)
-		  (compile second full-env enclosure analysis))))))
+		  (compile second env enclosure analysis))))))
 
-(define (compile-apply exp full-env enclosure analysis)
-  (let ((operator (analysis-get (car exp) full-env analysis))
-	(operands (analysis-get (cadr exp) full-env analysis)))
+(define (compile-apply exp env enclosure analysis)
+  (let ((operator (analysis-get (car exp) env analysis))
+	(operands (analysis-get (cadr exp) env analysis)))
     (cond ((eq? primitive-if operator)
 	   (generate-if-statement
-	    exp full-env enclosure analysis operands))
+	    exp env enclosure analysis operands))
 	  ((primitive? operator)
 	   (primitive-application
 	    operator
-	    (compile (cadr exp) full-env enclosure analysis)))
+	    (compile (cadr exp) env enclosure analysis)))
 	  ((closure? operator)
 	   (closure-application operator operands
 	    (lambda ()
-	      (compile (car exp) full-env enclosure analysis))
+	      (compile (car exp) env enclosure analysis))
 	    (lambda ()
-	      (compile (cadr exp) full-env enclosure analysis))))
+	      (compile (cadr exp) env enclosure analysis))))
 	  (else
 	   (error "Invalid operator in code generation"
-		  exp operator operands full-env analysis)))))
+		  exp operator operands env analysis)))))
 
-(define (generate-if-statement exp full-env enclosure analysis operands)
+(define (generate-if-statement exp env enclosure analysis operands)
   (define (if-procedure-expression-consequent exp)
     (cadr (caddr (cadr exp))))
   (define (if-procedure-expression-alternate exp)
@@ -87,7 +87,7 @@
 	  (closure-application
 	   invokee-shape '()
 	   (lambda ()
-	     (compile branch-exp full-env enclosure analysis))
+	     (compile branch-exp env enclosure analysis))
 	   (lambda ()
 	     (error "Lose!"))))))
   (if (solved-abstractly? (car operands))
@@ -96,7 +96,7 @@
 	   (cadr operands) (if-procedure-expression-consequent exp))
 	  (generate-if-branch
 	   (cddr operands) (if-procedure-expression-alternate exp)))
-      `(if ,(compile (cadr (cadr exp)) full-env enclosure analysis)
+      `(if ,(compile (cadr (cadr exp)) env enclosure analysis)
 	   ,(generate-if-branch
 	     (cadr operands) (if-procedure-expression-consequent exp))
 	   ,(generate-if-branch
