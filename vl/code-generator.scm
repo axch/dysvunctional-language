@@ -1,3 +1,5 @@
+;;;; Code generator
+
 ;;; The computed analysis provides a complete description of what's
 ;;; going on in a program.  The code generator produces code in the
 ;;; target language (in this case, MIT Scheme) that's structurally
@@ -62,15 +64,14 @@
 	   (generate-if-statement
 	    exp env enclosure analysis operands))
 	  ((primitive? operator)
-	   (primitive-application
+	   (generate-primitive-application
 	    operator
 	    (compile (cadr exp) env enclosure analysis)))
 	  ((closure? operator)
-	   (closure-application operator operands
-	    (lambda ()
-	      (compile (car exp) env enclosure analysis))
-	    (lambda ()
-	      (compile (cadr exp) env enclosure analysis))))
+	   (generate-closure-application
+	    operator operands
+	    (compile (car exp) env enclosure analysis)
+	    (compile (cadr exp) env enclosure analysis)))
 	  (else
 	   (error "Invalid operator in code generation"
 		  exp operator operands env analysis)))))
@@ -84,12 +85,10 @@
     (let ((answer-shape (abstract-result-of invokee-shape analysis)))
       (if (solved-abstractly? answer-shape)
 	  (solved-abstract-value->constant answer-shape)
-	  (closure-application
+	  (generate-closure-application
 	   invokee-shape '()
-	   (lambda ()
-	     (compile branch-exp env enclosure analysis))
-	   (lambda ()
-	     (error "Lose!"))))))
+	   (compile branch-exp env enclosure analysis)
+	   "Lose!"))))
   (if (solved-abstractly? (car operands))
       (if (car operands)
 	  (generate-if-branch
@@ -102,7 +101,7 @@
 	   ,(generate-if-branch
 	     (cddr operands) (if-procedure-expression-alternate exp)))))
 
-(define (primitive-application primitive arg-code)
+(define (generate-primitive-application primitive arg-code)
   (cond ((= 1 (primitive-arity primitive))
 	 `(,(primitive-name primitive) ,arg-code))
 	((= 2 (primitive-arity primitive))
@@ -112,26 +111,26 @@
 	(else
 	 (error "Unsupported arity of primitive operation" primitive))))
 
-(define (closure-application closure arg-shape compile-closure compile-arg)
+(define (generate-closure-application closure arg-shape closure-code arg-code)
   (let ((call-name (call-site->scheme-function-name closure arg-shape)))
     (if (solved-abstractly? closure)
 	(if (solved-abstractly? arg-shape)
 	    (list call-name)
-	    (list call-name (compile-arg)))
+	    (list call-name arg-code))
 	(if (solved-abstractly? arg-shape)
-	    (list call-name (compile-closure))
-	    (list call-name (compile-closure) (compile-arg))))))
-
-(define (needs-structure-definition? abstract-value)
-  (and (closure? abstract-value)
-       (not (solved-abstractly? abstract-value))))
-
+	    (list call-name closure-code)
+	    (list call-name closure-code arg-code)))))
+
 (define (structure-definitions analysis)
   (map abstract-value->structure-definition
        (delete-duplicates
 	(filter needs-structure-definition?
 		(map caddr (analysis-bindings analysis)))
 	abstract-equal?)))
+
+(define (needs-structure-definition? abstract-value)
+  (and (closure? abstract-value)
+       (not (solved-abstractly? abstract-value))))
 
 (define (abstract-value->structure-definition value)
   (cond ((closure? value)
