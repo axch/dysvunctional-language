@@ -1,3 +1,28 @@
+;;;; Term-rewriting post-processor
+
+;;; This is by no means a general-purpose Scheme code simplifier.  On
+;;; the contrary, it is deliberately and heavily specialized to the
+;;; task of removing obvious stupidities from the output of the VL
+;;; code generator.
+
+;;; Don't worry about the rule-based term-rewriting system that powers
+;;; this.  That is its own pile of stuff, good for a few lectures of
+;;; Sussman's MIT class Adventures in Advanced Symbolic Programming.
+;;; It works, and it's very good for peephole manipulations of
+;;; structured expressions (like the output of the VL code generator).
+
+;;; The rules below consist of a pattern to try to match and an
+;;; expression to evaluate to compute a replacement for that match
+;;; should a match be found.  Patterns match themselves; the construct
+;;; (? name) introduces a pattern variable named name; the construct
+;;; (? name ,predicate) is a restrcted pattern variable which only
+;;; matches things the predicate accepts; the construct (?? name)
+;;; introduces a sublist pattern variable.  The replacement expression
+;;; is evaluated in an environment where the pattern variables are
+;;; bound to the things they matched.  The rules are applied to every
+;;; subexpression of the input expression repeatedly until the result
+;;; settles down.
+
 (define (symbol-with-prefix? thing prefix)
   (and (symbol? thing)
        (let ((name (symbol->string thing)))
