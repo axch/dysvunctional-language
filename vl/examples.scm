@@ -78,10 +78,10 @@
       (cdr (lambda ((cons x y)) y)))
   (letrec ((map (lambda (f lst)
 		  (if (null? lst)
-		      '()
+		      ()
 		      (cons (f (car lst)) (map f (cdr lst)))))))
-    (cons (map increment 1 2 3 '())
-	  (map double 4 5 '()))))
+    (cons (map increment (real 1) (real 2) (real 3) ())
+	  (map double (real 4) (real 5) ()))))
 
 (letrec ((even? (lambda (n)
 		  (if (= n 0)
