@@ -10,7 +10,7 @@
 	    (win (caddar bindings))
 	    (loop (cdr bindings))))))
 
-;;; ANALYSIS-GET is \bar E_1 from the paper.
+;;; ANALYSIS-GET is \bar E_1 from [1].
 (define (analysis-get exp env analysis)
   (analysis-search exp env analysis
    (lambda (value)
@@ -18,7 +18,7 @@
    (lambda ()
      abstract-all)))
 
-;;; EXPAND-ANALYSIS is \bar E_1' from the paper.
+;;; EXPAND-ANALYSIS is \bar E_1' from [1].
 ;;; It registers interest in the evaluation of EXP in ENV by producing
 ;;; a binding to be added to the new incarnation of ANALYSIS, should
 ;;; the current incarnation lack any binding already covering that
