@@ -1,3 +1,5 @@
+;;;; Abstract values
+
 ;;; An abstract value represents the "shape" that a concrete value may
 ;;; take.  The following shapes are admitted: Known concrete scalars,
 ;;; the "boolean" shape, the "real number" shape, pairs of shapes,
@@ -24,6 +26,8 @@
 ;;; the "boolean" or "real" shapes are never refined to specific
 ;;; concrete values.
 
+;;; Unique abstract objects
+
 (define abstract-boolean (list 'abstract-boolean))
 (define (abstract-boolean? thing)
   (eq? thing abstract-boolean))
@@ -41,6 +45,8 @@
 (define abstract-all (list 'abstract-all))
 (define (abstract-all? thing)
   (eq? thing abstract-all))
+
+;;; Equality of shapes
 
 (define (abstract-equal? thing1 thing2)
   (cond ((eqv? thing1 thing2)
@@ -75,8 +81,10 @@
 
 (define make-abstract-hash-table
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #t))
+
+;;; Union of shapes --- can be either this or that.  ABSTRACT-UNION is
+;;; only used on the return values of IF statements.
 
-;; ABSTRACT-UNION is only used on the return values of IF statements.
 (define (abstract-union thing1 thing2)
   (cond ((abstract-equal? thing1 thing2)
 	 thing1)
@@ -101,6 +109,8 @@
 			  (env-bindings thing2))))
 	(else
 	 abstract-all)))
+
+;;; Is this shape completely determined?
 
 (define (solved-abstractly? thing)
   (cond ((null? thing) #t)

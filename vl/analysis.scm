@@ -1,3 +1,5 @@
+;;;; Analysis data structure
+
 (define-structure (analysis (safe-accessors #t))
   bindings)
 
