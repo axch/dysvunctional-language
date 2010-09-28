@@ -48,7 +48,7 @@
 ;;; curious about those expressions that it finds.  Expansion is \bar
 ;;; E', \bar A', and \bar E'_1 in [1], and EXPAND-EVAL, EXPAND-APPLY,
 ;;; and ANALYSIS-EXPAND, respectively, here.
-
+
 ;;; The polyvariance of this flow analysis comes out of the fact that
 ;;; the same expression is allowed to appear paired with different
 ;;; abstract environments as the flow analysis proceeds, and the fates
@@ -65,7 +65,7 @@
 ;;; Programming Language with a First-Class Derivative Operator to
 ;;; Efficient Fortran-like Code."  Purdue University ECE Technical
 ;;; Report, 2008.  http://docs.lib.purdue.edu/ecetr/376
-
+
 ;;;; Refinement
 
 ;;; REFINE-EVAL is \bar E from [1].
@@ -93,7 +93,7 @@
 	(else
 	 (error "Invalid expression in abstract refiner"
 		exp env analysis))))
-
+
 ;;; REFINE-APPLY is \bar A from [1].
 (define (refine-apply proc arg analysis)
   (cond ((primitive? proc)
@@ -112,7 +112,7 @@
 	((abstract-all? proc)
 	 abstract-all)
 	(else
-	 (error "Trying to refine an application of something that is known not to be a procedure"
+	 (error "Refining an application of a known non-procedure"
 		proc arg analysis))))
 
 (define (refine-analysis analysis)
@@ -149,7 +149,7 @@
 	(else
 	 (error "Invalid expression in abstract expander"
 		exp env analysis))))
-
+
 ;;; EXPAND-APPLY is \bar A' from [1].
 (define (expand-apply proc arg analysis)
   (cond ((primitive? proc)
@@ -160,7 +160,9 @@
 		   (alternate (cddr arg)))
 	       (define (expand-thunk-application thunk)
 		 (analysis-expand
-		  `(,(closure-expression thunk) ()) (closure-env thunk) analysis))
+		  `(,(closure-expression thunk) ())
+		  (closure-env thunk)
+		  analysis))
 	       (if (not (abstract-boolean? predicate))
 		   (if predicate
 		       (expand-thunk-application consequent)
@@ -180,7 +182,7 @@
 	((abstract-all? proc)
 	 '())
 	(else
-	 (error "Trying to expand on an application of something that is known not to be a procedure"
+	 (error "Expanding an application a known non-procedure"
 		proc arg analysis))))
 
 (define (analysis-expand-binding binding analysis)

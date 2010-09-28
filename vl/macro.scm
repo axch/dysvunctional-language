@@ -28,7 +28,7 @@
 		  ,(macroexpand-operands (cdr exp))))))
 	(else
 	 (error "Invalid expression syntax" exp))))
-
+
 ;;; A VL procedure application supplying zero or 2+ arguments needs to
 ;;; be converted into code that CONSes up the right structure and
 ;;; passes it in.
@@ -163,10 +163,8 @@
 	     `(letrec ((Z* (lambda (,@names Z*-k)
 			     (Z*-k ,@(map recursive-variant names)))))
 		(Z* ,@(map (lambda (form)
-			     `(lambda (,@names)
-				,form))
+			     `(lambda (,@names) ,form))
 			   forms)
-		    (lambda (,@names)
-		      ,@body))))))))
+		    (lambda (,@names) ,@body))))))))
 
 (define-vl-macro! 'letrec letrec-transformer)

@@ -147,7 +147,7 @@
     (cond ((abstract-all? x) abstract-all)
 	  ((abstract-real? x) abstract-real)
 	  ((number? x) abstract-real)
-	  (else (error "Something known not to be a real number is declared real" x))))))
+	  (else (error "A known non-real is declared real" x))))))
 
 (define (if-procedure p c a)
   (if p (c) (a)))
@@ -169,8 +169,9 @@
 	       (if predicate
 		   (abstract-result-of (cadr shape) analysis)
 		   (abstract-result-of (cddr shape) analysis))
-	       (abstract-union (abstract-result-of (cadr shape) analysis)
-			       (abstract-result-of (cddr shape) analysis))))))))
+	       (abstract-union
+		(abstract-result-of (cadr shape) analysis)
+		(abstract-result-of (cddr shape) analysis))))))))
 (add-primitive! primitive-if)
 
 (define (abstract-result-of thunk-shape analysis)

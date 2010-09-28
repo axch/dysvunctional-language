@@ -140,3 +140,8 @@
 (define (interesting-variable? env)
   (lambda (var)
     (not (solved-abstractly? (lookup var env)))))
+
+(define (interesting-variables exp env)
+  (sort (filter (interesting-variable? env)
+		(free-variables exp))
+	symbol<?))

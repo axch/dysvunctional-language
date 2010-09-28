@@ -36,14 +36,12 @@
 ;;; Programming Language with a First-Class Derivative Operator to
 ;;; Efficient Fortran-like Code."  Purdue University ECE Technical
 ;;; Report, 2008.  http://docs.lib.purdue.edu/ecetr/376
-
-;;;; Compiling expressions
+;;;; Compiling expressions
 
 ;;; Compilation of expressions proceeds by structural recursion on the
 ;;; expression, paying attension to portions whose values are
 ;;; completely solved by the analysis because those need not be
-;;; computed (and their values can just be inserted where they are
-;;; needed).
+;;; computed (and their values can just be put where they are needed).
 
 ;;; COMPILE is C from [1].
 (define (compile exp env enclosure analysis)
@@ -61,14 +59,12 @@
 		      (compile-cons exp env enclosure analysis))
 		     (else
 		      (compile-apply exp env enclosure analysis))))
-	      (else
-	       (error "Invaid expression in code generation"
-		      exp env enclosure analysis))))))
+	      (else (error "Invaid expression in code generation"
+			   exp env enclosure analysis))))))
 
 ;;; A VL variable access becomes either a Scheme variable access if
-;;; the VL variable was bound by the immediately nearest VL LAMBDA
-;;; form, or a Scheme record access to the converted closure if it was
-;;; free.
+;;; the VL variable was bound by the immediately nearest VL LAMBDA, or
+;;; a Scheme record access to the converted closure if it was free.
 (define (compile-variable exp enclosure)
   (if (memq exp (closure-free-variables enclosure))
       (vl-variable->scheme-record-access exp enclosure)
@@ -80,25 +76,19 @@
 (define (compile-lambda exp env enclosure analysis)
   (cons (abstract-closure->scheme-constructor-name
 	 (analysis-get exp env analysis))
-	(map (lambda (var)
-	       (compile var env enclosure analysis))
-	     (sort (filter (interesting-variable? env)
-			   (free-variables exp))
-		   symbol<?))))
+	(map (lambda (var) (compile var env enclosure analysis))
+	     (interesting-variables exp env))))
 
 ;;; A VL CONS becomes a Scheme CONS.
 (define (compile-cons exp env enclosure analysis)
-  (let ((first (cadr exp))
-	(second (caddr exp)))
-    (let ((first-shape (analysis-get first env analysis))
-	  (second-shape (analysis-get second env analysis)))
-      `(cons ,(if (solved-abstractly? first-shape)
-		  (solved-abstract-value->constant first-shape)
-		  (compile first env enclosure analysis))
-	     ,(if (solved-abstractly? second-shape)
-		  (solved-abstract-value->constant second-shape)
-		  (compile second env enclosure analysis))))))
-
+  (let ((first-shape (analysis-get (cadr exp) env analysis))
+	(second-shape (analysis-get (caddr exp) env analysis)))
+    `(cons ,(if (solved-abstractly? first-shape)
+		(solved-abstract-value->constant first-shape)
+		(compile (cadr exp) env enclosure analysis))
+	   ,(if (solved-abstractly? second-shape)
+		(solved-abstract-value->constant second-shape)
+		(compile (caddr exp) env enclosure analysis)))))
 ;;; The flow analysis fully determines the shape of every VL procedure
 ;;; that is called at any VL call site.  This allows applications to
 ;;; be coded to directly refer to the right target.  N.B.  The
@@ -150,7 +140,7 @@
 	     (cadr operands) (if-procedure-expression-consequent exp))
 	   ,(generate-if-branch
 	     (cddr operands) (if-procedure-expression-alternate exp)))))
-
+
 ;;; A VL primitive application becomes an inlined call to a Scheme
 ;;; primitive (destructuring the incoming argument if needed).
 (define (generate-primitive-application primitive arg-code)
@@ -202,13 +192,20 @@
   (cond ((closure? value)
 	 `(define-structure ,(abstract-closure->scheme-structure-name value)
 	    ,@(map vl-variable->scheme-field-name
-		   (sort (filter (interesting-variable? (closure-env value))
-				 (closure-free-variables value))
-			 symbol<?))))
-	(else (error "Not compiling non-closure aggregates to Scheme structures"
-		     value))))
-
+		   (interesting-variables
+		    (closure-free-variables value) (closure-env value)))))
+	(else
+	 (error "Not compiling non-closure aggregates to Scheme structures"
+		value))))
+
 ;;;; Procedure definitions
+
+(define (procedure-definitions analysis)
+  (map (procedure-definition analysis)
+       (delete-duplicates
+	(filter-map (binding->maybe-call-shape analysis)
+		    (analysis-bindings analysis))
+	abstract-equal?)))
 
 ;;; Every VL application of every compound VL procedure to every
 ;;; argument shape to which it is ever applied (producing a non-solved
@@ -225,7 +222,7 @@
 	       (operands (analysis-get (cadr exp) env analysis)))
 	   (and (closure? operator)
 		(cons operator operands))))))
-
+
 ;;; Every generated Scheme procedure receives two arguments (either or
 ;;; both of which will be elided if they are completely solved): the
 ;;; record for the closure this procedure was converted from and the
@@ -270,11 +267,6 @@
 		     operator
 		     analysis))))))
 
-(define (procedure-definitions analysis)
-  (map (procedure-definition analysis)
-       (delete-duplicates
-	(filter-map (binding->maybe-call-shape analysis) (analysis-bindings analysis))
-	abstract-equal?)))
 
 ;;;; Code generation
 

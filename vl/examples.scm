@@ -3,8 +3,7 @@
 ;;; Adding 5 to 3
 
 (let ((addn (lambda (n)
-	      (lambda (x)
-		(+ n x)))))
+	      (lambda (x) (+ n x)))))
   (let ((add5 (addn (real 5))))
     (add5 (real 3))))
 
@@ -20,10 +19,8 @@
 
 ;;; Doubling and squaring do not commute under composition
 
-(let ((double (lambda (x)
-		(+ x x)))
-      (square (lambda (x)
-		(* x x)))
+(let ((double (lambda (x) (+ x x)))
+      (square (lambda (x) (* x x)))
       (compose (lambda (f g)
 		 (lambda (x) (f (g x))))))
   (cons ((compose double square) (real 2))
@@ -31,8 +28,7 @@
 
 ;;; Cubing 3 if it's less than 20
 
-(let ((cube (lambda (x)
-	      (* x (* x x)))))
+(let ((cube (lambda (x) (* x (* x x)))))
   (let ((enlarge-upto (lambda (bound)
 			(lambda (x)
 			  (if (< x bound)
@@ -42,24 +38,18 @@
 
 ;;; Variations on destructuring
 
-(let ((my-add (lambda (x y)
-		(+ x y))))
+(let ((my-add (lambda (x y) (+ x y))))
   (my-add (real 3) (real 6)))
 
-(let ((my-add (lambda (foo)
-		(+ foo))))
+(let ((my-add (lambda (foo) (+ foo))))
   (my-add (cons (real 3) (real 6))))
 
-(let ((my-add (lambda (foo)
-		(+ foo))))
+(let ((my-add (lambda (foo) (+ foo))))
   (my-add (cons 3 (real 6))))
 
-(let ((delay-add (lambda (x y)
-		   (lambda ()
-		     (+ x y)))))
+(let ((delay-add (lambda (x y) (lambda () (+ x y)))))
   ((delay-add (real 3) (real 6))))
-
-;;; Factorial
+;;; Factorial
 
 (letrec ((fact (lambda (n)
 		 (if (= n 1)
@@ -71,11 +61,9 @@
 
 (let ((Z (lambda (f)
 	   ((lambda (x)
-	      (f (lambda (y)
-		   ((x x) y))))
+	      (f (lambda (y) ((x x) y))))
 	    (lambda (x)
-	      (f (lambda (y)
-		   ((x x) y))))))))
+	      (f (lambda (y) ((x x) y))))))))
   (let ((fact (Z (lambda (fact)
 		   (lambda (n)
 		     (if (= n 1)

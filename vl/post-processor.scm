@@ -35,7 +35,7 @@
 
 (define (generated-temporary? thing)
   (symbol-with-prefix? thing "temp-"))
-
+
 (define post-process
   (rule-simplifier
    (list

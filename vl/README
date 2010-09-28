@@ -46,7 +46,7 @@ numeric operations and conditional branches remain.  This has the
 consequence that the output will have a specialized version of MAP for
 every function that is mapped and every length of list that is mapped
 over.
-
+
 Going all the way to union-free is almost certainly overkill.  On the
 upside, it allows the compiler to completely unbox everything because
 no types of anything ever need to be checked at runtime.  On the
@@ -89,7 +89,7 @@ differing in the following respects:
   result.  Syntactically n-ary procedure applications and formal
   parameter lists are supported by transformation to construction and
   destructuring of compound data structures.
-
+
 VL supports the following procedures:
 
 null?  -- as in Scheme
@@ -136,7 +136,7 @@ behavior would defeat the purpose (and slow the analyzer down even
 more), so, following [1], VL offers the primitive procedure REAL.
 
 
-So how does it work?
+So how does it work?
 ----------------------------------------------------------------------
 
 The VL->Scheme compiler proceeds by stages:
@@ -167,7 +167,7 @@ VL produced by Stage 1, and a term-rewriting post-processor that can
 be applied to the output Scheme code to make it a little more legible.
 
 
-I'm psyched.  Where do I start?
+I'm psyched!  Where do I start?
 ----------------------------------------------------------------------
 
 Read [1] first.  Then, if you like to run code, grab your MIT Scheme
