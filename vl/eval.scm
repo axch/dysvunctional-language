@@ -1,19 +1,15 @@
-;;;; Concrete evaluator
+;;;; Concrete evaluator for VL
 
 ;;; Functions take only one argument (which they may destructure
-;;; inside).  Constants are (notionally) converted to variables and
-;;; (notionally) looked up in environments.  CONS is a special form.
-;;; LAMBDA, CONS, and LETREC are the only non-macro special forms.
-
-;;; The evaluation structure is built out of MIT Scheme pairs.  These
-;;; need to be kept distinct from the pairs that the object-language
-;;; cons macro makes.
+;;; inside).  CONS is a special form.  LAMBDA and CONS are the only
+;;; non-macro special forms.  IF becomes a slightly magical primitive,
+;;; but VL-VALUE->SCHEME-VALUE suffices to let it work its magic
+;;; properly in the concrete evaluator.
 
 (define (concrete-eval exp env)
-  (cond ((variable? exp)
-	 (lookup exp env))
-	((null? exp)
-	 '())
+  (cond ((constant? exp) exp)
+	((variable? exp) (lookup exp env))
+	((null? exp) '())
 	((pair? exp)
 	 (cond ((eq? (car exp) 'lambda)
 		(make-closure (cadr exp) (caddr exp) env))
