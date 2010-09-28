@@ -34,7 +34,7 @@
    "nomenclature"
    "code-generator"))
 
-(define peephole-optimize #f)
+(define post-process #f)
 
 (let ((rule-system "../../rule-system/load-for-use.scm"))
  (self-relatively

@@ -11,7 +11,7 @@
 (define (generated-temporary? thing)
   (symbol-with-prefix? thing "temp-"))
 
-(define peephole-optimize
+(define post-process
   (rule-simplifier
    (list
 

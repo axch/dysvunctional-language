@@ -208,6 +208,6 @@
 			     (initial-vl-user-env)
 			     #f
 			     analysis))))
-      (if peephole-optimize
-	  (peephole-optimize answer)
+      (if post-process
+	  (post-process answer)
 	  answer))))
