@@ -95,7 +95,6 @@
     ((_ name)
      (add-primitive! (primitive-type-predicate 'name name)))))
 
-
 (define-unary-numeric-primitive abs)
 (define-unary-numeric-primitive exp)
 (define-unary-numeric-primitive log)

@@ -69,21 +69,71 @@ differing in the following respects:
 
 - The only Scheme datatypes supported are the empty list,
   booleans, real numbers, pairs, and procedures.
-- Only a subset of the builtin Scheme procedures and syntax are
-  supported.
+- Only the following built-in Scheme syntax is supported:
+  LAMBDA, IF, LET, and LETREC.
+- Only a subset of built-in Scheme procedures are supported.
 - No rest arguments.
+- No implicit sequencing (procedure and let bodies may only contain
+  one form).
 - CONS is built-in syntax, not a procedure.
 - Procedure parameters p can be variables, () to indicate that an
   argument should be ignored, or (cons p1 p2) to indicate the argument
   should be destructured appropriately.
 - All procedures take exactly one argument and return exactly one
-  result.  Syntactically nary procedure applications and formal
+  result.  Syntactically n-ary procedure applications and formal
   parameter lists are supported by transformation to construction and
   destructuring of compound data structures.
 
 In particular, VL is completely pure --- it supports neither mutation
 of VL variables, nor input from nor output to the outside world.  It
 is a vehicle for studying flow analyses.
+
+VL supports the following procedures:
+
+null?  -- as in Scheme
+pair?  -- as in Scheme
+  N.B. cons is syntax, and car and cdr are obviated by destructuring
+
+abs    -- as in Scheme
+exp    -- as in Scheme
+log    -- as in Scheme
+sin    -- as in Scheme
+cos    -- as in Scheme
+tan    -- as in Scheme
+asin   -- as in Scheme
+acos   -- as in Scheme
+sqrt   -- as in Scheme
+
++      -- binary only
+-      -- binary only
+*      -- binary only
+/      -- binary only
+atan   -- binary only
+expt   -- as in Scheme
+
+<      -- binary only
+<=     -- binary only
+>      -- binary only
+>=     -- binary only
+=      -- binary only
+
+real   -- introduces imprecision:
+  As VL has no i/o facilities, there is no reason why a "flow
+  analysis" of a VL program couldn't just run the program and emit
+  code that just spits out the answer.  This behavior would defeat the
+  purpose (and slow the analyzer down even more), so, following [1],
+  VL offers the primitive procedure REAL.  At runtime, REAL is just
+  the identity procedure on real numbers, but at analysis time it
+  introduces imprecision: the analyzer always treats the return value
+  of REAL as the unknown real number, even though it could in
+  principle be determined statically.  The resulting code is not
+  specialized on the values of any arguments to any instance of REAL,
+  nor, therefore, on the results of computations with them.
+
+
+I'm psyched.  Where do I start?
+
+
 
 
 
