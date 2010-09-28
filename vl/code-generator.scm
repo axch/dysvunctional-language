@@ -165,12 +165,9 @@
     (let ((operator (car pair))
 	  (operands (cdr pair)))
       (let ((name (call-site->scheme-function-name operator operands)))
-	`(define (,name ,@(if (solved-abstractly? operator)
-			      '()
-			      '(the-closure))
-			,@(if (solved-abstractly? operands)
-			      '()
-			      '(the-formals)))
+	`(define (,name
+		  ,@(if (solved-abstractly? operator) '() '(the-closure))
+		  ,@(if (solved-abstractly? operands) '() '(the-formals)))
 	   (let ,(destructuring-let-bindings
 		  (car (closure-formal operator))
 		  operands)
@@ -181,7 +178,7 @@
 			(closure-env operator))
 		       operator				   
 		       analysis))))))
-  (define (maybe-pocedure-request binding)
+  (define (maybe-call-site binding)
     (let ((exp (car binding))
 	  (env (cadr binding))
 	  (value (caddr binding)))
@@ -195,8 +192,7 @@
 		  (cons operator operands))))))
   (map procedure-definition
        (delete-duplicates
-	(filter (lambda (x) x)
-		(map maybe-pocedure-request (analysis-bindings analysis)))
+	(filter-map maybe-call-site (analysis-bindings analysis))
 	abstract-equal?)))
 
 (define (compile-to-scheme program #!optional print-analysis?)
