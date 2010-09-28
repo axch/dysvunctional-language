@@ -41,5 +41,5 @@
   (lambda ()
     (if (file-exists? rule-system)
 	(begin (load rule-system)
-	       (load "peephole-optimizer"))
+	       (load "post-processor"))
 	(warn "Did not find the rule-simplification engine, peephole optimizer disabled")))))
