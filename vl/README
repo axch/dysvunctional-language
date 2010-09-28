@@ -1,7 +1,10 @@
 A VL interpreter and an aggressively optimizing VL->Scheme compiler.
 
+Author: Alexey Radul
+
 
 Why do you care?
+----------------------------------------------------------------------
 
 The compiler uses polyvariant union-free flow analysis to compile the
 higher-order functional language VL to efficient, Fortran-like Scheme
@@ -12,6 +15,7 @@ without the AD.
 
 
 What is polyvariant union-free flow analysis?
+----------------------------------------------------------------------
 
 "Flow analysis" is thinking about what kinds of values may flow where
 in a program.  For example, flow analysis will discover things like
@@ -61,6 +65,7 @@ union types.
 
 
 What is VL?
+----------------------------------------------------------------------
 
 VL stands for Vunctional Language.  It is a higher-order functional
 programming language.  It is a reimplementation of VLAD from [1],
@@ -70,12 +75,13 @@ differing in the following respects:
 - The only Scheme datatypes supported are the empty list,
   booleans, real numbers, pairs, and procedures.
 - Only the following built-in Scheme syntax is supported:
-  LAMBDA, IF, LET, and LETREC.
+  LAMBDA, IF, LET, LETREC, and procedure application.
 - Only a subset of built-in Scheme procedures are supported.
 - No rest arguments.
-- No implicit sequencing (procedure and let bodies may only contain
-  one form).
+- No implicit sequencing (lambda bodies may only contain one form).
 - CONS is built-in syntax, not a procedure.
+- The names LAMBDA, IF, LET, LETREC, and CONS may not be shadowed.
+- The only self-evaluating forms are literal numbers, #t, #f, and ()
 - Procedure parameters p can be variables, () to indicate that an
   argument should be ignored, or (cons p1 p2) to indicate the argument
   should be destructured appropriately.
@@ -83,10 +89,6 @@ differing in the following respects:
   result.  Syntactically n-ary procedure applications and formal
   parameter lists are supported by transformation to construction and
   destructuring of compound data structures.
-
-In particular, VL is completely pure --- it supports neither mutation
-of VL variables, nor input from nor output to the outside world.  It
-is a vehicle for studying flow analyses.
 
 VL supports the following procedures:
 
@@ -118,24 +120,99 @@ expt   -- as in Scheme
 =      -- binary only
 
 real   -- introduces imprecision:
-  As VL has no i/o facilities, there is no reason why a "flow
-  analysis" of a VL program couldn't just run the program and emit
-  code that just spits out the answer.  This behavior would defeat the
-  purpose (and slow the analyzer down even more), so, following [1],
-  VL offers the primitive procedure REAL.  At runtime, REAL is just
-  the identity procedure on real numbers, but at analysis time it
-  introduces imprecision: the analyzer always treats the return value
-  of REAL as the unknown real number, even though it could in
-  principle be determined statically.  The resulting code is not
-  specialized on the values of any arguments to any instance of REAL,
-  nor, therefore, on the results of computations with them.
+  At runtime, REAL is just the identity procedure on real numbers, but
+  the flow analysis always treats the return value of REAL as the
+  unknown real number, even though it could in principle be determined
+  statically.  The resulting code is not specialized on the values of
+  any arguments to any instance of REAL, nor, therefore, on the
+  results of computations with them.
+
+VL is completely pure --- it supports neither mutation of VL
+variables, nor input from nor output to the outside world.  It is a
+vehicle for studying flow analyses.  As VL has no i/o facilities,
+there is no reason why a "flow analysis" of a VL program couldn't just
+run the program and emit code that just spits out the answer.  This
+behavior would defeat the purpose (and slow the analyzer down even
+more), so, following [1], VL offers the primitive procedure REAL.
+
+
+So how does it work?
+----------------------------------------------------------------------
+
+The VL->Scheme compiler proceeds by stages:
+
+1) The input VL program is syntactically transformed by a process very
+   much like macro expansion into a program in a smaller core language
+   which consists only of constants, variable references, LAMBDA, IF,
+   CONS, and applications.  This is uninteresting but simplifies the
+   rest.
+
+2) The simplified program undergoes polyvariant union-free flow
+   analysis by abstract evaluation to determine the procedures called
+   at all call sites and the shapes of all data structures (including
+   closures).
+
+3) The code generator traverses the result of the flow analysis to
+   generate Scheme code that consists only of toplevel structure
+   definitions, toplevel procedure definitions, and one toplevel entry
+   form, and where all variables are monomorphic and all procedure
+   calls are to explicitly named procedures.
+
+The output Scheme code is suitable for aggressive inlining and scalar
+replacement of aggregates, after which it should compile to machine
+code that is similar to that generated by good Fortran compilers.
+
+This distribution also includes a direct interpreter for the subset of
+VL produced by Stage 1, and a term-rewriting post-processor that can
+be applied to the output Scheme code to make it a little more legible.
 
 
 I'm psyched.  Where do I start?
+----------------------------------------------------------------------
+
+Read [1] first.  Then, if you like to run code, grab your MIT Scheme
+repl and try
+
+(load "load")
+(set! *analyze-wallp* 10)
+(pp
+ (compile-to-scheme
+  '(let ((increment (lambda (x) (+ x 1)))
+	 (double (lambda (x) (* x 2)))
+	 (car (lambda ((cons x y)) x))
+	 (cdr (lambda ((cons x y)) y)))
+     (letrec ((map (lambda (f lst)
+		     (if (null? lst)
+			 ()
+			 (cons (f (car lst)) (map f (cdr lst)))))))
+       (cons (map increment (real 1) (real 2) (real 3) ())
+	     (map double (real 4) (real 5) ()))))
+   #t))
+
+There are more example VL programs in examples.scm.  You can paste the
+compiled output straight into your repl and it will run.  Try removing
+calls to REAL from some of the examples and see what happens to the
+compiled output.
+
+If you like to read code, here's a good order:
+
+examples.scm         Example VL programs
+abstract-eval.scm    The main interesting guts of the program; Stage 2
+code-generator.scm   The second most interesting guts of the program; Stage 3
+macro.scm            Syntax preprocessor; Stage 1
+eval.scm             Direct interpreter (straight from the textbook)
+post-processor.scm   Term-rewriting post-processor
+primitives.scm       Primitive procedures
+data.scm             Completely boring data structures
+env.scm              Environments
+analysis.scm         Data structure for the full current analysis knowledge
+abstract-values.scm  Shapes that values may be known to have
+nomenclature.scm     Synthesizing Scheme names for code generation
+load.scm             Putting it all together
 
 
-
-
+Bibliography
+----------------------------------------------------------------------
 
 [1] Jeffrey Siskind and Barak Pearlmutter, "Using Ployvariant
 Union-Free Flow Analysis to Compile a Higher-Order Functional
