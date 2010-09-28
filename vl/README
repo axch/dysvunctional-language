@@ -198,7 +198,7 @@ If you like to read code, here's a good order:
 
 examples.scm         Example VL programs
 abstract-eval.scm    The main interesting guts of the program; Stage 2
-code-generator.scm   The second most interesting guts of the program; Stage 3
+code-generator.scm   The other interesting guts of the program; Stage 3
 macro.scm            Syntax preprocessor; Stage 1
 eval.scm             Direct interpreter (straight from the textbook)
 post-processor.scm   Term-rewriting post-processor

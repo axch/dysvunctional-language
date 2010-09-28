@@ -40,7 +40,8 @@
    (lambda (value) value)
    (lambda ()
      (let ((answer (make-name 'operation-)))
-       (hash-table/put! *call-site-names* (cons closure abstract-arg) answer)
+       (hash-table/put! *call-site-names*
+        (cons closure abstract-arg) answer)
        answer))))
 
 (define (initialize-name-caches!)

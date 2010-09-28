@@ -162,7 +162,8 @@
 ;;; closure-record for the compound procedure being called, and the
 ;;; pair tree of arguments.  One or both may be elided if they were
 ;;; solved by the analysis.
-(define (generate-closure-application closure arg-shape closure-code arg-code)
+(define (generate-closure-application
+	 closure arg-shape closure-code arg-code)
   (let ((call-name (call-site->scheme-function-name closure arg-shape)))
     (if (solved-abstractly? closure)
 	(if (solved-abstractly? arg-shape)

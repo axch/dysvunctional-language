@@ -210,7 +210,9 @@
 (define (analyze program)
   (let ((initial-analysis
 	 (make-analysis
-	  `((,(macroexpand program) ,(initial-vl-user-env) ,abstract-all)))))
+	  (list (list (macroexpand program)
+		      (initial-vl-user-env)
+		      abstract-all)))))
     (let loop ((old-analysis initial-analysis)
 	       (new-analysis (step-analysis initial-analysis))
 	       (count 0))
