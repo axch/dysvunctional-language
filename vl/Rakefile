@@ -1,0 +1,22 @@
+def files
+  ["examples",
+   "abstract-eval",
+   "code-generator",
+   "macro",
+   "eval",
+   "post-processor",
+   "primitives",
+   "data",
+   "env",
+   "analysis",
+   "abstract-values",
+   "nomenclature",
+   "load",
+  ].map do |base|
+  "#{base}.scm"
+  end
+end
+
+task :workbook do
+  sh "enscript -M letter -fCourier-Bold12 -o workbook.ps --file-align=2 README #{files.join(" ")}"
+end
