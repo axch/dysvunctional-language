@@ -13,6 +13,18 @@
 (define (add-primitive! primitive)
   (set! *primitives* (cons primitive *primitives*)))
 
+(define (unary-numeric-primitive name base)
+  (make-primitive
+   name
+   1
+   base
+   (lambda (arg)
+     (if (abstract-all? arg)
+	 abstract-all
+	 (if (abstract-real? arg)
+	     abstract-real
+	     (base arg))))))
+
 (define (binary-numeric-primitive name base)
   (make-primitive
    name
@@ -63,18 +75,54 @@
 (define (if-procedure p c a)
   (if p (c) (a)))
 
-(add-primitive! (binary-numeric-primitive '+ +))
-(add-primitive! (binary-numeric-primitive '- -))
-(add-primitive! (binary-numeric-primitive '* *))
-(add-primitive! (binary-numeric-primitive '/ /))
-(add-primitive! (RxR->bool-primitive '<  <))
-(add-primitive! (RxR->bool-primitive '<= <=))
-(add-primitive! (RxR->bool-primitive '>  >))
-(add-primitive! (RxR->bool-primitive '>= >=))
-(add-primitive! (RxR->bool-primitive '=  =))
+(define-syntax define-unary-numeric-primitive
+  (syntax-rules ()
+    ((_ name)
+     (add-primitive! (unary-numeric-primitive 'name name)))))
+
+(define-syntax define-binary-numeric-primitive
+  (syntax-rules ()
+    ((_ name)
+     (add-primitive! (binary-numeric-primitive 'name name)))))
+
+(define-syntax define-RxR->bool-primitive
+  (syntax-rules ()
+    ((_ name)
+     (add-primitive! (RxR->bool-primitive 'name name)))))
+
+(define-syntax define-primitive-type-predicate
+  (syntax-rules ()
+    ((_ name)
+     (add-primitive! (primitive-type-predicate 'name name)))))
+
+
+(define-unary-numeric-primitive abs)
+(define-unary-numeric-primitive exp)
+(define-unary-numeric-primitive log)
+(define-unary-numeric-primitive sin)
+(define-unary-numeric-primitive cos)
+(define-unary-numeric-primitive tan)
+(define-unary-numeric-primitive asin)
+(define-unary-numeric-primitive acos)
+(define-unary-numeric-primitive sqrt)
+
+(define-binary-numeric-primitive +)
+(define-binary-numeric-primitive -)
+(define-binary-numeric-primitive *)
+(define-binary-numeric-primitive /)
+(define-binary-numeric-primitive atan)
+(define-binary-numeric-primitive expt)
+
+(define-RxR->bool-primitive  <)
+(define-RxR->bool-primitive <=)
+(define-RxR->bool-primitive  >)
+(define-RxR->bool-primitive >=)
+(define-RxR->bool-primitive  =)
+
 ;; TODO Do these really have to be primitive?
-(add-primitive! (primitive-type-predicate 'null? null?))
-(add-primitive! (primitive-type-predicate 'pair? pair?))
+(define-primitive-type-predicate null?)
+(define-primitive-type-predicate pair?)
+
 (add-primitive!
  (make-primitive
   'real
