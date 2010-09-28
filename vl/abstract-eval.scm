@@ -60,19 +60,6 @@
 ;;; not, notably, if some closures they contain differ as to the
 ;;; closure's body.  See abstract-values.scm.
 
-
-;;; Given a particular abstract analysis, REFINE-EVAL and REFINE-APPLY
-;;; will convert an expression and an (abstract) environment into an
-;;; abstract value.  This is (presumably) a refinement of the knowledge
-;;; in the analysis.
-
-;;; In other words, given the available knowledge about what various
-;;; expressions evaluate to in various environments, these two will
-;;; evaluate one expression in one environment to a depth of about 1,
-;;; and maybe produce better knowledge about what that expression
-;;; evaluates to in that environment, which can then be incorporated
-;;; into an updated collection of available knowledge.
-
 ;;; [1] Jeffrey Siskind and Barak Pearlmutter, "Using Ployvariant
 ;;; Union-Free Flow Analysis to Compile a Higher-Order Functional
 ;;; Programming Language with a First-Class Derivative Operator to
