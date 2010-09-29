@@ -60,7 +60,7 @@
 ;;; not, notably, if some closures they contain differ as to the
 ;;; closure's body.  See abstract-values.scm.
 
-;;; [1] Jeffrey Siskind and Barak Pearlmutter, "Using Ployvariant
+;;; [1] Jeffrey Siskind and Barak Pearlmutter, "Using Polyvariant
 ;;; Union-Free Flow Analysis to Compile a Higher-Order Functional
 ;;; Programming Language with a First-Class Derivative Operator to
 ;;; Efficient Fortran-like Code."  Purdue University ECE Technical

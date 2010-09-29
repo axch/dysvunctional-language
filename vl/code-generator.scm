@@ -31,7 +31,7 @@
 ;;; record type, whereas for C one could just write the ubiquitous
 ;;; ".".
 
-;;; [1] Jeffrey Siskind and Barak Pearlmutter, "Using Ployvariant
+;;; [1] Jeffrey Siskind and Barak Pearlmutter, "Using Polyvariant
 ;;; Union-Free Flow Analysis to Compile a Higher-Order Functional
 ;;; Programming Language with a First-Class Derivative Operator to
 ;;; Efficient Fortran-like Code."  Purdue University ECE Technical
@@ -39,7 +39,7 @@
 ;;;; Compiling expressions
 
 ;;; Compilation of expressions proceeds by structural recursion on the
-;;; expression, paying attension to portions whose values are
+;;; expression, paying attention to portions whose values are
 ;;; completely solved by the analysis because those need not be
 ;;; computed (and their values can just be put where they are needed).
 
