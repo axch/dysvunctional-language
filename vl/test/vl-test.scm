@@ -14,21 +14,25 @@
 	 `(not (equal? ,value (interpreted ,(vl-eval form)))))
 	((not (equal? value (analyzed-answer form)))
 	 `(not (equal? ,value (analyzed ,(analyzed-answer form)))))
-	((not (equal? value (compile-to-scheme form)))
+	((not (equal? `(begin ,value) (compile-to-scheme form)))
 	 `(not (equal? ,value (compiled ,(compile-to-scheme form)))))
 	(else #f)))
 
-(define (%eval-through-scheme program)
-  (eval (compile-to-scheme program) (nearest-repl/environment)))
+(define (%scheme-eval code)
+  (eval code (nearest-repl/environment)))
 
 (define (eval-through-scheme program)
-  (let ((interpreted-answer (vl-eval program))
-	(compiled-answer (%eval-through-scheme program)))
-    (if (equal? interpreted-answer compiled-answer)
+  (let* ((interpreted-answer (vl-eval program))
+	 (compiled-program (compile-to-scheme program))
+	 (compiled-answer (%scheme-eval compiled-program))
+	 (pretty-compiled-answer (%scheme-eval (prettify-compiler-output compiled-program))))
+    (if (and (equal? interpreted-answer compiled-answer)
+	     (equal? interpreted-answer pretty-compiled-answer))
 	compiled-answer
 	(error "VL compiler disagreed with VL interpreter"
 	       `((interpreted: ,interpreted-answer)
-		 (compiled: ,compiled-answer))))))
+		 (compiled: ,compiled-answer)
+		 (pretty-compiled ,pretty-compiled-answer))))))
 
 (in-test-group
  vl

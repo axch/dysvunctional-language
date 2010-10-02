@@ -275,13 +275,20 @@
 (define (compile-to-scheme program)
   (initialize-name-caches!)
   (let ((analysis (analyze program)))
-    (inline-constructions
-     (inline
-      (structure-definitions->vectors
-       (post-process
-	`(begin ,@(structure-definitions analysis)
-		,@(procedure-definitions analysis)
-		,(compile (macroexpand program)
-			  (initial-vl-user-env)
-			  #f
-			  analysis))))))))
+    `(begin ,@(structure-definitions analysis)
+	    ,@(procedure-definitions analysis)
+	    ,(compile (macroexpand program)
+		      (initial-vl-user-env)
+		      #f
+		      analysis))))
+
+(define (prettify-compiler-output output)
+  (inline-constructions
+   (inline
+    (structure-definitions->vectors
+     (post-process
+      output)))))
+
+(define (compile-to-pretty-scheme program)
+  (prettify-compiler-output
+   (compile-to-scheme program)))
