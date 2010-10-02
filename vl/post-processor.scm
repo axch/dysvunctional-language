@@ -107,12 +107,25 @@
 
 (define (structure-definitions->vectors forms)
   (if (list? forms)
-      (append-map (lambda (form)
-		    (let ((maybe-expansion (structure-definition->function-definitions-rule form)))
-		      (if maybe-expansion
-			  maybe-expansion
-			  (list form))))
-		  forms)
+      (let ((structure-names (map cadr
+				  (filter (lambda (form)
+					    (and (pair? form)
+						 (eq? (car form) 'define-structure)))
+					  forms))))
+	(define (structure-name? thing)
+	  (memq thing structure-names))
+	(define fix-argument-types
+	  (rule-simplifier
+	   (list
+	    (rule ((? name ,structure-name?) (?? args))
+		  `(vector ,@args)))))
+	(fix-argument-types
+	 (append-map (lambda (form)
+		       (let ((maybe-expansion (structure-definition->function-definitions-rule form)))
+			 (if maybe-expansion
+			     maybe-expansion
+			     (list form))))
+		     forms)))
       forms))
 
 (define post-inline-rules
@@ -159,7 +172,7 @@
 		      ,@bindings2)
 		  ,@(replace-free-occurrences name exp body))))
     post-inline-rules)))
-
+
 (define sra-cons-definition-rule
   (rule (define ((? name ,symbol?) (?? formals1) (? formal ,symbol?) (?? formals2))
 	  (argument-types (?? stuff1) ((? formal) (cons (? car-shape) (? cdr-shape))) (?? stuff2))
@@ -184,7 +197,77 @@
 	       `(let ((,temp-name ,arg))
 		  (,operation-name ,@args1 (car ,temp-name) (cdr ,temp-name) ,@args2))))))
 
-(define (sra-cons forms)
+(define sra-vector-definition-rule
+  (rule (define ((? name ,symbol?) (?? formals1) (? formal ,symbol?) (?? formals2))
+	  (argument-types (?? stuff1) ((? formal) (vector (?? arg-piece-shapes))) (?? stuff2))
+	  (?? body))
+	(let ((arg-piece-names (map (lambda (shape)
+				      (make-name (symbol formal '-)))
+				    arg-piece-shapes))
+	      (index (length formals1))
+	      (total-arg-count (+ (length formals1) 1 (length formals2))))
+	  (cons (sra-vector-call-site-rule name index (length arg-piece-shapes) total-arg-count)
+		`(define (,name ,@formals1 ,@arg-piece-names ,@formals2)
+		   (argument-types ,@stuff1 ,@(map list arg-piece-names arg-piece-shapes) ,@stuff2)
+		   (let ((,formal (vector ,@arg-piece-names)))
+		     ,@body))))))
+
+(define (sra-vector-call-site-rule operation-name replacee-index num-replacees total-arg-count)
+  (rule (,(match:eqv operation-name) (?? args))
+	(and (= (length args) total-arg-count)
+	     (let ((args1 (take args replacee-index))
+		   (arg (list-ref args replacee-index))
+		   (args2 (drop args (+ replacee-index 1)))
+		   (temp-name (make-name 'temp-)))
+	       `(let ((,temp-name ,arg))
+		  (,operation-name ,@args1 ,@(map (lambda (index)
+						    `(vector-ref ,temp-name ,index))
+						  (iota num-replacees)) ,@args2))))))
+
+(define (non-repeating-rule-simplifier the-rules)
+  (let ((unique-object (list)))
+    (define (make-unfakeable-box thing)
+      (cons unique-object thing))
+    (define (unfakeable-box? thing)
+      (and (pair? thing)
+	   (eq? (car thing) unique-object)))
+    (define unfakeable-contents cdr)
+    (define (compute-simplify-expression expression)
+      (let ((simplified-subexpressions
+	     (if (list? expression)
+		 (map simplify-expression expression)
+		 expression)))
+	(let ((result (try-rules simplified-subexpressions
+				 the-rules make-unfakeable-box)))
+	  ;; This complexity allows us to distinguish between the
+	  ;; three possible cases:
+	  (cond ((not result)
+		 ;; No rule in the rule list fired
+		 simplified-subexpressions)
+		((unfakeable-box? result)
+		 ;; Some rule called succeed
+		 (unfakeable-contents result))
+		(else
+		 ;; Some rule returned a value without calling succeed
+		 result)))))
+    (define simplify-expression (memoize compute-simplify-expression))
+    simplify-expression))
+
+(define (sra forms)
+  (define (try-defining-rule rule target done rest loop lose)
+    (let ((definition-sra-attempt (rule target)))
+      (if definition-sra-attempt
+	  (let ((sra-call-site-rule (car definition-sra-attempt))
+		(replacement-form (cdr definition-sra-attempt)))
+	    (let ((sra-call-sites (non-repeating-rule-simplifier (list sra-call-site-rule))))
+	      (let ((fixed-replacement-form
+		     `(,(car replacement-form) ,(cadr replacement-form)
+		       ,(caddr replacement-form)
+		       ,(sra-call-sites (cadddr replacement-form))))
+		    (fixed-done (sra-call-sites (reverse done)))
+		    (fixed-forms (sra-call-sites rest)))
+		(loop (append fixed-done (list fixed-replacement-form) fixed-forms)))))
+	  (lose))))
   (if (list? forms)
       (let loop ((forms forms))
 	(let scan ((done '())
@@ -193,20 +276,11 @@
 	  (cond ((null? forms)
 		 (reverse done))
 		(else
-		 (let ((cons-definition-sra-attempt (sra-cons-definition-rule (car forms))))
-		   (if cons-definition-sra-attempt
-		       (let ((sra-cons-call-site-rule (car cons-definition-sra-attempt))
-			     (replacement-form (cdr cons-definition-sra-attempt)))
-			 (let ((sra-cons-call-sites (rule-simplifier (list sra-cons-call-site-rule))))
-			   (let ((fixed-replacement-form
-				  `(,(car replacement-form) ,(cadr replacement-form)
-				    ,(caddr replacement-form)
-				    ,(sra-cons-call-sites (cadddr replacement-form))))
-				 (fixed-done (sra-cons-call-sites (reverse done)))
-				 (fixed-forms (sra-cons-call-sites (cdr forms))))
-			     (loop (append fixed-done (list fixed-replacement-form) fixed-forms)))))
-		       (scan (cons (car forms) done)
-			     (cdr forms))))))))
+		 (try-defining-rule sra-cons-definition-rule (car forms) done (cdr forms) loop
+                  (lambda ()
+		    (try-defining-rule sra-vector-definition-rule (car forms) done (cdr forms) loop
+                     (lambda ()
+		       (scan (cons (car forms) done) (cdr forms))))))))))
       forms))
 
 (define strip-argument-types

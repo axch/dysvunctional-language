@@ -302,10 +302,12 @@
    (inline-constructions
     (post-inline
      (inline
-      (structure-definitions->vectors
-       (post-process
-	output)))))))
+      (strip-argument-types
+       (sra
+	(structure-definitions->vectors
+	 (post-process
+	  output)))))))))
 
 (define (compile-to-pretty-scheme program)
   (prettify-compiler-output
-   (compile-to-scheme program)))
+   (compile-to-scheme program #t)))
