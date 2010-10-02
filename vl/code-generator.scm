@@ -272,12 +272,9 @@
 
 ;;;; Code generation
 
-(define (compile-to-scheme program #!optional print-analysis?)
+(define (compile-to-scheme program)
   (initialize-name-caches!)
   (let ((analysis (analyze program)))
-    (if (and (not (default-object? print-analysis?))
-	     print-analysis?)
-	(pp analysis))
     (inline-constructions
      (inline
       (structure-definitions->vectors

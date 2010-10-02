@@ -223,8 +223,10 @@
     (let loop ((old-analysis initial-analysis)
 	       (new-analysis (step-analysis initial-analysis))
 	       (count 0))
-      (if (and *analyze-wallp* (= 0 (modulo count *analyze-wallp*)))
+      (if (and (number? *analyze-wallp*) (= 0 (modulo count *analyze-wallp*)))
 	  (pp new-analysis))
       (if (step-changed-analysis? old-analysis new-analysis)
 	  (loop new-analysis (step-analysis new-analysis) (+ count 1))
-	  new-analysis))))
+	  (begin (if *analyze-wallp*
+		     (pp new-analysis))
+		 new-analysis)))))

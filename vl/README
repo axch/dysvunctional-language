@@ -186,8 +186,7 @@ repl and try
 			 ()
 			 (cons (f (car lst)) (map f (cdr lst)))))))
        (cons (map increment (real 1) (real 2) (real 3) ())
-	     (map double (real 4) (real 5) ()))))
-   #t))
+	     (map double (real 4) (real 5) ()))))))
 
 There are more example VL programs in examples.scm.  You can paste the
 compiled output straight into your repl and it will run.  Try removing
