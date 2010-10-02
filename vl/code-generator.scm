@@ -278,10 +278,11 @@
     (if (and (not (default-object? print-analysis?))
 	     print-analysis?)
 	(pp analysis))
-    (post-process
-     `(begin ,@(structure-definitions analysis)
-	     ,@(procedure-definitions analysis)
-	     ,(compile (macroexpand program)
-		       (initial-vl-user-env)
-		       #f
-		       analysis)))))
+    (inline
+     (post-process
+      `(begin ,@(structure-definitions analysis)
+	      ,@(procedure-definitions analysis)
+	      ,(compile (macroexpand program)
+			(initial-vl-user-env)
+			#f
+			analysis))))))
