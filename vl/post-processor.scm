@@ -136,3 +136,65 @@
 	  `(let ()
 	     ,@(replace-free-occurrences name exp body)))
     post-inline-rules)))
+
+(define sra-cons-definition-rule
+  (rule (define ((? name ,symbol?) (?? formals1) (? formal ,symbol?) (?? formals2))
+	  (argument-types (?? stuff1) ((? formal) (cons (? car-shape) (? cdr-shape))) (?? stuff2))
+	  (?? body))
+	(let ((car-name (make-name (symbol formal '-)))
+	      (cdr-name (make-name (symbol formal '-)))
+	      (index (length formals1))
+	      (total-arg-count (+ (length formals1) 1 (length formals2))))
+	  (cons (sra-cons-call-site-rule name index total-arg-count)
+		`(define (,name ,@formals1 ,car-name ,cdr-name ,@formals2)
+		   (argument-types ,@stuff1 (,car-name ,car-shape) (,cdr-name ,cdr-shape) ,@stuff2)
+		   (let ((,formal (cons ,car-name ,cdr-name)))
+		     ,@body))))))
+
+(define (sra-cons-call-site-rule operation-name replacee-index total-arg-count)
+  (rule (,(match:eqv operation-name) (?? args))
+	(and (= (length args) total-arg-count)
+	     (let ((args1 (take args replacee-index))
+		   (arg (list-ref args replacee-index))
+		   (args2 (drop args (+ replacee-index 1)))
+		   (temp-name (make-name 'temp-)))
+	       `(let ((,temp-name ,arg))
+		  (,operation-name ,@args1 (car ,temp-name) (cdr ,temp-name) ,@args2))))))
+
+(define (sra-cons forms)
+  (if (list? forms)
+      (let loop ((forms forms))
+	(let scan ((done '())
+		   (forms forms))
+	  ;(pp `(done ,done forms ,forms))
+	  (cond ((null? forms)
+		 (reverse done))
+		(else
+		 (let ((cons-definition-sra-attempt (sra-cons-definition-rule (car forms))))
+		   (if cons-definition-sra-attempt
+		       (let ((sra-cons-call-site-rule (car cons-definition-sra-attempt))
+			     (replacement-form (cdr cons-definition-sra-attempt)))
+			 (let ((sra-cons-call-sites (rule-simplifier (list sra-cons-call-site-rule))))
+			   (let ((fixed-replacement-form
+				  `(,(car replacement-form) ,(cadr replacement-form)
+				    ,(caddr replacement-form)
+				    ,(sra-cons-call-sites (cadddr replacement-form))))
+				 (fixed-done (sra-cons-call-sites (reverse done)))
+				 (fixed-forms (sra-cons-call-sites (cdr forms))))
+			     (loop (append fixed-done (list fixed-replacement-form) fixed-forms)))))
+		       (scan (cons (car forms) done)
+			     (cdr forms))))))))
+      forms))
+
+(define strip-argument-types
+  (rule-simplifier
+   (list
+    (rule (begin (define-syntax argument-types (?? etc))
+		 (?? stuff))
+	  `(begin
+	     ,@stuff))
+    (rule (define (? formals)
+	    (argument-types (?? etc))
+	    (?? body))
+	  `(define ,formals
+	     ,@body)))))
