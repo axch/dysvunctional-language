@@ -298,11 +298,13 @@
 		      analysis))))
 
 (define (prettify-compiler-output output)
-  (inline-constructions
-   (inline
-    (structure-definitions->vectors
-     (post-process
-      output)))))
+  (post-process
+   (inline-constructions
+    (post-inline
+     (inline
+      (structure-definitions->vectors
+       (post-process
+	output)))))))
 
 (define (compile-to-pretty-scheme program)
   (prettify-compiler-output

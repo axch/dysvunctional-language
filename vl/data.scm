@@ -34,6 +34,31 @@
 (define (occurs-in-tree? thing tree)
   (> (count-in-tree thing tree) 0))
 
+(define (count-free-occurrences name exp)
+  (cond ((eq? exp name) 1)
+	((pair? exp)
+	 (cond ((eq? (car exp) 'lambda)
+		(if (occurs-in-tree? name (cadr exp))
+		    0
+		    (count-free-occurrences name (cddr exp))))
+	       ((eq? (car exp) 'let)
+		(let ((bindings (cadr exp))
+		      (body (cddr exp)))
+		  (apply +
+		   (if (memq name (map car bindings))
+		       0
+		       (count-free-occurrences name body))
+		   (map (lambda (binding)
+			  (count-free-occurrences name (cadr binding)))
+			bindings))))
+	       ((eq? (car exp) 'cons)
+		(+ (count-free-occurrences name (cadr exp))
+		   (count-free-occurrences name (caddr exp))))
+	       (else
+		(+ (count-free-occurrences name (car exp))
+		   (count-free-occurrences name (cdr exp))))))
+	(else 0)))
+
 (define (replace-free-occurrences name new exp)
   (cond ((eq? exp name) new)
 	((pair? exp)

@@ -22,19 +22,18 @@
   (define (inline-defn defn others)
     (replace-free-occurrences (definiend defn) (definition-expression defn) others))
   (if (list? forms)
-      (post-inline
-       (let loop ((forms forms))
-	 (let scan ((done '())
-		    (forms forms))
-	   (cond ((null? forms)
-		  (reverse done))
-		 ((and (definition? (car forms))
-		       (non-self-calling? (car forms)))
-		  (let ((defn (car forms))
-			(others (append (reverse done) (cdr forms))))
-		    ;; Can insert other inlining restrictions here
-		    (loop (inline-defn defn others))))
-		 (else
-		  (scan (cons (car forms) done)
-			(cdr forms)))))))
+      (let loop ((forms forms))
+	(let scan ((done '())
+		   (forms forms))
+	  (cond ((null? forms)
+		 (reverse done))
+		((and (definition? (car forms))
+		      (non-self-calling? (car forms)))
+		 (let ((defn (car forms))
+		       (others (append (reverse done) (cdr forms))))
+		   ;; Can insert other inlining restrictions here
+		   (loop (inline-defn defn others))))
+		(else
+		 (scan (cons (car forms) done)
+		       (cdr forms))))))
       forms))

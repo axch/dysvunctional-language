@@ -197,7 +197,7 @@
    (lambda ()
      (let loop ((program (read)))
        (if (not (eof-object? program))
-	   (begin (define-test ()
+	   (begin (define-test
 		    ;; Check that vl-eval and compile-to-scheme agree
 		    (eval-through-scheme program))
 		  (loop (read)))))))

@@ -35,7 +35,8 @@
   (symbol-with-prefix? thing "closure-"))
 
 (define (generated-temporary? thing)
-  (symbol-with-prefix? thing "temp-"))
+  ;(symbol-with-prefix? thing "temp-")
+  (symbol? thing))
 
 (define post-process-rules
   (list
@@ -59,17 +60,35 @@
 	   (? body))
 	 body)
 
-   (rule (let (((? name ,generated-temporary?) (cons (? a) (? d))))
-	   (? body))
-	 (replace-free-occurrences name `(cons ,a ,d) body))
+   (rule (let ((?? bindings1)
+	       ((? name ,generated-temporary?) (cons (? a) (? d)))
+	       (?? bindings2))
+	   (?? body))
+	 `(let (,@bindings1
+		,@bindings2)
+	    ,@(replace-free-occurrences name `(cons ,a ,d) body)))
 
-   (rule (let (((? name ,generated-temporary?) (? exp ,symbol?)))
-	   (? body))
-	 (replace-free-occurrences name exp body))
+   (rule (let ((?? bindings1)
+	       ((? name ,generated-temporary?) (? exp ,symbol?))
+	       (?? bindings2))
+	   (?? body))
+	 (and (not (memq exp (append (map car bindings1) (map car bindings2))))
+	      `(let (,@bindings1
+		     ,@bindings2)
+		 ,@(replace-free-occurrences name exp body))))
 
    (rule (let (((? name ,symbol?) (? exp)))
 	   (? name))
 	 exp)
+
+   (rule (let ((?? bindings1)
+	       ((? name ,symbol?) (? exp))
+	       (?? bindings2))
+	   (?? body))
+	 (and (= 0 (count-free-occurrences name body))
+	      `(let (,@bindings1
+		     ,@bindings2)
+		 ,@body)))
 
    (rule (car (cons (? a) (? d))) a)
    (rule (cdr (cons (? a) (? d))) d)
@@ -131,10 +150,14 @@
 (define inline-constructions
   (rule-simplifier
    (cons
-    (rule (let (((? name ,symbol?) (? exp ,constructors-only?)))
+    (rule (let ((?? bindings1)
+		((? name ,symbol?) (? exp ,constructors-only?))
+		(?? bindings2))
 	    (?? body))
-	  `(let ()
-	     ,@(replace-free-occurrences name exp body)))
+	  (and (not (memq exp (append (map car bindings1) (map car bindings2))))
+	       `(let (,@bindings1
+		      ,@bindings2)
+		  ,@(replace-free-occurrences name exp body))))
     post-inline-rules)))
 
 (define sra-cons-definition-rule
