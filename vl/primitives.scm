@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;;;; VL primitive procedures
 
 ;;; A VL primitive procedure needs to tell the concrete evaluator how

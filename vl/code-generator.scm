@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;;;; Code generator
 
 ;;; The computed analysis provides a complete description of what's

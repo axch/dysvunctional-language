@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;;;; Scheme names for generated code pieces
 
 ;;; Nothing to see here.

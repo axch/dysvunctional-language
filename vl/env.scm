@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;;;; Environments
 
 ;;; In this code, environments are flat, restricted to the variables

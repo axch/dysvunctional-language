@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;;;; Syntactic preprocessor
 
 ;;; Accepts VL surface syntax and converts it into the more restricted

@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;;;; Concrete evaluator for VL
 
 ;;; Functions take only one argument (which they may destructure

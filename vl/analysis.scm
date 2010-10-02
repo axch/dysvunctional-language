@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;;;; Analysis data structure
 
 (define-structure (analysis (safe-accessors #t))

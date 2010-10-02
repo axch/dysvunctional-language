@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;;;; Abstract values
 
 ;;; An abstract value represents the "shape" that a concrete value may

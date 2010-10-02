@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;;;; Expressions
 
 (define (constant? thing)

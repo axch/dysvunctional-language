@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;;;; Term-rewriting post-processor
 
 ;;; This is by no means a general-purpose Scheme code simplifier.  On

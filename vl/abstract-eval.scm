@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;;;; Polyvariant union-free flow analysis by abstract interpretation
 
 ;;; This file implements the resursive equations from page 7 of [1].
