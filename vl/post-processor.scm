@@ -53,13 +53,17 @@
 	  `(define ,formals
 	     ,@body))
 
+    (rule (let ()
+	    (? body))
+	  body)
+
     (rule (let (((? name ,generated-temporary?) (cons (? a) (? d))))
 	    (? body))
-	  (replace-in-tree name `(cons ,a ,d) body))
+	  (replace-free-occurrences name `(cons ,a ,d) body))
 
     (rule (let (((? name ,generated-temporary?) (? exp ,symbol?)))
 	    (? body))
-	  (replace-in-tree name exp body))
+	  (replace-free-occurrences name exp body))
 
     (rule (let (((? name ,symbol?) (? exp)))
 	    (? name))
