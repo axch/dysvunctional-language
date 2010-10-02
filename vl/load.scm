@@ -27,7 +27,12 @@
    "nomenclature"
    "code-generator"))
 
-(define post-process #f)
+(define post-processor #f)
+
+(define (post-process code)
+  (if post-processor
+      (post-processor code)
+      code))
 
 (let ((rule-system "../../rule-system/load-for-use.scm"))
  (self-relatively

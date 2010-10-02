@@ -278,13 +278,10 @@
     (if (and (not (default-object? print-analysis?))
 	     print-analysis?)
 	(pp analysis))
-    (let ((answer
-	   `(begin ,@(structure-definitions analysis)
-		   ,@(procedure-definitions analysis)
-		   ,(compile (macroexpand program)
-			     (initial-vl-user-env)
-			     #f
-			     analysis))))
-      (if post-process
-	  (post-process answer)
-	  answer))))
+    (post-process
+     `(begin ,@(structure-definitions analysis)
+	     ,@(procedure-definitions analysis)
+	     ,(compile (macroexpand program)
+		       (initial-vl-user-env)
+		       #f
+		       analysis)))))

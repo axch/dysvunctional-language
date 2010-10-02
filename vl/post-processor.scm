@@ -71,5 +71,4 @@
    (rule (cdr (cons (? a) (? d))) d)
    ))
 
-(define post-process (rule-simplifier post-process-rules))
-
+(define post-processor (rule-simplifier post-process-rules))
