@@ -1,0 +1,293 @@
+
+                MASSACHVSETTS INSTITVTE OF TECHNOLOGY
+      Department of Electrical Engineering and Computer Science
+
+                          6.945 Spring 2010
+                            Problem Set 6
+
+ Issued: Wed. 10 Mar. 2010                    Due: Wed. 17 Mar. 2010
+
+
+Reading: MIT Scheme Reference Manual, section 2.11: Macros
+          This is complicated stuff, so don't try to read it until you
+          need to in the compilation part of the problem set.
+
+Code: load.scm, matcher.scm, pattern-directed-invocation.scm,
+      rules.scm, attached, and eq-properties.scm, ghelper.scm,
+      utils.scm detached (to wit, only online).
+
+            Pattern Matching and Instantiation, continued
+
+In this problem set we extend our pattern matching system to build a
+primitive algebraic simplifier, based on pattern matching and
+instantiation.
+
+In rules.scm there are two elementary rule systems.  In our system a
+rule has two parts: a pattern to match a subexpression, and a
+consequent expression.  If the pattern matches, the consequent is
+evaluated and its result replaces the matched subexpression.
+
+The rules are assembled into a list and handed to the rule-simplifier
+procedure.  The result is a simplifier procedure that can be applied
+to an algebraic expression.
+
+The first rule system demonstrates only elementary features.  It does
+not use segment variables or restricted variables.  The first system
+has three rules: The first rule implements the associative law of
+addition, the second implements the commutative law of multiplication,
+and the third implements the distributive law of multiplication over
+addition.
+
+The commutative law looks like:
+
+      (rule '(* (? b) (? a))
+            (and (expr<? a b)
+                 `(* ,a ,b)))
+
+Notice the restriction predicate in the consequent of the rule for the
+commutative law.  If the consequent expression returns #f, that match
+is considered to have failed.  The system backtracks into the matcher
+to look for an alternative match; if none are forthcoming, the rule is
+not applicable.  In the commutative law the restriction predicate
+expr<? imposes an ordering on algebraic expressions.
+
+-------------
+Problem 6.1:
+
+Why is the (expr<? a b) restriction necessary in the commutative law?
+What would go wrong if the there was no restriction?
+-------------
+
+The second system of rules is far more interesting.  It is built with
+the assumption that addition and multiplication are n-ary operations:
+it needs segment variables to make this work.  It also uses variable
+restrictions to allow rules for simplifying numerical terms and
+prefactors.
+
+-------------
+Problem 6.2:
+
+In the second system how does the use of the ordering on expressions
+imposed by the commutative laws make the numerical simplification
+rules effective?
+
+Suppose that the commutative laws did not force an ordering, how would
+we have to write the numerical simplification rules?  Explain why
+numerical simplification would become very expensive.
+-------------
+
+-------------
+Problem 6.3:
+
+The ordering in the commutative laws evolves an n^2 bubble sort on the
+terms of a sum and the factors of a product.  This can get pretty bad
+if there are many terms, as in a serious algebra problem.  Is there
+some way in this system to make a more efficient sort?  If not, why
+not?  If so, how would you arrange it?
+-------------
+
+-------------
+Problem 6.4:
+
+The system we have described does not collect like terms.  For example:
+
+(algebra-2 '(+ (* 4 x) (* 3 x)))
+;Value (+ (* 3 x) (* 4 x))
+
+Add rules that cause the collection of like terms, leaving the result
+as a sum of terms.  Demonstrate your solution.  Your solution must be
+able to handle problems like:
+
+(algebra-3
+  '(+ y (* x -2 w) (* x 4 y) (* w x) z (* 5 z) (* x w) (* x y 3)))
+;Value: (+ y (* 6 z) (* 7 x y))
+-------------
+
+Now that we have some experience with the use of such a rule system,
+let's dive in to see how it works.  The center of the system is in
+pattern-directed-invocation.scm.
+
+A rule is a procedure that matches a pattern against its argument.  If
+the match succeeds, it executes the consequent in an environment where
+the pattern variables are bound to their matched data.  Rule
+procedures normally take succeed and fail continuations that can be
+used to backtrack into the consequent or match of a rule (though this
+system does not).  For ease of testing rules, these continuations are
+optional, and reasonable defaults are supplied.
+
+Two interesting procedures use rules.  The rule-simplifier procedure
+is a simple recursive simplifier constructor.  It produces a
+procedure, simplify-expression, that takes an expression and uses the
+rules to simplify the expression.  It recursively simplifies all the
+subexpressions of an expression, and then applies the rules to
+simplify the resulting expression.  It does this repeatedly until the
+process converges and the expression returned is a fixed point of the
+simplification process.
+
+      (define (rule-simplifier the-rules)
+	(define (simplify-expression expression)
+	  (let ((subexpressions-simplified
+		 (if (list? expression)
+		     (map simplify-expression expression)
+		     expression)))
+	    (try-rules subexpressions-simplified the-rules
+	     (lambda (result fail)
+	       (simplify-expression result))
+	     (lambda ()
+	       subexpressions-simplified))))
+	(rule-memoize simplify-expression))
+
+The procedure rule-memoize may be thought of as an identity function:
+
+     (define (rule-memoize f) f)      ; CAVEAT:  Defined in "load.scm"
+
+but we can change this to be a memoizer that can greatly reduce the
+computational complexity of the process.
+
+The procedure try-rules just scans the list of rules, sequencing
+the scan through the succeed and fail continuations.
+
+      (define (try-rules data rules succeed fail)
+	(let per-rule ((rules rules))
+	  (if (null? rules)
+	      (fail)
+	      ((car rules) data succeed
+	       (lambda ()
+		 (per-rule (cdr rules)))))))
+
+Another mechanism that uses rules (and try-rules) is an extension of
+the generic operation idea to pattern-directed operators.  The
+make-pattern-operator procedure is analagous to make-generic-operator;
+it is an entity to allow the operator to be extended with additional
+rules dynamically (by attach-rule!, which is analagous to defhandler).
+
+      (define (make-pattern-operator #!optional rules)
+	(define (operator self . arguments)
+	  (define (succeed value fail) value)
+	  (define (fail)
+	    (error "No applicable operations" self arguments))
+	  (try-rules arguments (entity-extra self) succeed fail))
+	(make-entity operator (if (default-object? rules) '() rules)))
+
+      (define (attach-rule! operator rule)
+	(set-entity-extra! operator
+	 (cons rule (entity-extra operator))))
+
+Generic operations systems usually have no name for the analogue to
+our rules.  That analogue is the generic method, together with the set
+of types or predicates that determine the parameters to which the
+method is applicable.  Since the applicability testing and
+destructuring portions of a generic operations system are usually very
+predictable, there is less value to having that coupled object be
+manipulable in its own right.
+
+A rule is made by compiling its pattern into an appropriate
+combinator pile, coercing its handler into combinator of a
+compatible shape, and hooking them together in sequence.
+
+      (define (make-rule pattern handler)
+	(if (user-handler? handler)
+	    (make-rule pattern (user-handler->system-handler handler))
+	    (let ((pattern-combinator (->combinators pattern)))
+	      (lambda (data #!optional succeed fail)
+		(if (default-object? succeed)
+		    (set! succeed (lambda (value fail) value)))
+		(if (default-object? fail)
+		    (set! fail (lambda () #f)))
+		(pattern-combinator data
+		 (lambda (dict fail) (handler dict succeed fail))
+		 fail)))))
+
+For example, the commutative law rule at the beginning of this problem
+set can be made directly with make-rule thus:
+
+      (make-rule '(* (? a) (? b))
+       (lambda (a b)
+	 (and (expr<? a b)
+	      `(* ,a ,b))))
+
+Note that the handler (lambda (a b) ...) needs to extract the
+variables named a and b from the dictionary produced by the matcher
+combinator built out of the pattern '(* (? a) (? b)).  This is
+arranged by the procedure user-handler->system-handler in
+pattern-directed-invocation.scm.
+
+-------------
+Problem 6.5:
+
+Problem 3.27 in SICP (pp. 272--273) shows the basic idea of
+memoization.  We talked about this in class on Monday.  Can this help
+the simplifier?  How?
+
+Write a memoizer that may be useful in dealing with expressions in the
+rule-simplifier procedure.  One problem is that we don't want to store
+a table with an unbounded number of big expressions.  However, most of
+the advantage in this kind of memoizer comes from using it as a cache
+for recent results.  Implement an LRU memoizer mechanism that stores
+only a limited number of entries and throws away the Least-Recently
+Used one.  Demonstrate your program.
+-------------
+
+                           Magic Macrology
+
+Compare the rule definition given at the beginning of this
+probelm set:
+
+      (rule '(* (? b) (? a))
+            (and (expr<? a b)
+                 `(* ,a ,b)))
+
+with what make-rule demands of us:
+
+      (make-rule '(* (? a) (? b))
+       (lambda (a b)
+	 (and (expr<? a b)
+	      `(* ,a ,b))))
+
+The names a and b are repeated: the occur both in the pattern and in
+the parameter list of the handler.  This is both obnoxious to write
+and error-prone (one sign of good taste is when those two things
+coincide!), because we must remember to repeat the names, and we can
+make a mistake if we repeat them wrong.
+
+This is a case for syntactic abstraction, otherwise known as a macro.
+The following rather magical object does what we want:
+
+      (define-syntax rule
+	(sc-macro-transformer
+	 (lambda (form use-env)
+	   (let ((pattern (cadr form))
+		 (handler-body (caddr form)))
+	     `(make-rule 
+	       ,(close-syntax pattern use-env)
+	       ,(compile-handler handler-body use-env
+				 (match:pattern-names pattern)))))))
+
+      (define (compile-handler form env names)
+	;; See magic in utils.scm
+	(make-lambda names env
+	  (lambda (env*) (close-syntax form env*))))
+
+We can at least partially check this macro with the following magic
+incantation:
+
+      (pp (syntax '(rule '(* (? a) (? b))
+			 (and (expr<? a b)
+                              `(* ,a ,b)))
+		  (the-environment)))
+  ==>
+      (make-rule '(* (? a) (? b))
+		 (lambda (b a) (and (expr<? a b) (list '* a b))))
+
+We see that the rule expands into a call to make-rule with the pattern
+and its handler procedure.  This is the expression that is evaluated
+to make the rule.  In more conventional languages macros expand
+directly into code that is substituted for the macro call.  However
+this process is not referentially transparent, because the macro
+expansion may use symbols that conflict with the user's symbols.  In
+Scheme we try to avoid this problem, allowing a user to write
+"hygienic macros" that cannot cause conflicts.  However this is a bit
+more complicated than just substituting one expression for another.
+We will not try to explain the problems or the solutions here, but we
+will just use the solutions described in the MIT Scheme reference
+manual, section 2.11.

@@ -40,27 +40,27 @@
 
 (define post-process-rules
   (list
-   (rule (define ((?? line) the-formals)
+   (rule `(define ((?? line) the-formals)
 	   (let (((? name ,symbol?) the-formals))
 	     (?? body)))
 	 `(define (,@line ,name)
 	    ,@body))
 
-   (rule (define (? formals)
+   (rule `(define (? formals)
 	   (let ()
 	     (?? body)))
 	 `(define ,formals
 	    ,@body))
 
-   (rule (let ()
+   (rule `(let ()
 	   (? body))
 	 body)
 
-   (rule (begin
+   (rule `(begin
 	   (? body))
 	 body)
 
-   (rule (let ((?? bindings1)
+   (rule `(let ((?? bindings1)
 	       ((? name ,generated-temporary?) (cons (? a) (? d)))
 	       (?? bindings2))
 	   (?? body))
@@ -68,7 +68,7 @@
 		,@bindings2)
 	    ,@(replace-free-occurrences name `(cons ,a ,d) body)))
 
-   (rule (let ((?? bindings1)
+   (rule `(let ((?? bindings1)
 	       ((? name ,generated-temporary?) (? exp ,symbol?))
 	       (?? bindings2))
 	   (?? body))
@@ -77,11 +77,11 @@
 		     ,@bindings2)
 		 ,@(replace-free-occurrences name exp body))))
 
-   (rule (let (((? name ,symbol?) (? exp)))
+   (rule `(let (((? name ,symbol?) (? exp)))
 	   (? name))
 	 exp)
 
-   (rule (let ((?? bindings1)
+   (rule `(let ((?? bindings1)
 	       ((? name ,symbol?) (? exp))
 	       (?? bindings2))
 	   (?? body))
@@ -90,14 +90,14 @@
 		     ,@bindings2)
 		 ,@body)))
 
-   (rule (car (cons (? a) (? d))) a)
-   (rule (cdr (cons (? a) (? d))) d)
+   (rule `(car (cons (? a) (? d))) a)
+   (rule `(cdr (cons (? a) (? d))) d)
    ))
 
 (define post-processor (rule-simplifier post-process-rules))
 
 (define structure-definition->function-definitions-rule
-  (rule (define-structure (? name) (?? fields))
+  (rule `(define-structure (? name) (?? fields))
 	`((define ,(symbol 'make- name) vector)
 	  ,@(map (lambda (field index)
 		   `(define (,(symbol name '- field) thing)
@@ -117,11 +117,11 @@
 	(define fix-argument-types
 	  (rule-simplifier
 	   (list
-	    (rule ((? name ,structure-name?) (?? args))
+	    (rule `((? name ,structure-name?) (?? args))
 		  `(vector ,@args)))))
 	(fix-argument-types
 	 (append-map (lambda (form)
-		       (let ((maybe-expansion (structure-definition->function-definitions-rule form)))
+		       (let ((maybe-expansion (structure-definition->function-definitions-rule `form)))
 			 (if maybe-expansion
 			     maybe-expansion
 			     (list form))))
@@ -132,20 +132,20 @@
   (append
    post-process-rules
    (list
-    (rule ((lambda (? names)
+    (rule `((lambda (? names)
 	     (?? body))
 	   (?? args))
 	  `(let ,(map list names args)
 	     ,@body))
 
-    (rule (let (((? name ,symbol?) (? exp)))
+    (rule `(let (((? name ,symbol?) (? exp)))
 	    (?? body))
 	  (and (not (eq? exp 'the-formals))
 	       (= 1 (count-in-tree name body))
 	       `(let ()
 		  ,@(replace-free-occurrences name exp body))))
 
-    (rule (vector-ref (vector (?? stuff)) (? index ,integer?))
+    (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
 	  (list-ref stuff index))
 
     )))
@@ -163,7 +163,7 @@
 (define inline-constructions
   (rule-simplifier
    (cons
-    (rule (let ((?? bindings1)
+    (rule `(let ((?? bindings1)
 		((? name ,symbol?) (? exp ,constructors-only?))
 		(?? bindings2))
 	    (?? body))
@@ -174,7 +174,7 @@
     post-inline-rules)))
 
 (define sra-cons-definition-rule
-  (rule (define ((? name ,symbol?) (?? formals1) (? formal ,symbol?) (?? formals2))
+  (rule `(define ((? name ,symbol?) (?? formals1) (? formal ,symbol?) (?? formals2))
 	  (argument-types (?? stuff1) ((? formal) (cons (? car-shape) (? cdr-shape))) (?? stuff2))
 	  (?? body))
 	(let ((car-name (make-name (symbol formal '-)))
@@ -188,7 +188,7 @@
 		     ,@body))))))
 
 (define (sra-cons-call-site-rule operation-name replacee-index total-arg-count)
-  (rule (,(match:eqv operation-name) (?? args))
+  (rule `(,(match:eqv operation-name) (?? args))
 	(and (= (length args) total-arg-count)
 	     (let ((args1 (take args replacee-index))
 		   (arg (list-ref args replacee-index))
@@ -198,7 +198,7 @@
 		  (,operation-name ,@args1 (car ,temp-name) (cdr ,temp-name) ,@args2))))))
 
 (define sra-vector-definition-rule
-  (rule (define ((? name ,symbol?) (?? formals1) (? formal ,symbol?) (?? formals2))
+  (rule `(define ((? name ,symbol?) (?? formals1) (? formal ,symbol?) (?? formals2))
 	  (argument-types (?? stuff1) ((? formal) (vector (?? arg-piece-shapes))) (?? stuff2))
 	  (?? body))
 	(let ((arg-piece-names (map (lambda (shape)
@@ -213,7 +213,7 @@
 		     ,@body))))))
 
 (define (sra-vector-call-site-rule operation-name replacee-index num-replacees total-arg-count)
-  (rule (,(match:eqv operation-name) (?? args))
+  (rule `(,(match:eqv operation-name) (?? args))
 	(and (= (length args) total-arg-count)
 	     (let ((args1 (take args replacee-index))
 		   (arg (list-ref args replacee-index))
@@ -242,13 +242,13 @@
 	  ;; This complexity allows us to distinguish between the
 	  ;; three possible cases:
 	  (cond ((not result)
-		 ;; No rule in the rule list fired
+		 ;; No rule `in the rule `list fired
 		 simplified-subexpressions)
 		((unfakeable-box? result)
-		 ;; Some rule called succeed
+		 ;; Some rule `called succeed
 		 (unfakeable-contents result))
 		(else
-		 ;; Some rule returned a value without calling succeed
+		 ;; Some rule `returned a value without calling succeed
 		 result)))))
     (define simplify-expression (memoize compute-simplify-expression))
     simplify-expression))
@@ -286,11 +286,11 @@
 (define strip-argument-types
   (rule-simplifier
    (list
-    (rule (begin (define-syntax argument-types (?? etc))
+    (rule `(begin (define-syntax argument-types (?? etc))
 		 (?? stuff))
 	  `(begin
 	     ,@stuff))
-    (rule (define (? formals)
+    (rule `(define (? formals)
 	    (argument-types (?? etc))
 	    (?? body))
 	  `(define ,formals

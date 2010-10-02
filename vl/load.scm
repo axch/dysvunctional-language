@@ -35,7 +35,7 @@
       (post-processor code)
       code))
 
-(let ((rule-system "../../rule-system/load-for-use.scm"))
+(let ((rule-system "support/rule-system/load.scm"))
  (self-relatively
   (lambda ()
     (if (file-exists? rule-system)
