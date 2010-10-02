@@ -119,8 +119,11 @@
 (define (refine-analysis analysis)
   (map (lambda (binding)
 	 (let ((exp (car binding))
-	       (env (cadr binding)))
-	   (list exp env (refine-eval exp env analysis))))
+	       (env (cadr binding))
+	       (val (caddr binding)))
+	   (list exp env (if (open-to-refinement? val)
+			     (refine-eval exp env analysis)
+			     val))))
        (analysis-bindings analysis)))
 
 ;;;; Expansion
@@ -188,8 +191,11 @@
 
 (define (analysis-expand-binding binding analysis)
   (let ((exp (car binding))
-	(env (cadr binding)))
-    (expand-eval exp env analysis)))
+	(env (cadr binding))
+	(val (caddr binding)))
+    (if (open-to-refinement? val)
+	(expand-eval exp env analysis)
+	'())))
 
 (define (expand-analysis analysis)
   (apply lset-union same-analysis-binding?
