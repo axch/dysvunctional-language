@@ -163,7 +163,7 @@
 	((solved-abstractly? thing)
 	 'void)
 	((closure? thing)
-	 (cons (abstract-closure->scheme-constructor-name thing)
+	 (cons (abstract-closure->scheme-structure-name thing)
 	       (map shape->type-declaration
 		    (interesting-environment-values thing))))
 	((pair? thing)

@@ -255,8 +255,8 @@
   (let ((operator (car operator.operands))
 	(operands (cdr operator.operands)))
     (define (type-declaration)
-      `(argument-types ,@(if (solved-abstractly? operator) '() (list (shape->type-declaration operator)))
-		       ,@(if (solved-abstractly? operands) '() (list (shape->type-declaration operands)))))
+      `(argument-types ,@(if (solved-abstractly? operator) '() (list (list 'the-closure (shape->type-declaration operator))))
+		       ,@(if (solved-abstractly? operands) '() (list (list 'the-formals (shape->type-declaration operands))))))
     (let ((name (call-site->scheme-function-name operator operands)))
       `(define (,name
 		,@(if (solved-abstractly? operator) '() '(the-closure))
