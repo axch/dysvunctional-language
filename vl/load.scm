@@ -27,6 +27,5 @@
    "abstract-eval"
    "nomenclature"
    "code-generator"
-   "inline"
    "post-processing"))
 

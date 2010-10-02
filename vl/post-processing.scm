@@ -130,6 +130,45 @@
 		     forms)))
       forms))
 
+;;;; Inliner for the output of the VL->Scheme code generator
+
+(define (inline forms)
+  (define (definition? form)
+    (and (pair? form)
+	 (eq? (car form) 'define)))
+  (define (definiend definition)
+    (if (pair? (cadr definition))
+	(caadr definition)
+	(cadr definition)))
+  (define ((defines-name? name) form)
+    (and (definition? form)
+	 (eq? name (definiend form))))
+  (define (definition-expression definition)
+    (if (pair? (cadr definition))
+	`(lambda ,(cdadr definition)
+	   ,@(cddr definition))
+	(caddr definition)))
+  (define (non-self-calling? definition)
+    (= 0 (count-in-tree (definiend definition) (definition-expression definition))))
+  (define (inline-defn defn others)
+    (replace-free-occurrences (definiend defn) (definition-expression defn) others))
+  (if (list? forms)
+      (let loop ((forms forms))
+	(let scan ((done '())
+		   (forms forms))
+	  (cond ((null? forms)
+		 (reverse done))
+		((and (definition? (car forms))
+		      (non-self-calling? (car forms)))
+		 (let ((defn (car forms))
+		       (others (append (reverse done) (cdr forms))))
+		   ;; Can insert other inlining restrictions here
+		   (loop (inline-defn defn others))))
+		(else
+		 (scan (cons (car forms) done)
+		       (cdr forms))))))
+      forms))
+
 (define post-inline-rules
   (append
    post-process-rules
