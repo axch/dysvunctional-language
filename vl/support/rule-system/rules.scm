@@ -1,5 +1,7 @@
 ;;;; File:  rules.scm -- Some sample algebraic simplification rules
 
+(declare (usual-integrations))
+
 (define algebra-1
   (rule-simplifier
    (list
