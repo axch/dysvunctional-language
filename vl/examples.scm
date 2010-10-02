@@ -94,8 +94,8 @@
 
 (let ((increment (lambda (x) (+ x 1)))
       (double (lambda (x) (* x 2)))
-      (car (lambda ((cons x y)) x))
-      (cdr (lambda ((cons x y)) y)))
+      (car (lambda ((cons x ())) x))
+      (cdr (lambda ((cons () y)) y)))
   (letrec ((map (lambda (f lst)
 		  (if (null? lst)
 		      ()
