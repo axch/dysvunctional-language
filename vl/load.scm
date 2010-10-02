@@ -15,7 +15,7 @@
 (load-relative "support/auto-compilation")
 
 (for-each
- load-relative
+ load-relative-compiled
  '("data"
    "env"
    "primitives"
@@ -34,6 +34,6 @@
   (lambda ()
     (if (file-exists? rule-system)
 	(begin (load rule-system)
-	       (load "post-processor"))
+	       (load-compiled "post-processor"))
 	(begin (warn "Did not find the rule-simplification engine,")
 	       (warn "post-processor disabled"))))))
