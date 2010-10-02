@@ -72,3 +72,20 @@
    ))
 
 (define post-processor (rule-simplifier post-process-rules))
+
+(define structure-definition->function-definitions-rule
+  (rule (define-structure (? name) (?? fields))
+	`((define ,(symbol 'make- name) vector)
+	  ,@(map (lambda (field index)
+		   `(define (,(symbol name '- field) thing)
+		      (vector-ref thing ,index)))
+		 fields
+		 (iota (length fields))))))
+
+(define (structure-definitions->vectors forms)
+  (append-map (lambda (form)
+		(let ((maybe-expansion (structure-definition->function-definitions-rule form)))
+		  (if maybe-expansion
+		      maybe-expansion
+		      (list form))))
+	      forms))
