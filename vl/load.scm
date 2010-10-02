@@ -28,5 +28,5 @@
    "nomenclature"
    "code-generator"
    "inline"
-   "post-processor"))
+   "post-processing"))
 
