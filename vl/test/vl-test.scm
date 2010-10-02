@@ -181,12 +181,12 @@
 	    count))))
    )
 
- (define-test (example-sanity)
-   (with-input-from-file "examples.scm"
-    (lambda ()
-      (let loop ((program (read)))
-	(if (not (eof-object? program))
-	    ;; Check that vl-eval and compile-to-scheme agree
-	    (begin (eval-through-scheme program)
-		   (loop (read))))))))
+ (with-input-from-file "../examples.scm"
+   (lambda ()
+     (let loop ((program (read)))
+       (if (not (eof-object? program))
+	   (begin (define-test ()
+		    ;; Check that vl-eval and compile-to-scheme agree
+		    (eval-through-scheme program))
+		  (loop (read)))))))
  )
