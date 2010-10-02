@@ -23,12 +23,42 @@
 			    (free-variables (cdr exp))))))
 	(else '())))
 
-(define (replace-in-tree old new structure)
-  (cond ((eq? structure old) new)
-	((pair? structure)
-	 (cons (replace-in-tree old new (car structure))
-	       (replace-in-tree old new (cdr structure))))
-	(else structure)))
+(define (count-in-tree thing tree)
+  (cond ((equal? thing tree)
+	 1)
+	((pair? tree)
+	 (+ (count-in-tree thing (car tree))
+	    (count-in-tree thing (cdr tree))))
+	(else 0)))
+
+(define (occurs-in-tree? thing tree)
+  (> (count-in-tree thing tree) 0))
+
+(define (replace-free-occurrences name new exp)
+  (cond ((eq? exp name) new)
+	((pair? exp)
+	 (cond ((eq? (car exp) 'lambda)
+		(if (occurs-in-tree? name (cadr exp))
+		    exp
+		    `(lambda ,(cadr exp)
+		       ,(replace-free-occurrences name new (cddr exp)))))
+	       ((eq? (car exp) 'let)
+		(let ((bindings (cadr exp))
+		      (body (cddr exp)))
+		  `(let ,@(map (lambda (binding)
+				 (cons (car binding) (replace-free-occurrences name new (cadr binding))))
+			       bindings)
+		     ,@(if (memq name (map car bindings))
+			   body
+			   (replace-free-occurrences name new body)))))
+	       ((eq? (car exp) 'cons)
+		`(cons ,(replace-free-occurrences name new (cadr exp))
+		       ,(replace-free-occurrences name new (caddr exp))))
+	       (else
+		(cons (replace-free-occurrences name new (car exp))
+		      (replace-free-occurrences name new (cdr exp))))))
+	(else exp)))
+(define replace-in-tree replace-free-occurrences)
 
 ;;;; Closures
 
