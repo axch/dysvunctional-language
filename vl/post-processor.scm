@@ -87,12 +87,14 @@
 		 (iota (length fields))))))
 
 (define (structure-definitions->vectors forms)
-  (append-map (lambda (form)
-		(let ((maybe-expansion (structure-definition->function-definitions-rule form)))
-		  (if maybe-expansion
-		      maybe-expansion
-		      (list form))))
-	      forms))
+  (if (list? forms)
+      (append-map (lambda (form)
+		    (let ((maybe-expansion (structure-definition->function-definitions-rule form)))
+		      (if maybe-expansion
+			  maybe-expansion
+			  (list form))))
+		  forms)
+      forms))
 
 (define post-inline-rules
   (append
