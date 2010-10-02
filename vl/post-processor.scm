@@ -37,39 +37,39 @@
 (define (generated-temporary? thing)
   (symbol-with-prefix? thing "temp-"))
 
-(define post-process
-  (rule-simplifier
-   (list
+(define post-process-rules
+  (list
+   (rule (define ((?? line) the-formals)
+	   (let (((? name ,symbol?) the-formals))
+	     (?? body)))
+	 `(define (,@line ,name)
+	    ,@body))
 
-    (rule (define ((?? line) the-formals)
-	    (let (((? name ,symbol?) the-formals))
-	      (?? body)))
-	  `(define (,@line ,name)
-	     ,@body))
+   (rule (define (? formals)
+	   (let ()
+	     (?? body)))
+	 `(define ,formals
+	    ,@body))
 
-    (rule (define (? formals)
-	    (let ()
-	      (?? body)))
-	  `(define ,formals
-	     ,@body))
+   (rule (let ()
+	   (? body))
+	 body)
 
-    (rule (let ()
-	    (? body))
-	  body)
+   (rule (let (((? name ,generated-temporary?) (cons (? a) (? d))))
+	   (? body))
+	 (replace-free-occurrences name `(cons ,a ,d) body))
 
-    (rule (let (((? name ,generated-temporary?) (cons (? a) (? d))))
-	    (? body))
-	  (replace-free-occurrences name `(cons ,a ,d) body))
+   (rule (let (((? name ,generated-temporary?) (? exp ,symbol?)))
+	   (? body))
+	 (replace-free-occurrences name exp body))
 
-    (rule (let (((? name ,generated-temporary?) (? exp ,symbol?)))
-	    (? body))
-	  (replace-free-occurrences name exp body))
+   (rule (let (((? name ,symbol?) (? exp)))
+	   (? name))
+	 exp)
 
-    (rule (let (((? name ,symbol?) (? exp)))
-	    (? name))
-	  exp)
+   (rule (car (cons (? a) (? d))) a)
+   (rule (cdr (cons (? a) (? d))) d)
+   ))
 
-    (rule (car (cons (? a) (? d))) a)
-    (rule (cdr (cons (? a) (? d))) d)
-    )))
+(define post-process (rule-simplifier post-process-rules))
 
