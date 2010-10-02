@@ -25,7 +25,8 @@
    "abstract-values"
    "abstract-eval"
    "nomenclature"
-   "code-generator"))
+   "code-generator"
+   "inline"))
 
 (define post-processor #f)
 

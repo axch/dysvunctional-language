@@ -89,3 +89,26 @@
 		      maybe-expansion
 		      (list form))))
 	      forms))
+
+(define post-inline
+  (rule-simplifier
+   (append
+    post-process-rules
+    (list
+     (rule ((lambda (? names)
+	      (?? body))
+	    (?? args))
+	   `(let ,(map list names args)
+	      ,@body))
+
+     (rule (let (((? name ,symbol?) (? exp)))
+	     (?? body))
+	   (and (not (eq? exp 'the-formals))
+		(= 1 (count-in-tree name body))
+		`(let ()
+		   ,@(replace-free-occurrences name exp body))))
+
+     (rule (vector-ref (vector (?? stuff)) (? index ,integer?))
+	   (list-ref stuff index))
+
+     ))))
