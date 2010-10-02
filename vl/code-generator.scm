@@ -202,8 +202,8 @@
 
 ;;;; Procedure definitions
 
-(define (procedure-definitions analysis)
-  (map (procedure-definition analysis)
+(define (procedure-definitions analysis emit-type-declarations?)
+  (map (procedure-definition analysis emit-type-declarations?)
        (delete-duplicates
 	(filter-map (binding->maybe-call-shape analysis)
 		    (analysis-bindings analysis))
@@ -233,7 +233,7 @@
 ;;; VL procedure did, and execute its compiled body.  The
 ;;; destructuring elides solved slots of the incoming argument
 ;;; structure.
-(define ((procedure-definition analysis) operator.operands)
+(define ((procedure-definition analysis emit-type-declarations?) operator.operands)
   (define (destructuring-let-bindings formal-tree arg-tree)
     (define (xxx part1 part2)
       (append (replace-in-tree
@@ -254,10 +254,14 @@
 	       (xxx (car formal-tree) (cdr formal-tree))))))
   (let ((operator (car operator.operands))
 	(operands (cdr operator.operands)))
+    (define (type-declaration)
+      `(argument-types ,@(if (solved-abstractly? operator) '() (list (shape->type-declaration operator)))
+		       ,@(if (solved-abstractly? operands) '() (list (shape->type-declaration operands)))))
     (let ((name (call-site->scheme-function-name operator operands)))
       `(define (,name
 		,@(if (solved-abstractly? operator) '() '(the-closure))
 		,@(if (solved-abstractly? operands) '() '(the-formals)))
+	 ,@(if emit-type-declarations? (list (type-declaration)) '())
 	 (let ,(destructuring-let-bindings
 		(car (closure-formal operator))
 		operands)
@@ -272,11 +276,22 @@
 
 ;;;; Code generation
 
-(define (compile-to-scheme program)
+(define (type-declaration-macro emit-type-declarations?)
+  (if emit-type-declarations?
+      '((define-syntax argument-types
+	  (syntax-rules ()
+	    ((_ arg ...)
+	     (begin)))))
+      '()))
+
+(define (compile-to-scheme program #!optional emit-type-declarations?)
   (initialize-name-caches!)
+  (if (default-object? emit-type-declarations?)
+      (set! emit-type-declarations? #f))
   (let ((analysis (analyze program)))
-    `(begin ,@(structure-definitions analysis)
-	    ,@(procedure-definitions analysis)
+    `(begin ,@(type-declaration-macro emit-type-declarations?)
+	    ,@(structure-definitions analysis)
+	    ,@(procedure-definitions analysis emit-type-declarations?)
 	    ,(compile (macroexpand program)
 		      (initial-vl-user-env)
 		      #f

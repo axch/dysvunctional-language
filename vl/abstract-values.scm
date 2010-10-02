@@ -154,3 +154,27 @@
 ;;; are also deliberately tweaked to preserve this property).
 (define (open-to-refinement? val)
   (abstract-all? val))
+
+(define (shape->type-declaration thing)
+  (cond ((abstract-real? thing)
+	 'real)
+	((abstract-boolean? thing)
+	 'boolean)
+	((solved-abstractly? thing)
+	 'void)
+	((closure? thing)
+	 (cons (abstract-closure->scheme-constructor-name thing)
+	       (map shape->type-declaration
+		    (interesting-environment-values thing))))
+	((pair? thing)
+	 `(cons ,(shape->type-declaration (car thing))
+		,(shape->type-declaration (cdr thing))))
+	(else
+	 (error "shape->type-declaration loses!" thing))))
+
+(define (interesting-environment-values closure)
+  (let ((vars (closure-free-variables closure))
+	(env (closure-env closure)))
+    (map (lambda (var)
+	   (lookup var env))
+	 (interesting-variables vars env))))
