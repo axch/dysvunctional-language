@@ -55,6 +55,10 @@
 	   (? body))
 	 body)
 
+   (rule (begin
+	   (? body))
+	 body)
+
    (rule (let (((? name ,generated-temporary?) (cons (? a) (? d))))
 	   (? body))
 	 (replace-free-occurrences name `(cons ,a ,d) body))
@@ -90,25 +94,43 @@
 		      (list form))))
 	      forms))
 
-(define post-inline
-  (rule-simplifier
-   (append
-    post-process-rules
-    (list
-     (rule ((lambda (? names)
-	      (?? body))
-	    (?? args))
-	   `(let ,(map list names args)
-	      ,@body))
-
-     (rule (let (((? name ,symbol?) (? exp)))
+(define post-inline-rules
+  (append
+   post-process-rules
+   (list
+    (rule ((lambda (? names)
 	     (?? body))
-	   (and (not (eq? exp 'the-formals))
-		(= 1 (count-in-tree name body))
-		`(let ()
-		   ,@(replace-free-occurrences name exp body))))
+	   (?? args))
+	  `(let ,(map list names args)
+	     ,@body))
 
-     (rule (vector-ref (vector (?? stuff)) (? index ,integer?))
-	   (list-ref stuff index))
+    (rule (let (((? name ,symbol?) (? exp)))
+	    (?? body))
+	  (and (not (eq? exp 'the-formals))
+	       (= 1 (count-in-tree name body))
+	       `(let ()
+		  ,@(replace-free-occurrences name exp body))))
 
-     ))))
+    (rule (vector-ref (vector (?? stuff)) (? index ,integer?))
+	  (list-ref stuff index))
+
+    )))
+
+(define post-inline (rule-simplifier post-inline-rules))
+
+(define (constructors-only? exp)
+  (or (symbol? exp)
+      (constant? exp)
+      (null? exp)
+      (and (pair? exp)
+	   (memq (car exp) '(cons vector real))
+	   (every constructors-only? (cdr exp)))))
+
+(define inline-constructions
+  (rule-simplifier
+   (cons
+    (rule (let (((? name ,symbol?) (? exp ,constructors-only?)))
+	    (?? body))
+	  `(let ()
+	     ,@(replace-free-occurrences name exp body)))
+    post-inline-rules)))
