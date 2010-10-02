@@ -26,8 +26,9 @@
 	(compiled-answer (%eval-through-scheme program)))
     (if (equal? interpreted-answer compiled-answer)
 	compiled-answer
-	`((interpreted: ,interpreted-answer)
-	  (compiled: ,compiled-answer)))))
+	(error "VL compiler disagreed with VL interpreter"
+	       `((interpreted: ,interpreted-answer)
+		 (compiled: ,compiled-answer))))))
 
 (in-test-group
  vl
@@ -178,4 +179,14 @@
 	(if (< count 10)
 	    (loop (+ count 1))
 	    count))))
-   ))
+   )
+
+ (define-test (example-sanity)
+   (with-input-from-file "examples.scm"
+    (lambda ()
+      (let loop ((program (read)))
+	(if (not (eof-object? program))
+	    ;; Check that vl-eval and compile-to-scheme agree
+	    (begin (eval-through-scheme program)
+		   (loop (read))))))))
+ )
