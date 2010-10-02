@@ -41,13 +41,13 @@
 		(if (occurs-in-tree? name (cadr exp))
 		    exp
 		    `(lambda ,(cadr exp)
-		       ,(replace-free-occurrences name new (cddr exp)))))
+		       ,@(replace-free-occurrences name new (cddr exp)))))
 	       ((eq? (car exp) 'let)
 		(let ((bindings (cadr exp))
 		      (body (cddr exp)))
-		  `(let ,@(map (lambda (binding)
-				 (cons (car binding) (replace-free-occurrences name new (cadr binding))))
-			       bindings)
+		  `(let ,(map (lambda (binding)
+				(list (car binding) (replace-free-occurrences name new (cadr binding))))
+			      bindings)
 		     ,@(if (memq name (map car bindings))
 			   body
 			   (replace-free-occurrences name new body)))))
