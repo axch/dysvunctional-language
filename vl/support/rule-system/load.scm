@@ -13,8 +13,8 @@
 (load-relative "../auto-compilation")
 
 (load-relative-compiled "utils")
-(load-relative-compiled "eq-properties")
-(load-relative-compiled "ghelper")
+(load-relative-compiled "../eq-properties")
+(load-relative-compiled "../ghelper")
 (load-relative-compiled "matcher")
 
 (define (rule-memoize f) f)
