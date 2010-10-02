@@ -13,6 +13,7 @@
   (self-relatively (lambda () (load filename))))
 
 (load-relative "support/auto-compilation")
+(load-relative "support/rule-system/load")
 
 (for-each
  load-relative-compiled
@@ -26,20 +27,6 @@
    "abstract-eval"
    "nomenclature"
    "code-generator"
-   "inline"))
+   "inline"
+   "post-processor"))
 
-(define post-processor #f)
-
-(define (post-process code)
-  (if post-processor
-      (post-processor code)
-      code))
-
-(let ((rule-system "support/rule-system/load.scm"))
- (self-relatively
-  (lambda ()
-    (if (file-exists? rule-system)
-	(begin (load rule-system)
-	       (load-compiled "post-processor"))
-	(begin (warn "Did not find the rule-simplification engine,")
-	       (warn "post-processor disabled"))))))

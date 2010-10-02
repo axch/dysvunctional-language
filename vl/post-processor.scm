@@ -95,6 +95,8 @@
    ))
 
 (define post-processor (rule-simplifier post-process-rules))
+(define (post-process code)
+  (post-processor code))
 
 (define structure-definition->function-definitions-rule
   (rule `(define-structure (? name) (?? fields))
