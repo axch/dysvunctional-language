@@ -61,6 +61,10 @@
 	    (? body))
 	  (replace-in-tree name exp body))
 
+    (rule (let (((? name ,symbol?) (? exp)))
+	    (? name))
+	  exp)
+
     (rule (car (cons (? a) (? d))) a)
     (rule (cdr (cons (? a) (? d))) d)
     )))
