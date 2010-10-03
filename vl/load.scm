@@ -17,7 +17,8 @@
 
 (for-each
  load-relative-compiled
- '("data"
+ '("support/mit-profile"
+   "data"
    "env"
    "primitives"
    "macro"
