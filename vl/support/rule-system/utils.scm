@@ -4,7 +4,7 @@
 ;;; computer scientists would claim that it should never have been
 ;;; allowed to see the light of day.
 
-(define (procedure-argl proc)
+(define (procedure-argl proc #!optional default-argl)
   "Returns the arg list of PROC.
    Grumbles if PROC is an undocumented primitive."
   (if (primitive-procedure? proc)
@@ -27,7 +27,9 @@
 		(append required
 		 (if (null? optional) '() `(#!OPTIONAL ,@optional))
 		 (if rest `(#!REST ,rest) '()))))
-	    "No debugging information available for this procedure."))))
+	    (if (default-object? default-argl)
+		"No debugging information available for this procedure."
+		default-argl)))))
 
 ;;; Magic!
 

@@ -65,10 +65,12 @@
 	 `(define (,@line ,name)
 	    ,@body))
 
-   (rule `(define (? formals)
-	    (let ()
+   (rule `(define ((?? line) the-formals)
+	    (argument-types (?? stuff))
+	    (let (((? name ,symbol?) the-formals))
 	      (?? body)))
-	 `(define ,formals
+	 `(define (,@line ,name)
+	    (argument-types ,@stuff)
 	    ,@body))
 
    (rule `(let ()
@@ -206,33 +208,17 @@
 						  (iota num-replacees)) ,@args2))))))
 
 (define (non-repeating-rule-simplifier the-rules)
-  (let ((unique-object (list)))
-    (define (make-unfakeable-box thing)
-      (cons unique-object thing))
-    (define (unfakeable-box? thing)
-      (and (pair? thing)
-	   (eq? (car thing) unique-object)))
-    (define unfakeable-contents cdr)
-    (define (compute-simplify-expression expression)
-      (let ((simplified-subexpressions
-	     (if (list? expression)
-		 (map simplify-expression expression)
-		 expression)))
-	(let ((result (try-rules simplified-subexpressions
-				 the-rules make-unfakeable-box)))
-	  ;; This complexity allows us to distinguish between the
-	  ;; three possible cases:
-	  (cond ((not result)
-		 ;; No rule `in the rule `list fired
-		 simplified-subexpressions)
-		((unfakeable-box? result)
-		 ;; Some rule `called succeed
-		 (unfakeable-contents result))
-		(else
-		 ;; Some rule `returned a value without calling succeed
-		 result)))))
-    (define simplify-expression (memoize compute-simplify-expression))
-    simplify-expression))
+  (define (simplify-expression expression)
+    (let ((subexpressions-simplified
+	   (if (list? expression)
+	       (map simplify-expression expression)
+	       expression)))
+      (try-rules subexpressions-simplified the-rules
+       (lambda (result fail)
+	 result)
+       (lambda ()
+	 subexpressions-simplified))))
+  (rule-memoize simplify-expression))
 
 (define (sra forms)
   (define (try-defining-rule rule target done rest loop lose)

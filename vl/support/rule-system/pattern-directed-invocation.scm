@@ -2,7 +2,8 @@
 
 (define (make-rule pattern handler)
   (if (user-handler? handler)
-      (make-rule pattern (user-handler->system-handler handler))
+      (make-rule pattern (user-handler->system-handler
+			  handler (match:pattern-names pattern)))
       (let ((pattern-combinator (->combinators pattern)))
 	(lambda (data #!optional succeed fail)
 	  (if (default-object? succeed)
@@ -53,8 +54,8 @@
 ;;; and success and failure continuations.  Does not deal with
 ;;; optional and rest arguments in the handler.
 
-(define (user-handler->system-handler user-handler)
-  (let ((handler-argl (procedure-argl user-handler)))
+(define (user-handler->system-handler user-handler #!optional default-argl)
+  (let ((handler-argl (procedure-argl user-handler default-argl)))
     (system-handler!
      (lambda (dict succeed fail)
        (define (matched-value name)
