@@ -171,7 +171,7 @@
 		     ,@body))))))
 
 (define (sra-cons-call-site-rule operation-name replacee-index total-arg-count)
-  (rule `(,(match:eqv operation-name) (?? args))
+  (rule `(,operation-name (?? args))
 	(and (= (length args) total-arg-count)
 	     (let ((args1 (take args replacee-index))
 		   (arg (list-ref args replacee-index))
@@ -196,7 +196,7 @@
 		     ,@body))))))
 
 (define (sra-vector-call-site-rule operation-name replacee-index num-replacees total-arg-count)
-  (rule `(,(match:eqv operation-name) (?? args))
+  (rule `(,operation-name (?? args))
 	(and (= (length args) total-arg-count)
 	     (let ((args1 (take args replacee-index))
 		   (arg (list-ref args replacee-index))
