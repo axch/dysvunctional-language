@@ -298,14 +298,14 @@
 		      analysis))))
 
 (define (prettify-compiler-output output)
-  (post-process
+  (tidy
    (inline-constructions
     (post-inline
      (inline
       (strip-argument-types
        (sra
 	(structure-definitions->vectors
-	 (post-process
+	 (tidy
 	  output)))))))))
 
 (define (compile-to-pretty-scheme program)
