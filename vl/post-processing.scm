@@ -66,6 +66,11 @@
 
 ;;;; Turning record structures into vectors
 
+;;; Just replace every occurrence of DEFINE-STRUCTURE with the
+;;; corresponding pile of vector operations.  Also need to make sure
+;;; that the argument types declarations, if any, all say VECTOR
+;;; rather than whatever the name of the structure used to be.
+
 (define (structure-definition? form)
   (and (pair? form)
        (eq? (car form) 'define-structure)))
@@ -111,13 +116,9 @@
 ;;; tranformation is done, further local simplifications done by TIDY
 ;;; will have the effect of eliminating those structures completely.
 
-;;; This code only operates on the cons and vector structures, so
-;;; structure definitions should be converted (for example, with
-;;; STRUCTURE-DEFINITIONS->VECTORS) before calling this.  It also
-;;; expects to operate on the shape the code has before procedure
-;;; inlining, so call INLINE after.  Finally, this relies on the code
-;;; generator having emitted argument type declarations to work, so
-;;; they should be a) requested and b) not stripped out yet.
+;;; This process relies on the code generator having emitted argument
+;;; type declarations.  If there are no argument type declarations,
+;;; nothing will happen.
 
 ;;; The key trick in how this is done is SRA-DEFINITION-RULE, which
 ;;; pattern matches on a definition with an argument type declaration,
@@ -154,12 +155,13 @@
 		  (,operation-name ,@args1 ,@(call-site-replacement temp-name constructor num-replacees) ,@args2))))))
 
 ;;; The actual SCALAR-REPLACE-AGGREGATES procedure just tries
-;;; SRA-DEFINITION-RULE on all the possible definitions, and whenever
-;;; it rewrites one, applies the resulting sra-call-site-rule to
-;;; rewrite all the call sites.  The only tricky bit is to make sure
-;;; not to apply the sra-call-site-rule to the formal parameter list
-;;; of the definition just rewritten, because it will match and screw
-;;; up.
+;;; SRA-DEFINITION-RULE on all the possible definitions as many times
+;;; as it does something.  Whenever SRA-DEFINITION-RULE rewrites a
+;;; definition, SCALAR-REPLACE-AGGREGATES applies the resulting
+;;; sra-call-site-rule to rewrite all the call sites.  The only tricky
+;;; bit is to make sure not to apply the sra-call-site-rule to the
+;;; formal parameter list of the definition just rewritten, because it
+;;; will match it and screw it up.
 
 (define (scalar-replace-aggregates forms)
   (define (try-sra-definition done target rest win lose)
@@ -215,10 +217,6 @@
 ;;; that, just replace references to that procedure's name with
 ;;; anonymous lambda expressions that do the same job.  The
 ;;; term-rewriter TIDY will clean up the mess nicely.
-
-;;; Do this after stripping out argument-types declarations, because
-;;; the things that handle them expect procedures not to be inlined
-;;; yet.
 
 (define (inline forms)
   (define (definition? form)
