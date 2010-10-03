@@ -146,7 +146,7 @@
   (sort (filter (interesting-variable? env)
 		(free-variables exp))
 	symbol<?))
-
+
 ;;; This abstract domain, together with the fact that the abstract
 ;;; interpreter bubbles abstract-all values up, has the feature that
 ;;; every abstract value that occurs is either abstract-all or a shape

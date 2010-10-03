@@ -331,7 +331,8 @@
 		(?? bindings2))
 	    (?? body))
 	 (and (= 1 (count-free-occurrences name body))
-	      (not (memq exp (append (map car bindings1) (map car bindings2))))
+	      (not (memq exp (append (map car bindings1)
+				     (map car bindings2))))
 	      `(let (,@bindings1
 		     ,@bindings2)
 		 ,@(replace-free-occurrences name exp body))))
@@ -340,7 +341,8 @@
 		((? name ,symbol?) (? exp ,constructors-only?))
 		(?? bindings2))
 	    (?? body))
-	 (and (not (memq exp (append (map car bindings1) (map car bindings2))))
+	 (and (not (memq exp (append (map car bindings1)
+				     (map car bindings2))))
 	      `(let (,@bindings1
 		     ,@bindings2)
 		 ,@(replace-free-occurrences name exp body))))

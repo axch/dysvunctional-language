@@ -33,6 +33,7 @@
 
 (define (occurs-in-tree? thing tree)
   (> (count-in-tree thing tree) 0))
+;;;; Occurrences of free variables
 
 (define (count-free-occurrences name exp)
   (cond ((eq? exp name) 1)
@@ -71,7 +72,9 @@
 		(let ((bindings (cadr exp))
 		      (body (cddr exp)))
 		  `(let ,(map (lambda (binding)
-				(list (car binding) (replace-free-occurrences name new (cadr binding))))
+				(list (car binding)
+				      (replace-free-occurrences
+				       name new (cadr binding))))
 			      bindings)
 		     ,@(if (memq name (map car bindings))
 			   body
@@ -82,9 +85,7 @@
 	       (else
 		(cons (replace-free-occurrences name new (car exp))
 		      (replace-free-occurrences name new (cdr exp))))))
-	(else exp)))
-(define replace-in-tree replace-free-occurrences)
-
+	(else exp)))
 ;;;; Closures
 
 (define-structure (closure (safe-accessors #t) (constructor %make-closure))
