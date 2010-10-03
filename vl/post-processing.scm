@@ -26,8 +26,7 @@
     (strip-argument-types
      (scalar-replace-aggregates
       (structure-definitions->vectors
-       (tidy
-	output)))))))
+       output))))))
 
 (define (compile-to-pretty-scheme program)
   (prettify-compiler-output
