@@ -232,7 +232,7 @@
 	 subexpressions-simplified))))
   (rule-memoize simplify-expression))
 
-(define (sra forms)
+(define (scalar-replace-aggregates forms)
   (define (try-defining-rule rule target done rest loop lose)
     (let ((definition-sra-attempt (rule target)))
       (if definition-sra-attempt
@@ -324,7 +324,7 @@
   (tidy
    (inline
     (strip-argument-types
-     (sra
+     (scalar-replace-aggregates
       (structure-definitions->vectors
        (tidy
 	output)))))))
