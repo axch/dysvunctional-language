@@ -130,39 +130,52 @@
       (eq? thing 'vector)))
 
 (define sra-definition-rule
-  (rule `(define ((? name) (?? formals1) (? formal) (?? formals2))
-	  (argument-types
-	   (?? stuff1)
-	   ((? formal) ((? constructor ,cons-or-vector?)
-			(?? slot-shapes)))
-	   (?? stuff2))
-	  (?? body))
-	(let ((slot-names (map (lambda (shape)
-				 (make-name (symbol formal '-)))
-			       slot-shapes))
-	      (arg-index (length formals1))
-	      (num-slots (length slot-shapes))
-	      (total-arg-count (+ (length formals1) 1 (length formals2))))
-	  (cons (sra-call-site-rule
-		 name constructor arg-index num-slots total-arg-count)
-		`(define (,name ,@formals1 ,@slot-names ,@formals2)
-		   (argument-types
-		    ,@stuff1
-		    ,@(map list slot-names slot-shapes)
-		    ,@stuff2)
-		   (let ((,formal (,constructor ,@slot-names)))
-		     ,@body))))))
+  (rule
+   `(define ((? name) (?? formals1) (? formal) (?? formals2))
+      (argument-types
+       (?? stuff1)
+       ((? formal) ((? constructor ,cons-or-vector?)
+		    (?? slot-shapes)))
+       (?? stuff2))
+      (?? body))
+   (let ((slot-names (map (lambda (shape)
+			    (make-name (symbol formal '-)))
+			  slot-shapes))
+	 (arg-index (length formals1))
+	 (num-slots (length slot-shapes))
+	 (arg-count (+ (length formals1) 1 (length formals2))))
+     (cons (sra-call-site-rule
+	    name constructor arg-index num-slots arg-count)
+	   `(define (,name ,@formals1 ,@slot-names ,@formals2)
+	      (argument-types
+	       ,@stuff1
+	       ,@(map list slot-names slot-shapes)
+	       ,@stuff2)
+	      (let ((,formal (,constructor ,@slot-names)))
+		,@body))))))
 
-(define (sra-call-site-rule operation-name constructor arg-index num-slots total-arg-count)
-  (rule `(,operation-name (?? args))
-	(and (= (length args) total-arg-count)
-	     (let ((args1 (take args arg-index))
-		   (arg (list-ref args arg-index))
-		   (args2 (drop args (+ arg-index 1)))
-		   (temp-name (make-name 'temp-)))
-	       `(let ((,temp-name ,arg))
-		  (,operation-name ,@args1 ,@(call-site-replacement temp-name constructor num-slots) ,@args2))))))
+(define (sra-call-site-rule
+	 operation-name constructor arg-index num-slots arg-count)
+  (rule
+   `(,operation-name (?? args))
+   (and (= (length args) arg-count)
+	(let ((args1 (take args arg-index))
+	      (arg (list-ref args arg-index))
+	      (args2 (drop args (+ arg-index 1)))
+	      (temp-name (make-name 'temp-)))
+	  `(let ((,temp-name ,arg))
+	     (,operation-name
+	      ,@args1
+	      ,@(call-site-replacement temp-name constructor num-slots)
+	      ,@args2))))))
 
+(define (call-site-replacement temp-name constructor-type count)
+  (if (eq? 'cons constructor-type)
+      `((car ,temp-name) (cdr ,temp-name))
+      (map (lambda (index)
+	     `(vector-ref ,temp-name ,index))
+	   (iota count))))
+
 ;;; The actual SCALAR-REPLACE-AGGREGATES procedure just tries
 ;;; SRA-DEFINITION-RULE on all the possible definitions as many times
 ;;; as it does something.  Whenever SRA-DEFINITION-RULE rewrites a
@@ -197,13 +210,6 @@
 	       (lambda ()
 		 (scan (cons (car forms) done) (cdr forms)))))))
       forms))
-
-(define (call-site-replacement temp-name constructor-type count)
-  (if (eq? 'cons constructor-type)
-      `((car ,temp-name) (cdr ,temp-name))
-      (map (lambda (index)
-	     `(vector-ref ,temp-name ,index))
-	   (iota count))))
 
 ;;; Getting rid the argument-types declarations is easy.
 
