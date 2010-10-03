@@ -233,7 +233,8 @@
 ;;; VL procedure did, and execute its compiled body.  The
 ;;; destructuring elides solved slots of the incoming argument
 ;;; structure.
-(define ((procedure-definition analysis emit-type-declarations?) operator.operands)
+(define ((procedure-definition analysis emit-type-declarations?)
+	 operator.operands)
   (define (destructuring-let-bindings formal-tree arg-tree)
     (define (xxx part1 part2)
       (append (replace-in-tree
@@ -255,8 +256,11 @@
   (let ((operator (car operator.operands))
 	(operands (cdr operator.operands)))
     (define (type-declaration)
-      `(argument-types ,@(if (solved-abstractly? operator) '() (list (list 'the-closure (shape->type-declaration operator))))
-		       ,@(if (solved-abstractly? operands) '() (list (list 'the-formals (shape->type-declaration operands))))))
+      `(argument-types
+	,@(if (solved-abstractly? operator) '()
+	      `((the-closure ,(shape->type-declaration operator))))
+	,@(if (solved-abstractly? operands) '()
+	      `((the-formals ,(shape->type-declaration operands))))))
     (let ((name (call-site->scheme-function-name operator operands)))
       `(define (,name
 		,@(if (solved-abstractly? operator) '() '(the-closure))
@@ -272,7 +276,6 @@
 		      (closure-env operator))
 		     operator
 		     analysis))))))
-
 
 ;;;; Code generation
 
