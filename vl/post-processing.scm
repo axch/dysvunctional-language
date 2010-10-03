@@ -186,29 +186,27 @@
 ;;; will match it and screw it up.
 
 (define (scalar-replace-aggregates forms)
-  (define (try-sra-definition done target rest win lose)
-    (let ((definition-sra-attempt (sra-definition-rule target)))
-      (if definition-sra-attempt
-	  (let ((sra-call-site-rule (car definition-sra-attempt))
-		(replacement-form (cdr definition-sra-attempt)))
-	    (let ((sra-call-sites (recursively-try-once sra-call-site-rule)))
-	      (let ((fixed-replacement-form
-		     `(,(car replacement-form) ,(cadr replacement-form)
-		       ,(caddr replacement-form)
-		       ,(sra-call-sites (cadddr replacement-form))))
-		    (fixed-done (sra-call-sites (reverse done)))
-		    (fixed-rest (sra-call-sites rest)))
-		(win (append fixed-done (list fixed-replacement-form) fixed-rest)))))
-	  (lose))))
+  (define (do-sra-definition sra-result done rest)
+    (let ((sra-call-site-rule (car sra-result))
+	  (replacement-form (cdr sra-result)))
+      (let ((sra-call-sites (recursively-try-once sra-call-site-rule)))
+	(let ((fixed-replacement-form
+	       `(,(car replacement-form) ,(cadr replacement-form)
+		 ,(caddr replacement-form)
+		 ,(sra-call-sites (cadddr replacement-form))))
+	      (fixed-done (sra-call-sites (reverse done)))
+	      (fixed-rest (sra-call-sites rest)))
+	  (append fixed-done (list fixed-replacement-form) fixed-rest)))))
   (if (list? forms)
       (let loop ((forms forms))
 	(let scan ((done '())
 		   (forms forms))
 	  (if (null? forms)
 	      (reverse done)
-	      (try-sra-definition done (car forms) (cdr forms) loop
-	       (lambda ()
-		 (scan (cons (car forms) done) (cdr forms)))))))
+	      (let ((sra-attempt (sra-definition-rule (car forms))))
+		(if sra-attempt
+		    (loop (do-sra-definition sra-attempt done (cdr forms)))
+		    (scan (cons (car forms) done) (cdr forms)))))))
       forms))
 
 ;;; Getting rid the argument-types declarations is easy.
