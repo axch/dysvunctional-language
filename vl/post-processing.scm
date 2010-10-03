@@ -177,30 +177,6 @@
 
 ;;; What a mess!
 
-(define sra-cons-definition-rule
-  (rule `(define ((? name ,symbol?) (?? formals1) (? formal ,symbol?) (?? formals2))
-	  (argument-types (?? stuff1) ((? formal) (cons (? car-shape) (? cdr-shape))) (?? stuff2))
-	  (?? body))
-	(let ((car-name (make-name (symbol formal '-)))
-	      (cdr-name (make-name (symbol formal '-)))
-	      (index (length formals1))
-	      (total-arg-count (+ (length formals1) 1 (length formals2))))
-	  (cons (sra-cons-call-site-rule name index total-arg-count)
-		`(define (,name ,@formals1 ,car-name ,cdr-name ,@formals2)
-		   (argument-types ,@stuff1 (,car-name ,car-shape) (,cdr-name ,cdr-shape) ,@stuff2)
-		   (let ((,formal (cons ,car-name ,cdr-name)))
-		     ,@body))))))
-
-(define (sra-cons-call-site-rule operation-name replacee-index total-arg-count)
-  (rule `(,operation-name (?? args))
-	(and (= (length args) total-arg-count)
-	     (let ((args1 (take args replacee-index))
-		   (arg (list-ref args replacee-index))
-		   (args2 (drop args (+ replacee-index 1)))
-		   (temp-name (make-name 'temp-)))
-	       `(let ((,temp-name ,arg))
-		  (,operation-name ,@args1 ,@(call-site-replacement temp-name 'cons 2) ,@args2))))))
-
 (define (call-site-replacement temp-name constructor-type count)
   (if (eq? 'cons constructor-type)
       `((car ,temp-name) (cdr ,temp-name))
@@ -208,22 +184,26 @@
 	     `(vector-ref ,temp-name ,index))
 	   (iota count))))
 
-(define sra-vector-definition-rule
+(define (cons-or-vector? thing)
+  (or (eq? thing 'cons)
+      (eq? thing 'vector)))
+
+(define sra-definition-rule
   (rule `(define ((? name ,symbol?) (?? formals1) (? formal ,symbol?) (?? formals2))
-	  (argument-types (?? stuff1) ((? formal) (vector (?? arg-piece-shapes))) (?? stuff2))
+	  (argument-types (?? stuff1) ((? formal) ((? constructor ,cons-or-vector?) (?? arg-piece-shapes))) (?? stuff2))
 	  (?? body))
 	(let ((arg-piece-names (map (lambda (shape)
 				      (make-name (symbol formal '-)))
 				    arg-piece-shapes))
 	      (index (length formals1))
 	      (total-arg-count (+ (length formals1) 1 (length formals2))))
-	  (cons (sra-vector-call-site-rule name index (length arg-piece-shapes) total-arg-count)
+	  (cons (sra-call-site-rule name constructor index (length arg-piece-shapes) total-arg-count)
 		`(define (,name ,@formals1 ,@arg-piece-names ,@formals2)
 		   (argument-types ,@stuff1 ,@(map list arg-piece-names arg-piece-shapes) ,@stuff2)
-		   (let ((,formal (vector ,@arg-piece-names)))
+		   (let ((,formal (,constructor ,@arg-piece-names)))
 		     ,@body))))))
 
-(define (sra-vector-call-site-rule operation-name replacee-index num-replacees total-arg-count)
+(define (sra-call-site-rule operation-name constructor replacee-index num-replacees total-arg-count)
   (rule `(,operation-name (?? args))
 	(and (= (length args) total-arg-count)
 	     (let ((args1 (take args replacee-index))
@@ -231,7 +211,7 @@
 		   (args2 (drop args (+ replacee-index 1)))
 		   (temp-name (make-name 'temp-)))
 	       `(let ((,temp-name ,arg))
-		  (,operation-name ,@args1 ,@(call-site-replacement temp-name 'vector num-replacees) ,@args2))))))
+		  (,operation-name ,@args1 ,@(call-site-replacement temp-name constructor num-replacees) ,@args2))))))
 
 (define (non-repeating-rule-simplifier the-rules)
   (define (simplify-expression expression)
@@ -269,11 +249,9 @@
 	  (cond ((null? forms)
 		 (reverse done))
 		(else
-		 (try-defining-rule sra-cons-definition-rule (car forms) done (cdr forms) loop
-                  (lambda ()
-		    (try-defining-rule sra-vector-definition-rule (car forms) done (cdr forms) loop
-                     (lambda ()
-		       (scan (cons (car forms) done) (cdr forms))))))))))
+		 (try-defining-rule sra-definition-rule (car forms) done (cdr forms) loop
+		  (lambda ()
+		    (scan (cons (car forms) done) (cdr forms))))))))
       forms))
 
 (define strip-argument-types
