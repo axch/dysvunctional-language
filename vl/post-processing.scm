@@ -35,6 +35,19 @@
 ;;; bound to the things they matched.  The rules are applied to every
 ;;; subexpression of the input expression repeatedly until the result
 ;;; settles down.
+
+(define (prettify-compiler-output output)
+  (tidy
+   (inline
+    (strip-argument-types
+     (scalar-replace-aggregates
+      (structure-definitions->vectors
+       (tidy
+	output)))))))
+
+(define (compile-to-pretty-scheme program)
+  (prettify-compiler-output
+   (compile-to-scheme program #t)))
 
 ;;;; Term-rewriting tidier
 
@@ -49,9 +62,6 @@
 	 (and (> (string-length name) (string-length prefix))
 	      (equal? (string-head name (string-length prefix))
 		      prefix)))))
-
-(define (record-accessor-name? thing)
-  (symbol-with-prefix? thing "closure-"))
 
 (define (generated-temporary? thing)
   (symbol-with-prefix? thing "temp-"))
@@ -74,6 +84,17 @@
    (rule `(begin
 	    (? body))
 	 body)
+
+   (rule `((lambda (? names)
+	     (?? body))
+	   (?? args))
+	 `(let ,(map list names args)
+	    ,@body))
+
+   (rule `(car (cons (? a) (? d))) a)
+   (rule `(cdr (cons (? a) (? d))) d)
+   (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
+	 (list-ref stuff index))
 
    (rule `(let (((? name ,symbol?) (? exp)))
 	    (? name))
@@ -115,39 +136,32 @@
 		,@bindings2)
 	    ,@(replace-free-occurrences name `(cons ,a ,d) body)))
 
-   (rule `((lambda (? names)
-	     (?? body))
-	   (?? args))
-	 `(let ,(map list names args)
-	    ,@body))
-
-   (rule `(car (cons (? a) (? d))) a)
-   (rule `(cdr (cons (? a) (? d))) d)
-   (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
-	 (list-ref stuff index))
    ))
 
 (define tidy (rule-simplifier tidy-rules))
 
 ;;;; Turning record structures into vectors
 
-(define structure-definition->function-definitions-rule
-  (rule `(define-structure (? name) (?? fields))
+(define (structure-definition? form)
+  (and (pair? form)
+       (eq? (car form) 'define-structure)))
+
+(define (expand-if-structure-definition form)
+  (if (structure-definition? form)
+      (let ((name (cadr form))
+	    (fields (cddr form)))
 	`((define ,(symbol 'make- name) vector)
 	  ,@(map (lambda (field index)
 		   `(define (,(symbol name '- field) thing)
 		      (vector-ref thing ,index)))
 		 fields
-		 (iota (length fields))))))
+		 (iota (length fields)))))
+      (list form)))
 
 (define (structure-definitions->vectors forms)
   (if (list? forms)
       (let ((structure-names
-	     (map cadr
-		  (filter (lambda (form)
-			    (and (pair? form)
-				 (eq? (car form) 'define-structure)))
-			  forms))))
+	     (map cadr (filter structure-definition? forms))))
 	(define (structure-name? thing)
 	  (memq thing structure-names))
 	(define fix-argument-types
@@ -156,12 +170,7 @@
 	    (rule `((? name ,structure-name?) (?? args))
 		  `(vector ,@args)))))
 	(fix-argument-types
-	 (append-map (lambda (form)
-		       (let ((maybe-expansion (structure-definition->function-definitions-rule form)))
-			 (if maybe-expansion
-			     maybe-expansion
-			     (list form))))
-		     forms)))
+	 (append-map expand-if-structure-definition forms)))
       forms))
 
 ;;;; Scalar replacement of aggregates
@@ -317,18 +326,3 @@
 		 (scan (cons (car forms) done)
 		       (cdr forms))))))
       forms))
-
-;;;; Compilation to pretty Scheme code
-
-(define (prettify-compiler-output output)
-  (tidy
-   (inline
-    (strip-argument-types
-     (scalar-replace-aggregates
-      (structure-definitions->vectors
-       (tidy
-	output)))))))
-
-(define (compile-to-pretty-scheme program)
-  (prettify-compiler-output
-   (compile-to-scheme program #t)))
