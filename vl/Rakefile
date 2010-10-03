@@ -4,7 +4,7 @@ def files
    "code-generator",
    "macro",
    "eval",
-   "post-processor",
+   "post-processing",
    "primitives",
    "data",
    "env",
