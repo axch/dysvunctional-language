@@ -1,4 +1,5 @@
 workbook.ps
+workbook*.ps
 *.bci
 *.com
 *.bin
