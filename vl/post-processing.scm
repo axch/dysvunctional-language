@@ -1,40 +1,24 @@
 (declare (usual-integrations))
 ;;;; Post processing
 
-;;; The post-processing stage consists of several sub-stages, which
-;;; can in principle be mixed and matched to produce various
-;;; combinations of how cleaned-up one wants the output to be.
+;;; The post-processing stage consists of several sub-stages.  They
+;;; need to be done in order, but you can invoke any subsequence to
+;;; see the effect of doing only that level of post-processing.
 ;;; We have:
-;;; - A local, term-rewriting cleanup device
-;;; - A frob that replace define-structure with explicit vectors
-;;; - Scalar replacement of aggregates
-;;; - Removal of argument-type annotations, if they have been
-;;;   emitted by the code generator
-;;; - Inliner of function definitions, which inlines everything
-;;;   that doesn't call itself
-;;; - Term-rewriting post-inline cleanup
-;;; - A frob that pushes constructor invocations from let bindings
-;;;   and into their use sites.
-
-;;; Don't worry about the rule-based term-rewriting system that powers
-;;; this.  That is its own pile of stuff, good for a few lectures of
-;;; Sussman's MIT class Adventures in Advanced Symbolic Programming.
-;;; It works, and it's very good for peephole manipulations of
-;;; structured expressions (like the output of the VL code generator).
-;;; If you really want to see it, though, it's included in
-;;; support/rule-system.
-
-;;; The rules below consist of a pattern to try to match and an
-;;; expression to evaluate to compute a replacement for that match
-;;; should a match be found.  Patterns match themselves; the construct
-;;; (? name) introduces a pattern variable named name; the construct
-;;; (? name ,predicate) is a restrcted pattern variable which only
-;;; matches things the predicate accepts; the construct (?? name)
-;;; introduces a sublist pattern variable.  The replacement expression
-;;; is evaluated in an environment where the pattern variables are
-;;; bound to the things they matched.  The rules are applied to every
-;;; subexpression of the input expression repeatedly until the result
-;;; settles down.
+;;; - STRUCTURE-DEFINITIONS->VECTORS
+;;;   Replace DEFINE-STRUCTURE with explicit vectors
+;;; - SCALAR-REPLACE-AGGREGATES
+;;;   Replace aggregates with scalars at procedure boundaries.
+;;;   This relies on argument-type annotations being emitted by the
+;;;   code generator.
+;;; - STRIP-ARGUMENT-TYPES
+;;;   Remove argument-type annotations, if they have been emitted by
+;;;   the code generator (because SCALAR-REPLACE-AGGREGATES is the
+;;;   only thing that needs them)
+;;; - INLINE
+;;;   Inline non-recursive function definitions
+;;; - TIDY
+;;;   Local cleanup by term-rewriting
 
 (define (prettify-compiler-output output)
   (tidy
@@ -49,96 +33,36 @@
   (prettify-compiler-output
    (compile-to-scheme program #t)))
 
-;;;; Term-rewriting tidier
+;;; Don't worry about the rule-based term-rewriting system that powers
+;;; this.  That is its own pile of stuff, good for a few lectures of
+;;; Sussman's MIT class Adventures in Advanced Symbolic Programming.
+;;; It works, and it's very good for peephole manipulations of
+;;; structured expressions (like the output of the VL code generator).
+;;; If you really want to see it, though, it's included in
+;;; support/rule-system.
 
-;;; This is by no means a general-purpose Scheme code simplifier.  On
-;;; the contrary, it is deliberately and heavily specialized to the
-;;; task of removing obvious stupidities from the output of the VL
-;;; code generator.
+;;; Rules for the term-rewriting system consist of a pattern to try to
+;;; match and an expression to evaluate to compute a replacement for
+;;; that match should a match be found.  Patterns match themselves;
+;;; the construct (? name) introduces a pattern variable named name;
+;;; the construct (? name ,predicate) is a restricted pattern variable
+;;; which only matches things the predicate accepts; the construct (??
+;;; name) introduces a sublist pattern variable.  The pattern matcher
+;;; will search through possible lengths of sublists to find a match.
+;;; Repeated pattern variables must match equal structures in all the
+;;; corresponding places.
 
-(define (symbol-with-prefix? thing prefix)
-  (and (symbol? thing)
-       (let ((name (symbol->string thing)))
-	 (and (> (string-length name) (string-length prefix))
-	      (equal? (string-head name (string-length prefix))
-		      prefix)))))
+;;; A rule by itself is a one-argument procedure that tries to match
+;;; its pattern.  If the match succeeds, the rule will evaluate the
+;;; the replacement expression in an environment where the pattern
+;;; variables are bound to the things they matched and return the
+;;; result.  If the replacement expression returns #f, that tells the
+;;; matcher to backtrack and look for another match.  If the match
+;;; fails, the rule will return #f.
 
-(define (generated-temporary? thing)
-  (symbol-with-prefix? thing "temp-"))
-
-(define (constructors-only? exp)
-  (or (symbol? exp)
-      (constant? exp)
-      (null? exp)
-      (and (pair? exp)
-	   (memq (car exp) '(cons vector real))
-	   (every constructors-only? (cdr exp)))))
-
-(define tidy-rules
-  (list
-
-   (rule `(let ()
-	    (? body))
-	 body)
-
-   (rule `(begin
-	    (? body))
-	 body)
-
-   (rule `((lambda (? names)
-	     (?? body))
-	   (?? args))
-	 `(let ,(map list names args)
-	    ,@body))
-
-   (rule `(car (cons (? a) (? d))) a)
-   (rule `(cdr (cons (? a) (? d))) d)
-   (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
-	 (list-ref stuff index))
-
-   (rule `(let (((? name ,symbol?) (? exp)))
-	    (? name))
-	 exp)
-
-   (rule `(let ((?? bindings1)
-		((? name ,symbol?) (? exp))
-		(?? bindings2))
-	    (?? body))
-	 (and (= 0 (count-free-occurrences name body))
-	      `(let (,@bindings1
-		     ,@bindings2)
-		 ,@body)))
-
-   (rule `(let ((?? bindings1)
-		((? name ,symbol?) (? exp))
-		(?? bindings2))
-	    (?? body))
-	 (and (= 1 (count-free-occurrences name body))
-	      (not (memq exp (append (map car bindings1) (map car bindings2))))
-	      `(let (,@bindings1
-		     ,@bindings2)
-		 ,@(replace-free-occurrences name exp body))))
-
-   (rule `(let ((?? bindings1)
-		((? name ,symbol?) (? exp ,constructors-only?))
-		(?? bindings2))
-	    (?? body))
-	 (and (not (memq exp (append (map car bindings1) (map car bindings2))))
-	      `(let (,@bindings1
-		     ,@bindings2)
-		 ,@(replace-free-occurrences name exp body))))
-
-   (rule `(let ((?? bindings1)
-		((? name ,generated-temporary?) (cons (? a) (? d)))
-		(?? bindings2))
-	    (?? body))
-	 `(let (,@bindings1
-		,@bindings2)
-	    ,@(replace-free-occurrences name `(cons ,a ,d) body)))
-
-   ))
-
-(define tidy (rule-simplifier tidy-rules))
+;;; A rule simplifier has a set of rules, and applies them to every
+;;; subexpression of the input expression repeatedly until the result
+;;; settles down.
 
 ;;;; Turning record structures into vectors
 
@@ -167,7 +91,8 @@
 		     (structure-names structure-names))
 	    (if (null? structure-names)
 		forms
-		(loop (replace-free-occurrences (car structure-names) 'vector forms)
+		(loop (replace-free-occurrences
+		       (car structure-names) 'vector forms)
 		      (cdr structure-names)))))
 	(fix-argument-types
 	 (append-map expand-if-structure-definition forms)))
@@ -328,3 +253,94 @@
 		 (scan (cons (car forms) done)
 		       (cdr forms))))))
       forms))
+
+;;;; Term-rewriting tidier
+
+;;; This is by no means a general-purpose Scheme code simplifier.  On
+;;; the contrary, it is deliberately and heavily specialized to the
+;;; task of removing obvious stupidities from the output of the VL
+;;; code generator and post-processing stages.
+
+(define (symbol-with-prefix? thing prefix)
+  (and (symbol? thing)
+       (let ((name (symbol->string thing)))
+	 (and (> (string-length name) (string-length prefix))
+	      (equal? (string-head name (string-length prefix))
+		      prefix)))))
+
+(define (generated-temporary? thing)
+  (symbol-with-prefix? thing "temp-"))
+
+(define (constructors-only? exp)
+  (or (symbol? exp)
+      (constant? exp)
+      (null? exp)
+      (and (pair? exp)
+	   (memq (car exp) '(cons vector real))
+	   (every constructors-only? (cdr exp)))))
+
+(define tidy-rules
+  (list
+
+   (rule `(let ()
+	    (? body))
+	 body)
+
+   (rule `(begin
+	    (? body))
+	 body)
+
+   (rule `((lambda (? names)
+	     (?? body))
+	   (?? args))
+	 `(let ,(map list names args)
+	    ,@body))
+
+   (rule `(car (cons (? a) (? d))) a)
+   (rule `(cdr (cons (? a) (? d))) d)
+   (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
+	 (list-ref stuff index))
+
+   (rule `(let (((? name ,symbol?) (? exp)))
+	    (? name))
+	 exp)
+
+   (rule `(let ((?? bindings1)
+		((? name ,symbol?) (? exp))
+		(?? bindings2))
+	    (?? body))
+	 (and (= 0 (count-free-occurrences name body))
+	      `(let (,@bindings1
+		     ,@bindings2)
+		 ,@body)))
+
+   (rule `(let ((?? bindings1)
+		((? name ,symbol?) (? exp))
+		(?? bindings2))
+	    (?? body))
+	 (and (= 1 (count-free-occurrences name body))
+	      (not (memq exp (append (map car bindings1) (map car bindings2))))
+	      `(let (,@bindings1
+		     ,@bindings2)
+		 ,@(replace-free-occurrences name exp body))))
+
+   (rule `(let ((?? bindings1)
+		((? name ,symbol?) (? exp ,constructors-only?))
+		(?? bindings2))
+	    (?? body))
+	 (and (not (memq exp (append (map car bindings1) (map car bindings2))))
+	      `(let (,@bindings1
+		     ,@bindings2)
+		 ,@(replace-free-occurrences name exp body))))
+
+   (rule `(let ((?? bindings1)
+		((? name ,generated-temporary?) (cons (? a) (? d)))
+		(?? bindings2))
+	    (?? body))
+	 `(let (,@bindings1
+		,@bindings2)
+	    ,@(replace-free-occurrences name `(cons ,a ,d) body)))
+
+   ))
+
+(define tidy (rule-simplifier tidy-rules))
