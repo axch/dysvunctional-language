@@ -162,13 +162,13 @@
   (if (list? forms)
       (let ((structure-names
 	     (map cadr (filter structure-definition? forms))))
-	(define (structure-name? thing)
-	  (memq thing structure-names))
-	(define fix-argument-types
-	  (rule-simplifier
-	   (list
-	    (rule `((? name ,structure-name?) (?? args))
-		  `(vector ,@args)))))
+	(define (fix-argument-types forms)
+	  (let loop ((forms forms)
+		     (structure-names structure-names))
+	    (if (null? structure-names)
+		forms
+		(loop (replace-free-occurrences (car structure-names) 'vector forms)
+		      (cdr structure-names)))))
 	(fix-argument-types
 	 (append-map expand-if-structure-definition forms)))
       forms))
