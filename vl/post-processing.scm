@@ -269,6 +269,8 @@
 	     `(vector-ref ,temp-name ,index))
 	   (iota count))))
 
+;;; Getting rid the argument-types declarations is easy.
+
 (define strip-argument-types
   (rule-simplifier
    (list
@@ -284,6 +286,11 @@
 
 ;;;; Inlining procedure definitions
 
+;;; Every procedure that does not call itself can be inlined.  To do
+;;; that, just replace references to that procedure's name with
+;;; anonymous lambda expressions that do the same job.  The
+;;; term-rewriter TIDY will clean up the mess nicely.
+
 ;;; Do this after stripping out argument-types declarations, because
 ;;; the things that handle them expect procedures not to be inlined
 ;;; yet.
@@ -296,18 +303,15 @@
     (if (pair? (cadr definition))
 	(caadr definition)
 	(cadr definition)))
-  (define ((defines-name? name) form)
-    (and (definition? form)
-	 (eq? name (definiend form))))
-  (define (definition-expression definition)
+  (define (expression definition)
     (if (pair? (cadr definition))
 	`(lambda ,(cdadr definition)
 	   ,@(cddr definition))
 	(caddr definition)))
-  (define (non-self-calling? definition)
-    (= 0 (count-in-tree (definiend definition) (definition-expression definition))))
-  (define (inline-defn defn others)
-    (replace-free-occurrences (definiend defn) (definition-expression defn) others))
+  (define (non-self-calling? defn)
+    (= 0 (count-in-tree (definiend defn) (expression defn))))
+  (define (inline-defn defn forms)
+    (replace-free-occurrences (definiend defn) (expression defn) forms))
   (if (list? forms)
       (let loop ((forms forms))
 	(let scan ((done '())
