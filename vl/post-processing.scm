@@ -317,3 +317,18 @@
 		 (scan (cons (car forms) done)
 		       (cdr forms))))))
       forms))
+
+;;;; Compilation to pretty Scheme code
+
+(define (prettify-compiler-output output)
+  (tidy
+   (inline
+    (strip-argument-types
+     (sra
+      (structure-definitions->vectors
+       (tidy
+	output)))))))
+
+(define (compile-to-pretty-scheme program)
+  (prettify-compiler-output
+   (compile-to-scheme program #t)))
