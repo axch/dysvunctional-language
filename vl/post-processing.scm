@@ -54,8 +54,9 @@
   (symbol-with-prefix? thing "closure-"))
 
 (define (generated-temporary? thing)
-  ;(symbol-with-prefix? thing "temp-")
-  (symbol? thing))
+  (or (symbol-with-prefix? thing "temp-")
+      (symbol-with-prefix? thing "the-formals")
+      (symbol-with-prefix? thing "the-closure")))
 
 (define tidy-rules
   (list
@@ -66,11 +67,11 @@
 	    ,@body))
 
    (rule `(define ((?? line) the-formals)
-	    (argument-types (?? stuff))
+	    (argument-types (?? stuff) (the-formals (? type)))
 	    (let (((? name ,symbol?) the-formals))
 	      (?? body)))
 	 `(define (,@line ,name)
-	    (argument-types ,@stuff)
+	    (argument-types ,@stuff (,name ,type))
 	    ,@body))
 
    (rule `(let ()
