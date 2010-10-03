@@ -227,8 +227,8 @@
   (rule-memoize simplify-expression))
 
 (define (scalar-replace-aggregates forms)
-  (define (try-defining-rule rule target done rest loop lose)
-    (let ((definition-sra-attempt (rule target)))
+  (define (try-sra-definition target done rest loop lose)
+    (let ((definition-sra-attempt (sra-definition-rule target)))
       (if definition-sra-attempt
 	  (let ((sra-call-site-rule (car definition-sra-attempt))
 		(replacement-form (cdr definition-sra-attempt)))
@@ -249,7 +249,7 @@
 	  (cond ((null? forms)
 		 (reverse done))
 		(else
-		 (try-defining-rule sra-definition-rule (car forms) done (cdr forms) loop
+		 (try-sra-definition (car forms) done (cdr forms) loop
 		  (lambda ()
 		    (scan (cons (car forms) done) (cdr forms))))))))
       forms))
