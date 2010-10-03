@@ -47,6 +47,17 @@
 	((car rules) data succeed
 	 (lambda ()
 	   (per-rule (cdr rules)))))))
+
+(define (recursively-try-once the-rule)
+  (define (simplify-expression expression)
+    (let ((subexpressions-simplified
+	   (if (list? expression)
+	       (map simplify-expression expression)
+	       expression)))
+      (try-rules subexpressions-simplified (list the-rule)
+       (lambda (result fail) result)
+       (lambda () subexpressions-simplified))))
+  (rule-memoize simplify-expression))
 
 ;;; The user-handler is expected to be a procedure that binds the
 ;;; variables that appear in the match and uses them somehow.  This

@@ -175,14 +175,29 @@
 
 ;;;; Scalar replacement of aggregates
 
-;;; What a mess!
+;;; If some procedure accepts a structured argument, it can be
+;;; converted into accepting the fields of that argument instead, as
+;;; long as all the call sites are changed to pass the fields instead
+;;; of the structure at the same time.  This piece of code does this
+;;; in a way that is local to the definitions and call sites --- the
+;;; new procedure definition just reconstructs the structure from the
+;;; passed arguments, and the new call sites just extract the fields
+;;; from the structure they would have passed.  However, once this
+;;; tranformation is done, further local simplifications done by TIDY
+;;; will have the effect of eliminating those structures completely.
 
-(define (call-site-replacement temp-name constructor-type count)
-  (if (eq? 'cons constructor-type)
-      `((car ,temp-name) (cdr ,temp-name))
-      (map (lambda (index)
-	     `(vector-ref ,temp-name ,index))
-	   (iota count))))
+;;; This code only operates on the cons and vector structures, so
+;;; structure definitions should be converted (for example, with
+;;; STRUCTURE-DEFINITIONS->VECTORS) before calling this.  It also
+;;; expects to operate on the shape the code has before procedure
+;;; inlining, so call INLINE after.  Finally, this relies on the code
+;;; generator having emitted argument type declarations to work, so
+;;; they should be a) requested and b) not stripped out yet.
+
+;;; The key trick in how this is done is SRA-DEFINITION-RULE, which
+;;; pattern matches on a definition with an argument type declaration,
+;;; and, if the definition accepted a structured argument, returns a
+;;; rewritten definition and a rule for transforming the call sites.
 
 (define (cons-or-vector? thing)
   (or (eq? thing 'cons)
@@ -202,7 +217,7 @@
 		   (argument-types ,@stuff1 ,@(map list arg-piece-names arg-piece-shapes) ,@stuff2)
 		   (let ((,formal (,constructor ,@arg-piece-names)))
 		     ,@body))))))
-
+
 (define (sra-call-site-rule operation-name constructor replacee-index num-replacees total-arg-count)
   (rule `(,operation-name (?? args))
 	(and (= (length args) total-arg-count)
@@ -213,16 +228,13 @@
 	       `(let ((,temp-name ,arg))
 		  (,operation-name ,@args1 ,@(call-site-replacement temp-name constructor num-replacees) ,@args2))))))
 
-(define (recursively-try-once the-rule)
-  (define (simplify-expression expression)
-    (let ((subexpressions-simplified
-	   (if (list? expression)
-	       (map simplify-expression expression)
-	       expression)))
-      (try-rules subexpressions-simplified (list the-rule)
-       (lambda (result fail) result)
-       (lambda () subexpressions-simplified))))
-  (rule-memoize simplify-expression))
+;;; The actual SCALAR-REPLACE-AGGREGATES procedure just tries
+;;; SRA-DEFINITION-RULE on all the possible definitions, and whenever
+;;; it rewrites one, applies the resulting sra-call-site-rule to
+;;; rewrite all the call sites.  The only tricky bit is to make sure
+;;; not to apply the sra-call-site-rule to the formal parameter list
+;;; of the definition just rewritten, because it will match and screw
+;;; up.
 
 (define (scalar-replace-aggregates forms)
   (define (try-sra-definition done target rest win lose)
@@ -250,6 +262,13 @@
 		 (scan (cons (car forms) done) (cdr forms)))))))
       forms))
 
+(define (call-site-replacement temp-name constructor-type count)
+  (if (eq? 'cons constructor-type)
+      `((car ,temp-name) (cdr ,temp-name))
+      (map (lambda (index)
+	     `(vector-ref ,temp-name ,index))
+	   (iota count))))
+
 (define strip-argument-types
   (rule-simplifier
    (list
