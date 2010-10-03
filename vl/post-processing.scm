@@ -208,8 +208,9 @@
 		    (loop (do-sra-definition sra-attempt done (cdr forms)))
 		    (scan (cons (car forms) done) (cdr forms)))))))
       forms))
-
-;;; Getting rid the argument-types declarations is easy.
+
+;;; Getting rid the argument-types declarations once we're done with
+;;; them is easy.
 
 (define strip-argument-types
   (rule-simplifier
