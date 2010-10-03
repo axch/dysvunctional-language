@@ -213,45 +213,41 @@
 	       `(let ((,temp-name ,arg))
 		  (,operation-name ,@args1 ,@(call-site-replacement temp-name constructor num-replacees) ,@args2))))))
 
-(define (non-repeating-rule-simplifier the-rules)
+(define (recursively-try-once the-rule)
   (define (simplify-expression expression)
     (let ((subexpressions-simplified
 	   (if (list? expression)
 	       (map simplify-expression expression)
 	       expression)))
-      (try-rules subexpressions-simplified the-rules
-       (lambda (result fail)
-	 result)
-       (lambda ()
-	 subexpressions-simplified))))
+      (try-rules subexpressions-simplified (list the-rule)
+       (lambda (result fail) result)
+       (lambda () subexpressions-simplified))))
   (rule-memoize simplify-expression))
 
 (define (scalar-replace-aggregates forms)
-  (define (try-sra-definition target done rest loop lose)
+  (define (try-sra-definition done target rest win lose)
     (let ((definition-sra-attempt (sra-definition-rule target)))
       (if definition-sra-attempt
 	  (let ((sra-call-site-rule (car definition-sra-attempt))
 		(replacement-form (cdr definition-sra-attempt)))
-	    (let ((sra-call-sites (non-repeating-rule-simplifier (list sra-call-site-rule))))
+	    (let ((sra-call-sites (recursively-try-once sra-call-site-rule)))
 	      (let ((fixed-replacement-form
 		     `(,(car replacement-form) ,(cadr replacement-form)
 		       ,(caddr replacement-form)
 		       ,(sra-call-sites (cadddr replacement-form))))
 		    (fixed-done (sra-call-sites (reverse done)))
-		    (fixed-forms (sra-call-sites rest)))
-		(loop (append fixed-done (list fixed-replacement-form) fixed-forms)))))
+		    (fixed-rest (sra-call-sites rest)))
+		(win (append fixed-done (list fixed-replacement-form) fixed-rest)))))
 	  (lose))))
   (if (list? forms)
       (let loop ((forms forms))
 	(let scan ((done '())
 		   (forms forms))
-	  ;(pp `(done ,done forms ,forms))
-	  (cond ((null? forms)
-		 (reverse done))
-		(else
-		 (try-sra-definition (car forms) done (cdr forms) loop
-		  (lambda ()
-		    (scan (cons (car forms) done) (cdr forms))))))))
+	  (if (null? forms)
+	      (reverse done)
+	      (try-sra-definition done (car forms) (cdr forms) loop
+	       (lambda ()
+		 (scan (cons (car forms) done) (cdr forms)))))))
       forms))
 
 (define strip-argument-types
