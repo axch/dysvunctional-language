@@ -299,14 +299,12 @@
 
 (define (prettify-compiler-output output)
   (tidy
-   (inline-constructions
-    (post-inline
-     (inline
-      (strip-argument-types
-       (sra
-	(structure-definitions->vectors
-	 (tidy
-	  output)))))))))
+   (inline
+    (strip-argument-types
+     (sra
+      (structure-definitions->vectors
+       (tidy
+	output)))))))
 
 (define (compile-to-pretty-scheme program)
   (prettify-compiler-output

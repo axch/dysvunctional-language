@@ -54,25 +54,18 @@
   (symbol-with-prefix? thing "closure-"))
 
 (define (generated-temporary? thing)
-  (or (symbol-with-prefix? thing "temp-")
-      (symbol-with-prefix? thing "the-formals")
-      (symbol-with-prefix? thing "the-closure")))
+  (symbol-with-prefix? thing "temp-"))
+
+(define (constructors-only? exp)
+  (or (symbol? exp)
+      (constant? exp)
+      (null? exp)
+      (and (pair? exp)
+	   (memq (car exp) '(cons vector real))
+	   (every constructors-only? (cdr exp)))))
 
 (define tidy-rules
   (list
-   (rule `(define ((?? line) the-formals)
-	    (let (((? name ,symbol?) the-formals))
-	      (?? body)))
-	 `(define (,@line ,name)
-	    ,@body))
-
-   (rule `(define ((?? line) the-formals)
-	    (argument-types (?? stuff) (the-formals (? type)))
-	    (let (((? name ,symbol?) the-formals))
-	      (?? body)))
-	 `(define (,@line ,name)
-	    (argument-types ,@stuff (,name ,type))
-	    ,@body))
 
    (rule `(let ()
 	    (? body))
@@ -81,23 +74,6 @@
    (rule `(begin
 	    (? body))
 	 body)
-
-   (rule `(let ((?? bindings1)
-		((? name ,generated-temporary?) (cons (? a) (? d)))
-		(?? bindings2))
-	    (?? body))
-	 `(let (,@bindings1
-		,@bindings2)
-	    ,@(replace-free-occurrences name `(cons ,a ,d) body)))
-
-   (rule `(let ((?? bindings1)
-		((? name ,generated-temporary?) (? exp ,symbol?))
-		(?? bindings2))
-	    (?? body))
-	 (and (not (memq exp (append (map car bindings1) (map car bindings2))))
-	      `(let (,@bindings1
-		     ,@bindings2)
-		 ,@(replace-free-occurrences name exp body))))
 
    (rule `(let (((? name ,symbol?) (? exp)))
 	    (? name))
@@ -112,8 +88,43 @@
 		     ,@bindings2)
 		 ,@body)))
 
+   (rule `(let ((?? bindings1)
+		((? name ,symbol?) (? exp))
+		(?? bindings2))
+	    (?? body))
+	 (and (= 1 (count-free-occurrences name body))
+	      (not (memq exp (append (map car bindings1) (map car bindings2))))
+	      `(let (,@bindings1
+		     ,@bindings2)
+		 ,@(replace-free-occurrences name exp body))))
+
+   (rule `(let ((?? bindings1)
+		((? name ,symbol?) (? exp ,constructors-only?))
+		(?? bindings2))
+	    (?? body))
+	 (and (not (memq exp (append (map car bindings1) (map car bindings2))))
+	      `(let (,@bindings1
+		     ,@bindings2)
+		 ,@(replace-free-occurrences name exp body))))
+
+   (rule `(let ((?? bindings1)
+		((? name ,generated-temporary?) (cons (? a) (? d)))
+		(?? bindings2))
+	    (?? body))
+	 `(let (,@bindings1
+		,@bindings2)
+	    ,@(replace-free-occurrences name `(cons ,a ,d) body)))
+
+   (rule `((lambda (? names)
+	     (?? body))
+	   (?? args))
+	 `(let ,(map list names args)
+	    ,@body))
+
    (rule `(car (cons (? a) (? d))) a)
    (rule `(cdr (cons (? a) (? d))) d)
+   (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
+	 (list-ref stuff index))
    ))
 
 (define tidy (rule-simplifier tidy-rules))
@@ -306,51 +317,3 @@
 		 (scan (cons (car forms) done)
 		       (cdr forms))))))
       forms))
-
-;;;; Post-inliner cleanup
-
-(define post-inline-rules
-  (append
-   tidy-rules
-   (list
-    (rule `((lambda (? names)
-	      (?? body))
-	    (?? args))
-	  `(let ,(map list names args)
-	     ,@body))
-
-    (rule `(let (((? name ,symbol?) (? exp)))
-	     (?? body))
-	  (and (not (eq? exp 'the-formals))
-	       (= 1 (count-in-tree name body))
-	       `(let ()
-		  ,@(replace-free-occurrences name exp body))))
-
-    (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
-	  (list-ref stuff index))
-
-    )))
-
-(define post-inline (rule-simplifier post-inline-rules))
-
-(define (constructors-only? exp)
-  (or (symbol? exp)
-      (constant? exp)
-      (null? exp)
-      (and (pair? exp)
-	   (memq (car exp) '(cons vector real))
-	   (every constructors-only? (cdr exp)))))
-
-(define inline-constructions
-  (rule-simplifier
-   (cons
-    (rule `(let ((?? bindings1)
-		((? name ,symbol?) (? exp ,constructors-only?))
-		(?? bindings2))
-	    (?? body))
-	  (and (not (memq exp (append (map car bindings1) (map car bindings2))))
-	       `(let (,@bindings1
-		      ,@bindings2)
-		  ,@(replace-free-occurrences name exp body))))
-    post-inline-rules)))
-
