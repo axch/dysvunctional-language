@@ -25,14 +25,17 @@
   (let* ((interpreted-answer (vl-eval program))
 	 (compiled-program (compile-to-scheme program))
 	 (compiled-answer (%scheme-eval compiled-program))
-	 (pretty-compiled-answer (%scheme-eval (prettify-compiler-output compiled-program))))
+	 (pretty-compiled-answer (%scheme-eval (prettify-compiler-output compiled-program)))
+	 (direct-pretty-compiled-answer (%scheme-eval (compile-to-pretty-scheme program))))
     (if (and (equal? interpreted-answer compiled-answer)
-	     (equal? interpreted-answer pretty-compiled-answer))
+	     (equal? interpreted-answer pretty-compiled-answer)
+	     (equal? interpreted-answer direct-pretty-compiled-answer))
 	compiled-answer
 	(error "VL compiler disagreed with VL interpreter"
 	       `((interpreted: ,interpreted-answer)
 		 (compiled: ,compiled-answer)
-		 (pretty-compiled ,pretty-compiled-answer))))))
+		 (compiled-and-prettified ,pretty-compiled-answer)
+		 (pretty-compiled ,direct-pretty-compiled-answer))))))
 
 (in-test-group
  vl
