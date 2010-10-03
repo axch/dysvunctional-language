@@ -130,6 +130,10 @@
   (make-generic-operator 1 match:eqv))
 
 (defhandler match:->combinators
+  (lambda (pattern) pattern)
+  procedure?)
+
+(defhandler match:->combinators
   (lambda (pattern)
     (match:element
      (match:variable-name pattern)
