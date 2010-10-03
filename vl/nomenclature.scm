@@ -49,3 +49,13 @@
   (set! *symbol-count* 0)
   (set! *closure-names* (make-abstract-hash-table))
   (set! *call-site-names* (make-abstract-hash-table)))
+
+(define (symbol-with-prefix? thing prefix)
+  (and (symbol? thing)
+       (let ((name (symbol->string thing)))
+	 (and (> (string-length name) (string-length prefix))
+	      (equal? (string-head name (string-length prefix))
+		      prefix)))))
+
+(define (generated-temporary? thing)
+  (symbol-with-prefix? thing "temp-"))

@@ -9,6 +9,25 @@
   (or (constant? thing)
       (symbol? thing)))
 
+(define (constructors-only? exp)
+  (or (symbol? exp)
+      (constant? exp)
+      (null? exp)
+      (and (pair? exp)
+	   (memq (car exp) '(cons vector real))
+	   (every constructors-only? (cdr exp)))))
+
+(define (count-in-tree thing tree)
+  (cond ((equal? thing tree)
+	 1)
+	((pair? tree)
+	 (+ (count-in-tree thing (car tree))
+	    (count-in-tree thing (cdr tree))))
+	(else 0)))
+
+(define (occurs-in-tree? thing tree)
+  (> (count-in-tree thing tree) 0))
+
 (define (free-variables exp)
   (cond ((symbol? exp) (list exp))
 	((pair? exp)
@@ -22,17 +41,6 @@
 		(lset-union eq? (free-variables (car exp))
 			    (free-variables (cdr exp))))))
 	(else '())))
-
-(define (count-in-tree thing tree)
-  (cond ((equal? thing tree)
-	 1)
-	((pair? tree)
-	 (+ (count-in-tree thing (car tree))
-	    (count-in-tree thing (cdr tree))))
-	(else 0)))
-
-(define (occurs-in-tree? thing tree)
-  (> (count-in-tree thing tree) 0))
 ;;;; Occurrences of free variables
 
 (define (count-free-occurrences name exp)

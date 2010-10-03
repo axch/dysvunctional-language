@@ -265,96 +265,56 @@
 		 (scan (cons (car forms) done)
 		       (cdr forms))))))
       forms))
-
-;;;; Term-rewriting tidier
+;;;; Term-rewriting tidier
 
-;;; This is by no means a general-purpose Scheme code simplifier.  On
-;;; the contrary, it is deliberately and heavily specialized to the
-;;; task of removing obvious stupidities from the output of the VL
-;;; code generator and post-processing stages.
+(define tidy
+  (rule-simplifier
+   (list
+    (rule `(let () (? body)) body)
+    (rule `(begin (? body)) body)
+    (rule `(car (cons (? a) (? d))) a)
+    (rule `(cdr (cons (? a) (? d))) d)
+    (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
+	  (list-ref stuff index))
+    (rule `(let (((? name ,symbol?) (? exp))) (? name)) exp)
 
-(define (symbol-with-prefix? thing prefix)
-  (and (symbol? thing)
-       (let ((name (symbol->string thing)))
-	 (and (> (string-length name) (string-length prefix))
-	      (equal? (string-head name (string-length prefix))
-		      prefix)))))
+    (rule `((lambda (? names) (?? body)) (?? args))
+	  `(let ,(map list names args) ,@body))
 
-(define (generated-temporary? thing)
-  (symbol-with-prefix? thing "temp-"))
-
-(define (constructors-only? exp)
-  (or (symbol? exp)
-      (constant? exp)
-      (null? exp)
-      (and (pair? exp)
-	   (memq (car exp) '(cons vector real))
-	   (every constructors-only? (cdr exp)))))
-
-(define tidy-rules
-  (list
-
-   (rule `(let ()
-	    (? body))
-	 body)
-
-   (rule `(begin
-	    (? body))
-	 body)
-
-   (rule `((lambda (? names)
+    (rule `(let ((?? bindings1)
+		 ((? name ,symbol?) (? exp))
+		 (?? bindings2))
 	     (?? body))
-	   (?? args))
-	 `(let ,(map list names args)
-	    ,@body))
+	  (and (= 0 (count-free-occurrences name body))
+	       `(let (,@bindings1
+		      ,@bindings2)
+		  ,@body)))
 
-   (rule `(car (cons (? a) (? d))) a)
-   (rule `(cdr (cons (? a) (? d))) d)
-   (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
-	 (list-ref stuff index))
+    (rule `(let ((?? bindings1)
+		 ((? name ,symbol?) (? exp))
+		 (?? bindings2))
+	     (?? body))
+	  (and (= 1 (count-free-occurrences name body))
+	       (not (memq exp (append (map car bindings1)
+				      (map car bindings2))))
+	       `(let (,@bindings1
+		      ,@bindings2)
+		  ,@(replace-free-occurrences name exp body))))
 
-   (rule `(let (((? name ,symbol?) (? exp)))
-	    (? name))
-	 exp)
-
-   (rule `(let ((?? bindings1)
-		((? name ,symbol?) (? exp))
-		(?? bindings2))
-	    (?? body))
-	 (and (= 0 (count-free-occurrences name body))
-	      `(let (,@bindings1
-		     ,@bindings2)
-		 ,@body)))
+    (rule `(let ((?? bindings1)
+		 ((? name ,symbol?) (? exp ,constructors-only?))
+		 (?? bindings2))
+	     (?? body))
+	  (and (not (memq exp (append (map car bindings1)
+				      (map car bindings2))))
+	       `(let (,@bindings1
+		      ,@bindings2)
+		  ,@(replace-free-occurrences name exp body))))
 
-   (rule `(let ((?? bindings1)
-		((? name ,symbol?) (? exp))
-		(?? bindings2))
-	    (?? body))
-	 (and (= 1 (count-free-occurrences name body))
-	      (not (memq exp (append (map car bindings1)
-				     (map car bindings2))))
-	      `(let (,@bindings1
-		     ,@bindings2)
-		 ,@(replace-free-occurrences name exp body))))
-
-   (rule `(let ((?? bindings1)
-		((? name ,symbol?) (? exp ,constructors-only?))
-		(?? bindings2))
-	    (?? body))
-	 (and (not (memq exp (append (map car bindings1)
-				     (map car bindings2))))
-	      `(let (,@bindings1
-		     ,@bindings2)
-		 ,@(replace-free-occurrences name exp body))))
-
-   (rule `(let ((?? bindings1)
-		((? name ,generated-temporary?) (cons (? a) (? d)))
-		(?? bindings2))
-	    (?? body))
-	 `(let (,@bindings1
-		,@bindings2)
-	    ,@(replace-free-occurrences name `(cons ,a ,d) body)))
-
-   ))
-
-(define tidy (rule-simplifier tidy-rules))
+    (rule `(let ((?? bindings1)
+		 ((? name ,generated-temporary?) (cons (? a) (? d)))
+		 (?? bindings2))
+	     (?? body))
+	  `(let (,@bindings1
+		 ,@bindings2)
+	     ,@(replace-free-occurrences name `(cons ,a ,d) body))))))
