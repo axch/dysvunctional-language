@@ -99,7 +99,7 @@
    (rule `(let (((? name ,symbol?) (? exp)))
 	    (? name))
 	 exp)
-
+
    (rule `(let ((?? bindings1)
 		((? name ,symbol?) (? exp))
 		(?? bindings2))
@@ -199,7 +199,14 @@
 		   (args2 (drop args (+ replacee-index 1)))
 		   (temp-name (make-name 'temp-)))
 	       `(let ((,temp-name ,arg))
-		  (,operation-name ,@args1 (car ,temp-name) (cdr ,temp-name) ,@args2))))))
+		  (,operation-name ,@args1 ,@(call-site-replacement temp-name 'cons 2) ,@args2))))))
+
+(define (call-site-replacement temp-name constructor-type count)
+  (if (eq? 'cons constructor-type)
+      `((car ,temp-name) (cdr ,temp-name))
+      (map (lambda (index)
+	     `(vector-ref ,temp-name ,index))
+	   (iota count))))
 
 (define sra-vector-definition-rule
   (rule `(define ((? name ,symbol?) (?? formals1) (? formal ,symbol?) (?? formals2))
@@ -224,9 +231,7 @@
 		   (args2 (drop args (+ replacee-index 1)))
 		   (temp-name (make-name 'temp-)))
 	       `(let ((,temp-name ,arg))
-		  (,operation-name ,@args1 ,@(map (lambda (index)
-						    `(vector-ref ,temp-name ,index))
-						  (iota num-replacees)) ,@args2))))))
+		  (,operation-name ,@args1 ,@(call-site-replacement temp-name 'vector num-replacees) ,@args2))))))
 
 (define (non-repeating-rule-simplifier the-rules)
   (define (simplify-expression expression)
