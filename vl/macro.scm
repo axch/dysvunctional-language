@@ -169,3 +169,37 @@
 		    (lambda (,@names) ,@body))))))))
 
 (define-vl-macro! 'letrec letrec-transformer)
+
+(define (expand-and form)
+  (cond ((null? (cdr form))
+	 #t)
+	((null? (cddr from))
+	 (cadr form))
+	(else
+	 `(if ,(cadr form)
+	      (and ,@(cddr form))
+	      #f))))
+
+(define-vl-macro! 'and expand-and)
+
+(define (expand-or form)
+  (cond ((null? (cdr form))
+	 #f)
+	((null? (cddr from))
+	 (cadr form))
+	(else
+	 `(if ,(cadr form)
+	      #t
+	      (or ,@(cddr form))))))
+
+(define-vl-macro! 'or expand-or)
+
+(define (expand-cond form)
+  (cond ((null? (cdr form))
+	 0) ; unspecific
+	(else
+	 `(if ,(caadr form) ; can support else by making it #t here
+	      ,(cdadr form)
+	      (cond ,@(cddr form))))))
+
+(define-vl-macro! 'cond expand-cond)
