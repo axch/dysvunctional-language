@@ -74,8 +74,8 @@
 	(expression (car (last-pair forms))))
     (if (null? definitions)
 	expression
-	`(letrec ,@(map list (map definiendum definitions)
-			(map definiens definitions))
+	`(letrec ,(map list (map definiendum definitions)
+		       (map definiens definitions))
 	   ,expression))))
 
 ;;;; Additional data-driven macros.
@@ -184,7 +184,7 @@
 (define (expand-and form)
   (cond ((null? (cdr form))
 	 #t)
-	((null? (cddr from))
+	((null? (cddr form))
 	 (cadr form))
 	(else
 	 `(if ,(cadr form)
@@ -196,7 +196,7 @@
 (define (expand-or form)
   (cond ((null? (cdr form))
 	 #f)
-	((null? (cddr from))
+	((null? (cddr form))
 	 (cadr form))
 	(else
 	 `(if ,(cadr form)
@@ -210,7 +210,7 @@
 	 0) ; unspecific
 	(else
 	 `(if ,(caadr form) ; can support else by making it #t here
-	      ,(cdadr form)
+	      ,(cadadr form)
 	      (cond ,@(cddr form))))))
 
 (define-vl-macro! 'cond expand-cond)

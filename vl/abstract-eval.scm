@@ -186,7 +186,7 @@
 	((abstract-all? proc)
 	 '())
 	(else
-	 (error "Expanding an application a known non-procedure"
+	 (error "Expanding an application of a known non-procedure"
 		proc arg analysis))))
 
 (define (analysis-expand-binding binding analysis)
