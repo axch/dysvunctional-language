@@ -9,6 +9,21 @@
   (or (constant? thing)
       (symbol? thing)))
 
+(define (definition? form)
+  (and (pair? form)
+       (eq? (car form) 'define)))
+
+(define (definiendum definition)
+  (if (pair? (cadr definition))
+      (caadr definition)
+      (cadr definition)))
+
+(define (definiens definition)
+  (if (pair? (cadr definition))
+      `(lambda ,(cdadr definition)
+	 ,@(cddr definition))
+      (caddr definition)))
+
 (define (constructors-only? exp)
   (or (symbol? exp)
       (constant? exp)
@@ -27,6 +42,8 @@
 
 (define (occurs-in-tree? thing tree)
   (> (count-in-tree thing tree) 0))
+
+;;;; Free variables
 
 (define (free-variables exp)
   (cond ((symbol? exp) (list exp))
@@ -41,7 +58,6 @@
 		(lset-union eq? (free-variables (car exp))
 			    (free-variables (cdr exp))))))
 	(else '())))
-;;;; Occurrences of free variables
 
 (define (count-free-occurrences name exp)
   (cond ((eq? exp name) 1)
@@ -67,7 +83,7 @@
 		(+ (count-free-occurrences name (car exp))
 		   (count-free-occurrences name (cdr exp))))))
 	(else 0)))
-
+
 (define (replace-free-occurrences name new exp)
   (cond ((eq? exp name) new)
 	((pair? exp)
@@ -93,7 +109,8 @@
 	       (else
 		(cons (replace-free-occurrences name new (car exp))
 		      (replace-free-occurrences name new (cdr exp))))))
-	(else exp)))
+	(else exp)))
+
 ;;;; Closures
 
 (define-structure (closure (safe-accessors #t) (constructor %make-closure))
