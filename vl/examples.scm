@@ -58,8 +58,8 @@
 
 (let ((frobnicate (lambda (x) (real x))))
   (frobnicate 3))
-
-;;; Factorial
+
+;;; Factorial
 
 (letrec ((fact (lambda (n)
 		 (if (= n 1)
@@ -104,8 +104,7 @@
   (if (> count 0)
       (+ (loop (- count 1)) 1)
       count))
-
-;;; Mapping different functions over different length lists.
+;;; Mapping different functions over different length lists.
 
 (let ((increment (lambda (x) (+ x 1)))
       (double (lambda (x) (* x 2)))
@@ -116,7 +115,8 @@
 		      ()
 		      (cons (f (car lst)) (map f (cdr lst)))))))
     (cons (map increment (real 1) (real 2) (real 3) ())
-	  (map double (real 4) (real 5) ()))))
+	  (map double (real 4) (real 5) ()))))
+
 ;;; Vector addition
 
 (let ((car (lambda ((cons x ())) x))
