@@ -1,7 +1,7 @@
-(define (car ((cons x ())))
+(define (car (cons x ()))
   x)
 
-(define (cdr ((cons () y)))
+(define (cdr (cons () y))
   y)
 
 (define (v+ structure1 structure2)
