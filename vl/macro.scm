@@ -18,7 +18,7 @@
 	((pair? exp)
 	 (cond ((eq? (car exp) 'lambda)
 		`(lambda ,(macroexpand-formals (cadr exp))
-		   ,(macroexpand (caddr exp))))
+		   ,(macroexpand (macroexpand-body (cddr exp)))))
 	       ((eq? (car exp) 'cons)
 		`(cons ,(macroexpand (cadr exp))
 		       ,(macroexpand (caddr exp))))
@@ -66,6 +66,17 @@
 		   (error "Invalid formal parameter tree" formals))))))
 	(else
 	 (error "Invalid formal parameter tree" formals))))
+
+;;; Multi-form procedure bodies are presumed to contain internal
+;;; definitions, which are expanded into LETREC.
+(define (macroexpand-body forms)
+  (let ((definitions (except-last-pair forms))
+	(expression (car (last-pair forms))))
+    (if (null? definitions)
+	expression
+	`(letrec ,@(map list (map definiendum definitions)
+			(map definiens definitions))
+	   ,expression))))
 
 ;;;; Additional data-driven macros.
 
