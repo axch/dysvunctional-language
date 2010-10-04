@@ -101,8 +101,7 @@
 		      ()
 		      (cons (f (car lst)) (map f (cdr lst)))))))
     (cons (map increment (real 1) (real 2) (real 3) ())
-	  (map double (real 4) (real 5) ()))))
-
+	  (map double (real 4) (real 5) ()))))
 ;;; Vector addition
 
 (let ((car (lambda ((cons x ())) x))
