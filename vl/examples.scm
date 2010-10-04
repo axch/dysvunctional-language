@@ -120,3 +120,25 @@
   (cons (v+ (real 1) (real 2))
 	(v+ (cons (real 10) (real 20))
 	    (cons (real 1) (real 2)))))
+
+;;; Square root by iteration to fixed point
+
+(let ()
+ (define (heron-step x)
+   (lambda (guess)
+     (/ (+ guess (/ x guess)) 2)))
+
+ (define (close-enuf? a b)
+   (< (abs (- a b)) 0.00001))
+
+ (define (numeric-fix f start close-enuf?)
+   (let loop ((old start)
+	      (new (f start)))
+     (if (close-enuf? old new)
+	 new
+	 (loop new (f new)))))
+
+ (define (square-root x)
+   (numeric-fix (heron-step x) (real 1.0) close-enuf?))
+
+ (cons (sqrt 2) (square-root 2)))
