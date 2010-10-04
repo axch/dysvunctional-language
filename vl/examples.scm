@@ -65,7 +65,7 @@
 		 (if (= n 1)
 		     1
 		     (* n (fact (- n 1)))))))
-  (fact 5))
+  (fact (real 5)))
 
 ;;; Factorial, with letrec manually macro expanded
 
@@ -98,6 +98,11 @@
 (let loop ((count (real 0)))
   (if (< count 10)
       (loop (+ count 1))
+      count))
+
+(let loop ((count (real 10)))
+  (if (< count 0)
+      (+ (loop (- count 1)) 1)
       count))
 
 ;;; Mapping different functions over different length lists.
