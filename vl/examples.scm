@@ -101,7 +101,7 @@
       count))
 
 (let loop ((count (real 10)))
-  (if (< count 0)
+  (if (> count 0)
       (+ (loop (- count 1)) 1)
       count))
 
