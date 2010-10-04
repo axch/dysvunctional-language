@@ -41,14 +41,24 @@
 (let ((my-add (lambda (x y) (+ x y))))
   (my-add (real 3) (real 6)))
 
+(let ((my-add (lambda (x y) (+ (real x) (real y)))))
+  (my-add 3 6))
+
 (let ((my-add (lambda (foo) (+ foo))))
   (my-add (cons (real 3) (real 6))))
 
 (let ((my-add (lambda (foo) (+ foo))))
   (my-add (cons 3 (real 6))))
 
+(let ((my-add (lambda (foo) (real (+ foo)))))
+  (my-add 3 6))
+
 (let ((delay-add (lambda (x y) (lambda () (+ x y)))))
   ((delay-add (real 3) (real 6))))
+
+(let ((frobnicate (lambda (x) (real x))))
+  (frobnicate 3))
+
 ;;; Factorial
 
 (letrec ((fact (lambda (n)
