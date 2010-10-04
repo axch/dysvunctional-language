@@ -287,15 +287,20 @@
 	     (begin)))))
       '()))
 
-(define (compile-to-scheme program #!optional emit-type-declarations?)
+(define (generate program analysis #!optional emit-type-declarations?)
   (initialize-name-caches!)
   (if (default-object? emit-type-declarations?)
       (set! emit-type-declarations? #f))
-  (let ((analysis (analyze program)))
-    `(begin ,@(type-declaration-macro emit-type-declarations?)
-	    ,@(structure-definitions analysis)
-	    ,@(procedure-definitions analysis emit-type-declarations?)
-	    ,(compile (macroexpand program)
-		      (initial-vl-user-env)
-		      #f
-		      analysis))))
+  `(begin ,@(type-declaration-macro emit-type-declarations?)
+	  ,@(structure-definitions analysis)
+	  ,@(procedure-definitions analysis emit-type-declarations?)
+	  ,(compile (macroexpand program)
+		    (initial-vl-user-env)
+		    #f
+		    analysis)))
+
+(define (analyze-and-generate program)
+  (generate program (analyze program)))
+
+(define (analyze-and-generate-with-type-declarations program)
+  (generate program (analyze program) #t))
