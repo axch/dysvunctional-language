@@ -102,3 +102,22 @@
 		      (cons (f (car lst)) (map f (cdr lst)))))))
     (cons (map increment (real 1) (real 2) (real 3) ())
 	  (map double (real 4) (real 5) ()))))
+
+;;; Vector addition
+
+(let ((car (lambda ((cons x ())) x))
+      (cdr (lambda ((cons () y)) y)))
+  (letrec ((v+ (lambda (structure1 structure2)
+		 (cond ((and (pair? structure1)
+			     (pair? structure2))
+			(cons (v+ (car structure1)
+				  (car structure2))
+			      (v+ (cdr structure1)
+				  (cdr structure2))))
+		       ((and (null? structure1) (null? structure2))
+			())
+		       (#t ; (and (number? structure1) (number? structure2))
+			(+ structure1 structure2))))))
+    (cons (v+ (real 1) (real 2))
+	  (v+ (cons (real 10) (real 20))
+	      (cons (real 1) (real 2))))))
