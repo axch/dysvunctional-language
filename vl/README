@@ -74,13 +74,17 @@ differing in the following respects:
 
 - The only Scheme datatypes supported are the empty list,
   booleans, real numbers, pairs, and procedures.
-- Only the following built-in Scheme syntax is supported:
-  LAMBDA, IF, LET, LETREC, and procedure application.
+- Only the following built-in Scheme syntax is supported: LAMBDA, LET,
+  LETREC, DEFINE, IF, COND, AND, OR and procedure application.
 - Only a subset of built-in Scheme procedures are supported.
 - No rest arguments.
-- No implicit sequencing (lambda bodies may only contain one form).
+- No implicit sequencing (lambda bodies may only contain one form,
+  except for internal definitions).
+- LETREC may only be used to bind procedures
+- DEFINE may only be used to define procedures
 - CONS is built-in syntax, not a procedure.
-- The names LAMBDA, IF, LET, LETREC, and CONS may not be shadowed.
+- The names LAMBDA, LET, LETREC, DEFINE, IF, COND, AND, OR and CONS
+  may not be shadowed.
 - The only self-evaluating forms are literal numbers, #t, #f, and ()
 - Procedure parameters p can be variables, () to indicate that an
   argument should be ignored, or (cons p1 p2) to indicate the argument
