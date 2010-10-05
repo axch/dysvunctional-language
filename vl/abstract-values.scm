@@ -29,23 +29,20 @@
 
 ;;; Unique abstract objects
 
-(define abstract-boolean (list 'abstract-boolean))
-(define (abstract-boolean? thing)
-  (eq? thing abstract-boolean))
+(define-structure abstract-boolean)
+(define abstract-boolean (make-abstract-boolean))
 (define (some-boolean? thing)
   (or (boolean? thing)
       (abstract-boolean? thing)))
 
-(define abstract-real (list 'abstract-real))
-(define (abstract-real? thing)
-  (eq? thing abstract-real))
+(define-structure abstract-real)
+(define abstract-real (make-abstract-real))
 (define (some-real? thing)
   (or (real? thing)
       (abstract-real? thing)))
 
-(define abstract-all (list 'abstract-all))
-(define (abstract-all? thing)
-  (eq? thing abstract-all))
+(define-structure abstract-all)
+(define abstract-all (make-abstract-all))
 
 ;;; Equality of shapes
 

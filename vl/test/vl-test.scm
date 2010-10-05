@@ -130,7 +130,7 @@
 			      (lambda (x) (f (g x))))))
 	       (cons ((compose double square) 2)
 		     ((compose square double) 2)))))
-   (equal? '((abstract-real) . (abstract-real))
+   (equal? `(,abstract-real . ,abstract-real)
     (analyzed-answer
      '(let ((double (lambda (x)
 		      (+ x x)))
