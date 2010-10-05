@@ -67,6 +67,20 @@
 		     (* n (fact (- n 1)))))))
   (fact (real 5)))
 
+(let ((my-* (lambda (x y) (* x y))))
+  (letrec ((fact (lambda (n)
+		   (if (= n 1)
+		       1
+		       (my-* n (fact (- n 1)))))))
+    (fact (real 5))))
+
+(let ((my-* (lambda (x y) (* x y))))
+  (letrec ((fact (lambda (n)
+		   (if (= n 1)
+		       1
+		       (my-* n (fact (- n 1)))))))
+    (fact 5)))
+
 ;;; Factorial, with letrec manually macro expanded
 
 (let ((Z (lambda (f)
@@ -104,6 +118,12 @@
   (if (> count 0)
       (+ (loop (- count 1)) 1)
       count))
+
+(abs
+ (let loop ((count (real 0)))
+   (if (> count -10)
+       (loop (- count 1))
+       count)))
 ;;; Mapping different functions over different length lists.
 
 (let ((increment (lambda (x) (+ x 1)))

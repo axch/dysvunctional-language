@@ -103,7 +103,7 @@
 	    exp env enclosure analysis operands))
 	  ((primitive? operator)
 	   (generate-primitive-application
-	    operator
+	    operator operands
 	    (compile (cadr exp) env enclosure analysis)))
 	  ((closure? operator)
 	   (generate-closure-application
@@ -144,13 +144,26 @@
 
 ;;; A VL primitive application becomes an inlined call to a Scheme
 ;;; primitive (destructuring the incoming argument if needed).
-(define (generate-primitive-application primitive arg-code)
+(define (generate-primitive-application primitive arg-shape arg-code)
   (cond ((= 1 (primitive-arity primitive))
+	 (if (abstract-all? arg-shape)
+	     (error "Unary primitive procedure given fully unknown argument"
+		    primitive arg-shape arg-code))
 	 `(,(primitive-name primitive) ,arg-code))
 	((= 2 (primitive-arity primitive))
+	 (if (not (pair? arg-shape))
+	     (error "Wrong arguments to binary primitive procedure"
+		    primitive arg-shape arg-code))
 	 (let ((temp (fresh-temporary)))
+	   (define (access-code access access-name)
+	     (if (solved-abstractly? (access arg-shape))
+		 (solved-abstract-value->constant (access arg-shape))
+		 `(,access-name ,temp))
+	     `(,access-name ,temp))
 	   `(let ((,temp ,arg-code))
-	      (,(primitive-name primitive) (car ,temp) (cdr ,temp)))))
+	      (,(primitive-name primitive)
+	       ,(access-code car 'car)
+	       ,(access-code cdr 'cdr)))))
 	(else
 	 (error "Unsupported arity of primitive operation" primitive))))
 
