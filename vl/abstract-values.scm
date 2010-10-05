@@ -133,7 +133,7 @@
 	((pair? thing)
 	 (list 'cons (solved-abstract-value->constant (car thing))
 	       (solved-abstract-value->constant (cdr thing))))
-	(else ''void)))
+	(else '(vector))))
 
 (define (interesting-variable? env)
   (lambda (var)
@@ -158,7 +158,7 @@
 	((abstract-boolean? thing)
 	 'boolean)
 	((solved-abstractly? thing)
-	 'void)
+	 (vector))
 	((closure? thing)
 	 (cons (abstract-closure->scheme-structure-name thing)
 	       (map shape->type-declaration
