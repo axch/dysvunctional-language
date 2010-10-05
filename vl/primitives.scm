@@ -126,11 +126,7 @@
 (define-RxR->bool-primitive  =)
 
 (define-primitive-type-predicate null?)
-(define (some-pair? thing)
-  (and (pair? thing)
-       (not (abstract-boolean? thing))
-       (not (abstract-real? thing))))
-(add-primitive! (primitive-type-predicate 'pair? some-pair?))
+(define-primitive-type-predicate pair?)
 
 ;;; The primitives REAL and IF-PROCEDURE are very special.
 
