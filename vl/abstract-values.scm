@@ -163,7 +163,7 @@
 	((abstract-boolean? thing)
 	 'boolean)
 	((solved-abstractly? thing)
-	 (vector))
+	 '(vector))
 	((closure? thing)
 	 (cons (abstract-closure->scheme-structure-name thing)
 	       (map shape->type-declaration

@@ -170,18 +170,12 @@
 ;;; distinct and can be given distinct toplevel Scheme names.  The
 ;;; generated Scheme procedures in question accept two arguments: the
 ;;; closure-record for the compound procedure being called, and the
-;;; pair tree of arguments.  One or both may be elided if they were
-;;; solved by the analysis.
+;;; pair tree of arguments.  One or both may be eliminated by the post
+;;; processing if they were solved by the analysis.
 (define (generate-closure-application
 	 closure arg-shape closure-code arg-code)
   (let ((call-name (call-site->scheme-function-name closure arg-shape)))
-    (if (solved-abstractly? closure)
-	(if (solved-abstractly? arg-shape)
-	    (list call-name)
-	    (list call-name arg-code))
-	(if (solved-abstractly? arg-shape)
-	    (list call-name closure-code)
-	    (list call-name closure-code arg-code)))))
+    (list call-name closure-code arg-code)))
 
 ;;;; Structure definitions
 
@@ -235,13 +229,13 @@
 		(cons operator operands))))))
 
 ;;; Every generated Scheme procedure receives two arguments (either or
-;;; both of which will be elided if they are completely solved): the
-;;; record for the closure this procedure was converted from and the
-;;; data structure containing the arguments.  The procedure must
-;;; destructure the argument structure the same way the corresponding
-;;; VL procedure did, and execute its compiled body.  The
-;;; destructuring elides solved slots of the incoming argument
-;;; structure.
+;;; both of which will be eliminated by the post processing if they
+;;; are completely solved): the record for the closure this procedure
+;;; was converted from and the data structure containing the
+;;; arguments.  The procedure must destructure the argument structure
+;;; the same way the corresponding VL procedure did, and execute its
+;;; compiled body.  The destructuring elides solved slots of the
+;;; incoming argument structure.
 (define ((procedure-definition analysis emit-type-declarations?)
 	 operator.operands)
   (define (destructuring-let-bindings formal-tree arg-tree)
@@ -266,14 +260,10 @@
 	(operands (cdr operator.operands)))
     (define (type-declaration)
       `(argument-types
-	,@(if (solved-abstractly? operator) '()
-	      `((the-closure ,(shape->type-declaration operator))))
-	,@(if (solved-abstractly? operands) '()
-	      `((the-formals ,(shape->type-declaration operands))))))
+	(the-closure ,(shape->type-declaration operator))
+	(the-formals ,(shape->type-declaration operands))))
     (let ((name (call-site->scheme-function-name operator operands)))
-      `(define (,name
-		,@(if (solved-abstractly? operator) '() '(the-closure))
-		,@(if (solved-abstractly? operands) '() '(the-formals)))
+      `(define (,name the-closure the-formals)
 	 ,@(if emit-type-declarations? (list (type-declaration)) '())
 	 (let ,(destructuring-let-bindings
 		(car (closure-formal operator))
