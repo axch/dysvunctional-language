@@ -86,6 +86,10 @@
 (define (abstract-union thing1 thing2)
   (cond ((abstract-equal? thing1 thing2)
 	 thing1)
+	((abstract-all? thing1)
+	 thing2)
+	((abstract-all? thing2)
+	 thing1)
 	((and (some-boolean? thing1) (some-boolean? thing2))
 	 abstract-boolean)
 	((and (some-real? thing1) (some-real? thing2))
@@ -150,7 +154,8 @@
 ;;; that's as solved as it's going to get.  (Some of the primitives
 ;;; are also deliberately tweaked to preserve this property).
 (define (open-to-refinement? val)
-  (abstract-all? val))
+  #t
+  #;(abstract-all? val))
 
 (define (shape->type-declaration thing)
   (cond ((abstract-real? thing)
