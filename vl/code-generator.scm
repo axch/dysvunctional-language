@@ -126,7 +126,7 @@
 	  (generate-closure-application
 	   invokee-shape '()
 	   (compile branch-exp env enclosure analysis)
-	   "Lose!"))))
+	   '(vector)))))
   (if (solved-abstractly? (car operands))
       (if (car operands)
 	  (generate-if-branch
