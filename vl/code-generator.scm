@@ -84,12 +84,9 @@
 (define (compile-cons exp env enclosure analysis)
   (let ((first-shape (analysis-get (cadr exp) env analysis))
 	(second-shape (analysis-get (caddr exp) env analysis)))
-    `(cons ,(if (solved-abstractly? first-shape)
-		(solved-abstract-value->constant first-shape)
-		(compile (cadr exp) env enclosure analysis))
-	   ,(if (solved-abstractly? second-shape)
-		(solved-abstract-value->constant second-shape)
-		(compile (caddr exp) env enclosure analysis)))))
+    `(cons ,(compile (cadr exp) env enclosure analysis)
+	   ,(compile (caddr exp) env enclosure analysis))))
+
 ;;; The flow analysis fully determines the shape of every VL procedure
 ;;; that is called at any VL call site.  This allows applications to
 ;;; be coded to directly refer to the right target.  N.B.  The
@@ -158,8 +155,7 @@
 	   (define (access-code access access-name)
 	     (if (solved-abstractly? (access arg-shape))
 		 (solved-abstract-value->constant (access arg-shape))
-		 `(,access-name ,temp))
-	     `(,access-name ,temp))
+		 `(,access-name ,temp)))
 	   `(let ((,temp ,arg-code))
 	      (,(primitive-name primitive)
 	       ,(access-code car 'car)
