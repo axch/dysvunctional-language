@@ -113,7 +113,7 @@
 	  (abstract-union (env-bindings thing1)
 			  (env-bindings thing2))))
 	(else
-	 abstract-none)))
+	 (error "This program is not union-free:" thing1 thing2))))
 
 ;;; Is this shape completely determined?
 
