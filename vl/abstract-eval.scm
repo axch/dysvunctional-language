@@ -82,10 +82,10 @@
 				   (cadr exp) env analysis))
 		      (cdr-answer (analysis-get
 				   (caddr exp) env analysis)))
-		  (if (and (not (abstract-all? car-answer))
-			   (not (abstract-all? cdr-answer)))
+		  (if (and (not (abstract-none? car-answer))
+			   (not (abstract-none? cdr-answer)))
 		      (cons car-answer cdr-answer)
-		      abstract-all)))
+		      abstract-none)))
 	       (else
 		(refine-apply
 		 (analysis-get (car exp) env analysis)
@@ -102,16 +102,16 @@
 	     ((primitive-abstract-implementation proc) arg analysis)
 	     ((primitive-abstract-implementation proc) arg)))
 	((closure? proc)
-	 (if (abstract-all? arg)
-	     abstract-all
+	 (if (abstract-none? arg)
+	     abstract-none
 	     (analysis-get (closure-body proc)
 			   (extend-env
 			    (closure-formal proc)
 			    arg
 			    (closure-env proc))
 			   analysis)))
-	((abstract-all? proc)
-	 abstract-all)
+	((abstract-none? proc)
+	 abstract-none)
 	(else
 	 (error "Refining an application of a known non-procedure"
 		proc arg analysis))))
@@ -157,7 +157,7 @@
 ;;; EXPAND-APPLY is \bar A' from [1].
 (define (expand-apply proc arg analysis)
   (cond ((primitive? proc)
-	 (if (or (abstract-all? arg) (not (eq? primitive-if proc)))
+	 (if (or (abstract-none? arg) (not (eq? primitive-if proc)))
 	     '()
 	     (let ((predicate (car arg))
 		   (consequent (cadr arg))
@@ -175,7 +175,7 @@
 			       (expand-thunk-application consequent)
 			       (expand-thunk-application alternate))))))
 	((closure? proc)
-	 (if (abstract-all? arg)
+	 (if (abstract-none? arg)
 	     '()
 	     (analysis-expand (closure-body proc)
 			      (extend-env
@@ -183,7 +183,7 @@
 			       arg
 			       (closure-env proc))
 			      analysis)))
-	((abstract-all? proc)
+	((abstract-none? proc)
 	 '())
 	(else
 	 (error "Expanding an application of a known non-procedure"
@@ -219,7 +219,7 @@
 	 (make-analysis
 	  (list (list (macroexpand program)
 		      (initial-vl-user-env)
-		      abstract-all)))))
+		      abstract-none)))))
     (let loop ((old-analysis initial-analysis)
 	       (new-analysis (step-analysis initial-analysis))
 	       (count 0))

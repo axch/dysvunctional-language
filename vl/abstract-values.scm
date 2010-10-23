@@ -41,8 +41,8 @@
   (or (real? thing)
       (abstract-real? thing)))
 
-(define-structure abstract-all)
-(define abstract-all (make-abstract-all))
+(define-structure abstract-none)
+(define abstract-none (make-abstract-none))
 
 ;;; Equality of shapes
 
@@ -86,9 +86,9 @@
 (define (abstract-union thing1 thing2)
   (cond ((abstract-equal? thing1 thing2)
 	 thing1)
-	((abstract-all? thing1)
+	((abstract-none? thing1)
 	 thing2)
-	((abstract-all? thing2)
+	((abstract-none? thing2)
 	 thing1)
 	((and (some-boolean? thing1) (some-boolean? thing2))
 	 abstract-boolean)
@@ -110,7 +110,7 @@
 	  (abstract-union (env-bindings thing1)
 			  (env-bindings thing2))))
 	(else
-	 abstract-all)))
+	 abstract-none)))
 
 ;;; Is this shape completely determined?
 
@@ -120,7 +120,7 @@
 	((real? thing) #t)
 	((abstract-boolean? thing) #f)
 	((abstract-real? thing) #f)
-	((abstract-all? thing) #f)
+	((abstract-none? thing) #f)
 	((primitive? thing) #t)
 	((closure? thing) (solved-abstractly? (closure-env thing)))
 	((pair? thing) (and (solved-abstractly? (car thing))
@@ -149,13 +149,13 @@
 	symbol<?))
 
 ;;; This abstract domain, together with the fact that the abstract
-;;; interpreter bubbles abstract-all values up, has the feature that
-;;; every abstract value that occurs is either abstract-all or a shape
+;;; interpreter bubbles abstract-none values up, has the feature that
+;;; every abstract value that occurs is either abstract-none or a shape
 ;;; that's as solved as it's going to get.  (Some of the primitives
 ;;; are also deliberately tweaked to preserve this property).
 (define (open-to-refinement? val)
   #t
-  #;(abstract-all? val))
+  #;(abstract-none? val))
 
 (define (shape->type-declaration thing)
   (cond ((abstract-real? thing)

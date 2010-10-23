@@ -21,13 +21,13 @@
 ;;; Most primitives fall into a few natural classes:
 
 ;;; Unary numeric primitives just have to handle getting abstract
-;;; values for arguments (either ABSTRACT-ALL or ABSTRACT-REAL).
+;;; values for arguments (either ABSTRACT-NONE or ABSTRACT-REAL).
 (define (unary-numeric-primitive name base)
   (make-primitive name 1
    base
    (lambda (arg)
-     (if (abstract-all? arg)
-	 abstract-all
+     (if (abstract-none? arg)
+	 abstract-none
 	 (if (abstract-real? arg)
 	     abstract-real
 	     (base arg))))))
@@ -39,8 +39,8 @@
    (lambda (arg)
      (base (car arg) (cdr arg)))
    (lambda (arg)
-     (if (abstract-all? arg)
-	 abstract-all
+     (if (abstract-none? arg)
+	 abstract-none
 	 (let ((first-arg (car arg))
 	       (second-arg (cdr arg)))
 	   (if (or (abstract-real? first-arg)
@@ -62,8 +62,8 @@
   (make-primitive name 1
    base
    (lambda (arg)
-     (if (abstract-all? arg)
-	 abstract-all ; Not abstract-bool, we're union-free
+     (if (abstract-none? arg)
+	 abstract-none ; Not abstract-bool, we're union-free
 	 (base arg)))))
 
 ;;; Binary numeric comparisons have all the concerns of binary numeric
@@ -73,8 +73,8 @@
    (lambda (arg)
      (base (car arg) (cdr arg)))
    (lambda (arg)
-     (if (abstract-all? arg)
-	 abstract-all
+     (if (abstract-none? arg)
+	 abstract-none
 	 (let ((first (car arg))
 	       (second (cdr arg)))
 	   (if (or (abstract-real? first)
@@ -145,7 +145,7 @@
  (make-primitive 'real 1
   real
   (lambda (x)
-    (cond ((abstract-all? x) abstract-all)
+    (cond ((abstract-none? x) abstract-none)
 	  ((abstract-real? x) abstract-real)
 	  ((number? x) abstract-real)
 	  (else (error "A known non-real is declared real" x))))))
@@ -163,8 +163,8 @@
    (lambda (arg)
      (if-procedure (car arg) (cadr arg) (cddr arg)))
    (lambda (shape analysis)
-     (if (abstract-all? shape)
-	 abstract-all
+     (if (abstract-none? shape)
+	 abstract-none
 	 (let ((predicate (car shape)))
 	   (if (not (abstract-boolean? predicate))
 	       (if predicate

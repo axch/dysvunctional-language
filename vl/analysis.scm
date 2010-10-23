@@ -19,7 +19,7 @@
    (lambda (value)
      value)
    (lambda ()
-     abstract-all)))
+     abstract-none)))
 
 ;;; EXPAND-ANALYSIS is \bar E_1' from [1].
 ;;; It registers interest in the evaluation of EXP in ENV by producing
@@ -31,7 +31,7 @@
    (lambda (value)
      '())
    (lambda ()
-     (list (list exp env abstract-all)))))
+     (list (list exp env abstract-none)))))
 
 (define (same-analysis-binding? binding1 binding2)
   (abstract-equal? binding1 binding2))

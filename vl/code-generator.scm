@@ -143,7 +143,7 @@
 ;;; primitive (destructuring the incoming argument if needed).
 (define (generate-primitive-application primitive arg-shape arg-code)
   (cond ((= 1 (primitive-arity primitive))
-	 (if (abstract-all? arg-shape)
+	 (if (abstract-none? arg-shape)
 	     (error "Unary primitive procedure given fully unknown argument"
 		    primitive arg-shape arg-code))
 	 `(,(primitive-name primitive) ,arg-code))
