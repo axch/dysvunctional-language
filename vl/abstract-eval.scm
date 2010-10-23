@@ -7,27 +7,28 @@
 ;;; be much faster, but this program is supposed to be expository.
 
 ;;; The code extends and completes the presentation in [1] by filling
-;;; out all the details.  In particular, [1] swept IF under the rug as
-;;; a "primitive", but when I tried to write the program down it
-;;; turned out to be somewhat thorny.  The thorns come from the fact
-;;; that the analysis has to be kept from exploring any branch of an
-;;; IF until that branch is known to be live.  This program does not
-;;; include any additional subtleties that may be introduced by the AD
-;;; basis.
+;;; out all the details.  In particular, [1] omits discussion of
+;;; primitives, but when I tried to write down the program for doing
+;;; IF it turned out to be somewhat thorny.  IF is the only primitive
+;;; in this program that accepts closures and chooses whether to
+;;; invoke them; the thorns come from the fact that the analysis has
+;;; to be kept from exploring any branch of an IF until that branch is
+;;; known to be live.  This program does not include any additional
+;;; subtleties that may be introduced by the AD basis.
 
 ;;; The main data structure being manipulated here is called an
 ;;; analysis.  (Sorry about the nomenclature -- "flow analysis" is the
 ;;; process, but an "analysis" is a particular collection of knowledge
 ;;; acquired by that process at a particular stage in its progress).
-;;; Have a look at analysis.scm if you are interested in
-;;; representation details.
+;;; Have a look at analysis.scm if you want representation details.
 
 ;;; An analysis is a collection of bindings, binding pairs of
 ;;; expression and (abstract) environment to abstract values.  Every
-;;; such binding means two things.  It means "I know that this
-;;; expression, when evalutated in this abstract environment, will
-;;; produce something of this shape (abstract value)."  It also means
-;;; "I want to know more about what this expression will produce if
+;;; such binding means two things.  It means "This is the minimal
+;;; shape (abstract value) that covers all the values that I know this
+;;; expression, when evalutated in this abstract environment, may
+;;; produce during the execution of the program."  It also means "I
+;;; want to know more about what this expression may produce if
 ;;; evaluated in this abstract environment."
 
 ;;; The process of abstract interpretation with respect to a
