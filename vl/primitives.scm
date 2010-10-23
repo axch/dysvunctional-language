@@ -48,22 +48,20 @@
 	       abstract-real
 	       (base first-arg second-arg)))))))
 
-;;; Primitive type testers (namely NULL? and PAIR?) need to take care
-;;; not to offer information too soon.  In principle, of course, no
-;;; matter what argument is passed to NULL? or PAIR?, the answer is
-;;; guaranteed to be some boolean.  However, IF treats an
-;;; ABSTRACT-BOOLEAN predicate as a promise that the analysis has
-;;; figured out that either branch is definitely capable of being
-;;; taken.  Therefore, primitive type testers must wait until the
-;;; analysis has determined the shape their argument will take, and
-;;; compute the answer only then.
+;;; In principle, of course, no matter what argument is passed to
+;;; NULL? or PAIR?, the answer is guaranteed to be some boolean.
+;;; However, an ABSTRACT-BOOLEAN is a promise that the analysis has
+;;; figured out that either boolean value is definitely possible.
+;;; Therefore, primitive type testers must wait until the analysis has
+;;; determined the shape their argument will take, and compute the
+;;; answer only then.
 
 (define (primitive-type-predicate name base)
   (make-primitive name 1
    base
    (lambda (arg)
      (if (abstract-none? arg)
-	 abstract-none ; Not abstract-bool, we're union-free
+	 abstract-none ; Not abstract-bool
 	 (base arg)))))
 
 ;;; Binary numeric comparisons have all the concerns of binary numeric

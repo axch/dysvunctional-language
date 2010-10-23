@@ -1,15 +1,17 @@
 (declare (usual-integrations))
 ;;;; Abstract values
 
-;;; An abstract value represents the "shape" that a concrete value may
-;;; take.  The following shapes are admitted: Known concrete scalars,
-;;; the "boolean" shape, the "real number" shape, pairs of shapes,
-;;; environments mapping variables to shapes, and closures with
-;;; fully-known expressions (and "environment" shapes for their
-;;; environments).  There is also an additional "completely unknown"
-;;; abstract value, which represents a thing whose shape is not known.
-;;; It is an invariant of the analysis that the "completely unknown"
-;;; abstract value does not occur inside any other shapes.
+;;; An abstract value represents the "shape" that a concrete value is
+;;; known to explore over the run of the program.  The following
+;;; shapes are admitted: Known concrete scalars, the "boolean" shape,
+;;; the "real number" shape, pairs of shapes, environments mapping
+;;; variables to shapes, and closures with fully-known expressions
+;;; (and "environment" shapes for their environments).  There is also
+;;; an additional "no information" abstract value, which represents a
+;;; thing that is not known to explore any shapes over the run of the
+;;; program.  It is an invariant of the analysis that the "no
+;;; information" abstract value does not occur inside any other
+;;; shapes.
 
 ;;; Shapes that have concrete counterparts (concrete scalars, pairs,
 ;;; environments, and closures) are represented by themselves.  The
@@ -21,11 +23,12 @@
 ;;; pure, so no new bindings are ever added to an environment after it
 ;;; is first created.
 
-;;; The analysis has the further interesting property that the shape
-;;; of any particular thing ceases to be "completely unknown" only
-;;; when it is as determined as it is going to get.  In particular,
-;;; the "boolean" or "real" shapes are never refined to specific
-;;; concrete values.
+;;; The meaning of a thing having a concrete shape is "This thing is
+;;; known to be exactly this value sometimes."  The meaning of the
+;;; "boolean" and "real" shapes is "This thing is known to be at least
+;;; two distinct such values at some times".  The meaning of the
+;;; ABSTRACT-NONE shape is "This thing is not known to ever have a
+;;; value".  That only happens when the analysis is progressing.
 
 ;;; Unique abstract objects
 
