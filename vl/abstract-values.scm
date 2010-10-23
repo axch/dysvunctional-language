@@ -151,15 +151,6 @@
 		(free-variables exp))
 	symbol<?))
 
-;;; This abstract domain, together with the fact that the abstract
-;;; interpreter bubbles abstract-none values up, has the feature that
-;;; every abstract value that occurs is either abstract-none or a shape
-;;; that's as solved as it's going to get.  (Some of the primitives
-;;; are also deliberately tweaked to preserve this property).
-(define (open-to-refinement? val)
-  #t
-  #;(abstract-none? val))
-
 (define (shape->type-declaration thing)
   (cond ((abstract-real? thing)
 	 'real)
