@@ -4,8 +4,8 @@
 ;;; A VL primitive procedure needs to tell the concrete evaluator how
 ;;; to execute it, the analyzer how to think about calls to it, and
 ;;; the code generator how to emit calls to it.  These are the
-;;; implementation, abstract-implementation, and name and arity slots,
-;;; respectively.
+;;; implementation, abstract-implementation and expand-implementation,
+;;; and name and arity slots, respectively.
 
 (define-structure (primitive (safe-accessors #t))
   name
