@@ -22,16 +22,14 @@
 ;;; Most primitives fall into a few natural classes:
 
 ;;; Unary numeric primitives just have to handle getting abstract
-;;; values for arguments (either ABSTRACT-NONE or ABSTRACT-REAL).
+;;; values for arguments (to wit, ABSTRACT-REAL).
 (define (unary-numeric-primitive name base)
   (make-primitive name 1
    base
    (lambda (arg analysis)
-     (if (abstract-none? arg)
-	 abstract-none
-	 (if (abstract-real? arg)
-	     abstract-real
-	     (base arg))))
+     (if (abstract-real? arg)
+	 abstract-real
+	 (base arg)))
    (lambda (arg analysis) '())))
 
 ;;; Binary numeric primitives also have to destructure their input,
@@ -41,31 +39,19 @@
    (lambda (arg)
      (base (car arg) (cdr arg)))
    (lambda (arg analysis)
-     (if (abstract-none? arg)
-	 abstract-none
-	 (let ((first-arg (car arg))
-	       (second-arg (cdr arg)))
-	   (if (or (abstract-real? first-arg)
-		   (abstract-real? second-arg))
-	       abstract-real
-	       (base first-arg second-arg)))))
+     (let ((first-arg (car arg))
+	   (second-arg (cdr arg)))
+       (if (or (abstract-real? first-arg)
+	       (abstract-real? second-arg))
+	   abstract-real
+	   (base first-arg second-arg))))
    (lambda (arg analysis) '())))
 
-;;; In principle, of course, no matter what argument is passed to
-;;; NULL? or PAIR?, the answer is guaranteed to be some boolean.
-;;; However, an ABSTRACT-BOOLEAN is a promise that the analysis has
-;;; figured out that either boolean value is definitely possible.
-;;; Therefore, primitive type testers must wait until the analysis has
-;;; determined the shape their argument will take, and compute the
-;;; answer only then.
-
 (define (primitive-type-predicate name base)
   (make-primitive name 1
    base
    (lambda (arg analysis)
-     (if (abstract-none? arg)
-	 abstract-none ; Not abstract-bool
-	 (base arg)))
+     (base arg))
    (lambda (arg analysis) '())))
 
 ;;; Binary numeric comparisons have all the concerns of binary numeric
@@ -75,14 +61,12 @@
    (lambda (arg)
      (base (car arg) (cdr arg)))
    (lambda (arg analysis)
-     (if (abstract-none? arg)
-	 abstract-none
-	 (let ((first (car arg))
-	       (second (cdr arg)))
-	   (if (or (abstract-real? first)
-		   (abstract-real? second))
-	       abstract-boolean
-	       (base first second)))))
+     (let ((first (car arg))
+	   (second (cdr arg)))
+       (if (or (abstract-real? first)
+	       (abstract-real? second))
+	   abstract-boolean
+	   (base first second))))
    (lambda (arg analysis) '())))
 
 (define-syntax define-unary-numeric-primitive
@@ -148,8 +132,7 @@
  (make-primitive 'real 1
   real
   (lambda (x analysis)
-    (cond ((abstract-none? x) abstract-none)
-	  ((abstract-real? x) abstract-real)
+    (cond ((abstract-real? x) abstract-real)
 	  ((number? x) abstract-real)
 	  (else (error "A known non-real is declared real" x))))
   (lambda (arg analysis) '())))
@@ -167,16 +150,14 @@
    (lambda (arg)
      (if-procedure (car arg) (cadr arg) (cddr arg)))
    (lambda (shape analysis)
-     (if (abstract-none? shape)
-	 abstract-none
-	 (let ((predicate (car shape)))
-	   (if (not (abstract-boolean? predicate))
-	       (if predicate
-		   (abstract-result-of (cadr shape) analysis)
-		   (abstract-result-of (cddr shape) analysis))
-	       (abstract-union
-		(abstract-result-of (cadr shape) analysis)
-		(abstract-result-of (cddr shape) analysis))))))
+     (let ((predicate (car shape)))
+       (if (not (abstract-boolean? predicate))
+	   (if predicate
+	       (abstract-result-of (cadr shape) analysis)
+	       (abstract-result-of (cddr shape) analysis))
+	   (abstract-union
+	    (abstract-result-of (cadr shape) analysis)
+	    (abstract-result-of (cddr shape) analysis)))))
    (lambda (arg analysis)
      (let ((predicate (car arg))
 	   (consequent (cadr arg))

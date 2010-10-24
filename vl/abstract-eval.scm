@@ -99,7 +99,9 @@
 ;;; REFINE-APPLY is \bar A from [1].
 (define (refine-apply proc arg analysis)
   (cond ((primitive? proc)
-	 ((primitive-abstract-implementation proc) arg analysis))
+	 (if (abstract-none? arg)
+	     abstract-none
+	     ((primitive-abstract-implementation proc) arg analysis)))
 	((closure? proc)
 	 (if (abstract-none? arg)
 	     abstract-none
