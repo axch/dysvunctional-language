@@ -25,7 +25,7 @@
 (define (unary-numeric-primitive name base)
   (make-primitive name 1
    base
-   (lambda (arg)
+   (lambda (arg analysis)
      (if (abstract-none? arg)
 	 abstract-none
 	 (if (abstract-real? arg)
@@ -38,7 +38,7 @@
   (make-primitive name 2
    (lambda (arg)
      (base (car arg) (cdr arg)))
-   (lambda (arg)
+   (lambda (arg analysis)
      (if (abstract-none? arg)
 	 abstract-none
 	 (let ((first-arg (car arg))
@@ -59,7 +59,7 @@
 (define (primitive-type-predicate name base)
   (make-primitive name 1
    base
-   (lambda (arg)
+   (lambda (arg analysis)
      (if (abstract-none? arg)
 	 abstract-none ; Not abstract-bool
 	 (base arg)))))
@@ -70,7 +70,7 @@
   (make-primitive name 2
    (lambda (arg)
      (base (car arg) (cdr arg)))
-   (lambda (arg)
+   (lambda (arg analysis)
      (if (abstract-none? arg)
 	 abstract-none
 	 (let ((first (car arg))
@@ -142,7 +142,7 @@
 (add-primitive!
  (make-primitive 'real 1
   real
-  (lambda (x)
+  (lambda (x analysis)
     (cond ((abstract-none? x) abstract-none)
 	  ((abstract-real? x) abstract-real)
 	  ((number? x) abstract-real)
