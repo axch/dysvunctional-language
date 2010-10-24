@@ -102,12 +102,10 @@
 	((primitive? proc)
 	 ((primitive-abstract-implementation proc) arg analysis))
 	((closure? proc)
-	 (analysis-get (closure-body proc)
-		       (extend-env
-			(closure-formal proc)
-			arg
-			(closure-env proc))
-		       analysis))
+	 (analysis-get
+	  (closure-body proc)
+	  (extend-env (closure-formal proc) arg (closure-env proc))
+	  analysis))
 	((abstract-none? proc) abstract-none)
 	(else
 	 (error "Refining an application of a known non-procedure"
@@ -155,12 +153,10 @@
 	((primitive? proc)
 	 ((primitive-expand-implementation proc) arg analysis))
 	((closure? proc)
-	 (analysis-expand (closure-body proc)
-			  (extend-env
-			   (closure-formal proc)
-			   arg
-			   (closure-env proc))
-			  analysis))
+	 (analysis-expand
+	  (closure-body proc)
+	  (extend-env (closure-formal proc) arg (closure-env proc))
+	  analysis))
 	((abstract-none? proc) '())
 	(else
 	 (error "Expanding an application of a known non-procedure"
