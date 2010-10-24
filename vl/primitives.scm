@@ -11,7 +11,8 @@
   name
   arity
   implementation
-  abstract-implementation)
+  abstract-implementation
+  expand-implementation)
 
 (define *primitives* '())
 
@@ -30,7 +31,8 @@
 	 abstract-none
 	 (if (abstract-real? arg)
 	     abstract-real
-	     (base arg))))))
+	     (base arg))))
+   (lambda (arg analysis) '())))
 
 ;;; Binary numeric primitives also have to destructure their input,
 ;;; because the VL system will hand it in as a pair.
@@ -46,7 +48,8 @@
 	   (if (or (abstract-real? first-arg)
 		   (abstract-real? second-arg))
 	       abstract-real
-	       (base first-arg second-arg)))))))
+	       (base first-arg second-arg)))))
+   (lambda (arg analysis) '())))
 
 ;;; In principle, of course, no matter what argument is passed to
 ;;; NULL? or PAIR?, the answer is guaranteed to be some boolean.
@@ -62,7 +65,8 @@
    (lambda (arg analysis)
      (if (abstract-none? arg)
 	 abstract-none ; Not abstract-bool
-	 (base arg)))))
+	 (base arg)))
+   (lambda (arg analysis) '())))
 
 ;;; Binary numeric comparisons have all the concerns of binary numeric
 ;;; procedures and of unary type testers.
@@ -78,7 +82,8 @@
 	   (if (or (abstract-real? first)
 		   (abstract-real? second))
 	       abstract-boolean
-	       (base first second)))))))
+	       (base first second)))))
+   (lambda (arg analysis) '())))
 
 (define-syntax define-unary-numeric-primitive
   (syntax-rules ()
@@ -146,7 +151,8 @@
     (cond ((abstract-none? x) abstract-none)
 	  ((abstract-real? x) abstract-real)
 	  ((number? x) abstract-real)
-	  (else (error "A known non-real is declared real" x))))))
+	  (else (error "A known non-real is declared real" x))))
+  (lambda (arg analysis) '())))
 
 (define (if-procedure p c a)
   (if p (c) (a)))
@@ -170,7 +176,23 @@
 		   (abstract-result-of (cddr shape) analysis))
 	       (abstract-union
 		(abstract-result-of (cadr shape) analysis)
-		(abstract-result-of (cddr shape) analysis))))))))
+		(abstract-result-of (cddr shape) analysis))))))
+   (lambda (arg analysis)
+     (let ((predicate (car arg))
+	   (consequent (cadr arg))
+	   (alternate (cddr arg)))
+       (define (expand-thunk-application thunk)
+	 (analysis-expand
+	  `(,(closure-expression thunk) ())
+	  (closure-env thunk)
+	  analysis))
+       (if (not (abstract-boolean? predicate))
+	   (if predicate
+	       (expand-thunk-application consequent)
+	       (expand-thunk-application alternate))
+	   (lset-union same-analysis-binding?
+		       (expand-thunk-application consequent)
+		       (expand-thunk-application alternate)))))))
 (add-primitive! primitive-if)
 
 (define (abstract-result-of thunk-shape analysis)

@@ -154,23 +154,9 @@
 ;;; EXPAND-APPLY is \bar A' from [1].
 (define (expand-apply proc arg analysis)
   (cond ((primitive? proc)
-	 (if (or (abstract-none? arg) (not (eq? primitive-if proc)))
+	 (if (abstract-none? arg)
 	     '()
-	     (let ((predicate (car arg))
-		   (consequent (cadr arg))
-		   (alternate (cddr arg)))
-	       (define (expand-thunk-application thunk)
-		 (analysis-expand
-		  `(,(closure-expression thunk) ())
-		  (closure-env thunk)
-		  analysis))
-	       (if (not (abstract-boolean? predicate))
-		   (if predicate
-		       (expand-thunk-application consequent)
-		       (expand-thunk-application alternate))
-		   (lset-union same-analysis-binding?
-			       (expand-thunk-application consequent)
-			       (expand-thunk-application alternate))))))
+	     ((primitive-expand-implementation proc) arg analysis)))
 	((closure? proc)
 	 (if (abstract-none? arg)
 	     '()
