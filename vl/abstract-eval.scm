@@ -98,21 +98,17 @@
 
 ;;; REFINE-APPLY is \bar A from [1].
 (define (refine-apply proc arg analysis)
-  (cond ((primitive? proc)
-	 (if (abstract-none? arg)
-	     abstract-none
-	     ((primitive-abstract-implementation proc) arg analysis)))
+  (cond ((abstract-none? arg) abstract-none)
+	((primitive? proc)
+	 ((primitive-abstract-implementation proc) arg analysis))
 	((closure? proc)
-	 (if (abstract-none? arg)
-	     abstract-none
-	     (analysis-get (closure-body proc)
-			   (extend-env
-			    (closure-formal proc)
-			    arg
-			    (closure-env proc))
-			   analysis)))
-	((abstract-none? proc)
-	 abstract-none)
+	 (analysis-get (closure-body proc)
+		       (extend-env
+			(closure-formal proc)
+			arg
+			(closure-env proc))
+		       analysis))
+	((abstract-none? proc) abstract-none)
 	(else
 	 (error "Refining an application of a known non-procedure"
 		proc arg analysis))))
@@ -155,21 +151,17 @@
 
 ;;; EXPAND-APPLY is \bar A' from [1].
 (define (expand-apply proc arg analysis)
-  (cond ((primitive? proc)
-	 (if (abstract-none? arg)
-	     '()
-	     ((primitive-expand-implementation proc) arg analysis)))
+  (cond ((abstract-none? arg) '())
+	((primitive? proc)
+	 ((primitive-expand-implementation proc) arg analysis))
 	((closure? proc)
-	 (if (abstract-none? arg)
-	     '()
-	     (analysis-expand (closure-body proc)
-			      (extend-env
-			       (closure-formal proc)
-			       arg
-			       (closure-env proc))
-			      analysis)))
-	((abstract-none? proc)
-	 '())
+	 (analysis-expand (closure-body proc)
+			  (extend-env
+			   (closure-formal proc)
+			   arg
+			   (closure-env proc))
+			  analysis))
+	((abstract-none? proc) '())
 	(else
 	 (error "Expanding an application of a known non-procedure"
 		proc arg analysis))))
