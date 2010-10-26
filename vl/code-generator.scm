@@ -235,7 +235,10 @@
 ;;; arguments.  The procedure must destructure the argument structure
 ;;; the same way the corresponding VL procedure did, and execute its
 ;;; compiled body.  The destructuring elides solved slots of the
-;;; incoming argument structure.
+;;; incoming argument structure.  If specified with the
+;;; EMIT-TYPE-DECLARATIONS? flag, the procedure definition will also
+;;; include a declaration of the types of its arguments, to enable
+;;; scalar replacement of aggregates in the post processing.
 (define ((procedure-definition analysis emit-type-declarations?)
 	 operator.operands)
   (define (destructuring-let-bindings formal-tree arg-tree)
