@@ -6,7 +6,7 @@
 ;;; see the effect of doing only that level of post-processing.
 ;;; We have:
 ;;; - STRUCTURE-DEFINITIONS->VECTORS
-;;;   Replace DEFINE-STRUCTURE with explicit vectors
+;;;   Replace DEFINE-STRUCTURE with explicit vectors.
 ;;; - SCALAR-REPLACE-AGGREGATES
 ;;;   Replace aggregates with scalars at procedure boundaries.
 ;;;   This relies on argument-type annotations being emitted by the
@@ -14,11 +14,11 @@
 ;;; - STRIP-ARGUMENT-TYPES
 ;;;   Remove argument-type annotations, if they have been emitted by
 ;;;   the code generator (because SCALAR-REPLACE-AGGREGATES is the
-;;;   only thing that needs them)
+;;;   only thing that needs them).
 ;;; - INLINE
-;;;   Inline non-recursive function definitions
+;;;   Inline non-recursive function definitions.
 ;;; - TIDY
-;;;   Local cleanup by term-rewriting
+;;;   Clean up and optimize locally by term-rewriting.
 
 (define (prettify-compiler-output output)
   (tidy

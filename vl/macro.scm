@@ -181,6 +181,8 @@
 
 (define-vl-macro! 'letrec letrec-transformer)
 
+;;; AND
+
 (define (expand-and form)
   (cond ((null? (cdr form))
 	 #t)
@@ -193,6 +195,8 @@
 
 (define-vl-macro! 'and expand-and)
 
+;;; OR
+
 (define (expand-or form)
   (cond ((null? (cdr form))
 	 #f)
@@ -204,6 +208,8 @@
 	      (or ,@(cddr form))))))
 
 (define-vl-macro! 'or expand-or)
+
+;;; COND
 
 (define (expand-cond form)
   (cond ((null? (cdr form))
