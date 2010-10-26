@@ -21,12 +21,14 @@
 ;;;   Clean up and optimize locally by term-rewriting.
 
 (define (prettify-compiler-output output)
-  (tidy
-   (inline
-    (strip-argument-types
-     (scalar-replace-aggregates
-      (structure-definitions->vectors
-       output))))))
+  (if (list? output)
+      (tidy
+       (inline
+	(strip-argument-types
+	 (scalar-replace-aggregates
+	  (structure-definitions->vectors
+	   output)))))
+      output))
 
 (define (compile-to-scheme program)
   (prettify-compiler-output
@@ -97,20 +99,18 @@
       (list form)))
 
 (define (structure-definitions->vectors forms)
-  (if (list? forms)
-      (let ((structure-names
-	     (map cadr (filter structure-definition? forms))))
-	(define (fix-argument-types forms)
-	  (let loop ((forms forms)
-		     (structure-names structure-names))
-	    (if (null? structure-names)
-		forms
-		(loop (replace-free-occurrences
-		       (car structure-names) 'vector forms)
-		      (cdr structure-names)))))
-	(fix-argument-types
-	 (append-map expand-if-structure-definition forms)))
-      forms))
+  (let ((structure-names
+	 (map cadr (filter structure-definition? forms))))
+    (define (fix-argument-types forms)
+      (let loop ((forms forms)
+		 (structure-names structure-names))
+	(if (null? structure-names)
+	    forms
+	    (loop (replace-free-occurrences
+		   (car structure-names) 'vector forms)
+		  (cdr structure-names)))))
+    (fix-argument-types
+     (append-map expand-if-structure-definition forms))))
 
 ;;;; Scalar replacement of aggregates
 
@@ -206,17 +206,15 @@
 	      (fixed-done (sra-call-sites (reverse done)))
 	      (fixed-rest (sra-call-sites rest)))
 	  (append fixed-done (list fixed-replacement-form) fixed-rest)))))
-  (if (list? forms)
-      (let loop ((forms forms))
-	(let scan ((done '())
-		   (forms forms))
-	  (if (null? forms)
-	      (reverse done)
-	      (let ((sra-attempt (sra-definition-rule (car forms))))
-		(if sra-attempt
-		    (loop (do-sra-definition sra-attempt done (cdr forms)))
-		    (scan (cons (car forms) done) (cdr forms)))))))
-      forms))
+  (let loop ((forms forms))
+    (let scan ((done '())
+	       (forms forms))
+      (if (null? forms)
+	  (reverse done)
+	  (let ((sra-attempt (sra-definition-rule (car forms))))
+	    (if sra-attempt
+		(loop (do-sra-definition sra-attempt done (cdr forms)))
+		(scan (cons (car forms) done) (cdr forms))))))))
 
 ;;; Getting rid the argument-types declarations once we're done with
 ;;; them is easy.
@@ -245,18 +243,16 @@
     (= 0 (count-in-tree (definiendum defn) (definiens defn))))
   (define (inline-defn defn forms)
     (replace-free-occurrences (definiendum defn) (definiens defn) forms))
-  (if (list? forms)
-      (let loop ((forms forms))
-	(let scan ((done '()) (forms forms))
-	  (cond ((null? forms) (reverse done))
-		((and (definition? (car forms))
-		      (non-self-calling? (car forms)))
-		 (let ((defn (car forms))
-		       (others (append (reverse done) (cdr forms))))
-		   ;; Can insert other inlining restrictions here
-		   (loop (inline-defn defn others))))
-		(else (scan (cons (car forms) done) (cdr forms))))))
-      forms))
+  (let loop ((forms forms))
+    (let scan ((done '()) (forms forms))
+      (cond ((null? forms) (reverse done))
+	    ((and (definition? (car forms))
+		  (non-self-calling? (car forms)))
+	     (let ((defn (car forms))
+		   (others (append (reverse done) (cdr forms))))
+	       ;; Can insert other inlining restrictions here
+	       (loop (inline-defn defn others))))
+	    (else (scan (cons (car forms) done) (cdr forms)))))))
 
 ;;;; Term-rewriting tidier
 
