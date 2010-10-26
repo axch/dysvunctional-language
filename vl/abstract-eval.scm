@@ -99,6 +99,7 @@
 ;;; REFINE-APPLY is \bar A from [1].
 (define (refine-apply proc arg analysis)
   (cond ((abstract-none? arg) abstract-none)
+	((abstract-none? proc) abstract-none)
 	((primitive? proc)
 	 ((primitive-abstract-implementation proc) arg analysis))
 	((closure? proc)
@@ -106,7 +107,6 @@
 	  (closure-body proc)
 	  (extend-env (closure-formal proc) arg (closure-env proc))
 	  analysis))
-	((abstract-none? proc) abstract-none)
 	(else
 	 (error "Refining an application of a known non-procedure"
 		proc arg analysis))))
@@ -150,6 +150,7 @@
 ;;; EXPAND-APPLY is \bar A' from [1].
 (define (expand-apply proc arg analysis)
   (cond ((abstract-none? arg) '())
+	((abstract-none? proc) '())
 	((primitive? proc)
 	 ((primitive-expand-implementation proc) arg analysis))
 	((closure? proc)
@@ -157,7 +158,6 @@
 	  (closure-body proc)
 	  (extend-env (closure-formal proc) arg (closure-env proc))
 	  analysis))
-	((abstract-none? proc) '())
 	(else
 	 (error "Expanding an application of a known non-procedure"
 		proc arg analysis))))
