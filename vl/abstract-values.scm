@@ -114,9 +114,9 @@
 			  (env-bindings thing2))))
 	(else
 	 (error "This program is not union-free:" thing1 thing2))))
-
-;;; Is this shape completely determined?
+;;;; Things the code generator wants to know about abstract values
 
+;;; Is this shape completely determined by the analysis?
 (define (solved-abstractly? thing)
   (cond ((null? thing) #t)
 	((boolean? thing) #t)
@@ -130,34 +130,34 @@
 			    (solved-abstractly? (cdr thing))))
 	((env? thing)
 	 (every solved-abstractly? (map cdr (env-bindings thing))))
-	(else
-	 (error "Invalid abstract value" thing))))
+	(else (error "Invalid abstract value" thing))))
 
+;;; If so, what's the Scheme code to make that value?
 (define (solved-abstract-value->constant thing)
-  (cond ((or (null? thing) (boolean? thing) (real? thing))
-	 thing)
+  (cond ((or (null? thing) (boolean? thing) (real? thing)) thing)
 	((primitive? thing) (primitive-name thing))
 	((pair? thing)
 	 (list 'cons (solved-abstract-value->constant (car thing))
 	       (solved-abstract-value->constant (cdr thing))))
 	(else '(vector))))
 
-(define (interesting-variable? env)
-  (lambda (var)
-    (not (solved-abstractly? (lookup var env)))))
-
+;;; What variables in this expression need determining at runtime?
 (define (interesting-variables exp env)
-  (sort (filter (interesting-variable? env)
-		(free-variables exp))
+  (define (interesting-variable? var)
+    (not (solved-abstractly? (lookup var env))))
+  (sort (filter interesting-variable? (free-variables exp))
 	symbol<?))
-
+
+;;; What type does this shape represent?
 (define (shape->type-declaration thing)
-  (cond ((abstract-real? thing)
-	 'real)
-	((abstract-boolean? thing)
-	 'boolean)
-	((solved-abstractly? thing)
-	 '(vector))
+  (define (interesting-environment-values closure)
+    (let ((vars (closure-free-variables closure))
+	  (env (closure-env closure)))
+      (map (lambda (var) (lookup var env))
+	   (interesting-variables vars env))))
+  (cond ((abstract-real? thing) 'real)
+	((abstract-boolean? thing) 'boolean)
+	((solved-abstractly? thing) '(vector))
 	((closure? thing)
 	 (cons (abstract-closure->scheme-structure-name thing)
 	       (map shape->type-declaration
@@ -165,12 +165,4 @@
 	((pair? thing)
 	 `(cons ,(shape->type-declaration (car thing))
 		,(shape->type-declaration (cdr thing))))
-	(else
-	 (error "shape->type-declaration loses!" thing))))
-
-(define (interesting-environment-values closure)
-  (let ((vars (closure-free-variables closure))
-	(env (closure-env closure)))
-    (map (lambda (var)
-	   (lookup var env))
-	 (interesting-variables vars env))))
+	(else (error "shape->type-declaration loses!" thing))))
