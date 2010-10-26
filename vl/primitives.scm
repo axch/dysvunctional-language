@@ -68,7 +68,7 @@
 	   abstract-boolean
 	   (base first second))))
    (lambda (arg analysis) '())))
-
+
 (define-syntax define-unary-numeric-primitive
   (syntax-rules ()
     ((_ name)
@@ -79,16 +79,16 @@
     ((_ name)
      (add-primitive! (binary-numeric-primitive 'name name)))))
 
-(define-syntax define-RxR->bool-primitive
-  (syntax-rules ()
-    ((_ name)
-     (add-primitive! (RxR->bool-primitive 'name name)))))
-
 (define-syntax define-primitive-type-predicate
   (syntax-rules ()
     ((_ name)
      (add-primitive! (primitive-type-predicate 'name name)))))
 
+(define-syntax define-RxR->bool-primitive
+  (syntax-rules ()
+    ((_ name)
+     (add-primitive! (RxR->bool-primitive 'name name)))))
+
 (define-unary-numeric-primitive abs)
 (define-unary-numeric-primitive exp)
 (define-unary-numeric-primitive log)
@@ -106,16 +106,16 @@
 (define-binary-numeric-primitive atan)
 (define-binary-numeric-primitive expt)
 
+(define-primitive-type-predicate null?)
+(define-primitive-type-predicate pair?)
+
 (define-RxR->bool-primitive  <)
 (define-RxR->bool-primitive <=)
 (define-RxR->bool-primitive  >)
 (define-RxR->bool-primitive >=)
 (define-RxR->bool-primitive  =)
 
-(define-primitive-type-predicate null?)
-(define-primitive-type-predicate pair?)
-
-;;; The primitives REAL and IF-PROCEDURE are very special.
+;;; The primitive REAL is special.
 
 (define (real x)
   (if (real? x)
@@ -136,14 +136,21 @@
 	  ((number? x) abstract-real)
 	  (else (error "A known non-real is declared real" x))))
   (lambda (arg analysis) '())))
+
+;;; IF-PROCEDURE is even more special than REAL, because it is the
+;;; only primitive that accepts VL closures as arguments and invokes
+;;; them internally.  That is handled transparently by the concrete
+;;; evaluator, but IF-PROCEDURE must be careful to analyze its own
+;;; return value as being dependent on the return values of its
+;;; argument closures, and let the analysis know which of its closures
+;;; it will invoke and with what arguments as the analysis discovers
+;;; knowledge about IF-PROCEDURE's predicate argument.  Also, the code
+;;; generator detects and special-cases IF-PROCEDURE because it wants
+;;; to emit native Scheme IF statements in correspondence with VL IF
+;;; statements.
 
 (define (if-procedure p c a)
   (if p (c) (a)))
-
-;;; IF is even more special than REAL.  This definition does not
-;;; capture how special IF really is, because the analyzer and the
-;;; code generator check explicitly for whether they've hit an IF or
-;;; not.  I am open to suggestions about how to improve this.
 
 (define primitive-if
   (make-primitive 'if-procedure 3
