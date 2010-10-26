@@ -7,16 +7,6 @@
   (let ((add5 (addn (real 5))))
     (add5 (real 3))))
 
-;;; Variations on IF
-
-(if (< (real 3) (real 6))
-    (real 4)
-    (real 3))
-
-(if (< 3 6)
-    (real 4)
-    (real 3))
-
 ;;; Doubling and squaring do not commute under composition
 
 (let ((double (lambda (x) (+ x x)))
@@ -41,23 +31,8 @@
 (let ((my-add (lambda (x y) (+ x y))))
   (my-add (real 3) (real 6)))
 
-(let ((my-add (lambda (x y) (+ (real x) (real y)))))
-  (my-add 3 6))
-
-(let ((my-add (lambda (foo) (+ foo))))
-  (my-add (cons (real 3) (real 6))))
-
-(let ((my-add (lambda (foo) (+ foo))))
-  (my-add (cons 3 (real 6))))
-
-(let ((my-add (lambda (foo) (real (+ foo)))))
-  (my-add 3 6))
-
-(let ((delay-add (lambda (x y) (lambda () (+ x y)))))
-  ((delay-add (real 3) (real 6))))
-
-(let ((frobnicate (lambda (x) (real x))))
-  (frobnicate 3))
+(let ((my-add (lambda (x.y) (+ x.y))))
+  (my-add (real 3) (real 6)))
 
 ;;; Factorial
 
@@ -67,33 +42,13 @@
 		     (* n (fact (- n 1)))))))
   (fact (real 5)))
 
-(let ((my-* (lambda (x y) (* x y))))
-  (letrec ((fact (lambda (n)
-		   (if (= n 1)
-		       1
-		       (my-* n (fact (- n 1)))))))
-    (fact (real 5))))
+;;; Factorial, computed at compile time
 
-(let ((my-* (lambda (x y) (* x y))))
-  (letrec ((fact (lambda (n)
-		   (if (= n 1)
-		       1
-		       (my-* n (fact (- n 1)))))))
-    (fact 5)))
-
-;;; Factorial, with letrec manually macro expanded
-
-(let ((Z (lambda (f)
-	   ((lambda (x)
-	      (f (lambda (y) ((x x) y))))
-	    (lambda (x)
-	      (f (lambda (y) ((x x) y))))))))
-  (let ((fact (Z (lambda (fact)
-		   (lambda (n)
-		     (if (= n 1)
-			 1
-			 (* n (fact (- n 1)))))))))
-    (fact (real 5))))
+(letrec ((fact (lambda (n)
+		 (if (= n 1)
+		     1
+		     (* n (fact (- n 1)))))))
+  (fact 5))
 
 ;;; Parity testing
 
