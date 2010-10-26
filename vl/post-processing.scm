@@ -233,8 +233,7 @@
 	     (?? body))
 	  `(define ,formals
 	     ,@body)))))
-
-;;;; Inlining procedure definitions
+;;;; Inlining procedure definitions
 
 ;;; Every procedure that does not call itself can be inlined.  To do
 ;;; that, just replace references to that procedure's name with
@@ -248,21 +247,17 @@
     (replace-free-occurrences (definiendum defn) (definiens defn) forms))
   (if (list? forms)
       (let loop ((forms forms))
-	(let scan ((done '())
-		   (forms forms))
-	  (cond ((null? forms)
-		 (reverse done))
+	(let scan ((done '()) (forms forms))
+	  (cond ((null? forms) (reverse done))
 		((and (definition? (car forms))
 		      (non-self-calling? (car forms)))
 		 (let ((defn (car forms))
 		       (others (append (reverse done) (cdr forms))))
 		   ;; Can insert other inlining restrictions here
 		   (loop (inline-defn defn others))))
-		(else
-		 (scan (cons (car forms) done)
-		       (cdr forms))))))
+		(else (scan (cons (car forms) done) (cdr forms))))))
       forms))
-
+
 ;;;; Term-rewriting tidier
 
 (define tidy
