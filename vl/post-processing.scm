@@ -282,31 +282,15 @@
 		 ((? name ,symbol?) (? exp))
 		 (?? bindings2))
 	     (?? body))
-	  (and (= 0 (count-free-occurrences name body))
-	       `(let (,@bindings1
-		      ,@bindings2)
-		  ,@body)))
-
-    (rule `(let ((?? bindings1)
-		 ((? name ,symbol?) (? exp))
-		 (?? bindings2))
-	     (?? body))
-	  (and (= 1 (count-free-occurrences name body))
-	       (not (memq exp (append (map car bindings1)
-				      (map car bindings2))))
-	       `(let (,@bindings1
-		      ,@bindings2)
-		  ,@(replace-free-occurrences name exp body))))
-
-    (rule `(let ((?? bindings1)
-		 ((? name ,symbol?) (? exp ,constructors-only?))
-		 (?? bindings2))
-	     (?? body))
-	  (and (not (memq exp (append (map car bindings1)
-				      (map car bindings2))))
-	       `(let (,@bindings1
-		      ,@bindings2)
-		  ,@(replace-free-occurrences name exp body))))
+	  (let ((occurrence-count (count-free-occurrences name body)))
+	    (and (or (= 0 occurrence-count)
+		     (and (not (memq exp (append (map car bindings1)
+						 (map car bindings2))))
+			  (or (= 1 occurrence-count)
+			      (constructors-only? exp))))
+		 `(let (,@bindings1
+			,@bindings2)
+		    ,@(replace-free-occurrences name exp body)))))
 
     (rule `(let ((?? bindings1)
 		 ((? name ,generated-temporary?) (cons (? a) (? d)))
