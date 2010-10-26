@@ -262,7 +262,8 @@
 		 (scan (cons (car forms) done)
 		       (cdr forms))))))
       forms))
-;;;; Term-rewriting tidier
+
+;;;; Term-rewriting tidier
 
 (define tidy
   (rule-simplifier
@@ -290,12 +291,4 @@
 			      (constructors-only? exp))))
 		 `(let (,@bindings1
 			,@bindings2)
-		    ,@(replace-free-occurrences name exp body)))))
-
-    (rule `(let ((?? bindings1)
-		 ((? name ,generated-temporary?) (cons (? a) (? d)))
-		 (?? bindings2))
-	     (?? body))
-	  `(let (,@bindings1
-		 ,@bindings2)
-	     ,@(replace-free-occurrences name `(cons ,a ,d) body))))))
+		    ,@(replace-free-occurrences name exp body))))))))
