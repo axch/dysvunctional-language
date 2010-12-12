@@ -49,6 +49,18 @@
 (define (match:value vcell)
   (cadr vcell))
 
+;;; TODO match:segment need not search under two circumstances.  One
+;;; is encoded here: if the variable's value is already known, no
+;;; search is needed.  The other is if this segment variable is the
+;;; last segment variable in its enclosing list matcher.  Then the
+;;; list matcher can compute the exact quantity of things in the list
+;;; that this variable must match (because if it matches any other
+;;; number, the enclosing list match is sure to fail due to a length
+;;; mismatch).  This extra optimization can save a factor linear in
+;;; the length of the list being matched.  (In cases of complete tail
+;;; position maybe even quadratic, because knowing that an unbound
+;;; variable has to match all the available data can obviate a
+;;; quadratic amount of work taking useless list-heads).
 (define (match:segment variable)
   (define (segment-match data dictionary succeed)
     (and (list? data)
