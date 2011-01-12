@@ -45,19 +45,19 @@
 
 (defrecord variable [name]
   Evaluable
-  (jl-eval [self env] (lookup env (:name self)))
+  (jl-eval [self env] (lookup env name))
   Destructurable
   (jl-destructure [self arg] {name arg}))
 
 (defrecord constant [object]
   Evaluable
-  (jl-eval [self env] (:object self))
+  (jl-eval [self env] object)
   Destructurable
   (jl-destructure [self arg] {}))
 
 (defrecord lambda-exp [formal body]
   Evaluable
-  (jl-eval [self env] (new closure (:formal self) (:body self) env)))
+  (jl-eval [self env] (new closure formal body env)))
 
 (defrecord application [operator operand]
   Evaluable
@@ -97,7 +97,7 @@
 		 (syntax-operands (next exp))))))
 
 (defn syntax-body [exps]
-  ;; Only one-form bodies for now
+  ;; TODO Only one-form bodies for now
   (syntax (first exps)))
 
 (defn syntax-operands [exps]
