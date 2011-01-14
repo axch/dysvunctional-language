@@ -147,7 +147,6 @@
   primitive
   (zero [self] self)
   closure
-  ;; TODO zero out the constants too
   (zero [self] (new closure (:formal self) (zero (:body self))
 		    (map-env zero (:env self))))
   pair
@@ -205,7 +204,7 @@
 
 ;;;; Forward Mode
 
-(declare forward-transform interleave-bundle)
+(declare forward-transform interleave-bundle interleave-bundle-deep)
 
 (defrecord bundle [primal tangent]
   Applicable
@@ -220,10 +219,31 @@
 	(new pair (make-bundle (:car primal) (:car tangent))
 	     (make-bundle (:cdr primal) (:cdr tangent)))
 	(closure? primal)
-	;; TODO Get the constants from the body of the tangent
-	(new closure (:formal primal) (:body primal)
+	(new closure (:formal primal)
+	     (interleave-bundle-deep (:body primal) (:body tangent))
 	     (interleave-env (:env primal) (:env tangent)))
 	(primitive? primal)
+	primal))
+
+(defn interleave-bundle-deep [primal tangent]
+  (cond (variable? primal)
+	;; TODO Should I be marking things and keeping track of
+	;; perturbations here?
+	primal
+	(constant? primal)
+	(new constant (make-bundle (:object primal) (:object tangent)))
+	(lambda-exp? primal)
+	(new lambda-exp (:formal primal)
+	     (interleave-bundle-deep (:body primal) (:body tangent)))
+	(application? primal)
+	(new application (interleave-bundle-deep (:operator primal)
+						 (:operator tangent))
+	     (interleave-bundle-deep (:operand primal)
+				     (:operand tangent)))
+	(pair? primal)
+	(new pair (interleave-bundle-deep (:car primal) (:car tangent))
+	     (interleave-bundle-deep (:cdr primal) (:cdr tangent)))
+	(empty-list? primal)
 	primal))
 
 (defn forward-transform [thing]
