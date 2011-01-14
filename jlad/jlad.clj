@@ -24,6 +24,8 @@
 (defn map-env [f env]
   (zipmap (keys env) (map f (vals env))))
 
+(declare make-bundle)
+
 (defn interleave-env [primal-env tangent-env]
   (merge-with make-bundle primal-env tangent-env))
 
@@ -92,7 +94,7 @@
 
 (defrecord constant [object]
   JLObject
-  (constant [self] true)
+  (constant? [self] true)
   Evaluable
   (jl-eval [self env] object)
   Destructurable
