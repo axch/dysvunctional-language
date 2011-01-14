@@ -32,6 +32,27 @@
 
 ;;;; Evaluator
 
+(defprotocol JLObject
+  (variable? [self])
+  (constant? [self])
+  (primitive? [self])
+  (closure? [self])
+  (lambda-exp? [self])
+  (application? [self])
+  (pair? [self])
+  (empty-list? [self]))
+
+(extend-type Object
+  JLObject
+  (variable? [self] false)
+  (constant? [self] false)
+  (primitive? [self] false)
+  (closure? [self] false)
+  (lambda-exp? [self] false)
+  (application? [self] false)
+  (pair? [self] false)
+  (empty-list? [self] false))
+
 (declare jl-eval)
 
 (defprotocol Zeroable
@@ -41,12 +62,16 @@
   (jl-apply [self arg]))
 
 (defrecord primitive [implementation]
+  JLObject
+  (primitive? [self] true)
   Applicable
   (jl-apply [self arg] (implementation arg))
   Zeroable
   (zero [self] self))
 
 (defrecord closure [formal body env]
+  JLObject
+  (closure? [self] true)
   Applicable
   (jl-apply [self arg]
 	    (jl-eval body (extend-env (jl-destructure formal arg) env)))
@@ -58,27 +83,37 @@
   (jl-eval [self env]))
 
 (defrecord variable [name]
+  JLObject
+  (variable? [self] true)
   Evaluable
   (jl-eval [self env] (lookup env name))
   Destructurable
   (jl-destructure [self arg] {name arg}))
 
 (defrecord constant [object]
+  JLObject
+  (constant [self] true)
   Evaluable
   (jl-eval [self env] object)
   Destructurable
   (jl-destructure [self arg] {}))
 
 (defrecord lambda-exp [formal body]
+  JLObject
+  (lambda-exp? [self] true)
   Evaluable
   (jl-eval [self env] (new closure formal body env)))
 
 (defrecord application [operator operand]
+  JLObject
+  (application? [self] true)
   Evaluable
   (jl-eval [self env] (jl-apply (jl-eval operator env)
 				(jl-eval operand env))))
 
 (defrecord pair [car cdr]
+  JLObject
+  (pair? [self] true)
   Evaluable
   (jl-eval [self env] (new pair (jl-eval car env)
 			   (jl-eval cdr env)))
@@ -88,7 +123,9 @@
   Zeroable
   (zero [self] (new pair (zero car) (zero cdr))))
 
-(defrecord empty-list [])
+(defrecord empty-list []
+  JLObject
+  (empty-list? [self] true))
 
 (extend-type Number
   Zeroable
