@@ -78,9 +78,6 @@
 
 (declare jl-eval)
 
-(defprotocol Zeroable
-  (zero [self]))
-
 (defprotocol Applicable
   (jl-apply [self arg]))
 
@@ -88,19 +85,14 @@
   JLPrimitive
   (primitive? [self] true)
   Applicable
-  (jl-apply [self arg] (implementation arg))
-  Zeroable
-  (zero [self] self))
+  (jl-apply [self arg] (implementation arg)))
 
 (defrecord closure [formal body env]
   JLClosure
   (closure? [self] true)
   Applicable
   (jl-apply [self arg]
-	    (jl-eval body (extend-env (jl-destructure formal arg) env)))
-  Zeroable
-  ;; TODO zero out the constants too
-  (zero [self] (new closure formal body (map-env zero env))))
+	    (jl-eval body (extend-env (jl-destructure formal arg) env))))
 
 (defprotocol Evaluable
   (jl-eval [self env]))
@@ -142,16 +134,25 @@
 			   (jl-eval cdr env)))
   Destructurable
   (jl-destructure [self arg] (merge (jl-destructure car (:car arg))
-				    (jl-destructure cdr (:cdr arg))))
-  Zeroable
-  (zero [self] (new pair (zero car) (zero cdr))))
+				    (jl-destructure cdr (:cdr arg)))))
 
 (defrecord empty-list []
   JLEmptyList
   (empty-list? [self] true))
 
-(extend-type Number
-  Zeroable
+(defprotocol Zeroable
+  (zero [self]))
+
+(extend-protocol Zeroable
+  primitive
+  (zero [self] self)
+  closure
+  ;; TODO zero out the constants too
+  (zero [self] (new closure (:formal self) (:body self)
+		    (map-env zero (:env self))))
+  pair
+  (zero [self] (new pair (zero (:car self)) (zero (:cdr self))))
+  Number
   (zero [self] 0))
 
 ;;;; Syntax
