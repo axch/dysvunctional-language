@@ -34,25 +34,46 @@
 
 ;;;; Evaluator
 
-(defprotocol JLObject
-  (variable? [self])
-  (constant? [self])
-  (primitive? [self])
-  (closure? [self])
-  (lambda-exp? [self])
-  (application? [self])
-  (pair? [self])
-  (empty-list? [self]))
+(defprotocol JLVariable
+  (variable? [self]))
+
+(defprotocol JLConstant
+  (constant? [self]))
+
+(defprotocol JLPrimitive
+  (primitive? [self]))
+
+(defprotocol JLClosure
+  (closure? [self]))
+
+(defprotocol JLLambdaExp
+  (lambda-exp? [self]))
+
+(defprotocol JLApplication
+  (application? [self]))
+
+(defprotocol JLPair
+  (pair? [self]))
+
+(defprotocol JLEmptyList
+ (empty-list? [self]))
 
 (extend-type Object
-  JLObject
+  JLVariable
   (variable? [self] false)
+  JLConstant
   (constant? [self] false)
+  JLPrimitive
   (primitive? [self] false)
+  JLClosure
   (closure? [self] false)
+  JLLambdaExp
   (lambda-exp? [self] false)
+  JLApplication
   (application? [self] false)
+  JLPair
   (pair? [self] false)
+  JLEmptyList
   (empty-list? [self] false))
 
 (declare jl-eval)
@@ -64,7 +85,7 @@
   (jl-apply [self arg]))
 
 (defrecord primitive [implementation]
-  JLObject
+  JLPrimitive
   (primitive? [self] true)
   Applicable
   (jl-apply [self arg] (implementation arg))
@@ -72,7 +93,7 @@
   (zero [self] self))
 
 (defrecord closure [formal body env]
-  JLObject
+  JLClosure
   (closure? [self] true)
   Applicable
   (jl-apply [self arg]
@@ -85,7 +106,7 @@
   (jl-eval [self env]))
 
 (defrecord variable [name]
-  JLObject
+  JLVariable
   (variable? [self] true)
   Evaluable
   (jl-eval [self env] (lookup env name))
@@ -93,7 +114,7 @@
   (jl-destructure [self arg] {name arg}))
 
 (defrecord constant [object]
-  JLObject
+  JLConstant
   (constant? [self] true)
   Evaluable
   (jl-eval [self env] object)
@@ -101,20 +122,20 @@
   (jl-destructure [self arg] {}))
 
 (defrecord lambda-exp [formal body]
-  JLObject
+  JLLambdaExp
   (lambda-exp? [self] true)
   Evaluable
   (jl-eval [self env] (new closure formal body env)))
 
 (defrecord application [operator operand]
-  JLObject
+  JLApplication
   (application? [self] true)
   Evaluable
   (jl-eval [self env] (jl-apply (jl-eval operator env)
 				(jl-eval operand env))))
 
 (defrecord pair [car cdr]
-  JLObject
+  JLPair
   (pair? [self] true)
   Evaluable
   (jl-eval [self env] (new pair (jl-eval car env)
@@ -126,7 +147,7 @@
   (zero [self] (new pair (zero car) (zero cdr))))
 
 (defrecord empty-list []
-  JLObject
+  JLEmptyList
   (empty-list? [self] true))
 
 (extend-type Number
@@ -172,35 +193,26 @@
 
 ;;;; Forward Mode
 
-(declare forward-transform)
-
-(defprotocol Interleavable
-  (interleave-bundle [primal tangent]))
+(declare forward-transform interleave-bundle)
 
 (defrecord bundle [primal tangent]
   Applicable
-  (jl-apply [self arg] (jl-apply (forward-transform (interleave-bundle primal tangent))
-				 arg)))
+  (jl-apply [self arg]
+   (jl-apply (forward-transform (interleave-bundle primal tangent)) arg)))
 
 (defn make-bundle [primal tangent]
   (new bundle primal tangent))
 
-(extend-type pair
-  Interleavable
-  (interleave-bundle [primal tangent] (new pair (make-bundle (:car primal) (:car tangent))
-					   (make-bundle (:cdr primal) (:cdr tangent)))))
-
-(extend-type closure
-  Interleavable
-  ;; TODO Get the constants from the body of the tangent
-  (interleave-bundle
-   [primal tangent]
-   (new closure (:formal primal) (:body primal)
-	(interleave-env (:env primal) (:env tangent)))))
-
-(extend-type primitive
-  Interleavable
-  (interleave-bundle [primal tangent] primal))
+(defn interleave-bundle [primal tangent]
+  (cond (pair? primal)
+	(new pair (make-bundle (:car primal) (:car tangent))
+	     (make-bundle (:cdr primal) (:cdr tangent)))
+	(closure? primal)
+	;; TODO Get the constants from the body of the tangent
+	(new closure (:formal primal) (:body primal)
+	     (interleave-env (:env primal) (:env tangent)))
+	(primitive? primal)
+	primal))
 
 (defn forward-transform [thing]
   (if (contains? (meta thing) :forward)
@@ -227,4 +239,4 @@
 (defn jl-do [form]
   (jl-eval (syntax form) inital-env))
 
-(jl-eval (syntax-body (sexp-slurp (clojure.java.io/file "foo.jlad"))) inital-env)
+; (jl-eval (syntax-body (sexp-slurp (clojure.java.io/file "foo.jlad"))) inital-env)
