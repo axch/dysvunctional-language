@@ -148,12 +148,23 @@
   (zero [self] self)
   closure
   ;; TODO zero out the constants too
-  (zero [self] (new closure (:formal self) (:body self)
+  (zero [self] (new closure (:formal self) (zero (:body self))
 		    (map-env zero (:env self))))
   pair
   (zero [self] (new pair (zero (:car self)) (zero (:cdr self))))
   Number
-  (zero [self] 0))
+  (zero [self] 0)
+
+  variable
+  (zero [self] self)
+  constant
+  (zero [self] (new constant (zero (:object self))))
+  lambda-exp
+  (zero [self] (new lambda-exp (:formal self) (zero (:body self))))
+  application
+  (zero [self] (new application (zero (:operator self)) (zero (:operand self))))
+  empty-list
+  (zero [self] self))
 
 ;;;; Syntax
 
