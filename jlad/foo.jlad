@@ -1,10 +1,10 @@
-(let ((j* (lambda (frob)
-	    (bundle frob (zero frob)))))
-  (let ((derivative
+(let* ((j* (lambda (frob)
+	    (bundle frob (zero frob))))
+       (derivative
 	 (lambda (f)
 	   (lambda (point)
 	     (tangent ((j* f) (bundle point 1)))))))
-    ((derivative (lambda (x) 3)) 1)))
+  ((derivative (lambda (x) 3)) 1))
 
 (let ((j* (lambda (frob)
 	    (bundle frob (zero frob)))))

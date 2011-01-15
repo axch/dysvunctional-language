@@ -206,7 +206,7 @@
 
 ;;; Macros
 
-(def macro-table {})
+(declare macro-table)
 
 (defn macro? [exp]
   (and (seq? exp)
@@ -219,7 +219,14 @@
   (cons (cons 'lambda (cons (map first bindings) body))
 	(map second bindings)))
 
-(def macro-table (assoc macro-table 'let jl-let))
+(defn jl-let* [[_ bindings & body]]
+  (if (empty? bindings)
+    (cons 'let (cons bindings body))
+    (list 'let (list (first bindings))
+	  (cons 'let* (cons (rest bindings) body)))))
+
+(def macro-table {'let  jl-let
+		  'let* jl-let*})
 
 ;;;; Forward Mode
 
