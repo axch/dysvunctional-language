@@ -189,9 +189,35 @@
 	    (new application (syntax (first exp))
 		 (syntax-operands (next exp))))))
 
+(defn definition? [exp]
+  (and (seq? exp)
+       (= 'define (first exp))))
+
+(defn definiendum [definition]
+  ;; TODO Automatic currying syntax?
+  (if (symbol? (second definition))
+    (second definition)
+    (first (second definition))))
+
+(defn definiens [definition]
+  (if (symbol? (second definition))
+    (nth definition 2)
+    (cons 'lambda (cons (next (second definition))
+			(nnext definition)))))
+
+(defn convert-definitions [exps]
+  (if (= (count exps) 1)
+    (first exps)
+    ;; TODO Turn this into letrec
+    ;; TODO Deal with multiple non-definitions
+    (let [definitions (filter definition? exps)
+	  others (remove definition? exps)]
+      (cons 'let* (cons (map list (map definiendum definitions)
+			     (map definiens definitions))
+			others)))))
+
 (defn syntax-body [exps]
-  ;; TODO Only one-form bodies for now
-  (syntax (first exps)))
+  (syntax (convert-definitions exps)))
 
 (defn syntax-operands [exps]
   (cond (empty? exps)
@@ -227,6 +253,36 @@
 
 (def macro-table {'let  jl-let
 		  'let* jl-let*})
+
+;;;; Unsyntax
+
+(declare unsyntax-list)
+
+(defn unsyntax [object]
+  (cond (application? object)
+	(cons (unsyntax (:operator object)) (unsyntax-list (:operand object)))
+	(pair? object)
+	(list 'cons (unsyntax (:car object))
+	      (unsyntax (:cdr object)))
+	(lambda-exp? object)
+	(list 'lambda (unsyntax-list (:formal object))
+	      (unsyntax (:body object)))
+	(variable? object)
+	(:name object)
+	(constant? object)
+	(unsyntax (:object object))
+	(empty-list? object)
+	'()
+	(number? object)
+	object))
+
+(defn unsyntax-list [lst]
+  (cond (pair? lst)
+	(cons (unsyntax (:car lst)) (unsyntax-list (:cdr lst)))
+	(empty-list? lst)
+	'()
+	true
+	(list (unsyntax lst))))
 
 ;;;; Forward Mode
 
