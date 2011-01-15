@@ -167,7 +167,7 @@
 
 ;;;; Syntax
 
-(declare syntax-body syntax-operands syntax-formals)
+(declare syntax-body syntax-operands syntax-formals macro? jl-expand-1)
 
 (defn self-evaluating? [thing]
   (number? thing))
@@ -177,6 +177,8 @@
 	(new variable exp)
 	(self-evaluating? exp)
 	(new constant exp)
+	(macro? exp)
+	(syntax (jl-expand-1 exp))
 	(seq? exp)
 	(condp = (first exp)
 	    'lambda (new lambda-exp
@@ -201,6 +203,23 @@
 	     (syntax-operands (next exps)))))
 
 (def syntax-formals syntax-operands)
+
+;;; Macros
+
+(def macro-table {})
+
+(defn macro? [exp]
+  (and (seq? exp)
+       (contains? macro-table (first exp))))
+
+(defn jl-expand-1 [exp]
+  ((get macro-table (first exp)) exp))
+
+(defn jl-let [[_ bindings & body]]
+  (cons (cons 'lambda (cons (map first bindings) body))
+	(map second bindings)))
+
+(def macro-table (assoc macro-table 'let jl-let))
 
 ;;;; Forward Mode
 
