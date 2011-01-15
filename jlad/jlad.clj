@@ -288,13 +288,13 @@
 (defn binary-primitive [proc]
   (new primitive (fn [arg] (proc (:car arg) (:cdr arg)))))
 
-(def inital-env {'+ (binary-primitive +)
-		 'zero (new primitive zero)
-		 'bundle (binary-primitive make-bundle)
-		 'primal (new primitive :primal)
-		 'tangent (new primitive :tangent)})
+(def initial-env {'+ (binary-primitive +)
+		  'zero (new primitive zero)
+		  'bundle (binary-primitive make-bundle)
+		  'primal (new primitive :primal)
+		  'tangent (new primitive :tangent)})
 
 (defn jl-do [form]
-  (jl-eval (syntax form) inital-env))
+  (jl-eval (syntax form) initial-env))
 
-; (jl-eval (syntax-body (sexp-slurp (clojure.java.io/file "foo.jlad"))) inital-env)
+; (jl-eval (syntax-body (sexp-slurp (clojure.java.io/file "foo.jlad"))) initial-env)
