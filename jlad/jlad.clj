@@ -24,6 +24,8 @@
 (defn map-env [f env]
   (zipmap (keys env) (map f (vals env))))
 
+(declare make-bundle)
+
 (defn interleave-env [primal-env tangent-env]
   (merge-with make-bundle primal-env tangent-env))
 
@@ -32,58 +34,71 @@
 
 ;;;; Evaluator
 
-(defprotocol JLObject
-  (variable? [self])
-  (constant? [self])
-  (primitive? [self])
-  (closure? [self])
-  (lambda-exp? [self])
-  (application? [self])
-  (pair? [self])
-  (empty-list? [self]))
+(defprotocol JLVariable
+  (variable? [self]))
+
+(defprotocol JLConstant
+  (constant? [self]))
+
+(defprotocol JLPrimitive
+  (primitive? [self]))
+
+(defprotocol JLClosure
+  (closure? [self]))
+
+(defprotocol JLLambdaExp
+  (lambda-exp? [self]))
+
+(defprotocol JLApplication
+  (application? [self]))
+
+(defprotocol JLPair
+  (pair? [self]))
+
+(defprotocol JLEmptyList
+ (empty-list? [self]))
 
 (extend-type Object
-  JLObject
+  JLVariable
   (variable? [self] false)
+  JLConstant
   (constant? [self] false)
+  JLPrimitive
   (primitive? [self] false)
+  JLClosure
   (closure? [self] false)
+  JLLambdaExp
   (lambda-exp? [self] false)
+  JLApplication
   (application? [self] false)
+  JLPair
   (pair? [self] false)
+  JLEmptyList
   (empty-list? [self] false))
 
 (declare jl-eval)
-
-(defprotocol Zeroable
-  (zero [self]))
 
 (defprotocol Applicable
   (jl-apply [self arg]))
 
 (defrecord primitive [implementation]
-  JLObject
+  JLPrimitive
   (primitive? [self] true)
   Applicable
-  (jl-apply [self arg] (implementation arg))
-  Zeroable
-  (zero [self] self))
+  (jl-apply [self arg] (implementation arg)))
 
 (defrecord closure [formal body env]
-  JLObject
+  JLClosure
   (closure? [self] true)
   Applicable
   (jl-apply [self arg]
-	    (jl-eval body (extend-env (jl-destructure formal arg) env)))
-  Zeroable
-  ;; TODO zero out the constants too
-  (zero [self] (new closure formal body (map-env zero env))))
+	    (jl-eval body (extend-env (jl-destructure formal arg) env))))
 
 (defprotocol Evaluable
   (jl-eval [self env]))
 
 (defrecord variable [name]
-  JLObject
+  JLVariable
   (variable? [self] true)
   Evaluable
   (jl-eval [self env] (lookup env name))
@@ -91,49 +106,68 @@
   (jl-destructure [self arg] {name arg}))
 
 (defrecord constant [object]
-  JLObject
-  (constant [self] true)
+  JLConstant
+  (constant? [self] true)
   Evaluable
   (jl-eval [self env] object)
   Destructurable
   (jl-destructure [self arg] {}))
 
 (defrecord lambda-exp [formal body]
-  JLObject
+  JLLambdaExp
   (lambda-exp? [self] true)
   Evaluable
   (jl-eval [self env] (new closure formal body env)))
 
 (defrecord application [operator operand]
-  JLObject
+  JLApplication
   (application? [self] true)
   Evaluable
   (jl-eval [self env] (jl-apply (jl-eval operator env)
 				(jl-eval operand env))))
 
 (defrecord pair [car cdr]
-  JLObject
+  JLPair
   (pair? [self] true)
   Evaluable
   (jl-eval [self env] (new pair (jl-eval car env)
 			   (jl-eval cdr env)))
   Destructurable
   (jl-destructure [self arg] (merge (jl-destructure car (:car arg))
-				    (jl-destructure cdr (:cdr arg))))
-  Zeroable
-  (zero [self] (new pair (zero car) (zero cdr))))
+				    (jl-destructure cdr (:cdr arg)))))
 
 (defrecord empty-list []
-  JLObject
+  JLEmptyList
   (empty-list? [self] true))
 
-(extend-type Number
-  Zeroable
-  (zero [self] 0))
+(defprotocol Zeroable
+  (zero [self]))
+
+(extend-protocol Zeroable
+  primitive
+  (zero [self] self)
+  closure
+  (zero [self] (new closure (:formal self) (zero (:body self))
+		    (map-env zero (:env self))))
+  pair
+  (zero [self] (new pair (zero (:car self)) (zero (:cdr self))))
+  Number
+  (zero [self] 0)
+
+  variable
+  (zero [self] self)
+  constant
+  (zero [self] (new constant (zero (:object self))))
+  lambda-exp
+  (zero [self] (new lambda-exp (:formal self) (zero (:body self))))
+  application
+  (zero [self] (new application (zero (:operator self)) (zero (:operand self))))
+  empty-list
+  (zero [self] self))
 
 ;;;; Syntax
 
-(declare syntax-body syntax-operands syntax-formals)
+(declare syntax-body syntax-operands syntax-formals macro? jl-expand-1)
 
 (defn self-evaluating? [thing]
   (number? thing))
@@ -143,6 +177,8 @@
 	(new variable exp)
 	(self-evaluating? exp)
 	(new constant exp)
+	(macro? exp)
+	(syntax (jl-expand-1 exp))
 	(seq? exp)
 	(condp = (first exp)
 	    'lambda (new lambda-exp
@@ -153,9 +189,35 @@
 	    (new application (syntax (first exp))
 		 (syntax-operands (next exp))))))
 
+(defn definition? [exp]
+  (and (seq? exp)
+       (= 'define (first exp))))
+
+(defn definiendum [definition]
+  ;; TODO Automatic currying syntax?
+  (if (symbol? (second definition))
+    (second definition)
+    (first (second definition))))
+
+(defn definiens [definition]
+  (if (symbol? (second definition))
+    (nth definition 2)
+    (cons 'lambda (cons (next (second definition))
+			(nnext definition)))))
+
+(defn convert-definitions [exps]
+  (if (= (count exps) 1)
+    (first exps)
+    ;; TODO Turn this into letrec
+    ;; TODO Deal with multiple non-definitions
+    (let [definitions (filter definition? exps)
+	  others (remove definition? exps)]
+      (cons 'let* (cons (map list (map definiendum definitions)
+			     (map definiens definitions))
+			others)))))
+
 (defn syntax-body [exps]
-  ;; TODO Only one-form bodies for now
-  (syntax (first exps)))
+  (syntax (convert-definitions exps)))
 
 (defn syntax-operands [exps]
   (cond (empty? exps)
@@ -168,37 +230,103 @@
 
 (def syntax-formals syntax-operands)
 
+;;; Macros
+
+(declare macro-table)
+
+(defn macro? [exp]
+  (and (seq? exp)
+       (contains? macro-table (first exp))))
+
+(defn jl-expand-1 [exp]
+  ((get macro-table (first exp)) exp))
+
+(defn jl-let [[_ bindings & body]]
+  (cons (cons 'lambda (cons (map first bindings) body))
+	(map second bindings)))
+
+(defn jl-let* [[_ bindings & body]]
+  (if (empty? bindings)
+    (cons 'let (cons bindings body))
+    (list 'let (list (first bindings))
+	  (cons 'let* (cons (rest bindings) body)))))
+
+(def macro-table {'let  jl-let
+		  'let* jl-let*})
+
+;;;; Unsyntax
+
+(declare unsyntax-list)
+
+(defn unsyntax [object]
+  (cond (application? object)
+	(cons (unsyntax (:operator object)) (unsyntax-list (:operand object)))
+	(pair? object)
+	(list 'cons (unsyntax (:car object))
+	      (unsyntax (:cdr object)))
+	(lambda-exp? object)
+	(list 'lambda (unsyntax-list (:formal object))
+	      (unsyntax (:body object)))
+	(variable? object)
+	(:name object)
+	(constant? object)
+	(unsyntax (:object object))
+	(empty-list? object)
+	'()
+	(number? object)
+	object))
+
+(defn unsyntax-list [lst]
+  (cond (pair? lst)
+	(cons (unsyntax (:car lst)) (unsyntax-list (:cdr lst)))
+	(empty-list? lst)
+	'()
+	true
+	(list (unsyntax lst))))
+
 ;;;; Forward Mode
 
-(declare forward-transform)
-
-(defprotocol Interleavable
-  (interleave-bundle [primal tangent]))
+(declare forward-transform interleave-bundle interleave-bundle-deep)
 
 (defrecord bundle [primal tangent]
   Applicable
-  (jl-apply [self arg] (jl-apply (forward-transform (interleave-bundle primal tangent))
-				 arg)))
+  (jl-apply [self arg]
+   (jl-apply (forward-transform (interleave-bundle primal tangent)) arg)))
 
 (defn make-bundle [primal tangent]
   (new bundle primal tangent))
 
-(extend-type pair
-  Interleavable
-  (interleave-bundle [primal tangent] (new pair (make-bundle (:car primal) (:car tangent))
-					   (make-bundle (:cdr primal) (:cdr tangent)))))
+(defn interleave-bundle [primal tangent]
+  (cond (pair? primal)
+	(new pair (make-bundle (:car primal) (:car tangent))
+	     (make-bundle (:cdr primal) (:cdr tangent)))
+	(closure? primal)
+	(new closure (:formal primal)
+	     (interleave-bundle-deep (:body primal) (:body tangent))
+	     (interleave-env (:env primal) (:env tangent)))
+	(primitive? primal)
+	primal))
 
-(extend-type closure
-  Interleavable
-  ;; TODO Get the constants from the body of the tangent
-  (interleave-bundle
-   [primal tangent]
-   (new closure (:formal primal) (:body primal)
-	(interleave-env (:env primal) (:env tangent)))))
-
-(extend-type primitive
-  Interleavable
-  (interleave-bundle [primal tangent] primal))
+(defn interleave-bundle-deep [primal tangent]
+  (cond (variable? primal)
+	;; TODO Should I be marking things and keeping track of
+	;; perturbations here?
+	primal
+	(constant? primal)
+	(new constant (make-bundle (:object primal) (:object tangent)))
+	(lambda-exp? primal)
+	(new lambda-exp (:formal primal)
+	     (interleave-bundle-deep (:body primal) (:body tangent)))
+	(application? primal)
+	(new application (interleave-bundle-deep (:operator primal)
+						 (:operator tangent))
+	     (interleave-bundle-deep (:operand primal)
+				     (:operand tangent)))
+	(pair? primal)
+	(new pair (interleave-bundle-deep (:car primal) (:car tangent))
+	     (interleave-bundle-deep (:cdr primal) (:cdr tangent)))
+	(empty-list? primal)
+	primal))
 
 (defn forward-transform [thing]
   (if (contains? (meta thing) :forward)
@@ -216,13 +344,13 @@
 (defn binary-primitive [proc]
   (new primitive (fn [arg] (proc (:car arg) (:cdr arg)))))
 
-(def inital-env {'+ (binary-primitive +)
-		 'zero (new primitive zero)
-		 'bundle (binary-primitive make-bundle)
-		 'primal (new primitive :primal)
-		 'tangent (new primitive :tangent)})
+(def initial-env {'+ (binary-primitive +)
+		  'zero (new primitive zero)
+		  'bundle (binary-primitive make-bundle)
+		  'primal (new primitive :primal)
+		  'tangent (new primitive :tangent)})
 
 (defn jl-do [form]
-  (jl-eval (syntax form) inital-env))
+  (jl-eval (syntax form) initial-env))
 
-(jl-eval (syntax-body (sexp-slurp (clojure.java.io/file "foo.jlad"))) inital-env)
+; (jl-eval (syntax-body (sexp-slurp (clojure.java.io/file "foo.jlad"))) initial-env)

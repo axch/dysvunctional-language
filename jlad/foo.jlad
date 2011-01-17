@@ -1,13 +1,21 @@
-((lambda (j*)
-   ((lambda (derivative)
-      ((derivative (lambda (x) x)) 1))
-    (lambda (f)
-      (lambda (point)
-	(tangent ((j* f) (bundle point 1)))))))
- (lambda (frob)
-   (bundle frob (zero frob))))
+(define (j* frob)
+  (bundle frob (zero frob)))
 
-(zero (cons 3 2))
-((lambda (x y)
-   (+ x y))
- 3 5)
+(define (derivative f)
+  (lambda (point)
+    (tangent ((j* f) (bundle point 1)))))
+
+((derivative (lambda (x) 3)) 1)
+
+;; (let ((j* (lambda (frob)
+;; 	    (bundle frob (zero frob)))))
+;;   (let ((derivative
+;; 	 (lambda (f)
+;; 	   (lambda (point)
+;; 	     (tangent ((j* f) (bundle point 1)))))))
+;;     ((derivative (lambda (x) x)) 1)))
+
+;; (zero (cons 3 2))
+;; ((lambda (x y)
+;;    (+ x y))
+;;  3 5)
