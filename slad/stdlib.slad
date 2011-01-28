@@ -1,0 +1,31 @@
+;;; -*- scheme -*-
+
+(
+ (define (j* thing)
+   (bundle thing (zero thing)))
+
+ (define (derivative f)
+   (lambda (x)
+     (tangent ((j* f) (bundle x 1)))))
+
+ (define exp
+   (with-forward-transform
+    %exp
+    (lambda (b)
+      (let ((p (primal b))
+	    (t (tangent b)))
+	(bundle
+	 (exp p)
+	 (* (exp p) t))))))
+
+ (define +
+   (with-forward-transform
+    %+
+    (lambda (x y)
+      (let ((px (primal x))
+	    (tx (tangent x))
+	    (py (primal y))
+	    (ty (tangent y)))
+	(bundle
+	 (+ px py)
+	 (+ tx ty)))))))
