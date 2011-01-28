@@ -1,13 +1,7 @@
 ;;; -*- scheme -*-
 
-(
- (define (j* thing)
-   (bundle thing (zero thing)))
-
- (define (derivative f)
-   (lambda (x)
-     (tangent ((j* f) (bundle x 1)))))
-
+(let ()
+#;
  (define dummy1
    (set-forward-transform!
     exp
@@ -28,4 +22,20 @@
 	    (ty (tangent y)))
 	(bundle
 	 (+ px py)
-	 (+ tx ty)))))))
+	 (+ tx ty))))))
+
+ (define dummy3 (set-forward-transform! bundle bundle))
+ (define dummy4 (set-forward-transform! primal primal))
+ (define dummy5 (set-forward-transform! tangent tangent))
+ (define dummy6 (set-forward-transform! zero zero))
+
+ (let ()
+
+   (define (j* thing)
+     (bundle thing (zero thing)))
+
+   (define (derivative f)
+     (lambda (x)
+       (tangent ((j* f) (bundle x 1)))))
+
+   "HERE"))

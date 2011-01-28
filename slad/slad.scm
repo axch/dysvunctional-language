@@ -27,13 +27,16 @@
 	(else
 	 (error "Invalid procedure type" proc arg))))
 
-(define (slad-do form)
+(define (slad-prepare form)
   (let ((slad-stdlib (with-input-from-file "stdlib.slad" read)))
-    (slad-eval (macroexpand
-		`(let ()
-		   ,@slad-stdlib
-		   ,form))
-	       (initial-slad-user-env))))
+    (let loop ((tail-form slad-stdlib))
+      (if (equal? tail-form "HERE")
+	  form
+	  `(,@(except-last-pair tail-form)
+	    ,(loop (car (last-pair tail-form))))))))
+
+(define (slad-do form)
+  (slad-eval (macroexpand (slad-prepare form)) (initial-slad-user-env)))
 
 ;;; ----------------------------------------------------------------------
 ;;;                             Forward Mode
@@ -110,7 +113,7 @@
 					       transform))
   (hash-table/put! primal-cache transform object)
   (hash-table/put! tangent-cache transform object)
-  object)
+  'forward-transform-assigned)
 
 (define (forward-transform-known? object)
   (hash-table/get forward-transforms object #f))
