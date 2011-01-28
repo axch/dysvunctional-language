@@ -47,38 +47,6 @@
   ;; shape as the original object.
   (cond ((forward-transform-known? object)
 	 ((get-forward-transform object) perturbation))
-	((slad-closure? object)
-	 (make-slad-closure
-	  (slad-closure-formal object)
-	  (slad-closure-body object)    ; Forward mode does not require code changes
-					; except maybe to avoid confusing perturbations
-	  (transform-and-perturb (slad-closure-env object)
-				 (slad-closure-env perturbation))))
-	((env? object)
-	 (slad-env-map transform-and-perturb object perturbation))
-	((slad-primitive? object)
-	 (error "Cannot transform primitives whose transforms are not known" object perturbation))
-	((slad-real? object)
-	 (make-slad-bundle object perturbation))
-	((slad-pair? object)
-	 (make-slad-pair (transform-and-perturb (slad-car object) (slad-car perturbation))
-			 (transform-and-perturb (slad-cdr object) (slad-cdr perturbation))))
-	((slad-emtpy-list? object)
-	 object)
-	((slad-bundle? object)
-	 ;; TODO Which way? Cons or interleave? This has to agree with
-	 ;; the access pattern to avoid perturbation confusion.
-	 (make-slad-bundle object perturbation)
-	 (make-slad-bundle (transform-and-perturb (slad-primal object) (slad-primal perturbation))
-			   (transform-and-perturb (slad-tangent object) (slad-tangent perturbation))))
-	(else
-	 (error "Invalid object type" object perturbation))))
-
-(define (transform-and-perturb object perturbation)
-  ;; Assume the perturbation is an object of exactly the same type and
-  ;; shape as the original object.
-  (cond ((forward-transform-known? object)
-	 ((get-forward-transform object) perturbation))
 	;; ((slad-closure? object)
 	;;  (make-slad-closure
 	;;   (slad-closure-formal object)
