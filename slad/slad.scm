@@ -42,6 +42,11 @@
 ;;;                             Forward Mode
 ;;; ----------------------------------------------------------------------
 
+;;; The invariant on nested bundles is the outermost bundle
+;;; corresponds to the dynamically nearest call to derviative (and
+;;; company).  In other words, in (derviative_1 (derviative_2 (lambda (x) ... x ...)))
+;;; the reference to x will see (bundle_2 (bundle_1 foo bar) (bundle_1 baz quux)).
+
 (define (transform-and-perturb object perturbation)
   ;; Assume the perturbation is an object of exactly the same type and
   ;; shape as the original object.
