@@ -1,7 +1,7 @@
 ;;; -*- scheme -*-
 
 (let ()
-#;
+
  (define dummy1
    (set-forward-transform!
     exp
@@ -23,6 +23,18 @@
 	(bundle
 	 (+ px py)
 	 (+ tx ty))))))
+
+ (define dummy2a
+   (set-forward-transform!
+    *
+    (lambda (x y)
+      (let ((px (primal x))
+	    (tx (tangent x))
+	    (py (primal y))
+	    (ty (tangent y)))
+	(bundle
+	 (* px py)
+	 (+ (* py tx) (* px ty)))))))
 
  (define dummy3 (set-forward-transform! bundle bundle))
  (define dummy4 (set-forward-transform! primal primal))
