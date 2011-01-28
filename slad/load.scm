@@ -12,5 +12,5 @@
 (load-relative "data")
 (load-relative "macro")
 (load-relative "env")
-(load-relative "primitives")
 (load-relative "slad")
+(load-relative "primitives")

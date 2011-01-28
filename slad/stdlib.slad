@@ -8,9 +8,9 @@
    (lambda (x)
      (tangent ((j* f) (bundle x 1)))))
 
- (define exp
-   (with-forward-transform
-    %exp
+ (define dummy1
+   (set-forward-transform!
+    exp
     (lambda (b)
       (let ((p (primal b))
 	    (t (tangent b)))
@@ -18,9 +18,9 @@
 	 (exp p)
 	 (* (exp p) t))))))
 
- (define +
-   (with-forward-transform
-    %+
+ (define dummy2
+   (set-forward-transform!
+    +
     (lambda (x y)
       (let ((px (primal x))
 	    (tx (tangent x))

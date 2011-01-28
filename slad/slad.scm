@@ -104,14 +104,13 @@
 
 (define forward-transforms (make-eq-hash-table))
 
-(define (with-forward-transform object transform)
-  (let ((answer (slad-copy object)))
-    ;; All standard forward transforms ignore the perturbation
-    (hash-table/put! forward-transforms answer (lambda (perturbation)
-						 transform))
-    (hash-table/put! primal-cache transform answer)
-    (hash-table/put! tangent-cache transform answer)
-    answer))
+(define (set-forward-transform! object transform)
+  ;; All standard forward transforms ignore the perturbation
+  (hash-table/put! forward-transforms object (lambda (perturbation)
+					       transform))
+  (hash-table/put! primal-cache transform object)
+  (hash-table/put! tangent-cache transform object)
+  object)
 
 (define (forward-transform-known? object)
   (hash-table/get forward-transforms object #f))
