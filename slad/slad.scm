@@ -27,8 +27,11 @@
 	(else
 	 (error "Invalid procedure type" proc arg))))
 
+(define my-pathname (self-relatively working-directory-pathname))
+(define stdlib (string-append (->namestring my-pathname) "stdlib.slad"))
+
 (define (slad-prepare form)
-  (let ((slad-stdlib (with-input-from-file "stdlib.slad" read)))
+  (let ((slad-stdlib (with-input-from-file stdlib read)))
     (let loop ((tail-form slad-stdlib))
       (if (equal? tail-form "HERE")
 	  form
@@ -37,6 +40,10 @@
 
 (define (slad-do form)
   (slad-eval (macroexpand (slad-prepare form)) (initial-slad-user-env)))
+
+(define (slad-eval-file filename)
+  (let ((forms (with-input-from-file filename read-all)))
+    (pp (slad-do `(let () ,@forms)))))
 
 ;;; ----------------------------------------------------------------------
 ;;;                             Forward Mode
