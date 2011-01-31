@@ -16,16 +16,22 @@
 
 (define definition? (tagged-list? 'define))
 
+(define (normalize-definition definition)
+  (cond ((not (definition? definition))
+	 (error "Trying to normalize a non-definition" definition))
+	((pair? (cadr definition))
+	 (normalize-definition
+	  `(define ,(caadr definition)
+	     (lambda ,(cdadr definition)
+	       ,@(cddr definition)))))
+	(else
+	 definition)))
+
 (define (definiendum definition)
-  (if (pair? (cadr definition))
-      (caadr definition)
-      (cadr definition)))
+  (cadr (normalize-definition definition)))
 
 (define (definiens definition)
-  (if (pair? (cadr definition))
-      `(lambda ,(cdadr definition)
-	 ,@(cddr definition))
-      (caddr definition)))
+  (caddr (normalize-definition definition)))
 
 (define pair-form? (tagged-list? 'cons))
 (define car-subform cadr)
