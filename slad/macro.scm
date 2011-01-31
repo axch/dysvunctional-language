@@ -214,10 +214,12 @@
 ;;; COND
 
 (define (expand-cond form)
+  (define (normalize-else condition)
+    (or (eq? condition 'else) condition))
   (cond ((null? (cdr form))
 	 0) ; unspecific
 	(else
-	 `(if ,(caadr form) ; can support else by making it #t here
+	 `(if ,(normalize-else (caadr form))
 	      ,(cadadr form)
 	      (cond ,@(cddr form))))))
 
