@@ -62,7 +62,7 @@
 (define (env-slice env variables)
   (make-env
    (filter (lambda (binding)
-	     (memq (car binding) variables))
+	     (member (car binding) variables))
 	   (env-bindings env))))
 
 ;;; To keep environments in canonical form, closures only keep the
