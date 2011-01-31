@@ -30,3 +30,16 @@
    "code-generator"
    "post-processing"))
 
+(define (vl-run-file filename)
+  (define (read-all)
+    (let loop ((results '())
+	       (form (read)))
+      (if (eof-object? form)
+	  (reverse results)
+	  (loop (cons form results) (read)))))
+  (let* ((forms (with-input-from-file filename read-all))
+	 (program `(let () ,@forms))
+	 (analysis (analyze program))
+	 (compiled-program (generate program analysis))
+	 (compiled-answer (eval compiled-program (nearest-repl/environment))))
+    (pp compiled-answer)))
