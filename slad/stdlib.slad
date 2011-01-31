@@ -22,138 +22,136 @@
 	      (answer (proc p1 p2)))
 	 (bundle answer (zero answer))))))
 
-  (let ()
-    (define dummy1 (transforms-to-self! null?))
-    (define dummy2 (transforms-to-self! boolean?))
-    (define dummy3 (transforms-to-self! pair?))
+  (let* ((dummy (transforms-to-self! null?))
+	 (dummy (transforms-to-self! boolean?))
+	 (dummy (transforms-to-self! pair?))
 
-    (define dummy4 (operates-on-primal! zero?))
-    (define dummy5 (operates-on-primal! positive?))
-    (define dummy6 (operates-on-primal! negative?))
-    (define dummy7 (operates-on-primal! null?))
+	 (dummy (operates-on-primal! zero?))
+	 (dummy (operates-on-primal! positive?))
+	 (dummy (operates-on-primal! negative?))
+	 (dummy (operates-on-primal! null?))
 
-    (define dummy8 (operates-on-primal! read-real))
+	 (dummy (operates-on-primal! read-real))
+
+	 (dummy
+	  (set-forward-transform!
+	   exp
+	   (lambda (b)
+	     (let ((p (primal b))
+		   (t (tangent b)))
+	       (bundle
+		(exp p)
+		(* (exp p) t))))))
+
+	 (dummy
+	  (set-forward-transform!
+	   sin
+	   (lambda (b)
+	     (let ((p (primal b))
+		   (t (tangent b)))
+	       (bundle
+		(sin p)
+		(* (cos p) t))))))
+
+	 (dummy
+	  (set-forward-transform!
+	   cos
+	   (lambda (b)
+	     (let ((p (primal b))
+		   (t (tangent b)))
+	       (bundle
+		(cos p)
+		(* (- 0 (sin p)) t))))))
+
+	 (dummy
+	  (set-forward-transform!
+	   sqrt
+	   (lambda (b)
+	     (let ((p (primal b))
+		   (t (tangent b)))
+	       (bundle
+		(sqrt p)
+		(/ t (* 2 (sqrt p))))))))
+
+	 (dummy
+	  (set-forward-transform!
+	   +
+	   (lambda (x y)
+	     (let ((px (primal x))
+		   (tx (tangent x))
+		   (py (primal y))
+		   (ty (tangent y)))
+	       (bundle
+		(+ px py)
+		(+ tx ty))))))
+
+	 (dummy
+	  (set-forward-transform!
+	   -
+	   (lambda (x y)
+	     (let ((px (primal x))
+		   (tx (tangent x))
+		   (py (primal y))
+		   (ty (tangent y)))
+	       (bundle
+		(- px py)
+		(- tx ty))))))
+
+	 (dummy
+	  (set-forward-transform!
+	   *
+	   (lambda (x y)
+	     (let ((px (primal x))
+		   (tx (tangent x))
+		   (py (primal y))
+		   (ty (tangent y)))
+	       (bundle
+		(* px py)
+		(+ (* py tx) (* px ty)))))))
+
+	 (dummy
+	  (set-forward-transform!
+	   /
+	   (lambda (x y)
+	     (let ((px (primal x))
+		   (tx (tangent x))
+		   (py (primal y))
+		   (ty (tangent y)))
+	       (bundle
+		(/ px py)
+		(- (/ tx py) (/ (* px ty) (* py py))))))))
+
+	 (dummy (operates-on-primals! <))
+	 (dummy (operates-on-primals! <=))
+	 (dummy (operates-on-primals! >))
+	 (dummy (operates-on-primals! >=))
+	 (dummy (operates-on-primals! =))
+
+	 (dummy
+	  (set-forward-transform!
+	   if-procedure
+	   (lambda (b1 c a)
+	     (if (primal b1)
+		 (c)
+		 (a)))))
+
+	 (dummy (set-forward-transform! bundle bundle))
+	 (dummy (set-forward-transform! primal primal))
+	 (dummy (set-forward-transform! tangent tangent))
+	 (dummy (set-forward-transform! zero zero))
+	 (dummy (transforms-to-self! forward?)))
 
     (let ()
-      (define dummy1
-	(set-forward-transform!
-	 exp
-	 (lambda (b)
-	   (let ((p (primal b))
-		 (t (tangent b)))
-	     (bundle
-	      (exp p)
-	      (* (exp p) t))))))
 
-      (define dummy1a
-	(set-forward-transform!
-	 sin
-	 (lambda (b)
-	   (let ((p (primal b))
-		 (t (tangent b)))
-	     (bundle
-	      (sin p)
-	      (* (cos p) t))))))
+      (define (perturb x) x)		; Compatibility with VLAD
+      (define (unperturb x) x)		; Compatibility with VLAD
+      (define (real x) x)		; Compatibility with VLAD
 
-      (define dummy1b
-	(set-forward-transform!
-	 cos
-	 (lambda (b)
-	   (let ((p (primal b))
-		 (t (tangent b)))
-	     (bundle
-	      (cos p)
-	      (* (- 0 (sin p)) t))))))
+      (define (j* thing)
+	(bundle thing (zero thing)))
 
-      (define dummy1c
-	(set-forward-transform!
-	 sqrt
-	 (lambda (b)
-	   (let ((p (primal b))
-		 (t (tangent b)))
-	     (bundle
-	      (sqrt p)
-	      (/ t (* 2 (sqrt p))))))))
+      (define (derivative f)
+	(lambda (x)
+	  (tangent ((j* f) (bundle x 1)))))
 
-      (define dummy2
-	(set-forward-transform!
-	 +
-	 (lambda (x y)
-	   (let ((px (primal x))
-		 (tx (tangent x))
-		 (py (primal y))
-		 (ty (tangent y)))
-	     (bundle
-	      (+ px py)
-	      (+ tx ty))))))
-
-      (define dummy2aa
-	(set-forward-transform!
-	 -
-	 (lambda (x y)
-	   (let ((px (primal x))
-		 (tx (tangent x))
-		 (py (primal y))
-		 (ty (tangent y)))
-	     (bundle
-	      (- px py)
-	      (- tx ty))))))
-
-      (define dummy2a
-	(set-forward-transform!
-	 *
-	 (lambda (x y)
-	   (let ((px (primal x))
-		 (tx (tangent x))
-		 (py (primal y))
-		 (ty (tangent y)))
-	     (bundle
-	      (* px py)
-	      (+ (* py tx) (* px ty)))))))
-
-      (define dummy2b
-	(set-forward-transform!
-	 /
-	 (lambda (x y)
-	   (let ((px (primal x))
-		 (tx (tangent x))
-		 (py (primal y))
-		 (ty (tangent y)))
-	     (bundle
-	      (/ px py)
-	      (- (/ tx py) (/ (* px ty) (* py py))))))))
-
-      (define dummy2z (operates-on-primals! <))
-      (define dummy2y (operates-on-primals! <=))
-      (define dummy2x (operates-on-primals! >))
-      (define dummy2w (operates-on-primals! >=))
-      (define dummy2v (operates-on-primals! =))
-
-      (define dummy2-5
-	(set-forward-transform!
-	 if-procedure
-	 (lambda (b1 c a)
-	   (if (primal b1)
-	       (c)
-	       (a)))))
-
-      (define dummy3 (set-forward-transform! bundle bundle))
-      (define dummy4 (set-forward-transform! primal primal))
-      (define dummy5 (set-forward-transform! tangent tangent))
-      (define dummy6 (set-forward-transform! zero zero))
-      (define dummy7 (transforms-to-self! forward?))
-
-      (let ()
-
-	(define (perturb x) x)		; Compatibility with VLAD
-	(define (unperturb x) x)	; Compatibility with VLAD
-	(define (real x) x)		; Compatibility with VLAD
-
-	(define (j* thing)
-	  (bundle thing (zero thing)))
-
-	(define (derivative f)
-	  (lambda (x)
-	    (tangent ((j* f) (bundle x 1)))))
-
-	"HERE"))))
+      "HERE")))
