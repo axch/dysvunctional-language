@@ -14,9 +14,7 @@
   (symbol? thing))
 (define variable<? symbol<?)
 
-(define (definition? form)
-  (and (pair? form)
-       (eq? (car form) 'define)))
+(define definition? (tagged-list? 'define))
 
 (define (definiendum definition)
   (if (pair? (cadr definition))
