@@ -52,20 +52,23 @@
   (cond ((null? formals)
 	 (list formals))
 	((and (pair? formals) (null? (cdr formals)))
-	 formals)
+	 (list (macroexpand-formals-macros (car formals))))
 	((pair? formals)
-	 (list
-	  (let walk ((formals (apply cons* formals)))
-	    (cond ((symbol? formals) formals)
-		  ((null? formals) formals)
-		  ((pair? formals)
-		   (if (eq? (car formals) 'cons)
-		       `(cons ,(walk (cadr formals))
-			      ,(walk (caddr formals)))
-		       `(cons ,(walk (car formals))
-			      ,(walk (cdr formals)))))
-		  (else
-		   (error "Invalid formal parameter tree" formals))))))
+	 (list (macroexpand-formals-macros (apply cons* formals))))
+	(else
+	 (error "Invalid formal parameter tree" formals))))
+
+(define (macroexpand-formals-macros formals)
+  (cond ((symbol? formals) formals)
+	((null? formals) formals)
+	((slad-formal-macro? formals)
+	 (macroexpand-formals-macros (expand-slad-formal-macro formals)))
+	((pair? formals)
+	 (if (eq? (car formals) 'cons)
+	     `(cons ,(macroexpand-formals-macros (cadr formals))
+		    ,(macroexpand-formals-macros (caddr formals)))
+	     `(cons ,(macroexpand-formals-macros (car formals))
+		    ,(macroexpand-formals-macros (cdr formals)))))
 	(else
 	 (error "Invalid formal parameter tree" formals))))
 
@@ -95,6 +98,20 @@
 
 (define (define-slad-macro! name transformer)
   (set! *slad-macros* (cons (cons name transformer) *slad-macros*)))
+
+(define *slad-formal-macros* '())
+
+(define (slad-formal-macro? form)
+  (memq (car form) (map car *slad-formal-macros*)))
+
+(define (expand-slad-formal-macro form)
+  (let ((transformer (assq (car form) *slad-formal-macros*)))
+    (if transformer
+	((cdr transformer) form)
+	(error "Undefined macro" form))))
+
+(define (define-slad-formal-macro! name transformer)
+  (set! *slad-formal-macros* (cons (cons name transformer) *slad-formal-macros*)))
 
 ;;; LET
 (define (normal-let-transformer form)
@@ -130,7 +147,7 @@
 	   (let* ,(cdr bindings)
 	     ,@body)))))
 
-(define-vl-macro! 'let* let*-transformer)
+(define-slad-macro! 'let* let*-transformer)
 
 ;;; Following the suggestion in [1], I chose to do IF as a macro
 ;;; expansion into a primitive IF-PROCEDURE.  This may have been a bad
@@ -237,3 +254,13 @@
 	      (cond ,@(cddr form))))))
 
 (define-slad-macro! 'cond expand-cond)
+
+;;; LIST
+
+(define (expand-list form)
+  (if (null? (cdr form))
+      '()
+      `(cons ,(cadr form) (list ,@(cddr form)))))
+
+(define-slad-macro! 'list expand-list)
+(define-slad-formal-macro! 'list expand-list)

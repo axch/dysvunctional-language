@@ -50,20 +50,23 @@
   (cond ((null? formals)
 	 (list formals))
 	((and (pair? formals) (null? (cdr formals)))
-	 formals)
+	 (list (macroexpand-formals-macros (car formals))))
 	((pair? formals)
-	 (list
-	  (let walk ((formals (apply cons* formals)))
-	    (cond ((symbol? formals) formals)
-		  ((null? formals) formals)
-		  ((pair? formals)
-		   (if (eq? (car formals) 'cons)
-		       `(cons ,(walk (cadr formals))
-			      ,(walk (caddr formals)))
-		       `(cons ,(walk (car formals))
-			      ,(walk (cdr formals)))))
-		  (else
-		   (error "Invalid formal parameter tree" formals))))))
+	 (list (macroexpand-formals-macros (apply cons* formals))))
+	(else
+	 (error "Invalid formal parameter tree" formals))))
+
+(define (macroexpand-formals-macros formals)
+  (cond ((symbol? formals) formals)
+	((null? formals) formals)
+	((vl-formal-macro? formals)
+	 (macroexpand-formals-macros (expand-vl-formal-macro formals)))
+	((pair? formals)
+	 (if (eq? (car formals) 'cons)
+	     `(cons ,(macroexpand-formals-macros (cadr formals))
+		    ,(macroexpand-formals-macros (caddr formals)))
+	     `(cons ,(macroexpand-formals-macros (car formals))
+		    ,(macroexpand-formals-macros (cdr formals)))))
 	(else
 	 (error "Invalid formal parameter tree" formals))))
 
@@ -93,6 +96,20 @@
 
 (define (define-vl-macro! name transformer)
   (set! *vl-macros* (cons (cons name transformer) *vl-macros*)))
+
+(define *vl-formal-macros* '())
+
+(define (vl-formal-macro? form)
+  (memq (car form) (map car *vl-formal-macros*)))
+
+(define (expand-vl-formal-macro form)
+  (let ((transformer (assq (car form) *vl-formal-macros*)))
+    (if transformer
+	((cdr transformer) form)
+	(error "Undefined macro" form))))
+
+(define (define-vl-formal-macro! name transformer)
+  (set! *vl-formal-macros* (cons (cons name transformer) *vl-formal-macros*)))
 
 ;;; LET
 (define (normal-let-transformer form)
@@ -235,3 +252,13 @@
 	      (cond ,@(cddr form))))))
 
 (define-vl-macro! 'cond expand-cond)
+
+;;; LIST
+
+(define (expand-list form)
+  (if (null? (cdr form))
+      '()
+      `(cons ,(cadr form) (list ,@(cddr form)))))
+
+(define-vl-macro! 'list expand-list)
+(define-vl-formal-macro! 'list expand-list)
