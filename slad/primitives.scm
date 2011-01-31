@@ -62,6 +62,18 @@
 
 (add-primitive! (make-slad-primitive 'if-procedure slad-if-procedure))
 
+(define (slad-write thing)
+  (write thing)
+  (newline)
+  thing)
+
+(define (slad-read arg)
+  (read))
+
+(unary-primitive 'write slad-write)
+(unary-primitive 'write-real slad-write)
+(unary-primitive 'read-real slad-read)
+
 (define-unary-primitive zero)
 (binary-primitive 'bundle transform-and-perturb)
 (unary-primitive 'primal slad-primal)
