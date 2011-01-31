@@ -84,7 +84,16 @@
 
 (define slad-real? real?)
 
-(define-structure (slad-bundle safe-accessors)
+(define-structure
+  (slad-bundle
+   safe-accessors
+   (print-procedure
+    (lambda (unparser-state bundle)
+      (with-current-unparser-state unparser-state
+	(lambda (port)
+	  (with-output-to-port port
+	    (lambda ()
+	      (write (list 'forward (slad-bundle-primal bundle) (slad-bundle-tangent bundle))))))))))
   primal tangent)
 
 

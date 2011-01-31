@@ -43,7 +43,8 @@
 
 (define (slad-eval-file filename)
   (let ((forms (with-input-from-file filename read-all)))
-    (pp (slad-do `(let () ,@forms)))))
+    (write (slad-do `(let () ,@forms)))
+    (newline)))
 
 ;;; ----------------------------------------------------------------------
 ;;;                             Forward Mode
