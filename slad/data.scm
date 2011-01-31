@@ -4,6 +4,7 @@
 
 (define (constant? thing)
   (or (number? thing)
+      (boolean? thing)
       (slad-bundle? thing)
       (null? thing)))
 
