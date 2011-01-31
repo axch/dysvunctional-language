@@ -14,7 +14,7 @@
    (sort
     bindings
     (lambda (binding1 binding2)
-      (symbol<? (car binding1) (car binding2))))))
+      (variable<? (car binding1) (car binding2))))))
 
 (define (lookup exp env)
   (if (constant? exp)
@@ -61,7 +61,7 @@
 	   (map car new-bindings)
 	   old-bindings)))
 
-(define (remove-from-bindings symbols bindings)
+(define (remove-from-bindings variables bindings)
   (filter (lambda (binding)
-	    (not (memq (car binding) symbols)))
+	    (not (member (car binding) variables)))
 	  bindings))
