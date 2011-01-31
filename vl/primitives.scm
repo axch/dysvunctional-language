@@ -125,6 +125,11 @@
 (define-primitive-type-predicate null?)
 (define-primitive-type-predicate pair?)
 
+(define (vl-procedure? thing)
+  (or (primitive? thing)
+      (closure? thing)))
+(add-primitive! (primitive-type-predicate 'procedure? vl-procedure?))
+
 (define-RxR->bool-primitive  <)
 (define-RxR->bool-primitive <=)
 (define-RxR->bool-primitive  >)
