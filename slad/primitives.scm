@@ -10,18 +10,51 @@
   (add-primitive! (make-slad-primitive name (lambda (arg)
 					      (proc (slad-car arg) (slad-cdr arg))))))
 
-(binary-primitive '+ +)
-(binary-primitive '- -)
-(binary-primitive '* *)
-(binary-primitive '/ /)
+(define-syntax define-unary-primitive
+  (syntax-rules ()
+    ((_ name)
+     (unary-primitive 'name name))))
 
-(unary-primitive 'exp exp)
-(unary-primitive 'sin sin)
-(unary-primitive 'cos cos)
+(define-syntax define-binary-primitive
+  (syntax-rules ()
+    ((_ name)
+     (binary-primitive 'name name))))
 
-(unary-primitive 'zero zero)
+(define-binary-primitive +)
+(define-binary-primitive -)
+(define-binary-primitive *)
+(define-binary-primitive /)
+
+(define-binary-primitive <)
+(define-binary-primitive <=)
+(define-binary-primitive >)
+(define-binary-primitive >=)
+(define-binary-primitive =)
+
+(define-unary-primitive null?)
+(define-unary-primitive boolean?)
+(define-unary-primitive pair?)
+
+(define (slad-procedure? thing)
+  (or (slad-primitive? thing)
+      (slad-closure? thing)))
+
+(unary-primitive 'procedure? slad-procedure?)
+
+(define-unary-primitive sqrt)
+(define-unary-primitive exp)
+(define-unary-primitive log)
+(define-unary-primitive sin)
+(define-unary-primitive cos)
+(define-binary-primitive atan)
+(define-unary-primitive zero?)
+(define-unary-primitive positive?)
+(define-unary-primitive negative?)
+(define-unary-primitive real?)
+
+(define-unary-primitive zero)
 (binary-primitive 'bundle transform-and-perturb)
 (unary-primitive 'primal slad-primal)
 (unary-primitive 'tangent slad-tangent)
 
-(binary-primitive 'set-forward-transform! set-forward-transform!)
+(define-binary-primitive set-forward-transform!)
