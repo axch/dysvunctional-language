@@ -117,6 +117,19 @@
 	(named-let-transformer form)
 	(normal-let-transformer form))))
 
+;;; LET*
+(define (let*-transformer form)
+  (let ((bindings (cadr form))
+	(body (cddr form)))
+    (if (null? bindings)
+	`(let ()
+	   ,@body)
+	`(let (,(car bindings))
+	   (let* ,(cdr bindings)
+	     ,@body)))))
+
+(define-vl-macro! 'let* let*-transformer)
+
 ;;; Following the suggestion in [1], I chose to do IF as a macro
 ;;; expansion into a primitive IF-PROCEDURE.  This may have been a bad
 ;;; idea, because the analyzer and code generator seem to need to
