@@ -43,6 +43,9 @@
 
  (let ()
 
+   (define (perturb x) x)   ; Compatibility with VLAD
+   (define (unperturb x) x) ; Compatibility with VLAD
+
    (define (j* thing)
      (bundle thing (zero thing)))
 
