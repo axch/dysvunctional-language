@@ -59,7 +59,9 @@
    base
    (lambda (arg analysis)
      (if (abstract-real? arg)
-	 abstract-boolean
+	 (if (not (eq? base real?)) ;; Grr!
+	     abstract-boolean
+	     #t)
 	 (base arg)))
    (lambda (arg analysis) '())))
 
@@ -129,6 +131,7 @@
 (define-RxR->bool-primitive >=)
 (define-RxR->bool-primitive  =)
 
+(define-R->bool-primitive real?)
 (define-R->bool-primitive zero?)
 (define-R->bool-primitive positive?)
 (define-R->bool-primitive negative?)
