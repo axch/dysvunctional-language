@@ -10,6 +10,10 @@
 (define (constant-value thing)
   thing)
 
+(define (variable? thing)
+  (symbol? thing))
+(define variable<? symbol<?)
+
 (define (definition? form)
   (and (pair? form)
        (eq? (car form) 'define)))
@@ -24,10 +28,6 @@
       `(lambda ,(cdadr definition)
 	 ,@(cddr definition))
       (caddr definition)))
-
-(define (variable? thing)
-  (symbol? thing))
-(define variable<? symbol<?)
 
 (define pair-form? (tagged-list? 'cons))
 (define car-subform cadr)
