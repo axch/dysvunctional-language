@@ -52,6 +52,16 @@
 (define-unary-primitive negative?)
 (define-unary-primitive real?)
 
+(define (slad-if-procedure arg)
+  (let ((p (car arg))
+	(c (cadr arg))
+	(a (cddr arg)))
+    (if p
+	(slad-apply c '())
+	(slad-apply a '()))))
+
+(add-primitive! (make-slad-primitive 'if-procedure slad-if-procedure))
+
 (define-unary-primitive zero)
 (binary-primitive 'bundle transform-and-perturb)
 (unary-primitive 'primal slad-primal)
