@@ -6,10 +6,13 @@
   (or (number? thing)
       (boolean? thing)
       (slad-bundle? thing)
-      (null? thing)))
+      (null? thing)
+      (quoted? thing)))
 
 (define (constant-value thing)
-  thing)
+  (if (quoted? thing)
+      (cadr thing)
+      thing))
 
 (define (variable? thing)
   (symbol? thing))
@@ -60,6 +63,8 @@
 (define operand-subform cadr)
 (define (make-application operator-form operand-form)
   `(,operator-form ,operand-form))
+
+(define quoted? (tagged-list? 'quote))
 
 (define-structure (slad-closure safe-accessors (constructor %make-slad-closure))
   formal
@@ -115,7 +120,9 @@
 	 object)))
 
 (define (slad-exp-map f form . forms)
-  (cond ((constant? form)
+  (cond ((quoted? form)
+	 `(quote ,(apply f (cadr form) (map cadr forms))))
+	((constant? form)
 	 (apply f form forms))
 	((variable? form) form)
 	((pair-form? form)
