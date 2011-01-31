@@ -47,6 +47,7 @@
 (define-unary-primitive sin)
 (define-unary-primitive cos)
 (define-binary-primitive atan)
+
 (define-unary-primitive zero?)
 (define-unary-primitive positive?)
 (define-unary-primitive negative?)
