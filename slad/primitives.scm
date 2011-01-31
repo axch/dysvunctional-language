@@ -66,5 +66,6 @@
 (binary-primitive 'bundle transform-and-perturb)
 (unary-primitive 'primal slad-primal)
 (unary-primitive 'tangent slad-tangent)
+(unary-primitive 'forward? slad-bundle?)
 
 (define-binary-primitive set-forward-transform!)
