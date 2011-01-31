@@ -83,7 +83,13 @@
   (let ((free (free-variables `(lambda ,formal ,body))))
     (%make-slad-closure formal body (env-slice env free))))
 
-(define-structure (slad-primitive safe-accessors)
+(define-structure
+  (slad-primitive
+   safe-accessors
+   (print-procedure
+    (simple-unparser-method 'slad-primitive
+     (lambda (prim)
+       (list (slad-primitive-name prim))))))
   name
   implementation)
 
