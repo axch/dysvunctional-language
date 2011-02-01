@@ -4,30 +4,38 @@
 
 (define (constant? thing)
   (or (number? thing)
+      (boolean? thing)
       (slad-bundle? thing)
-      (null? thing)))
+      (null? thing)
+      (quoted? thing)))
 
 (define (constant-value thing)
-  thing)
+  (if (quoted? thing)
+      (cadr thing)
+      thing))
 
 (define (variable? thing)
   (symbol? thing))
 (define variable<? symbol<?)
 
-(define (definition? form)
-  (and (pair? form)
-       (eq? (car form) 'define)))
+(define definition? (tagged-list? 'define))
+
+(define (normalize-definition definition)
+  (cond ((not (definition? definition))
+	 (error "Trying to normalize a non-definition" definition))
+	((pair? (cadr definition))
+	 (normalize-definition
+	  `(define ,(caadr definition)
+	     (lambda ,(cdadr definition)
+	       ,@(cddr definition)))))
+	(else
+	 definition)))
 
 (define (definiendum definition)
-  (if (pair? (cadr definition))
-      (caadr definition)
-      (cadr definition)))
+  (cadr (normalize-definition definition)))
 
 (define (definiens definition)
-  (if (pair? (cadr definition))
-      `(lambda ,(cdadr definition)
-	 ,@(cddr definition))
-      (caddr definition)))
+  (caddr (normalize-definition definition)))
 
 (define pair-form? (tagged-list? 'cons))
 (define car-subform cadr)
@@ -56,6 +64,8 @@
 (define (make-application operator-form operand-form)
   `(,operator-form ,operand-form))
 
+(define quoted? (tagged-list? 'quote))
+
 (define-structure (slad-closure safe-accessors (constructor %make-slad-closure))
   formal
   body
@@ -64,7 +74,7 @@
 (define (env-slice env variables)
   (make-env
    (filter (lambda (binding)
-	     (memq (car binding) variables))
+	     (member (car binding) variables))
 	   (env-bindings env))))
 
 ;;; To keep environments in canonical form, closures only keep the
@@ -73,13 +83,28 @@
   (let ((free (free-variables `(lambda ,formal ,body))))
     (%make-slad-closure formal body (env-slice env free))))
 
-(define-structure (slad-primitive safe-accessors)
+(define-structure
+  (slad-primitive
+   safe-accessors
+   (print-procedure
+    (simple-unparser-method 'slad-primitive
+     (lambda (prim)
+       (list (slad-primitive-name prim))))))
   name
   implementation)
 
 (define slad-real? real?)
 
-(define-structure (slad-bundle safe-accessors)
+(define-structure
+  (slad-bundle
+   safe-accessors
+   (print-procedure
+    (lambda (unparser-state bundle)
+      (with-current-unparser-state unparser-state
+	(lambda (port)
+	  (with-output-to-port port
+	    (lambda ()
+	      (write (list 'forward (slad-bundle-primal bundle) (slad-bundle-tangent bundle))))))))))
   primal tangent)
 
 
@@ -101,7 +126,9 @@
 	 object)))
 
 (define (slad-exp-map f form . forms)
-  (cond ((constant? form)
+  (cond ((quoted? form)
+	 `(quote ,(apply f (cadr form) (map cadr forms))))
+	((constant? form)
 	 (apply f form forms))
 	((variable? form) form)
 	((pair-form? form)

@@ -1,6 +1,10 @@
 (declare (usual-integrations))
 ;;;; Expressions
 
+(define ((tagged-list? tag) thing)
+  (and (pair? thing)
+       (eq? (car thing) tag)))
+
 (define (constant? thing)
   (or (number? thing)
       (boolean? thing)))
@@ -11,20 +15,24 @@
 
 (define variable<? symbol<?)
 
-(define (definition? form)
-  (and (pair? form)
-       (eq? (car form) 'define)))
+(define definition? (tagged-list? 'define))
+
+(define (normalize-definition definition)
+  (cond ((not (definition? definition))
+	 (error "Trying to normalize a non-definition" definition))
+	((pair? (cadr definition))
+	 (normalize-definition
+	  `(define ,(caadr definition)
+	     (lambda ,(cdadr definition)
+	       ,@(cddr definition)))))
+	(else
+	 definition)))
 
 (define (definiendum definition)
-  (if (pair? (cadr definition))
-      (caadr definition)
-      (cadr definition)))
+  (cadr (normalize-definition definition)))
 
 (define (definiens definition)
-  (if (pair? (cadr definition))
-      `(lambda ,(cdadr definition)
-	 ,@(cddr definition))
-      (caddr definition)))
+  (caddr (normalize-definition definition)))
 
 (define (constructors-only? exp)
   (or (symbol? exp)
@@ -125,10 +133,10 @@
   `(lambda ,(closure-formal closure)
      ,(closure-body closure)))
 
-(define (env-slice env symbols)
+(define (env-slice env variables)
   (make-env
    (filter (lambda (binding)
-	     (memq (car binding) symbols))
+	     (member (car binding) variables))
 	   (env-bindings env))))
 
 ;;; To keep environments in canonical form, closures only keep the

@@ -54,6 +54,17 @@
      (base arg))
    (lambda (arg analysis) '())))
 
+(define (R->bool-primitive name base)
+  (make-primitive name 1
+   base
+   (lambda (arg analysis)
+     (if (abstract-real? arg)
+	 (if (not (eq? base real?)) ;; Grr!
+	     abstract-boolean
+	     #t)
+	 (base arg)))
+   (lambda (arg analysis) '())))
+
 ;;; Binary numeric comparisons have all the concerns of binary numeric
 ;;; procedures and of unary type testers.
 (define (RxR->bool-primitive name base)
@@ -84,6 +95,11 @@
     ((_ name)
      (add-primitive! (primitive-type-predicate 'name name)))))
 
+(define-syntax define-R->bool-primitive
+  (syntax-rules ()
+    ((_ name)
+     (add-primitive! (R->bool-primitive 'name name)))))
+
 (define-syntax define-RxR->bool-primitive
   (syntax-rules ()
     ((_ name)
@@ -109,11 +125,21 @@
 (define-primitive-type-predicate null?)
 (define-primitive-type-predicate pair?)
 
+(define (vl-procedure? thing)
+  (or (primitive? thing)
+      (closure? thing)))
+(add-primitive! (primitive-type-predicate 'procedure? vl-procedure?))
+
 (define-RxR->bool-primitive  <)
 (define-RxR->bool-primitive <=)
 (define-RxR->bool-primitive  >)
 (define-RxR->bool-primitive >=)
 (define-RxR->bool-primitive  =)
+
+(define-R->bool-primitive real?)
+(define-R->bool-primitive zero?)
+(define-R->bool-primitive positive?)
+(define-R->bool-primitive negative?)
 
 ;;; The primitive REAL is special.
 

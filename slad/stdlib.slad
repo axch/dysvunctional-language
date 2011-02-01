@@ -2,52 +2,156 @@
 
 (let ()
 
- (define dummy1
-   (set-forward-transform!
-    exp
-    (lambda (b)
-      (let ((p (primal b))
-	    (t (tangent b)))
-	(bundle
-	 (exp p)
-	 (* (exp p) t))))))
+  (define (transforms-to-self! proc)
+    (set-forward-transform! proc proc))
 
- (define dummy2
-   (set-forward-transform!
-    +
-    (lambda (x y)
-      (let ((px (primal x))
-	    (tx (tangent x))
-	    (py (primal y))
-	    (ty (tangent y)))
-	(bundle
-	 (+ px py)
-	 (+ tx ty))))))
+  (define (operates-on-primal! proc)
+    (set-forward-transform!
+     proc
+     (lambda (b)
+       (let* ((p (primal b))
+	      (answer (proc p)))
+	 (bundle answer (zero answer))))))
 
- (define dummy2a
-   (set-forward-transform!
-    *
-    (lambda (x y)
-      (let ((px (primal x))
-	    (tx (tangent x))
-	    (py (primal y))
-	    (ty (tangent y)))
-	(bundle
-	 (* px py)
-	 (+ (* py tx) (* px ty)))))))
+  (define (operates-on-primals! proc)
+    (set-forward-transform!
+     proc
+     (lambda (b1 b2)
+       (let* ((p1 (primal b1))
+	      (p2 (primal b2))
+	      (answer (proc p1 p2)))
+	 (bundle answer (zero answer))))))
 
- (define dummy3 (set-forward-transform! bundle bundle))
- (define dummy4 (set-forward-transform! primal primal))
- (define dummy5 (set-forward-transform! tangent tangent))
- (define dummy6 (set-forward-transform! zero zero))
+  (let* ((dummy (transforms-to-self! null?))
+	 (dummy (transforms-to-self! boolean?))
+	 (dummy (transforms-to-self! pair?))
 
- (let ()
+	 (dummy (operates-on-primal! zero?))
+	 (dummy (operates-on-primal! positive?))
+	 (dummy (operates-on-primal! negative?))
+	 (dummy (operates-on-primal! null?))
 
-   (define (j* thing)
-     (bundle thing (zero thing)))
+	 (dummy (operates-on-primal! read-real))
 
-   (define (derivative f)
-     (lambda (x)
-       (tangent ((j* f) (bundle x 1)))))
+	 (dummy
+	  (set-forward-transform!
+	   exp
+	   (lambda (b)
+	     (let ((p (primal b))
+		   (t (tangent b)))
+	       (bundle
+		(exp p)
+		(* (exp p) t))))))
 
-   "HERE"))
+	 (dummy
+	  (set-forward-transform!
+	   sin
+	   (lambda (b)
+	     (let ((p (primal b))
+		   (t (tangent b)))
+	       (bundle
+		(sin p)
+		(* (cos p) t))))))
+
+	 (dummy
+	  (set-forward-transform!
+	   cos
+	   (lambda (b)
+	     (let ((p (primal b))
+		   (t (tangent b)))
+	       (bundle
+		(cos p)
+		(* (- 0 (sin p)) t))))))
+
+	 (dummy
+	  (set-forward-transform!
+	   sqrt
+	   (lambda (b)
+	     (let ((p (primal b))
+		   (t (tangent b)))
+	       (bundle
+		(sqrt p)
+		(/ t (* 2 (sqrt p))))))))
+
+	 (dummy
+	  (set-forward-transform!
+	   +
+	   (lambda (x y)
+	     (let ((px (primal x))
+		   (tx (tangent x))
+		   (py (primal y))
+		   (ty (tangent y)))
+	       (bundle
+		(+ px py)
+		(+ tx ty))))))
+
+	 (dummy
+	  (set-forward-transform!
+	   -
+	   (lambda (x y)
+	     (let ((px (primal x))
+		   (tx (tangent x))
+		   (py (primal y))
+		   (ty (tangent y)))
+	       (bundle
+		(- px py)
+		(- tx ty))))))
+
+	 (dummy
+	  (set-forward-transform!
+	   *
+	   (lambda (x y)
+	     (let ((px (primal x))
+		   (tx (tangent x))
+		   (py (primal y))
+		   (ty (tangent y)))
+	       (bundle
+		(* px py)
+		(+ (* py tx) (* px ty)))))))
+
+	 (dummy
+	  (set-forward-transform!
+	   /
+	   (lambda (x y)
+	     (let ((px (primal x))
+		   (tx (tangent x))
+		   (py (primal y))
+		   (ty (tangent y)))
+	       (bundle
+		(/ px py)
+		(- (/ tx py) (/ (* px ty) (* py py))))))))
+
+	 (dummy (operates-on-primals! <))
+	 (dummy (operates-on-primals! <=))
+	 (dummy (operates-on-primals! >))
+	 (dummy (operates-on-primals! >=))
+	 (dummy (operates-on-primals! =))
+
+	 (dummy
+	  (set-forward-transform!
+	   if-procedure
+	   (lambda (b1 c a)
+	     (if (primal b1)
+		 (c)
+		 (a)))))
+
+	 (dummy (set-forward-transform! bundle bundle))
+	 (dummy (set-forward-transform! primal primal))
+	 (dummy (set-forward-transform! tangent tangent))
+	 (dummy (set-forward-transform! zero zero))
+	 (dummy (transforms-to-self! forward?)))
+
+    (let ()
+
+      (define (perturb x) x)		; Compatibility with VLAD
+      (define (unperturb x) x)		; Compatibility with VLAD
+      (define (real x) x)		; Compatibility with VLAD
+
+      (define (j* thing)
+	(bundle thing (zero thing)))
+
+      (define (derivative f)
+	(lambda (x)
+	  (tangent ((j* f) (bundle x 1)))))
+
+      "HERE")))

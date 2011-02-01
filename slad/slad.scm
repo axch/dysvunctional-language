@@ -43,11 +43,17 @@
 
 (define (slad-eval-file filename)
   (let ((forms (with-input-from-file filename read-all)))
-    (pp (slad-do `(let () ,@forms)))))
+    (write (slad-do `(let () ,@forms)))
+    (newline)))
 
 ;;; ----------------------------------------------------------------------
 ;;;                             Forward Mode
 ;;; ----------------------------------------------------------------------
+
+;;; The invariant on interaction of bundles with other compound
+;;; structures is that bundles are interleaved all the way down: a
+;;; bundle will never contain any compound structure except for
+;;; another bundle.
 
 ;;; The invariant on nested bundles is the outermost bundle
 ;;; corresponds to the dynamically nearest call to derviative (and
@@ -96,7 +102,9 @@
   'forward-transform-assigned)
 
 (define (forward-transform-known? object)
-  (hash-table/get forward-transforms object #f))
+  (let ((unique (list 'unique)))
+    (let ((answer (hash-table/get forward-transforms object unique)))
+      (not (eq? unique answer)))))
 
 (define (get-forward-transform object)
   (hash-table/get forward-transforms object #f))
@@ -132,4 +140,7 @@
 	 (error "Cannot take the tangent of a non-bundle" thing))
 	(else
 	 (slad-map slad-tangent thing))))
+
+(set-forward-transform! #t #t)
+(set-forward-transform! #f #f)
 
