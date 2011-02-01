@@ -9,15 +9,9 @@
 (define (load-relative filename)
   (self-relatively (lambda () (load filename))))
 
-(define (read-all)
-  (let loop ((results '())
-	     (form (read)))
-    (if (eof-object? form)
-	(reverse results)
-	(loop (cons form results) (read)))))
-
 (load-relative "data")
 (load-relative "macro")
 (load-relative "env")
 (load-relative "slad")
 (load-relative "primitives")
+(load-relative "os")

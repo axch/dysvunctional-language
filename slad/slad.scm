@@ -41,11 +41,6 @@
 (define (slad-do form)
   (slad-eval (macroexpand (slad-prepare form)) (initial-slad-user-env)))
 
-(define (slad-eval-file filename)
-  (let ((forms (with-input-from-file filename read-all)))
-    (write (slad-do `(let () ,@forms)))
-    (newline)))
-
 ;;; ----------------------------------------------------------------------
 ;;;                             Forward Mode
 ;;; ----------------------------------------------------------------------
