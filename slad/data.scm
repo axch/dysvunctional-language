@@ -1,3 +1,5 @@
+(declare (usual-integrations))
+
 (define ((tagged-list? tag) thing)
   (and (pair? thing)
        (eq? (car thing) tag)))

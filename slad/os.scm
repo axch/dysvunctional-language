@@ -1,3 +1,5 @@
+(declare (usual-integrations))
+
 (define (read-source pathname)
   (let ((pathname (merge-pathnames (->pathname pathname)
 				   (->pathname "foo.vlad"))))

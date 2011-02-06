@@ -1,3 +1,5 @@
+(declare (usual-integrations))
+
 (define (slad-eval form env)
   (cond ((constant? form)
 	 (constant-value form))

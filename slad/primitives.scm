@@ -1,3 +1,5 @@
+(declare (usual-integrations))
+
 (define *primitives* '())
 
 (define (add-primitive! primitive)

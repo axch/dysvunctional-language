@@ -9,9 +9,11 @@
 (define (load-relative filename)
   (self-relatively (lambda () (load filename))))
 
-(load-relative "data")
-(load-relative "macro")
-(load-relative "env")
-(load-relative "slad")
-(load-relative "primitives")
-(load-relative "os")
+(load-relative "../vl/support/auto-compilation")
+
+(load-relative-compiled "data")
+(load-relative-compiled "macro")
+(load-relative-compiled "env")
+(load-relative-compiled "slad")
+(load-relative-compiled "primitives")
+(load-relative-compiled "os")
