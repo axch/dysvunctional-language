@@ -2,4 +2,11 @@
 
 SELFDIR=$(dirname $0)
 
-mit-scheme --batch-mode --no-init-file --load "${SELFDIR}/load.scm" --eval "(begin (slad-eval-file \"$1\") (%exit 0))"
+if [ `uname -m` == 'x86_64' ]; then
+    HEAP=50000
+else
+    HEAP=6000
+fi
+
+
+mit-scheme --heap $HEAP --batch-mode --no-init-file --load "${SELFDIR}/load.scm" --eval "(begin (slad-eval-file \"$1\") (%exit 0))"
