@@ -169,3 +169,71 @@
 	(else
 	 (error "Invalid expression type" form forms))))
 
+;;; Below is a faster free-variables, and some code for testing it.
+(define (memoize f)
+  (let ((cache (make-eq-hash-table)))
+    (lambda (x)
+      (hash-table/lookup cache x
+       (lambda (datum) datum)
+       (lambda ()
+	 (let ((answer (f x)))
+	   (hash-table/put! cache x answer)
+	   answer))))))
+
+(load-option 'wt-tree)
+
+(define (free-variables form)
+  (define (set->list set)
+    (wt-tree/fold (lambda (key datum list)
+		    (cons key list))
+		  '()
+		  set))
+  (set->list (%free-variables form)))
+
+(define %free-variables
+  (let ()
+    (define variable-tree-type
+      (make-wt-tree-type variable<?))
+    (define (empty-set)
+      (make-wt-tree variable-tree-type))
+    (define (singleton-set thing)
+      (singleton-wt-tree variable-tree-type thing #t))
+    (define set-union wt-tree/union)
+    (define set-difference wt-tree/difference)
+    (memoize
+     (lambda (form)
+       (cond ((constant? form)
+	      (empty-set))
+	     ((variable? form)
+	      (singleton-set form))
+	     ((pair-form? form)
+	      (set-union (%free-variables (car-subform form))
+			 (%free-variables (cdr-subform form))))
+	     ((lambda-form? form)
+	      (set-difference (%free-variables (lambda-body form))
+			      (%free-variables (lambda-formal form))))
+	     ((pair? form)
+	      (set-union (%free-variables (car form))
+			 (%free-variables (cdr form))))
+	     (else
+	      (error "Invalid expression type" form forms)))))))
+
+(define (long-let* n content)
+  `(let* ,(map (lambda (i)
+		 `(dummy ,i))
+	       (iota n))
+     ,content))
+
+(define (long-letrec n)
+  `(letrec ,(map (lambda (i)
+		   `(,(symbol "dummy" i) ,i))
+		 (iota n))
+     dummy0))
+
+(define (tree-size tree)
+  (cond ((pair? tree)
+	 (+ (tree-size (car tree))
+	    (tree-size (cdr tree))))
+	((null? tree)
+	 0)
+	(else 1)))

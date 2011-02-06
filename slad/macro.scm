@@ -197,13 +197,15 @@
 	  (else
 	   (let ((names (map car bindings))
 		 (forms (map cadr bindings)))
+	     (define recursive-variants
+	       (map (lambda (name-1)
+		      `(lambda (y)
+			 (Z* ,@names
+			     (lambda (,@names)
+			       (,name-1 y)))))
+		    names))
 	     (define (recursive-variant name)
-	       `(,name ,@(map (lambda (name-1)
-				`(lambda (y)
-				   (Z* ,@names
-				       (lambda (,@names)
-					 (,name-1 y)))))
-			      names)))
+	       `(,name ,@recursive-variants))
 	     `(letrec ((Z* (lambda (,@names Z*-k)
 			     (Z*-k ,@(map recursive-variant names)))))
 		(Z* ,@(map (lambda (form)
