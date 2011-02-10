@@ -170,7 +170,15 @@
 ;;; continuation so it can produce multiple things sensibly).  Do not
 ;;; read this macro definition unless you are a lambda calculus geek,
 ;;; and even then I advise looking at some examples of its output
-;;; first.
+;;; first.  This particular implementation shares structure between
+;;; the expressions that arise in expansion of nary letrec, so that
+;;; the resulting datastructure consumes space quadratic rather than
+;;; cubic in the number of bindings.  This is reasonable because the
+;;; particular expressions in question are identical LAMBDA
+;;; expressions in a shared environment; the consumer of this
+;;; expansion may take further advantage of this sharing, for example
+;;; with appropriate memoization, but should take due care not to
+;;; introduce bugs.
 
 (define (letrec-transformer form)
   (let ((bindings (cadr form))
