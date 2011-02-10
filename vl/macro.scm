@@ -11,7 +11,7 @@
 ;;; being expanded.
 
 (define (macroexpand exp)
-  (cond ((variable? exp)
+  (cond ((or (constant? exp) (variable? exp))
 	 exp)
 	((null? exp)
 	 '())
