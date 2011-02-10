@@ -1,11 +1,11 @@
 (declare (usual-integrations))
 ;;;; Syntactic preprocessor
 
-;;; Accepts SLAD surface syntax and converts it into the more restricted
-;;; language that the SLAD interpreter and the SLAD compiler actually
-;;; process.  This is basically a rather straightforward, unhygienic
-;;; macro engine; but since SLAD does not allow user-defined macros, the
-;;; lack of hygiene is not too bad.
+;;; Accepts somewhat Schemey surface syntax and converts it into a
+;;; more restricted language for subsequent processing.  This is
+;;; basically a rather straightforward, unhygienic macro engine; but
+;;; since we do not allow user-defined macros, the lack of hygiene is
+;;; not too bad.
 
 ;;; Macro expansion proceeds by structural recursion over the form
 ;;; being expanded.
@@ -32,9 +32,9 @@
 	(else
 	 (error "Invalid expression syntax" exp))))
 
-;;; A SLAD procedure application supplying zero or 2+ arguments needs to
-;;; be converted into code that CONSes up the right structure and
-;;; passes it in.
+;;; A surface procedure application supplying zero or 2+ arguments
+;;; needs to be converted into code that CONSes up the right structure
+;;; and passes it in.
 (define (macroexpand-operands operands)
   (cond ((null? operands)
 	 '())
@@ -44,7 +44,7 @@
 	 `(cons ,(macroexpand (car operands))
 		,(macroexpand-operands (cdr operands))))))
 
-;;; A SLAD procedure definition that specifies zero or 2+ formal
+;;; A surface procedure definition that specifies zero or 2+ formal
 ;;; parameters needs to be converted into one that specifies the right
 ;;; destructuring.  While I'm at it, I can allow explicit
 ;;; destructuring in the surface syntax.
