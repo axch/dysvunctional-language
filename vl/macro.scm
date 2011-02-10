@@ -22,8 +22,8 @@
 	       ((eq? (car exp) 'cons)
 		`(cons ,(macroexpand (cadr exp))
 		       ,(macroexpand (caddr exp))))
-	       ((vl-macro? exp)
-		(macroexpand (expand-vl-macro exp)))
+	       ((exp-macro? exp)
+		(macroexpand (expand-exp-macro exp)))
 	       (else
 		`(,(macroexpand (car exp))
 		  ,(macroexpand-operands (cdr exp))))))
@@ -83,19 +83,19 @@
 
 ;;;; Additional data-driven macros.
 
-(define *vl-macros* '())
+(define *exp-macros* '())
 
-(define (vl-macro? form)
-  (memq (car form) (map car *vl-macros*)))
+(define (exp-macro? form)
+  (memq (car form) (map car *exp-macros*)))
 
-(define (expand-vl-macro form)
-  (let ((transformer (assq (car form) *vl-macros*)))
+(define (expand-exp-macro form)
+  (let ((transformer (assq (car form) *exp-macros*)))
     (if transformer
 	((cdr transformer) form)
 	(error "Undefined macro" form))))
 
-(define (define-vl-macro! name transformer)
-  (set! *vl-macros* (cons (cons name transformer) *vl-macros*)))
+(define (define-exp-macro! name transformer)
+  (set! *exp-macros* (cons (cons name transformer) *exp-macros*)))
 
 (define *vl-formal-macros* '())
 
@@ -128,7 +128,7 @@
 		       ,@body)))
        (,name ,@(map cadr bindings)))))
 
-(define-vl-macro! 'let
+(define-exp-macro! 'let
   (lambda (form)
     (if (symbol? (cadr form))
 	(named-let-transformer form)
@@ -145,14 +145,14 @@
 	   (let* ,(cdr bindings)
 	     ,@body)))))
 
-(define-vl-macro! 'let* let*-transformer)
+(define-exp-macro! 'let* let*-transformer)
 
 ;;; Following the suggestion in [1], I chose to do IF as a macro
 ;;; expansion into a primitive IF-PROCEDURE.  This may have been a bad
 ;;; idea, because the analyzer and code generator seem to need to
 ;;; special-case applications of this primitive procedure anyway, so
 ;;; why not leave IF as a special form in the language?
-(define-vl-macro! 'if
+(define-exp-macro! 'if
   (lambda (form)
     `(if-procedure
       ,(cadr form)
@@ -219,7 +219,7 @@
 			   forms)
 		    (lambda (,@names) ,@body))))))))
 
-(define-vl-macro! 'letrec letrec-transformer)
+(define-exp-macro! 'letrec letrec-transformer)
 
 ;;; AND
 
@@ -233,7 +233,7 @@
 	      (and ,@(cddr form))
 	      #f))))
 
-(define-vl-macro! 'and expand-and)
+(define-exp-macro! 'and expand-and)
 
 ;;; OR
 
@@ -247,7 +247,7 @@
 	      #t
 	      (or ,@(cddr form))))))
 
-(define-vl-macro! 'or expand-or)
+(define-exp-macro! 'or expand-or)
 
 ;;; COND
 
@@ -261,7 +261,7 @@
 	      ,(cadadr form)
 	      (cond ,@(cddr form))))))
 
-(define-vl-macro! 'cond expand-cond)
+(define-exp-macro! 'cond expand-cond)
 
 ;;; LIST
 
@@ -270,5 +270,5 @@
       '()
       `(cons ,(cadr form) (list ,@(cddr form)))))
 
-(define-vl-macro! 'list expand-list)
+(define-exp-macro! 'list expand-list)
 (define-vl-formal-macro! 'list expand-list)
