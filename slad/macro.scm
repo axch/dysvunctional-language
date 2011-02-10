@@ -195,19 +195,19 @@
 			  ,bound-form))))
 		  ,@body))))
 	  (else
-	   (let ((names (map car bindings))
-		 (forms (map cadr bindings)))
-	     (define recursive-variants
-	       (map (lambda (name-1)
-		      `(lambda (y)
-			 (Z* ,@names
-			     (lambda (,@names)
-			       (,name-1 y)))))
-		    names))
-	     (define (recursive-variant name)
-	       `(,name ,@recursive-variants))
+	   (let* ((names (map car bindings))
+		  (forms (map cadr bindings))
+		  (recursive-variants
+		   (map (lambda (name-1)
+			  `(lambda (y)
+			     (Z* ,@names
+				 (lambda (,@names)
+				   (,name-1 y)))))
+			names)))
 	     `(letrec ((Z* (lambda (,@names Z*-k)
-			     (Z*-k ,@(map recursive-variant names)))))
+			     (Z*-k ,@(map (lambda (name)
+					    `(,name ,@recursive-variants))
+					  names)))))
 		(Z* ,@(map (lambda (form)
 			     `(lambda (,@names) ,form))
 			   forms)
