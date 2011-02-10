@@ -61,8 +61,8 @@
 (define (macroexpand-formals-macros formals)
   (cond ((symbol? formals) formals)
 	((null? formals) formals)
-	((slad-formal-macro? formals)
-	 (macroexpand-formals-macros (expand-slad-formal-macro formals)))
+	((formal-macro? formals)
+	 (macroexpand-formals-macros (expand-formal-macro formals)))
 	((pair? formals)
 	 (if (eq? (car formals) 'cons)
 	     `(cons ,(macroexpand-formals-macros (cadr formals))
@@ -99,19 +99,19 @@
 (define (define-exp-macro! name transformer)
   (set! *exp-macros* (cons (cons name transformer) *exp-macros*)))
 
-(define *slad-formal-macros* '())
+(define *formal-macros* '())
 
-(define (slad-formal-macro? form)
-  (memq (car form) (map car *slad-formal-macros*)))
+(define (formal-macro? form)
+  (memq (car form) (map car *formal-macros*)))
 
-(define (expand-slad-formal-macro form)
-  (let ((transformer (assq (car form) *slad-formal-macros*)))
+(define (expand-formal-macro form)
+  (let ((transformer (assq (car form) *formal-macros*)))
     (if transformer
 	((cdr transformer) form)
 	(error "Undefined macro" form))))
 
-(define (define-slad-formal-macro! name transformer)
-  (set! *slad-formal-macros* (cons (cons name transformer) *slad-formal-macros*)))
+(define (define-formal-macro! name transformer)
+  (set! *formal-macros* (cons (cons name transformer) *formal-macros*)))
 
 ;;; LET
 (define (normal-let-transformer form)
@@ -273,4 +273,4 @@
       `(cons ,(cadr form) (list ,@(cddr form)))))
 
 (define-exp-macro! 'list expand-list)
-(define-slad-formal-macro! 'list expand-list)
+(define-formal-macro! 'list expand-list)
