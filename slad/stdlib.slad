@@ -138,10 +138,10 @@
 		 (c)
 		 (a)))))
 
-	 (dummy (set-forward-transform! bundle bundle))
-	 (dummy (set-forward-transform! primal primal))
-	 (dummy (set-forward-transform! tangent tangent))
-	 (dummy (set-forward-transform! zero zero))
+	 (dummy (transforms-to-self! bundle))
+	 (dummy (transforms-to-self! primal))
+	 (dummy (transforms-to-self! tangent))
+	 (dummy (transforms-to-self! zero))
 	 (dummy (transforms-to-self! forward?)))
 
     (let ()
