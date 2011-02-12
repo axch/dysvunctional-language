@@ -25,12 +25,15 @@
   (let* ((dummy (transforms-to-self! null?))
 	 (dummy (transforms-to-self! boolean?))
 	 (dummy (transforms-to-self! pair?))
+	 (dummy (transforms-to-self! procedure?))
 
 	 (dummy (operates-on-primal! zero?))
 	 (dummy (operates-on-primal! positive?))
 	 (dummy (operates-on-primal! negative?))
-	 (dummy (operates-on-primal! null?))
+	 (dummy (operates-on-primal! real?))
 
+	 (dummy (operates-on-primal! write))
+	 (dummy (operates-on-primal! write-real))
 	 (dummy (operates-on-primal! read-real))
 
 	 (dummy
