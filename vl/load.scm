@@ -22,6 +22,7 @@
    "env"
    "primitives"
    "macro"
+   "letrec"
    "eval"
    "analysis"
    "abstract-values"

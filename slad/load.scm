@@ -13,6 +13,7 @@
 
 (load-relative-compiled "data")
 (load-relative-compiled "macro")
+(load-relative-compiled "letrec")
 (load-relative-compiled "env")
 (load-relative-compiled "slad")
 (load-relative-compiled "primitives")
