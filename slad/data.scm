@@ -226,9 +226,13 @@
 
 (define (long-letrec n)
   `(letrec ,(map (lambda (i)
-		   `(,(symbol "dummy" i) ,i))
+		   `(,(symbol "dummy" i)
+		     ,(if (= i (- n 1))
+			  `(lambda (x) ,n)
+			  `(lambda (x)
+			     (,(symbol "dummy" (+ i 1)) ,i)))))
 		 (iota n))
-     dummy0))
+     (dummy0 -1)))
 
 (define (tree-size tree)
   (cond ((pair? tree)
