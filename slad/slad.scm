@@ -62,13 +62,6 @@
   ;; shape as the original object.
   (cond ((forward-transform-known? object)
 	 ((get-forward-transform object) perturbation))
-	;; ((slad-closure? object)
-	;;  (make-slad-closure
-	;;   (slad-closure-formal object)
-	;;   (slad-closure-body object)    ; Forward mode does not require code changes
-	;; 				; except maybe to avoid confusing perturbations
-	;;   (transform-and-perturb (slad-closure-env object)
-	;; 			 (slad-closure-env perturbation))))
 	((slad-primitive? object)
 	 (error "Cannot transform primitives whose transforms are not known" object perturbation))
 	((slad-real? object)
@@ -79,6 +72,10 @@
 	 (make-slad-bundle object perturbation)
 	 (make-slad-bundle (transform-and-perturb (slad-primal object) (slad-primal perturbation))
 			   (transform-and-perturb (slad-tangent object) (slad-tangent perturbation))))
+	;; Notably, forward mode relegates to slad-map for
+	;; slad-closure objects.  This is because it does not acutally
+	;; need to make any changes to the closure bodies, except
+	;; maybe to avoid confusing perturbations.
 	(else
 	 (slad-map transform-and-perturb object perturbation))))
 
