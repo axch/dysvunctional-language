@@ -118,8 +118,9 @@
 (define (slad-map f object . objects)
   (cond ((slad-closure? object)
 	 (make-slad-closure
-	  `(lambda ,(slad-closure-formal object)
-	     ,(apply slad-exp-map f (slad-closure-body object) (map slad-closure-body objects)))
+	  (make-lambda-form
+	   (slad-closure-formal object)
+	   (apply slad-exp-map f (slad-closure-body object) (map slad-closure-body objects)))
 	  (apply f (slad-closure-env object) (map slad-closure-env objects))))
 	((env? object)
 	 (apply slad-env-map f object objects))
