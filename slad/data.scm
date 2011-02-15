@@ -69,9 +69,14 @@
 (define quoted? (tagged-list? 'quote))
 
 (define-structure (slad-closure safe-accessors (constructor %make-slad-closure))
-  formal
-  body
+  lambda
   env)
+
+(define (slad-closure-formal closure)
+  (lambda-formal (slad-closure-lambda closure)))
+
+(define (slad-closure-body closure)
+  (lambda-body (slad-closure-lambda closure)))
 
 (define (env-slice env variables)
   (make-env
@@ -81,9 +86,9 @@
 
 ;;; To keep environments in canonical form, closures only keep the
 ;;; variables they want.
-(define (make-slad-closure formal body env)
-  (let ((free (free-variables `(lambda ,formal ,body))))
-    (%make-slad-closure formal body (env-slice env free))))
+(define (make-slad-closure exp env)
+  (let ((free (free-variables exp)))
+    (%make-slad-closure exp (env-slice env free))))
 
 (define-structure
   (slad-primitive
@@ -113,8 +118,8 @@
 (define (slad-map f object . objects)
   (cond ((slad-closure? object)
 	 (make-slad-closure
-	  (slad-closure-formal object)
-	  (apply slad-exp-map f (slad-closure-body object) (map slad-closure-body objects))
+	  `(lambda ,(slad-closure-formal object)
+	     ,(apply slad-exp-map f (slad-closure-body object) (map slad-closure-body objects)))
 	  (apply f (slad-closure-env object) (map slad-closure-env objects))))
 	((env? object)
 	 (apply slad-env-map f object objects))
