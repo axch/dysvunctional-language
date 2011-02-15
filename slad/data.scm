@@ -152,24 +152,6 @@
 	(else
 	 (slad-map slad-copy object))))
 
-(define (free-variables form)
-  (cond ((constant? form)
-	 '())
-	((variable? form)
-	 (list form))
-	((pair-form? form)
-	 (lset-union equal? (free-variables (car-subform form))
-		     (free-variables (cdr-subform form))))
-	((lambda-form? form)
-	 (lset-difference equal? (free-variables (lambda-body form))
-			  (free-variables (lambda-formal form))))
-	((pair? form)
-	 (lset-union equal? (free-variables (car form))
-		     (free-variables (cdr form))))
-	(else
-	 (error "Invalid expression type" form forms))))
-
-;;; Below is a faster free-variables, and some code for testing it.
 (define (memoize f)
   (let ((cache (make-eq-hash-table)))
     (lambda (x)
@@ -180,7 +162,28 @@
 	   (hash-table/put! cache x answer)
 	   answer))))))
 
+(define free-variables
+  (memoize
+   (lambda (form)
+     (cond ((constant? form)
+	    '())
+	   ((variable? form)
+	    (list form))
+	   ((pair-form? form)
+	    (lset-union equal? (free-variables (car-subform form))
+			(free-variables (cdr-subform form))))
+	   ((lambda-form? form)
+	    (lset-difference equal? (free-variables (lambda-body form))
+			     (free-variables (lambda-formal form))))
+	   ((pair? form)
+	    (lset-union equal? (free-variables (car form))
+			(free-variables (cdr form))))
+	   (else
+	    (error "Invalid expression type" form forms))))))
+
 (load-option 'wt-tree)
+
+;;; Below is a faster free-variables, and some code for testing it.
 
 (define (free-variables form)
   (define (set->list set)
