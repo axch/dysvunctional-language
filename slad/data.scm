@@ -185,27 +185,3 @@
 			(free-variables (cdr form))))
 	   (else
 	    (error "Invalid expression type" form forms))))))
-
-(define (long-let* n content)
-  `(let* ,(map (lambda (i)
-		 `(dummy ,i))
-	       (iota n))
-     ,content))
-
-(define (long-letrec n)
-  `(letrec ,(map (lambda (i)
-		   `(,(symbol "dummy" i)
-		     ,(if (= i (- n 1))
-			  `(lambda (x) ,n)
-			  `(lambda (x)
-			     (,(symbol "dummy" (+ i 1)) ,i)))))
-		 (iota n))
-     (dummy0 -1)))
-
-(define (tree-size tree)
-  (cond ((pair? tree)
-	 (+ (tree-size (car tree))
-	    (tree-size (cdr tree))))
-	((null? tree)
-	 0)
-	(else 1)))
