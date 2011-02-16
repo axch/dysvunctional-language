@@ -9,8 +9,9 @@
   (add-primitive! (make-slad-primitive name proc)))
 
 (define (binary-primitive name proc)
-  (add-primitive! (make-slad-primitive name (lambda (arg)
-					      (proc (slad-car arg) (slad-cdr arg))))))
+  (add-primitive!
+   (make-slad-primitive name (lambda (arg)
+			       (proc (slad-car arg) (slad-cdr arg))))))
 
 (define-syntax define-unary-primitive
   (syntax-rules ()
@@ -83,4 +84,115 @@
 (unary-primitive 'tangent slad-tangent)
 (unary-primitive 'forward? slad-bundle?)
 
-(define-binary-primitive set-forward-transform!)
+
+(define unev-forward-transforms (make-eq-hash-table))
+
+(define (has-unev-forward-transform? thing)
+  (hash-table/lookup unev-forward-transforms thing
+   (lambda (datum) #t)
+   (lambda () #f)))
+
+(define (unev-forward-transform thing)
+  (hash-table/get unev-forward-transforms thing #f))
+
+(define (set-forward-transform-unevaluated! thing transform)
+  (hash-table/put! unev-forward-transforms thing transform))
+
+(define (transforms-to-self! name)
+  (set-forward-transform-unevaluated! name name))
+
+(define (operates-on-primal! name)
+  (set-forward-transform-unevaluated!
+   name
+   `(lambda (b)
+      (let* ((p (primal b))
+	     (answer (,name p)))
+	(bundle answer (zero answer))))))
+
+(define (operates-on-primals! name)
+  (set-forward-transform-unevaluated!
+   name
+   `(lambda (b1 b2)
+      (let* ((p1 (primal b1))
+	     (p2 (primal b2))
+	     (answer (,name p1 p2)))
+	(bundle answer (zero answer))))))
+
+(transforms-to-self! 'null?)
+(transforms-to-self! 'boolean?)
+(transforms-to-self! 'pair?)
+(transforms-to-self! 'procedure?)
+
+(operates-on-primal! 'zero?)
+(operates-on-primal! 'positive?)
+(operates-on-primal! 'negative?)
+(operates-on-primal! 'real?)
+
+(operates-on-primal! 'write)
+(operates-on-primal! 'write-real)
+(operates-on-primal! 'read-real)
+
+(define (unary-derivative-expression! name expr)
+  (set-forward-transform-unevaluated!
+   name
+   `(lambda (b)
+      (let ((p (primal b))
+	    (t (tangent b)))
+	(bundle
+	 (,name p)
+	 (* ,expr t))))))
+
+(define (binary-derivative-expression! name exprx expry)
+  (set-forward-transform-unevaluated!
+   name
+   `(lambda (x y)
+      (let ((px (primal x))
+	    (tx (tangent x))
+	    (py (primal y))
+	    (ty (tangent y)))
+	(bundle
+	 (,name px py)
+	 (+ (* ,exprx tx) (* ,expry ty)))))))
+
+(unary-derivative-expression!  'exp  '(exp p))
+(unary-derivative-expression!  'sin  '(cos p))
+(unary-derivative-expression!  'cos  '(- 0 (sin p)))
+(unary-derivative-expression!  'sqrt '(/ 1 (* 2 (sqrt p))))
+(binary-derivative-expression! '+ 1 1)
+(binary-derivative-expression! '- 1 -1)
+(binary-derivative-expression! '* 'py 'px)
+(binary-derivative-expression! '/ '(/ 1 py) '(/ (- 0 px) (* py py)))
+
+(operates-on-primals! '<)
+(operates-on-primals! '<=)
+(operates-on-primals! '>)
+(operates-on-primals! '>=)
+(operates-on-primals! '=)
+
+(set-forward-transform-unevaluated!
+ 'if-procedure
+ '(lambda (b1 c a)
+    (if (primal b1)
+	(c)
+	(a))))
+
+(transforms-to-self! 'bundle)
+(transforms-to-self! 'primal)
+(transforms-to-self! 'tangent)
+(transforms-to-self! 'zero)
+(transforms-to-self! 'forward?)
+
+
+(define (initial-slad-user-env)
+  (let ((answer
+	 (make-env
+	  (map (lambda (primitive)
+		 (cons (slad-primitive-name primitive) primitive))
+	       *primitives*))))
+    (for-each (lambda (name)
+		(set-forward-transform!
+		 (cdr (assq name (env-bindings answer)))
+		 (slad-eval (macroexpand (unev-forward-transform name)) answer)))
+	      (filter has-unev-forward-transform?
+		      (map car (env-bindings answer))))
+    answer))
