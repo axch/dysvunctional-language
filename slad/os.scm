@@ -3,6 +3,12 @@
 (define (default-extension-to-vlad pathname)
   (merge-pathnames (->pathname pathname) (->pathname "foo.vlad")))
 
+(define (include-directive? form)
+  (and (list? form)
+       (= (length form) 2)
+       (eq? (first form) 'include)
+       (string? (second form))))
+
 (define (read-source pathname)
   (let ((pathname (default-extension-to-vlad pathname)))
     (call-with-input-file pathname
@@ -13,10 +19,7 @@
 	     ((eof-object? form) (reverse forms))
 	     (ignore? (loop forms #f))
 	     ((eq? '===> form) (loop forms #t))
-	     ((and (list? form)
-		   (= (length form) 2)
-		   (eq? (first form) 'include)
-		   (string? (second form)))
+	     ((include-directive? form)
 	      (loop
 	       (append (reverse (with-working-directory-pathname
 				 (directory-namestring pathname)
