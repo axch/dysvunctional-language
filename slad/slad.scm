@@ -52,8 +52,10 @@
 
 ;;; The invariant on nested bundles is the outermost bundle
 ;;; corresponds to the dynamically nearest call to derviative (and
-;;; company).  In other words, in (derviative_1 (derviative_2 (lambda (x) ... x ...)))
-;;; the reference to x will see (bundle_2 (bundle_1 foo bar) (bundle_1 baz quux)).
+;;; company).  In other words, in
+;;;   (derviative_1 (derviative_2 (lambda (x) ... x ...)))
+;;; the reference to x will see
+;;;   (bundle_2 (bundle_1 foo bar) (bundle_1 baz quux)).
 
 (define (transform-and-perturb object perturbation)
   ;; Assume the perturbation is an object of exactly the same type and
@@ -61,15 +63,19 @@
   (cond ((forward-transform-known? object)
 	 ((get-forward-transform object) perturbation))
 	((slad-primitive? object)
-	 (error "Cannot transform primitives whose transforms are not known" object perturbation))
+	 (error "Cannot transform primitives whose transforms are not known"
+		object perturbation))
 	((slad-real? object)
 	 (make-slad-bundle object perturbation))
 	((slad-bundle? object)
 	 ;; TODO Which way? Cons or interleave? This has to agree with
 	 ;; the access pattern to avoid perturbation confusion.
 	 (make-slad-bundle object perturbation)
-	 (make-slad-bundle (transform-and-perturb (slad-primal object) (slad-primal perturbation))
-			   (transform-and-perturb (slad-tangent object) (slad-tangent perturbation))))
+	 (make-slad-bundle
+	  (transform-and-perturb (slad-primal object)
+				 (slad-primal perturbation))
+	  (transform-and-perturb (slad-tangent object)
+				 (slad-tangent perturbation))))
 	;; Notably, forward mode relegates to slad-map for
 	;; slad-closure objects.  This is because it does not acutally
 	;; need to make any changes to the closure bodies, except
