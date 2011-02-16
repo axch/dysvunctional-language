@@ -87,16 +87,20 @@
 	 (body (cddr form)))
     (let ((references
 	   (transitive-closure (reference-graph variables expressions))))
-      ;; TODO I could sweep out unreferenced variables with
-      #;
-      (filter (lambda (var.neighbors)
-		(any (lambda (body-var)
-		       (memq (car var.neighbors) (referees body-var)))
-		     (free-variables (macroexpand body))))
-	      references)
-      ;; This may be dangerous if those variables' expressions are to
-      ;; be executed for effect.
       (define (referees var) (neighbors var references))
+      ;; I could sweep out unreferenced variables.  This may be
+      ;; dangerous if those variables' expressions are to be executed
+      ;; for effect; but why would anyone use a letrec for that?
+      #;
+      (set! references
+	    (let ((entry-points (lset-intersection equal?
+				 variables (free-variables (macroexpand-body body)))))
+	     (filter (lambda (var.neighbors)
+		       (any (lambda (body-var)
+			      (or (equal? (car var.neighbors) body-var)
+				  (memq (car var.neighbors) (referees body-var))))
+			    entry-points))
+		     references)))
       (define (referenced-by? component1 component2)
 	(any (lambda (var2)
 	       (any (lambda (var1)
