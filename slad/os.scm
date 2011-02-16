@@ -1,8 +1,10 @@
 (declare (usual-integrations))
 
+(define (default-extension-to-vlad pathname)
+  (merge-pathnames (->pathname pathname) (->pathname "foo.vlad")))
+
 (define (read-source pathname)
-  (let ((pathname (merge-pathnames (->pathname pathname)
-				   (->pathname "foo.vlad"))))
+  (let ((pathname (default-extension-to-vlad pathname)))
     (call-with-input-file pathname
       (lambda (input-port)
 	(let loop ((forms '()) (ignore? #f))
