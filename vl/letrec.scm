@@ -1,4 +1,34 @@
 (declare (usual-integrations))
+;;;; LETREC Conversion
+
+;;; Consider a LETREC with n bindings.  The LETREC-TRANSFORMER
+;;; provided in macro.scm produces output of size O(n^2); which,
+;;; moreover, imposes O(n^2) overhead on interpretation of every call
+;;; to procedures defined in such a LETREC.  Given that parallel
+;;; definitions are expanded into a big LETREC, and that a library
+;;; file may well offer hundreds of parallel definitions (for example,
+;;; R5RS defines 80 "library procedures"), this is a serious
+;;; performance problem.
+
+;;; Fortunately, the performance problem has a simple solution.  In
+;;; practice, those hundreds of library procedures would not all be
+;;; mutually recursive; in fact, one would expect the vast majority of
+;;; recursions to involve only one or two procedures.  It is therefore
+;;; profitable to convert a large LETREC into a collection of LETs and
+;;; smaller LETRECs that precisely capture the scoping structure that
+;;; is actually required.  This can be achieved with a computation on
+;;; the static binding-reference graph of the input LETREC.
+
+;;; Given a LETREC form, consider the following graph.  The vertices
+;;; are the names bound by that LETREC form.  There is an edge from
+;;; vertex x to vertex y iff y appears free in the expression to which
+;;; x is bound.  The strongly connected components of this graph are
+;;; exactly the irreducible mutually-recursive clusters bound by the
+;;; LETREC.  They can be bound in topological sort order in a series
+;;; of separate, hopefully smaller, nested LETREC forms.  As a further
+;;; optimization, one can distinguish a singleton component that has a
+;;; self-loop (and therefore requires a unary LETREC) from one that
+;;; does not (and can therefore be defined with a simple LET).
 
 (define (equivalence-classes equiv? items)
   (if (null? items)
