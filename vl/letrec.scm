@@ -135,6 +135,8 @@
 	  (points-to? node2 node1 transitive-graph)))
    (map car transitive-graph)))
 
+;;; Support (equivalence relations and partially ordered sets)
+
 (define (equivalence-classes equiv? items)
   (if (null? items)
       '()
