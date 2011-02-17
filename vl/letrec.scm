@@ -95,28 +95,17 @@
 	  (points-to? node2 node1 transitive-graph)))
    (map car transitive-graph)))
 
-(define (normalize-graph graph =)
-  (let ((nodes (map car graph)))
-    (map (lambda (node.neighbors)
-	   (cons (car node.neighbors)
-		 (map (lambda (neighbor)
-			(car (member neighbor nodes =)))
-		      (cdr node.neighbors))))
-	 graph)))
-
 (define (filter-vertices pred graph)
   (filter (lambda (node.neighbors)
 	    (pred (car node.neighbors)))
 	  graph))
 
 (define (reference-graph variables expressions)
-  (normalize-graph
-   (map (lambda (variable expression)
-	  (cons variable (lset-intersection equal?
-			  variables (free-variables (macroexpand expression)))))
-	variables
-	expressions)
-   equal?))
+  (map (lambda (variable expression)
+	 (cons variable (lset-intersection equal?
+			 variables (free-variables (macroexpand expression)))))
+       variables
+       expressions))
 
 (define (simplify-letrec form)
   (let* ((bindings (cadr form))
@@ -135,7 +124,7 @@
 	     (filter-vertices
 	      (lambda (var)
 		(any (lambda (body-var)
-		       (or (equal? body-var var)
+		       (or (eq? body-var var)
 			   (points-to? body-var var references)))
 		     entry-points))
 	      references)))
