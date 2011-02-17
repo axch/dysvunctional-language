@@ -31,3 +31,12 @@
   ((derivative (lambda (x)
 		 (* x (one (* 2 x)))))
    7)) ===> 1
+
+;;; Another don't confuse the perturbations.
+((derivative
+  (lambda (y)
+    ((derivative
+      (lambda (x)
+	(* x (* x y))))
+     (* y 2))))
+ 2) ===> 16
