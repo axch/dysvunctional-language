@@ -65,6 +65,9 @@
 (define (neighbors node graph)
   (cdr (assq node graph)))
 
+(define (points-to? node1 node2 graph)
+  (memq node2 (neighbors node1 graph)))
+
 (define (transitive-closure graph)
   (define (node-union nodes1 nodes2)
     (lset-union eq? nodes1 nodes2))
@@ -88,8 +91,8 @@
 (define (strongly-connected-components transitive-graph)
   (equivalence-classes
    (lambda (node1 node2)
-     (and (memq node2 (neighbors node1 transitive-graph))
-	  (memq node1 (neighbors node2 transitive-graph))))
+     (and (points-to? node1 node2 transitive-graph)
+	  (points-to? node2 node1 transitive-graph)))
    (map car transitive-graph)))
 
 (define (normalize-graph graph =)
@@ -117,7 +120,6 @@
 	 (body (cddr form)))
     (let ((references
 	   (transitive-closure (reference-graph variables expressions))))
-      (define (referees var) (neighbors var references))
       ;; I could sweep out unreferenced variables.  This may be
       ;; dangerous if those variables' expressions are to be executed
       ;; for effect; but why would anyone use a letrec for that?
@@ -128,13 +130,13 @@
 	     (filter (lambda (var.neighbors)
 		       (any (lambda (body-var)
 			      (or (equal? (car var.neighbors) body-var)
-				  (memq (car var.neighbors) (referees body-var))))
+				  (points-to? body-var (car var.neighbors) references)))
 			    entry-points))
 		     references)))
       (define (referenced-by? component1 component2)
 	(any (lambda (var2)
 	       (any (lambda (var1)
-		      (memq var1 (referees var2)))
+		      (points-to? var2 var1 references))
 		    component1))
 	     component2))
       (let loop ((clusters
@@ -147,7 +149,7 @@
 	      (else
 	       (let ((cluster (car clusters)))
 		 (if (and (null? (cdr cluster))
-			  (not (memq (car cluster) (referees (car cluster)))))
+			  (not (points-to? (car cluster) (car cluster) references)))
 		     (let* ((var (car cluster))
 			    (binding (assq var bindings)))
 		       `(let (,binding)
