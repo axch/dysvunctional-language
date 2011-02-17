@@ -114,7 +114,7 @@
   (define (same-node-set? nodes1 nodes2)
     (lset= eq? nodes1 nodes2))
   (let loop ((graph graph))
-    (define (second-neighbors nodes)
+    (define (node-set-neighbors nodes)
       (reduce node-set-union '()
 	      (map (lambda (node)
 		     (neighbors node graph))
@@ -122,7 +122,7 @@
     (define (new-neighbors node.neighbors)
       (let ((node (car node.neighbors))
 	    (neighbors (cdr node.neighbors)))
-	(cons node (node-set-union neighbors (second-neighbors neighbors)))))
+	(cons node (node-set-union neighbors (node-set-neighbors neighbors)))))
     (let ((new-graph (map new-neighbors graph)))
       (if (every same-node-set? (map cdr graph) (map cdr new-graph))
 	  graph
