@@ -16,6 +16,6 @@
 (load-relative-compiled "macro")
 (load-relative-compiled "letrec")
 (load-relative-compiled "env")
-(load-relative-compiled "slad")
+(load-relative-compiled "eval")
 (load-relative-compiled "forward-mode")
 (load-relative-compiled "primitives")
