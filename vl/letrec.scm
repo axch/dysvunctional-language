@@ -1,5 +1,5 @@
 (declare (usual-integrations))
-;;;; LETREC Conversion
+;;;; LETREC Simplification
 
 ;;; Consider a LETREC with n bindings.  The LETREC-TRANSFORMER
 ;;; provided in macro.scm produces output of size O(n^2); which,
@@ -7,8 +7,8 @@
 ;;; to procedures defined in such a LETREC.  Given that parallel
 ;;; definitions are expanded into a big LETREC, and that a library
 ;;; file may well offer hundreds of parallel definitions (for example,
-;;; R5RS defines 80 "library procedures"), this is a serious
-;;; performance problem.
+;;; the rather minimalist R5RS defines 80 "library procedures"), this
+;;; is a serious performance problem.
 
 ;;; Fortunately, the performance problem has a simple solution.  In
 ;;; practice, those hundreds of library procedures would not all be
@@ -25,7 +25,7 @@
 ;;; x is bound.  The strongly connected components of this graph are
 ;;; exactly the irreducible mutually-recursive clusters bound by the
 ;;; LETREC.  They can be bound in topological sort order in a series
-;;; of separate, hopefully smaller, nested LETREC forms.  As a further
+;;; of separate, smaller, nested LETREC forms.  As a further
 ;;; optimization, one can distinguish a singleton component that has a
 ;;; self-loop (and therefore requires a unary LETREC) from one that
 ;;; does not (and can therefore be defined with a simple LET).
