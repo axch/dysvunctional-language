@@ -113,7 +113,7 @@
 	expressions)
    equal?))
 
-(define (lightweight-letrec-conversion form)
+(define (simplify-letrec form)
   (let* ((bindings (cadr form))
 	 (variables (map car bindings))
 	 (expressions (map cadr bindings))
@@ -160,5 +160,5 @@
 		       `(raw-letrec ,bindings
 			  ,(loop (cdr clusters))))))))))))
 
-(define-exp-macro! 'letrec lightweight-letrec-conversion)
+(define-exp-macro! 'letrec simplify-letrec)
 (define-exp-macro! 'raw-letrec letrec-transformer)
