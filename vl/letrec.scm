@@ -29,84 +29,7 @@
 ;;; optimization, one can distinguish a singleton component that has a
 ;;; self-loop (and therefore requires a unary LETREC) from one that
 ;;; does not (and can therefore be defined with a simple LET).
-
-(define (equivalence-classes equiv? items)
-  (if (null? items)
-      '()
-      (let* ((item (first items))
-	     (classes (equivalence-classes equiv? (cdr items)))
-	     (class-of-item
-	      (find (lambda (class)
-		      ;; Assumes equiv? is transitive
-		      (equiv? item (car class)))
-		    classes)))
-	(if class-of-item
-	    (cons (cons item class-of-item)
-		  (delq class-of-item classes))
-	    (cons (list item) classes)))))
-
-(define (topological-sort < items)
-  (if (null? items)
-      '()
-      (let ((min (find
-		  (lambda (x)
-		    (not (any (lambda (y)
-				(and (not (eq? x y))
-				     (< y x)))
-			      items)))
-		  items)))
-	(if (not min)
-	    (error "Purported order contains a cycle" < items)
-	    (cons min (topological-sort < (delq min items)))))))
-
-;;; A graph is an alist of node with its adjacency list.  Nodes are
-;;; assumed to be normalized to be eq?
-
-(define (neighbors node graph)
-  (cdr (assq node graph)))
-
-(define (points-to? node1 node2 graph)
-  (memq node2 (neighbors node1 graph)))
-
-(define (transitive-closure graph)
-  (define (node-set-union nodes1 nodes2)
-    (lset-union eq? nodes1 nodes2))
-  (define (same-node-set? nodes1 nodes2)
-    (lset= eq? nodes1 nodes2))
-  (let loop ((graph graph))
-    (define (second-neighbors nodes)
-      (reduce node-set-union '()
-	      (map (lambda (node)
-		     (neighbors node graph))
-		   nodes)))
-    (define (new-neighbors node.neighbors)
-      (let ((node (car node.neighbors))
-	    (neighbors (cdr node.neighbors)))
-	(cons node (node-set-union neighbors (second-neighbors neighbors)))))
-    (let ((new-graph (map new-neighbors graph)))
-      (if (every same-node-set? (map cdr graph) (map cdr new-graph))
-	  graph
-	  (loop new-graph)))))
-
-(define (strongly-connected-components transitive-graph)
-  (equivalence-classes
-   (lambda (node1 node2)
-     (and (points-to? node1 node2 transitive-graph)
-	  (points-to? node2 node1 transitive-graph)))
-   (map car transitive-graph)))
-
-(define (filter-vertices pred graph)
-  (filter (lambda (node.neighbors)
-	    (pred (car node.neighbors)))
-	  graph))
-
-(define (reference-graph variables expressions)
-  (map (lambda (variable expression)
-	 (cons variable (lset-intersection equal?
-			 variables (free-variables (macroexpand expression)))))
-       variables
-       expressions))
-
+
 (define (simplify-letrec form)
   (let* ((bindings (cadr form))
 	 (variables (map car bindings))
@@ -158,3 +81,80 @@
 
 (define-exp-macro! 'letrec simplify-letrec)
 (define-exp-macro! 'irreducible-letrec letrec-transformer)
+
+;;; A graph is an alist of node with its adjacency list.  Nodes are
+;;; assumed to be normalized to be eq?
+
+(define (neighbors node graph)
+  (cdr (assq node graph)))
+
+(define (points-to? node1 node2 graph)
+  (memq node2 (neighbors node1 graph)))
+
+(define (transitive-closure graph)
+  (define (node-set-union nodes1 nodes2)
+    (lset-union eq? nodes1 nodes2))
+  (define (same-node-set? nodes1 nodes2)
+    (lset= eq? nodes1 nodes2))
+  (let loop ((graph graph))
+    (define (second-neighbors nodes)
+      (reduce node-set-union '()
+	      (map (lambda (node)
+		     (neighbors node graph))
+		   nodes)))
+    (define (new-neighbors node.neighbors)
+      (let ((node (car node.neighbors))
+	    (neighbors (cdr node.neighbors)))
+	(cons node (node-set-union neighbors (second-neighbors neighbors)))))
+    (let ((new-graph (map new-neighbors graph)))
+      (if (every same-node-set? (map cdr graph) (map cdr new-graph))
+	  graph
+	  (loop new-graph)))))
+
+(define (strongly-connected-components transitive-graph)
+  (equivalence-classes
+   (lambda (node1 node2)
+     (and (points-to? node1 node2 transitive-graph)
+	  (points-to? node2 node1 transitive-graph)))
+   (map car transitive-graph)))
+
+(define (filter-vertices pred graph)
+  (filter (lambda (node.neighbors)
+	    (pred (car node.neighbors)))
+	  graph))
+
+(define (reference-graph variables expressions)
+  (map (lambda (variable expression)
+	 (cons variable (lset-intersection equal?
+			 variables (free-variables (macroexpand expression)))))
+       variables
+       expressions))
+
+(define (equivalence-classes equiv? items)
+  (if (null? items)
+      '()
+      (let* ((item (first items))
+	     (classes (equivalence-classes equiv? (cdr items)))
+	     (class-of-item
+	      (find (lambda (class)
+		      ;; Assumes equiv? is transitive
+		      (equiv? item (car class)))
+		    classes)))
+	(if class-of-item
+	    (cons (cons item class-of-item)
+		  (delq class-of-item classes))
+	    (cons (list item) classes)))))
+
+(define (topological-sort < items)
+  (if (null? items)
+      '()
+      (let ((min (find
+		  (lambda (x)
+		    (not (any (lambda (y)
+				(and (not (eq? x y))
+				     (< y x)))
+			      items)))
+		  items)))
+	(if (not min)
+	    (error "Purported order contains a cycle" < items)
+	    (cons min (topological-sort < (delq min items)))))))
