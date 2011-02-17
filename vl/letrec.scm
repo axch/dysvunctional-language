@@ -82,14 +82,31 @@
 (define-exp-macro! 'letrec simplify-letrec)
 (define-exp-macro! 'irreducible-letrec letrec-transformer)
 
+;;; Graph abstraction
+
 ;;; A graph is an alist of node with its adjacency list.  Nodes are
-;;; assumed to be normalized to be eq?
+;;; assumed to be normalized to be eq?.
+
+(define (reference-graph variables expressions)
+  (map (lambda (variable expression)
+	 ;; lset-intersection is specified to preserve the identities
+	 ;; of the elements of the first input in the output, so the
+	 ;; resulting graph will obey the eq?-nodes desideratum.
+	 (cons variable (lset-intersection equal?
+			 variables (free-variables (macroexpand expression)))))
+       variables
+       expressions))
 
 (define (neighbors node graph)
   (cdr (assq node graph)))
 
 (define (points-to? node1 node2 graph)
   (memq node2 (neighbors node1 graph)))
+
+(define (filter-vertices pred graph)
+  (filter (lambda (node.neighbors)
+	    (pred (car node.neighbors)))
+	  graph))
 
 (define (transitive-closure graph)
   (define (node-set-union nodes1 nodes2)
@@ -117,18 +134,6 @@
      (and (points-to? node1 node2 transitive-graph)
 	  (points-to? node2 node1 transitive-graph)))
    (map car transitive-graph)))
-
-(define (filter-vertices pred graph)
-  (filter (lambda (node.neighbors)
-	    (pred (car node.neighbors)))
-	  graph))
-
-(define (reference-graph variables expressions)
-  (map (lambda (variable expression)
-	 (cons variable (lset-intersection equal?
-			 variables (free-variables (macroexpand expression)))))
-       variables
-       expressions))
 
 (define (equivalence-classes equiv? items)
   (if (null? items)
