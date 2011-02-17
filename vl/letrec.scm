@@ -111,49 +111,50 @@
   (let* ((bindings (cadr form))
 	 (variables (map car bindings))
 	 (expressions (map cadr bindings))
-	 (body (cddr form)))
-    (let ((graph
-	   (transitive-closure (reference-graph variables expressions))))
-      ;; I could sweep out unreferenced variables.  This may be
-      ;; dangerous if those variables' expressions are to be executed
-      ;; for effect; but why would anyone use a letrec for that?
-      #;
-      (set! graph
-	    (let ((entry-points (lset-intersection equal?
-				 variables (free-variables (macroexpand-body body)))))
-	     (filter-vertices
-	      (lambda (var)
-		(any (lambda (body-var)
-		       (or (eq? body-var var)
-			   (points-to? body-var var graph)))
-		     entry-points))
-	      graph)))
-      (define (referenced-by? component1 component2)
-	(any (lambda (var2)
-	       (any (lambda (var1)
-		      (points-to? var2 var1 graph))
-		    component1))
-	     component2))
-      (let loop ((clusters
-		  (topological-sort
-		   referenced-by?
-		   (strongly-connected-components graph))))
-	(cond ((null? clusters)
-	       `(let ()
-		  ,@body))
-	      (else
-	       (let ((cluster (car clusters)))
-		 (if (and (null? (cdr cluster))
-			  (not (points-to? (car cluster) (car cluster) graph)))
-		     (let* ((var (car cluster))
-			    (binding (assq var bindings)))
-		       `(let (,binding)
-			  ,(loop (cdr clusters))))
-		     (let ((bindings (map (lambda (var)
-					    (assq var bindings))
-					  cluster)))
-		       `(raw-letrec ,bindings
-			  ,(loop (cdr clusters))))))))))))
+	 (body (cddr form))
+	 (graph (transitive-closure (reference-graph variables expressions)))
+	 ;; The next two bindings sweep out variables that the body of
+	 ;; the letrec never (transitively) references.  This may be
+	 ;; dangerous if those variables' expressions are to be
+	 ;; executed for effect; but why would anyone do that in a
+	 ;; letrec?
+	 (entry-points
+	  (lset-intersection equal?
+	   variables (free-variables (macroexpand-body body))))
+         (graph
+	  (filter-vertices
+	   (lambda (var)
+	     (any (lambda (body-var)
+		    (or (eq? body-var var)
+			(points-to? body-var var graph)))
+		  entry-points))
+	   graph)))
+    (define (referenced-by? component1 component2)
+      (any (lambda (var2)
+	     (any (lambda (var1)
+		    (points-to? var2 var1 graph))
+		  component1))
+	   component2))
+    (let loop ((clusters
+		(topological-sort
+		 referenced-by?
+		 (strongly-connected-components graph))))
+      (cond ((null? clusters)
+	     `(let ()
+		,@body))
+	    (else
+	     (let ((cluster (car clusters)))
+	       (if (and (null? (cdr cluster))
+			(not (points-to? (car cluster) (car cluster) graph)))
+		   (let* ((var (car cluster))
+			  (binding (assq var bindings)))
+		     `(let (,binding)
+			,(loop (cdr clusters))))
+		   (let ((bindings (map (lambda (var)
+					  (assq var bindings))
+					cluster)))
+		     `(raw-letrec ,bindings
+				  ,(loop (cdr clusters)))))))))))
 
 (define-exp-macro! 'letrec simplify-letrec)
 (define-exp-macro! 'raw-letrec letrec-transformer)
