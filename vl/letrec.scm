@@ -112,39 +112,39 @@
 	 (variables (map car bindings))
 	 (expressions (map cadr bindings))
 	 (body (cddr form)))
-    (let ((references
+    (let ((graph
 	   (transitive-closure (reference-graph variables expressions))))
       ;; I could sweep out unreferenced variables.  This may be
       ;; dangerous if those variables' expressions are to be executed
       ;; for effect; but why would anyone use a letrec for that?
       #;
-      (set! references
+      (set! graph
 	    (let ((entry-points (lset-intersection equal?
 				 variables (free-variables (macroexpand-body body)))))
 	     (filter-vertices
 	      (lambda (var)
 		(any (lambda (body-var)
 		       (or (eq? body-var var)
-			   (points-to? body-var var references)))
+			   (points-to? body-var var graph)))
 		     entry-points))
-	      references)))
+	      graph)))
       (define (referenced-by? component1 component2)
 	(any (lambda (var2)
 	       (any (lambda (var1)
-		      (points-to? var2 var1 references))
+		      (points-to? var2 var1 graph))
 		    component1))
 	     component2))
       (let loop ((clusters
 		  (topological-sort
 		   referenced-by?
-		   (strongly-connected-components references))))
+		   (strongly-connected-components graph))))
 	(cond ((null? clusters)
 	       `(let ()
 		  ,@body))
 	      (else
 	       (let ((cluster (car clusters)))
 		 (if (and (null? (cdr cluster))
-			  (not (points-to? (car cluster) (car cluster) references)))
+			  (not (points-to? (car cluster) (car cluster) graph)))
 		     (let* ((var (car cluster))
 			    (binding (assq var bindings)))
 		       `(let (,binding)
