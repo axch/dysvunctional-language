@@ -28,9 +28,3 @@
 		       forms)
 	       #f))
 	     (else (loop (cons form forms) #f)))))))))
-
-(define (slad-eval-file filename)
-  (let ((forms (read-source filename)))
-    (write (slad-do `(let () ,@forms)))
-    (newline)))
-
