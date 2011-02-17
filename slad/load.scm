@@ -12,9 +12,9 @@
 (load-relative "../vl/support/auto-compilation")
 
 (load-relative-compiled "data")
+(load-relative-compiled "read")
 (load-relative-compiled "macro")
 (load-relative-compiled "letrec")
 (load-relative-compiled "env")
 (load-relative-compiled "slad")
 (load-relative-compiled "primitives")
-(load-relative-compiled "os")
