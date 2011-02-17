@@ -31,12 +31,9 @@
 (define stdlib (string-append (->namestring my-pathname) "stdlib.slad"))
 
 (define (slad-prepare form)
-  (let ((slad-stdlib (with-input-from-file stdlib read)))
-    (let loop ((tail-form slad-stdlib))
-      (if (equal? tail-form "HERE")
-	  form
-	  `(,@(except-last-pair tail-form)
-	    ,(loop (car (last-pair tail-form))))))))
+  `(let ()
+     ,@(read-source stdlib)
+     ,form))
 
 (define (slad-do form)
   (slad-eval (macroexpand (slad-prepare form)) (initial-slad-user-env)))
