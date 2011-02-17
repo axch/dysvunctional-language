@@ -70,8 +70,9 @@
 	(else
 	 (error "Invalid formal parameter tree" formals))))
 
-;;; Multi-form procedure bodies are presumed to contain internal
-;;; definitions, which are expanded into LETREC.
+;;; A surface procedure body must be a single expression, except that
+;;; this expression may be preceded by internal definitions.  The
+;;; latter case is converted into LETREC.
 (define (macroexpand-body forms)
   (let ((definitions (except-last-pair forms))
 	(expression (car (last-pair forms))))
@@ -96,6 +97,10 @@
 
 (define (define-exp-macro! name transformer)
   (set! *exp-macros* (cons (cons name transformer) *exp-macros*)))
+
+;;; A also want to allow "macros", such as LIST and CONS* in the
+;;; surface syntax of formal parameters, but I do not want any old
+;;; expression macro to be expanded in a formal parameter context.
 
 (define *formal-macros* '())
 
@@ -147,11 +152,9 @@
 
 (define-exp-macro! 'let* let*-transformer)
 
-;;; Following the suggestion in [1], I chose to do IF as a macro
-;;; expansion into a primitive IF-PROCEDURE.  This may have been a bad
-;;; idea, because the analyzer and code generator seem to need to
-;;; special-case applications of this primitive procedure anyway, so
-;;; why not leave IF as a special form in the language?
+;;; There are many ways to do IF.  I chose to expand IF into a call to
+;;; a primitive IF-PROCEDURE.  This primitive is unusual because it
+;;; accepts and internally calls compound procedures.
 (define-exp-macro! 'if
   (lambda (form)
     `(if-procedure
