@@ -104,6 +104,11 @@
 		      (cdr node.neighbors))))
 	 graph)))
 
+(define (filter-vertices pred graph)
+  (filter (lambda (node.neighbors)
+	    (pred (car node.neighbors)))
+	  graph))
+
 (define (reference-graph variables expressions)
   (normalize-graph
    (map (lambda (variable expression)
@@ -127,12 +132,13 @@
       (set! references
 	    (let ((entry-points (lset-intersection equal?
 				 variables (free-variables (macroexpand-body body)))))
-	     (filter (lambda (var.neighbors)
-		       (any (lambda (body-var)
-			      (or (equal? (car var.neighbors) body-var)
-				  (points-to? body-var (car var.neighbors) references)))
-			    entry-points))
-		     references)))
+	     (filter-vertices
+	      (lambda (var)
+		(any (lambda (body-var)
+		       (or (equal? body-var var)
+			   (points-to? body-var var references)))
+		     entry-points))
+	      references)))
       (define (referenced-by? component1 component2)
 	(any (lambda (var2)
 	       (any (lambda (var1)
