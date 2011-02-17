@@ -153,8 +153,8 @@
 		   (let ((bindings (map (lambda (var)
 					  (assq var bindings))
 					cluster)))
-		     `(raw-letrec ,bindings
+		     `(irreducible-letrec ,bindings
 				  ,(loop (cdr clusters)))))))))))
 
 (define-exp-macro! 'letrec simplify-letrec)
-(define-exp-macro! 'raw-letrec letrec-transformer)
+(define-exp-macro! 'irreducible-letrec letrec-transformer)
