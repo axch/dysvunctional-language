@@ -83,6 +83,8 @@
     ((_ name)
      (add-primitive! (primitive-type-predicate 'name name)))))
 
+;;; The usual suspects:
+
 (define-R->R-primitive abs)
 (define-R->R-primitive exp)
 (define-R->R-primitive log)
@@ -118,8 +120,28 @@
 (define-R->bool-primitive zero?)
 (define-R->bool-primitive positive?)
 (define-R->bool-primitive negative?)
+
+;;; Side-effects from I/O procedures need to be hidden from the
+;;; analysis.
 
-;;; The primitive REAL is special.
+(define read-real read)
+
+(add-primitive!
+ (make-primitive 'read-real 0 read-real
+  (lambda (x analysis) abstract-real)
+  (lambda (arg analysis) '())))
+
+(define (write-real x)
+  (write x)
+  (newline)
+  x)
+
+(add-primitive!
+ (make-primitive 'write-real 1 write-real
+  (lambda (x analysis) x)
+  (lambda (arg analysis) '())))
+
+;;; We need a mechanism to introduce imprecision into the analysis.
 
 (define (real x)
   (if (real? x)
@@ -140,37 +162,17 @@
 	  ((number? x) abstract-real)
 	  (else (error "A known non-real is declared real" x))))
   (lambda (arg analysis) '())))
-
-;;; READ-REAL
-
-(define read-real read)
-(add-primitive!
- (make-primitive 'read-real 0
-  read-real
-  (lambda (x analysis)
-    abstract-real)
-  (lambda (arg analysis) '())))
-
-(define (write-real x)
-  (write x)
-  (newline)
-  x)
-(add-primitive!
- (make-primitive 'write-real 1
-  write-real
-  (lambda (x analysis) x)
-  (lambda (arg analysis) '())))
 
-;;; IF-PROCEDURE is even more special than REAL, because it is the
-;;; only primitive that accepts VL closures as arguments and invokes
-;;; them internally.  That is handled transparently by the concrete
-;;; evaluator, but IF-PROCEDURE must be careful to analyze its own
-;;; return value as being dependent on the return values of its
-;;; argument closures, and let the analysis know which of its closures
-;;; it will invoke and with what arguments as the analysis discovers
-;;; knowledge about IF-PROCEDURE's predicate argument.  Also, the code
-;;; generator detects and special-cases IF-PROCEDURE because it wants
-;;; to emit native Scheme IF statements in correspondence with VL IF
+;;; IF-PROCEDURE is special because it is the only primitive that
+;;; accepts VL closures as arguments and invokes them internally.
+;;; That is handled transparently by the concrete evaluator, but
+;;; IF-PROCEDURE must be careful to analyze its own return value as
+;;; being dependent on the return values of its argument closures, and
+;;; let the analysis know which of its closures it will invoke and
+;;; with what arguments as the analysis discovers knowledge about
+;;; IF-PROCEDURE's predicate argument.  Also, the code generator
+;;; detects and special-cases IF-PROCEDURE because it wants to emit
+;;; native Scheme IF statements in correspondence with VL IF
 ;;; statements.
 
 (define (if-procedure p c a)
