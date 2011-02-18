@@ -8,11 +8,11 @@
 ;;; and name and arity slots, respectively.
 
 (define-structure (primitive (safe-accessors #t))
-  name
-  arity
-  implementation
-  abstract-implementation
-  expand-implementation)
+  name					; concrete eval and code generator
+  arity					; code generator
+  implementation			; concrete eval
+  abstract-implementation		; abstract eval
+  expand-implementation)		; abstract eval
 
 (define *primitives* '())
 
@@ -47,11 +47,15 @@
 	   (base first-arg second-arg))))
    (lambda (arg analysis) '())))
 
+;;; Type predicates need to take care to respect the possible abstract
+;;; types.
 (define (primitive-type-predicate name base)
   (make-primitive name 1
    base
    (lambda (arg analysis)
-     (base arg))
+     (if (abstract-real? arg)
+	 (eq? base real?)
+	 (base arg)))
    (lambda (arg analysis) '())))
 
 (define (R->bool-primitive name base)
@@ -59,9 +63,7 @@
    base
    (lambda (arg analysis)
      (if (abstract-real? arg)
-	 (if (not (eq? base real?)) ;; Grr!
-	     abstract-boolean
-	     #t)
+	 abstract-boolean
 	 (base arg)))
    (lambda (arg analysis) '())))
 
@@ -124,6 +126,7 @@
 
 (define-primitive-type-predicate null?)
 (define-primitive-type-predicate pair?)
+(define-primitive-type-predicate real?)
 
 (define (vl-procedure? thing)
   (or (primitive? thing)
@@ -136,7 +139,6 @@
 (define-RxR->bool-primitive >=)
 (define-RxR->bool-primitive  =)
 
-(define-R->bool-primitive real?)
 (define-R->bool-primitive zero?)
 (define-R->bool-primitive positive?)
 (define-R->bool-primitive negative?)

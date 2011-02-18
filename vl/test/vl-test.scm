@@ -195,6 +195,11 @@
 	(if (< count 10)
 	    (loop (+ count 1))
 	    count))))
+   (equal? #f (eval-through-scheme '(pair? (real 3))))
+   (equal? #t (eval-through-scheme '(real? (real 3))))
+   (equal? #f (eval-through-scheme '(zero? (real 3))))
+   (equal? #t (eval-through-scheme '(positive? (real 3))))
+   (equal? #f (eval-through-scheme '(negative? (real 3))))
    )
 
  (with-input-from-file "../examples.scm"
