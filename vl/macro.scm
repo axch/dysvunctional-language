@@ -171,49 +171,60 @@
 ;;; continuation so it can produce multiple things sensibly).  Do not
 ;;; read this macro definition unless you are a lambda calculus geek,
 ;;; and even then I advise looking at some examples of its output
-;;; first.
+;;; first.  If you grok what this does and are worried about the
+;;; performance implications, go read letrec.scm.
+
+(define (nullary-letrec bindings body)
+  `(let ()
+     ,@body))
+
+(define (unary-letrec bindings body)
+  (let ((bound-name (caar bindings))
+	(bound-form (cadar bindings)))
+    `(let ((the-Z-combinator
+	    (lambda (f)
+	      ((lambda (x)
+		 (f (lambda (y)
+		      ((x x) y))))
+	       (lambda (x)
+		 (f (lambda (y)
+		      ((x x) y))))))))
+       (let ((,bound-name
+	      (the-Z-combinator
+	       (lambda (,bound-name)
+		 ,bound-form))))
+	 ,@body))))
+
+(define (nary-letrec bindings body)
+  (let ((names (map car bindings))
+	(forms (map cadr bindings)))
+    `(letrec ((Z* (lambda (Z*-k kernels)
+		    (let ((recursive-variants
+			   (cons*
+			    ,@(map (lambda (name-1)
+				     `(lambda (y)
+					(Z* (lambda (,@names)
+					      (,name-1 y))
+					    kernels)))
+				   names))))
+		      (let ((,(apply cons* names) kernels))
+			(Z*-k ,@(map (lambda (name)
+				       `(,name recursive-variants))
+				     names)))))))
+       (Z* (lambda (,@names) ,@body)
+	   ,@(map (lambda (form)
+		    `(lambda (,@names) ,form))
+		  forms)))))
 
 (define (letrec-transformer form)
   (let ((bindings (cadr form))
 	(body (cddr form)))
     (cond ((= 0 (length bindings))
-	   `(let ()
-	      ,@body))
+	   (nullary-letrec bindings body))
 	  ((= 1 (length bindings))
-	   (let ((bound-name (caar bindings))
-		 (bound-form (cadar bindings)))
-	     `(let ((the-Z-combinator
-		     (lambda (f)
-		       ((lambda (x)
-			  (f (lambda (y)
-			       ((x x) y))))
-			(lambda (x)
-			  (f (lambda (y)
-			       ((x x) y))))))))
-		(let ((,bound-name
-		       (the-Z-combinator
-			(lambda (,bound-name)
-			  ,bound-form))))
-		  ,@body))))
+	   (unary-letrec bindings body))
 	  (else
-	   (let ((names (map car bindings))
-		 (forms (map cadr bindings)))
-	     `(letrec ((Z* (lambda (Z*-k kernels)
-			     (let ((recursive-variants
-				    (cons* ,@(map (lambda (name-1)
-						    `(lambda (y)
-						       (Z* (lambda (,@names)
-							     (,name-1 y))
-							   kernels)))
-						  names))))
-			       (let ((,(apply cons* names) kernels))
-				 (Z*-k ,@(map (lambda (name)
-						`(,name recursive-variants))
-					      names)))))))
-		(Z* (lambda (,@names) ,@body)
-		    ,@(map (lambda (form)
-			     `(lambda (,@names) ,form))
-			   forms))))))))
+	   (nary-letrec bindings body)))))
 
 (define-exp-macro! 'letrec letrec-transformer)
 
