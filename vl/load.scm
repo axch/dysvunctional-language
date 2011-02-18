@@ -29,16 +29,11 @@
    "abstract-eval"
    "nomenclature"
    "code-generator"
-   "post-processing"))
+   "post-processing"
+   "../slad/read"))
 
 (define (vl-run-file filename)
-  (define (read-all)
-    (let loop ((results '())
-	       (form (read)))
-      (if (eof-object? form)
-	  (reverse results)
-	  (loop (cons form results) (read)))))
-  (let* ((forms (with-input-from-file filename read-all))
+  (let* ((forms (read-source filename))
 	 (program `(let () ,@forms))
 	 (analysis (analyze program))
 	 (compiled-program (generate program analysis))
