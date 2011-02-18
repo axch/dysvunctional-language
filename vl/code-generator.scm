@@ -142,7 +142,12 @@
 ;;; A VL primitive application becomes an inlined call to a Scheme
 ;;; primitive (destructuring the incoming argument if needed).
 (define (generate-primitive-application primitive arg-shape arg-code)
-  (cond ((= 1 (primitive-arity primitive))
+  (cond ((= 0 (primitive-arity primitive))
+	 (if (not (null? arg-shape))
+	     (error "Wrong arguments to nullary primitive procedure"
+		    primitive arg-shape arg-code)
+	     `(,(primitive-name primitive))))
+	((= 1 (primitive-arity primitive))
 	 (if (abstract-none? arg-shape)
 	     (error "Unary primitive procedure given fully unknown argument"
 		    primitive arg-shape arg-code))

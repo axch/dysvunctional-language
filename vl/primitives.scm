@@ -162,6 +162,16 @@
 	  ((number? x) abstract-real)
 	  (else (error "A known non-real is declared real" x))))
   (lambda (arg analysis) '())))
+
+;;; READ-REAL
+
+(define read-real read)
+(add-primitive!
+ (make-primitive 'read-real 0
+  read-real
+  (lambda (x analysis)
+    abstract-real)
+  (lambda (arg analysis) '())))
 
 ;;; IF-PROCEDURE is even more special than REAL, because it is the
 ;;; only primitive that accepts VL closures as arguments and invokes
