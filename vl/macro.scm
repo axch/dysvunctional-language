@@ -98,7 +98,7 @@
 (define (define-exp-macro! name transformer)
   (set! *exp-macros* (cons (cons name transformer) *exp-macros*)))
 
-;;; A also want to allow "macros", such as LIST and CONS* in the
+;;; A also want to allow "macros", such as LIST and CONS*, in the
 ;;; surface syntax of formal parameters, but I do not want any old
 ;;; expression macro to be expanded in a formal parameter context.
 
@@ -115,7 +115,7 @@
 
 (define (define-formal-macro! name transformer)
   (set! *formal-macros* (cons (cons name transformer) *formal-macros*)))
-
+
 ;;; LET
 (define (normal-let-transformer form)
   (let ((bindings (cadr form))
