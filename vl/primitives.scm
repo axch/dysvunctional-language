@@ -172,6 +172,16 @@
   (lambda (x analysis)
     abstract-real)
   (lambda (arg analysis) '())))
+
+(define (write-real x)
+  (write x)
+  (newline)
+  x)
+(add-primitive!
+ (make-primitive 'write-real 1
+  write-real
+  (lambda (x analysis) x)
+  (lambda (arg analysis) '())))
 
 ;;; IF-PROCEDURE is even more special than REAL, because it is the
 ;;; only primitive that accepts VL closures as arguments and invokes
