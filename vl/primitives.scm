@@ -34,7 +34,7 @@
 
 ;;; Binary numeric primitives also have to destructure their input,
 ;;; because the VL system will hand it in as a pair.
-(define (RxR->R-primitive name base)
+(define (binary-primitive name base abstract-answer)
   (make-primitive name 2
    (lambda (arg)
      (base (car arg) (cdr arg)))
@@ -43,20 +43,7 @@
 	   (second (cdr arg)))
        (if (or (abstract-real? first)
 	       (abstract-real? second))
-	   abstract-real
-	   (base first second))))
-   (lambda (arg analysis) '())))
-
-(define (RxR->bool-primitive name base)
-  (make-primitive name 2
-   (lambda (arg)
-     (base (car arg) (cdr arg)))
-   (lambda (arg analysis)
-     (let ((first (car arg))
-	   (second (cdr arg)))
-       (if (or (abstract-real? first)
-	       (abstract-real? second))
-	   abstract-boolean
+	   abstract-answer
 	   (base first second))))
    (lambda (arg analysis) '())))
 
@@ -84,17 +71,17 @@
 (define-syntax define-RxR->R-primitive
   (syntax-rules ()
     ((_ name)
-     (add-primitive! (RxR->R-primitive 'name name)))))
+     (add-primitive! (binary-primitive 'name name abstract-real)))))
+
+(define-syntax define-RxR->bool-primitive
+  (syntax-rules ()
+    ((_ name)
+     (add-primitive! (binary-primitive 'name name abstract-boolean)))))
 
 (define-syntax define-primitive-type-predicate
   (syntax-rules ()
     ((_ name)
      (add-primitive! (primitive-type-predicate 'name name)))))
-
-(define-syntax define-RxR->bool-primitive
-  (syntax-rules ()
-    ((_ name)
-     (add-primitive! (RxR->bool-primitive 'name name)))))
 
 (define-R->R-primitive abs)
 (define-R->R-primitive exp)
