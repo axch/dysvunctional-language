@@ -23,7 +23,7 @@
 
 ;;; Unary numeric primitives just have to handle getting abstract
 ;;; values for arguments (to wit, ABSTRACT-REAL).
-(define (unary-numeric-primitive name base)
+(define (R->R-primitive name base)
   (make-primitive name 1
    base
    (lambda (arg analysis)
@@ -32,9 +32,18 @@
 	 (base arg)))
    (lambda (arg analysis) '())))
 
+(define (R->bool-primitive name base)
+  (make-primitive name 1
+   base
+   (lambda (arg analysis)
+     (if (abstract-real? arg)
+	 abstract-boolean
+	 (base arg)))
+   (lambda (arg analysis) '())))
+
 ;;; Binary numeric primitives also have to destructure their input,
 ;;; because the VL system will hand it in as a pair.
-(define (binary-numeric-primitive name base)
+(define (RxR->R-primitive name base)
   (make-primitive name 2
    (lambda (arg)
      (base (car arg) (cdr arg)))
@@ -58,14 +67,6 @@
 	 (base arg)))
    (lambda (arg analysis) '())))
 
-(define (R->bool-primitive name base)
-  (make-primitive name 1
-   base
-   (lambda (arg analysis)
-     (if (abstract-real? arg)
-	 abstract-boolean
-	 (base arg)))
-   (lambda (arg analysis) '())))
 
 ;;; Binary numeric comparisons have all the concerns of binary numeric
 ;;; procedures and of unary type testers.
@@ -82,15 +83,15 @@
 	   (base first second))))
    (lambda (arg analysis) '())))
 
-(define-syntax define-unary-numeric-primitive
+(define-syntax define-R->R-primitive
   (syntax-rules ()
     ((_ name)
-     (add-primitive! (unary-numeric-primitive 'name name)))))
+     (add-primitive! (R->R-primitive 'name name)))))
 
-(define-syntax define-binary-numeric-primitive
+(define-syntax define-RxR->R-primitive
   (syntax-rules ()
     ((_ name)
-     (add-primitive! (binary-numeric-primitive 'name name)))))
+     (add-primitive! (RxR->R-primitive 'name name)))))
 
 (define-syntax define-primitive-type-predicate
   (syntax-rules ()
@@ -107,22 +108,22 @@
     ((_ name)
      (add-primitive! (RxR->bool-primitive 'name name)))))
 
-(define-unary-numeric-primitive abs)
-(define-unary-numeric-primitive exp)
-(define-unary-numeric-primitive log)
-(define-unary-numeric-primitive sin)
-(define-unary-numeric-primitive cos)
-(define-unary-numeric-primitive tan)
-(define-unary-numeric-primitive asin)
-(define-unary-numeric-primitive acos)
-(define-unary-numeric-primitive sqrt)
+(define-R->R-primitive abs)
+(define-R->R-primitive exp)
+(define-R->R-primitive log)
+(define-R->R-primitive sin)
+(define-R->R-primitive cos)
+(define-R->R-primitive tan)
+(define-R->R-primitive asin)
+(define-R->R-primitive acos)
+(define-R->R-primitive sqrt)
 
-(define-binary-numeric-primitive +)
-(define-binary-numeric-primitive -)
-(define-binary-numeric-primitive *)
-(define-binary-numeric-primitive /)
-(define-binary-numeric-primitive atan)
-(define-binary-numeric-primitive expt)
+(define-RxR->R-primitive +)
+(define-RxR->R-primitive -)
+(define-RxR->R-primitive *)
+(define-RxR->R-primitive /)
+(define-RxR->R-primitive atan)
+(define-RxR->R-primitive expt)
 
 (define-primitive-type-predicate null?)
 (define-primitive-type-predicate pair?)
