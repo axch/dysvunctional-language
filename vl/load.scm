@@ -20,7 +20,6 @@
  '("support/mit-profile"
    "data"
    "env"
-   "primitives"
    "macro"
    "letrec"
    "eval"
@@ -29,6 +28,7 @@
    "abstract-eval"
    "nomenclature"
    "code-generator"
+   "primitives"
    "post-processing"
    "../slad/read"))
 

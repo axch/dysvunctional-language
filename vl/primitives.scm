@@ -23,21 +23,12 @@
 
 ;;; Unary numeric primitives just have to handle getting abstract
 ;;; values for arguments (to wit, ABSTRACT-REAL).
-(define (R->R-primitive name base)
+(define (unary-primitive name base abstract-answer)
   (make-primitive name 1
    base
    (lambda (arg analysis)
      (if (abstract-real? arg)
-	 abstract-real
-	 (base arg)))
-   (lambda (arg analysis) '())))
-
-(define (R->bool-primitive name base)
-  (make-primitive name 1
-   base
-   (lambda (arg analysis)
-     (if (abstract-real? arg)
-	 abstract-boolean
+	 abstract-answer
 	 (base arg)))
    (lambda (arg analysis) '())))
 
@@ -83,7 +74,12 @@
 (define-syntax define-R->R-primitive
   (syntax-rules ()
     ((_ name)
-     (add-primitive! (R->R-primitive 'name name)))))
+     (add-primitive! (unary-primitive 'name name abstract-real)))))
+
+(define-syntax define-R->bool-primitive
+  (syntax-rules ()
+    ((_ name)
+     (add-primitive! (unary-primitive 'name name abstract-boolean)))))
 
 (define-syntax define-RxR->R-primitive
   (syntax-rules ()
@@ -94,11 +90,6 @@
   (syntax-rules ()
     ((_ name)
      (add-primitive! (primitive-type-predicate 'name name)))))
-
-(define-syntax define-R->bool-primitive
-  (syntax-rules ()
-    ((_ name)
-     (add-primitive! (R->bool-primitive 'name name)))))
 
 (define-syntax define-RxR->bool-primitive
   (syntax-rules ()
