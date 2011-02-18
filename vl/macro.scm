@@ -149,7 +149,6 @@
 	`(let (,(car bindings))
 	   (let* ,(cdr bindings)
 	     ,@body)))))
-
 (define-exp-macro! 'let* let*-transformer)
 
 ;;; There are many ways to do IF.  I chose to expand IF into a call to

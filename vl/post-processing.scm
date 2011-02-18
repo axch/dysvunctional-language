@@ -33,16 +33,6 @@
 (define (compile-to-scheme program)
   (prettify-compiler-output
    (analyze-and-generate-with-type-declarations program)))
-
-(define (read-vl-program filename)
-  (with-input-from-file filename
-   (lambda ()
-     (let loop ((form (read))
-		(forms '()))
-       (if (eof-object? form)
-	   `(let ()
-	      ,@(reverse forms))
-	   (loop (read) (cons form forms)))))))
 
 ;;; Don't worry about the rule-based term-rewriting system that powers
 ;;; this.  That is its own pile of stuff, good for a few lectures of
