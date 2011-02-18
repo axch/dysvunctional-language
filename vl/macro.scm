@@ -182,13 +182,11 @@
   (let ((bound-name (caar bindings))
 	(bound-form (cadar bindings)))
     `(let ((the-Z-combinator
-	    (lambda (f)
-	      ((lambda (x)
-		 (f (lambda (y)
-		      ((x x) y))))
-	       (lambda (x)
-		 (f (lambda (y)
-		      ((x x) y))))))))
+	    (lambda (kernel)
+	      ((lambda (recur)
+		 (kernel (lambda (y) ((recur recur) y))))
+	       (lambda (recur)
+		 (kernel (lambda (y) ((recur recur) y))))))))
        (let ((,bound-name
 	      (the-Z-combinator
 	       (lambda (,bound-name)
