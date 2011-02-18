@@ -37,5 +37,6 @@
 	 (program `(let () ,@forms))
 	 (analysis (analyze program))
 	 (compiled-program (generate program analysis))
-	 (compiled-answer (eval compiled-program (nearest-repl/environment))))
+	 (compiled-answer
+	  (eval compiled-program (nearest-repl/environment))))
     (pp compiled-answer)))
