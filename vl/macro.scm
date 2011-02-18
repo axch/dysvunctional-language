@@ -164,19 +164,21 @@
 
 ;;;; LETREC
 
-;;; LETREC by transformation to the Z combinator.  The Z combinator is
-;;; a slightly complexified Y combinator that works in a strict
-;;; language.  Also multi-binding LETREC by transformation to an n-ary
-;;; version of the Z combinator (this one with an explicit
-;;; continuation so it can produce multiple things sensibly).  Do not
-;;; read this macro definition unless you are a lambda calculus geek,
-;;; and even then I advise looking at some examples of its output
-;;; first.  If you grok what this does and are worried about the
-;;; performance implications, go read letrec.scm.
+(define (letrec-transformer form)
+  (let ((bindings (cadr form))
+	(body (cddr form)))
+    (cond ((= 0 (length bindings))
+	   `(let () ,@body))
+	  ((= 1 (length bindings))
+	   (unary-letrec bindings body))
+	  (else
+	   (nary-letrec bindings body)))))
 
-(define (nullary-letrec bindings body)
-  `(let ()
-     ,@body))
+(define-exp-macro! 'letrec letrec-transformer)
+
+;;; Unary LETREC by transformation to the Z combinator.  The Z
+;;; combinator is a slightly complexified Y combinator that works in a
+;;; strict language.
 
 (define (unary-letrec bindings body)
   (let ((bound-name (caar bindings))
@@ -192,6 +194,14 @@
 	       (lambda (,bound-name)
 		 ,bound-form))))
 	 ,@body))))
+
+;;; Multi-binding LETREC by transformation to an n-ary version of the
+;;; Z combinator (this one with an explicit continuation so it can
+;;; produce multiple things sensibly), itself defined via a unary
+;;; LETREC.  Do not read this macro definition unless you are a lambda
+;;; calculus geek, and even then I advise looking at some examples of
+;;; its output first.  If you grok what this does and are worried
+;;; about the performance implications, go read letrec.scm.
 
 (define (nary-letrec bindings body)
   (let ((names (map car bindings))
@@ -213,18 +223,6 @@
 	   ,@(map (lambda (form)
 		    `(lambda (,@names) ,form))
 		  forms)))))
-
-(define (letrec-transformer form)
-  (let ((bindings (cadr form))
-	(body (cddr form)))
-    (cond ((= 0 (length bindings))
-	   (nullary-letrec bindings body))
-	  ((= 1 (length bindings))
-	   (unary-letrec bindings body))
-	  (else
-	   (nary-letrec bindings body)))))
-
-(define-exp-macro! 'letrec letrec-transformer)
 
 ;;; AND
 
