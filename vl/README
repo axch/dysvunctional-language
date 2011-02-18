@@ -82,9 +82,9 @@ differing in the following respects:
   except for internal definitions).
 - LETREC may only be used to bind procedures
 - DEFINE may only be used to define procedures
-- CONS is built-in syntax, not a procedure.
-- The names LAMBDA, LET, LETREC, DEFINE, IF, COND, AND, OR and CONS
-  may not be shadowed.
+- CONS, CONS*, and LIST are built-in syntax, not procedures.
+- The names LAMBDA, LET, LETREC, DEFINE, IF, COND, AND, OR, CONS,
+  CONS*, and LIST may not be shadowed.
 - The only self-evaluating forms are literal numbers, #t, #f, and ()
 - Procedure parameters p can be variables, () to indicate that an
   argument should be ignored, or (cons p1 p2) to indicate the argument
@@ -96,34 +96,35 @@ differing in the following respects:
 
 VL supports the following procedures:
 
-null?  -- as in Scheme
-pair?  -- as in Scheme
+null?       -- as in Scheme
+pair?       -- as in Scheme
   N.B. cons is syntax, and car and cdr are obviated by destructuring
+procedure?  -- as in Scheme
+real?       -- as in Scheme
 
-abs    -- as in Scheme
-exp    -- as in Scheme
-log    -- as in Scheme
-sin    -- as in Scheme
-cos    -- as in Scheme
-tan    -- as in Scheme
-asin   -- as in Scheme
-acos   -- as in Scheme
-sqrt   -- as in Scheme
+abs         -- as in Scheme         sqrt        -- as in Scheme
+exp         -- as in Scheme         log         -- as in Scheme
+sin         -- as in Scheme         cos         -- as in Scheme
+tan         -- as in Scheme         asin        -- as in Scheme
+acos        -- as in Scheme
 
-+      -- binary only
--      -- binary only
-*      -- binary only
-/      -- binary only
-atan   -- binary only
-expt   -- as in Scheme
++           -- binary only          -           -- binary only
+*           -- binary only          /           -- binary only
+atan        -- binary only          expt        -- as in Scheme
 
-<      -- binary only
-<=     -- binary only
->      -- binary only
->=     -- binary only
-=      -- binary only
+<           -- binary only          <=          -- binary only
+>           -- binary only          >=          -- binary only
+=           -- binary only          zero?       -- as in Scheme
+positive?   -- as in Scheme         negative?   -- as in Scheme
 
-real   -- introduces imprecision:
+read-real   -- reads a real number from standard input and returns it
+write-real  -- writes a real number to standard output and returns it
+  The flow analysis is not sensitive to side effects, so a call to
+  READ-REAL or WRITE-REAL whose return value is not used may be
+  elided.  Analagously, calls to WRITE-REAL whose return value
+  may be computed at analysis time may be elided.
+
+real        -- introduces imprecision:
   At runtime, REAL is just the identity procedure on real numbers, but
   the flow analysis always treats the return value of REAL as the
   unknown real number, even though it could in principle be determined
@@ -131,13 +132,12 @@ real   -- introduces imprecision:
   any arguments to any instance of REAL, nor, therefore, on the
   results of computations with them.
 
-VL is completely pure --- it supports neither mutation of VL
-variables, nor input from nor output to the outside world.  It is a
-vehicle for studying flow analyses.  As VL has no i/o facilities,
-there is no reason why a "flow analysis" of a VL program couldn't just
-run the program and emit code that just spits out the answer.  This
-behavior would defeat the purpose (and slow the analyzer down even
-more), so, following [1], VL offers the primitive procedure REAL.
+VL is a vehicle for studying flow analyses.  There is no reason why a
+"flow analysis" of an input-free VL program couldn't just run the
+program and emit code that just spits out the answer.  This behavior
+would defeat the purpose (and slow the analyzer down even more), so,
+following [1], VL decouples analysis-time imprecision from run-time
+input with the primitive procedure REAL.
 
 
 So how does it work?
