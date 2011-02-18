@@ -25,8 +25,7 @@
 	  `(define ,(caadr definition)
 	     (lambda ,(cdadr definition)
 	       ,@(cddr definition)))))
-	(else
-	 definition)))
+	(else definition)))
 
 (define (definiendum definition)
   (cadr (normalize-definition definition)))
@@ -43,8 +42,7 @@
 	   (every constructors-only? (cdr exp)))))
 
 (define (count-in-tree thing tree)
-  (cond ((equal? thing tree)
-	 1)
+  (cond ((equal? thing tree) 1)
 	((pair? tree)
 	 (+ (count-in-tree thing (car tree))
 	    (count-in-tree thing (cdr tree))))

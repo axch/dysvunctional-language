@@ -30,8 +30,7 @@
 	  `(define ,(caadr definition)
 	     (lambda ,(cdadr definition)
 	       ,@(cddr definition)))))
-	(else
-	 definition)))
+	(else definition)))
 
 (define (definiendum definition)
   (cadr (normalize-definition definition)))
