@@ -194,7 +194,7 @@
 	       (lambda (,bound-name)
 		 ,bound-form))))
 	 ,@body))))
-
+
 ;;; Multi-binding LETREC by transformation to an n-ary version of the
 ;;; Z combinator (this one with an explicit continuation so it can
 ;;; produce multiple things sensibly), itself defined via a unary
@@ -227,29 +227,23 @@
 ;;; AND
 
 (define (expand-and form)
-  (cond ((null? (cdr form))
-	 #t)
-	((null? (cddr form))
-	 (cadr form))
+  (cond ((null? (cdr form))  #t)
+	((null? (cddr form)) (cadr form))
 	(else
 	 `(if ,(cadr form)
 	      (and ,@(cddr form))
 	      #f))))
-
 (define-exp-macro! 'and expand-and)
 
 ;;; OR
 
 (define (expand-or form)
-  (cond ((null? (cdr form))
-	 #f)
-	((null? (cddr form))
-	 (cadr form))
+  (cond ((null? (cdr form))  #f)
+	((null? (cddr form)) (cadr form))
 	(else
 	 `(if ,(cadr form)
 	      #t
 	      (or ,@(cddr form))))))
-
 (define-exp-macro! 'or expand-or)
 
 ;;; COND
@@ -257,13 +251,11 @@
 (define (expand-cond form)
   (define (normalize-else condition)
     (or (eq? condition 'else) condition))
-  (cond ((null? (cdr form))
-	 0) ; unspecific
-	(else
-	 `(if ,(normalize-else (caadr form))
-	      ,(cadadr form)
-	      (cond ,@(cddr form))))))
-
+  (if (null? (cdr form))
+      0	; unspecific
+      `(if ,(normalize-else (caadr form))
+	   ,(cadadr form)
+	   (cond ,@(cddr form)))))
 (define-exp-macro! 'cond expand-cond)
 
 ;;; LIST
@@ -272,19 +264,15 @@
   (if (null? (cdr form))
       '()
       `(cons ,(cadr form) (list ,@(cddr form)))))
-
 (define-exp-macro! 'list expand-list)
 (define-formal-macro! 'list expand-list)
 
 ;;; CONS*
 
 (define (expand-cons* form)
-  (cond ((null? (cdr form))
-	 '())
-	((null? (cddr form))
-	 (cadr form))
+  (cond ((null? (cdr form))  '())
+	((null? (cddr form)) (cadr form))
 	(else
 	 `(cons ,(cadr form) (cons* ,@(cddr form))))))
-
 (define-exp-macro! 'cons* expand-cons*)
 (define-formal-macro! 'cons* expand-cons*)
