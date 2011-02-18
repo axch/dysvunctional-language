@@ -48,28 +48,14 @@
    (lambda (arg)
      (base (car arg) (cdr arg)))
    (lambda (arg analysis)
-     (let ((first-arg (car arg))
-	   (second-arg (cdr arg)))
-       (if (or (abstract-real? first-arg)
-	       (abstract-real? second-arg))
+     (let ((first (car arg))
+	   (second (cdr arg)))
+       (if (or (abstract-real? first)
+	       (abstract-real? second))
 	   abstract-real
-	   (base first-arg second-arg))))
-   (lambda (arg analysis) '())))
-
-;;; Type predicates need to take care to respect the possible abstract
-;;; types.
-(define (primitive-type-predicate name base)
-  (make-primitive name 1
-   base
-   (lambda (arg analysis)
-     (if (abstract-real? arg)
-	 (eq? base real?)
-	 (base arg)))
+	   (base first second))))
    (lambda (arg analysis) '())))
 
-
-;;; Binary numeric comparisons have all the concerns of binary numeric
-;;; procedures and of unary type testers.
 (define (RxR->bool-primitive name base)
   (make-primitive name 2
    (lambda (arg)
@@ -81,6 +67,17 @@
 	       (abstract-real? second))
 	   abstract-boolean
 	   (base first second))))
+   (lambda (arg analysis) '())))
+
+;;; Type predicates need to take care to respect the possible abstract
+;;; types.
+(define (primitive-type-predicate name base)
+  (make-primitive name 1
+   base
+   (lambda (arg analysis)
+     (if (abstract-real? arg)
+	 (eq? base real?)
+	 (base arg)))
    (lambda (arg analysis) '())))
 
 (define-syntax define-R->R-primitive
