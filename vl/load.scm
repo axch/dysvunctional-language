@@ -30,7 +30,7 @@
    "code-generator"
    "primitives"
    "post-processing"
-   "../slad/read"))
+   "read"))
 
 (define (vl-run-file filename)
   (let* ((forms (read-source filename))
