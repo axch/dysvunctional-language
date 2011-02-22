@@ -63,10 +63,10 @@
 	((slad-bundle? object)
 	 ;; This interleaves new perturbations into existing bundles.
 	 ;; The alternative would have been to just cons them on, with
-	 #; (make-slad-bundle object perturbation)
+	 (make-slad-bundle object perturbation)
 	 ;; TODO Which way? Cons or interleave? This has to agree with
 	 ;; the access pattern to avoid perturbation confusion.
-	 (make-slad-bundle
+	 #;(make-slad-bundle
 	  (transform-and-perturb (slad-primal object)
 				 (slad-primal perturbation))
 	  (transform-and-perturb (slad-tangent object)
