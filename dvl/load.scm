@@ -24,11 +24,11 @@
    "letrec"
    "eval"
    "analysis"
-   ;"abstract-values"
-   ;"abstract-eval"
+   "abstract-values"
+   "abstract-eval"
    ;"nomenclature"
    ;"code-generator"
-   ;"primitives"
+   "primitives"
    ;"post-processing"
    "read"))
 

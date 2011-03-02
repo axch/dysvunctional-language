@@ -180,3 +180,24 @@
   (or (any-world? pattern)
       (= (world-gensym world)
 	 (world-gensym pattern))))
+
+(define-structure (gensym safe-accessors)
+  number)
+
+(define (do-i/o world)
+  (make-world
+   (+ 1 (world-io-version world))
+   (world-gensym world)))
+
+(define (union-world world1 world2)
+  (make-world
+   (max (world-io-version world1) (world-io-version world2))
+   (max (world-gensym world1) (world-gensym world2))))
+
+(define (current-gensym world)
+  (make-gensym (world-gensym world)))
+
+(define (do-i/o world)
+  (make-world
+   (world-io-version world)
+   (+ 1 (world-gensym world))))

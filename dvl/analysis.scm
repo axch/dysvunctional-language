@@ -73,7 +73,9 @@
 		 (abstract-equal? env (binding-env (car bindings)))
 		 (world-matches? world (binding-world (car bindings))))
 	    (win (binding-value (car bindings))
-		 (binding-new-world (car bindings)))
+		 (if (any-world? (binding-world (car bindings)))
+		     world ; TODO Check whether the expression does i/o?
+		     (binding-new-world (car bindings))))
 	    (loop (cdr bindings))))))
 
 ;;; ANALYSIS-GET is \bar E_1 from [1].
@@ -93,7 +95,7 @@
    (lambda (value new-world)
      '())
    (lambda ()
-     (list (list exp env world abstract-none impossible-world)))))
+     (list (make-binding exp env world abstract-none impossible-world)))))
 
 (define (same-analysis-binding? binding1 binding2)
   (and (equal? (binding-exp binding1) (binding-exp binding2))
@@ -101,6 +103,23 @@
        (world-equal? (binding-world binding1) (binding-world binding2))
        (abstract-equal? (binding-value binding1) (binding-value binding2))
        (world-equal? (binding-new-world binding1) (binding-new-world binding2))))
+
+(define (analysis-binding> binding1 binding2)
+  (and (equal? (binding-exp binding1) (binding-exp binding2))
+       (abstract-equal? (binding-env binding1) (binding-env binding2))
+       (abstract-value-superset? (binding-value binding1) (binding-value binding2))
+       (or (not (abstract-equal? (binding-value binding1) (binding-value binding2)))
+	   (world-matches? (binding-world binding2) (binding-world binding1)))))
+
+(define (filter-bindings bindings)
+  (if (null? bindings)
+      '()
+      (let ((binding (car binding)))
+	(cons binding
+	      (filter-bindings
+	       (filter (lambda (binding2)
+			 (not (analysis-binding> binding binding2)))
+		       (cdr bindings)))))))
 
 (define (same-analysis? ana1 ana2)
   (lset= same-analysis-binding? (analysis-bindings ana1)

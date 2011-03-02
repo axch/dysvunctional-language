@@ -43,7 +43,7 @@
 	 (error "Invalid procedure type" proc))))
 
 (define (apply-primitive proc arg world win)
-  ((primitive-implementation proc) (dvl-value->scheme-value arg) world win))
+  ((primitive-implementation proc) arg world win))
 
 (define (dvl-eval form)
   (concrete-eval
