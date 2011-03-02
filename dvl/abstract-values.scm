@@ -78,8 +78,7 @@
 
 (define (abstract-hash-mod thing modulus)
   (cond ((closure? thing)
-	 (modulo (+ (equal-hash-mod (closure-body thing) modulus)
-		    (equal-hash-mod (closure-formal thing) modulus)
+	 (modulo (+ (equal-hash-mod (closure-exp thing) modulus)
 		    (abstract-hash-mod (closure-env thing) modulus))
 		 modulus))
 	((pair? thing)
