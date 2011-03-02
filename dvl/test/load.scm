@@ -20,6 +20,8 @@
 	 `(not (equal? ,value (interpreted ,(dvl-eval form)))))
 	((not (equal? value (analyzed-answer form)))
 	 `(not (equal? ,value (analyzed ,(analyzed-answer form)))))
+	((not (equal? `(begin ,value) (analyze-and-generate form)))
+	 `(not (equal? ,value (compiled ,(analyze-and-generate form)))))
 	(else #f)))
 
 (in-test-group
