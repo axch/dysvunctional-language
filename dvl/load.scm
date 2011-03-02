@@ -30,6 +30,7 @@
    "../vl/nomenclature"
    "code-generator"
    "primitives"
+   "output-syntax"
    "../vl/post-processing"
    "read"))
 
