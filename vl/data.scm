@@ -99,9 +99,6 @@
 (define (closure-body closure)
   (lambda-body (closure-exp closure)))
 
-(define (closure-expression closure)
-  (closure-exp closure))
-
 (define (env-slice env variables)
   (make-env
    (filter (lambda (binding)

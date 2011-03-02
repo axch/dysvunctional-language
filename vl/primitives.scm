@@ -197,7 +197,7 @@
 	   (alternate (cddr arg)))
        (define (expand-thunk-application thunk)
 	 (analysis-expand
-	  `(,(closure-expression thunk) ())
+	  `(,(closure-exp thunk) ())
 	  (closure-env thunk)
 	  analysis))
        (if (not (abstract-boolean? predicate))
