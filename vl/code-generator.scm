@@ -79,10 +79,8 @@
 
 ;;; A VL CONS becomes a Scheme CONS.
 (define (compile-cons exp env enclosure analysis)
-  (let ((first-shape (analysis-get (cadr exp) env analysis))
-	(second-shape (analysis-get (caddr exp) env analysis)))
-    `(cons ,(compile (cadr exp) env enclosure analysis)
-	   ,(compile (caddr exp) env enclosure analysis))))
+  `(cons ,(compile (cadr exp) env enclosure analysis)
+	 ,(compile (caddr exp) env enclosure analysis)))
 
 ;;; The flow analysis fully determines the shape of every VL procedure
 ;;; that is called at any VL call site.  This allows applications to
