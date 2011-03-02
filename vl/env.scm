@@ -23,14 +23,8 @@
 	(if answer
 	    (cdr answer)
 	    (error "Variable not found" exp env)))))
-
-(define (initial-vl-user-env)
-  (make-env
-   (map (lambda (primitive)
-	  (cons (primitive-name primitive) primitive))
-	*primitives*)))
 
-;;; Extending a VL environment involves destructuring the incoming
+;;; Extending an environment involves destructuring the incoming
 ;;; argument structure according to the formal parameter tree of the
 ;;; closure whose environment is being extended.
 

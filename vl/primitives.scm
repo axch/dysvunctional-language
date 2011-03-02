@@ -212,3 +212,9 @@
 (define (abstract-result-of thunk-shape analysis)
   ;; N.B. ABSTRACT-RESULT-OF only exists because of the way I'm doing IF.
   (refine-apply thunk-shape '() analysis))
+
+(define (initial-vl-user-env)
+  (make-env
+   (map (lambda (primitive)
+	  (cons (primitive-name primitive) primitive))
+	*primitives*)))
