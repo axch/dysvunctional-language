@@ -67,7 +67,15 @@
 
 (define quoted? (tagged-list? 'quote))
 
-(define-structure (slad-closure safe-accessors (constructor %make-slad-closure))
+(define-structure
+  (slad-closure
+   safe-accessors
+   (constructor %make-slad-closure)
+   (print-procedure
+    (simple-unparser-method 'slad-closure
+     (lambda (closure)
+       (list (slad-closure-lambda closure)
+	     (slad-closure-env closure))))))
   lambda
   env)
 
