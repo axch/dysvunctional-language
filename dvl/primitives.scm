@@ -236,3 +236,9 @@
   (= (gensym-number gensym1) (gensym-number gensym1)))
 
 (define-RxR->bool-primitive gensym=)
+
+(define (initial-dvl-user-env)
+  (make-env
+   (map (lambda (primitive)
+	  (cons (primitive-name primitive) primitive))
+	*primitives*)))

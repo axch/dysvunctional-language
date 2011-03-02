@@ -167,7 +167,7 @@
   io-version
   gensym)
 
-(define (dvl-initial-world)
+(define (initial-dvl-world)
   (make-world 0 0))
 
 (define impossible-world (make-world #f #f))
