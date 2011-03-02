@@ -13,16 +13,16 @@
    (print-procedure
     (simple-unparser-method 'slad-closure
      (lambda (closure)
-       (list (slad-closure-lambda closure)
+       (list (slad-closure-exp closure)
 	     (slad-closure-env closure))))))
-  lambda
+  exp
   env)
 
 (define (slad-closure-formal closure)
-  (lambda-formal (slad-closure-lambda closure)))
+  (lambda-formal (slad-closure-exp closure)))
 
 (define (slad-closure-body closure)
-  (lambda-body (slad-closure-lambda closure)))
+  (lambda-body (slad-closure-exp closure)))
 
 (define (env-slice env variables)
   (make-env
