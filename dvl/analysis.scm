@@ -72,9 +72,11 @@
 	(if (and (equal? exp (binding-exp (car bindings)))
 		 (abstract-equal? env (binding-env (car bindings))))
 	    (win (world-update-value
-		  (binding-value (car bindings)) world (binding-world (car bindings)))
+		  (binding-value (car bindings))
+		  world (binding-world (car bindings)))
 		 (world-update-world
-		  (binding-new-world (car bindings)) world (binding-world (car bindings))))
+		  (binding-new-world (car bindings))
+		  world (binding-world (car bindings))))
 	    (loop (cdr bindings))))))
 
 ;;; ANALYSIS-GET is \bar E_1 from [1].
