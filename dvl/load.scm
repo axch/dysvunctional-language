@@ -19,7 +19,7 @@
  load-relative-compiled
  '("../vl/support/mit-profile"
    "data"
-   "../slad/env"
+   "../vl/env"
    "syntax"
    "macro"
    "letrec"
