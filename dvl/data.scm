@@ -17,6 +17,7 @@
 
 (define (variable? thing)
   (symbol? thing))
+
 (define variable<? symbol<?)
 
 (define definition? (tagged-list? 'define))
