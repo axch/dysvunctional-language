@@ -9,7 +9,7 @@
 ;;; in the concrete evaluator.
 
 (define (concrete-eval exp env)
-  (cond ((constant? exp) exp)
+  (cond ((constant? exp) (constant-value exp))
 	((variable? exp) (lookup exp env))
 	((null? exp) '())
 	((pair? exp)

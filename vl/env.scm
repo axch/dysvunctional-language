@@ -18,7 +18,7 @@
 
 (define (lookup exp env)
   (if (constant? exp)
-      exp
+      (constant-value exp)
       (let ((answer (assq exp (env-bindings env))))
 	(if answer
 	    (cdr answer)
