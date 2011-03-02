@@ -51,13 +51,12 @@
 	(solved-abstract-value->constant value)
 	(cond ((variable? exp)
 	       (compile-variable exp enclosure))
-	      ((pair? exp)
-	       (cond ((eq? (car exp) 'lambda)
-		      (compile-lambda exp env enclosure analysis))
-		     ((eq? (car exp) 'cons)
-		      (compile-cons exp env enclosure analysis))
-		     (else
-		      (compile-apply exp env enclosure analysis))))
+	      ((lambda-form? exp)
+	       (compile-lambda exp env enclosure analysis))
+	      ((pair-form? exp)
+	       (compile-cons exp env enclosure analysis))
+	      ((application? exp)
+	       (compile-apply exp env enclosure analysis))
 	      (else (error "Invaid expression in code generation"
 			   exp env enclosure analysis))))))
 
