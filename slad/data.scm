@@ -74,8 +74,9 @@
 	 (make-slad-pair (apply f (slad-car object) (map slad-car objects))
 			 (apply f (slad-cdr object) (map slad-cdr objects))))
 	((slad-bundle? object)
-	 (make-slad-bundle (apply f (slad-primal object) (map slad-primal objects))
-			   (apply f (slad-tangent object) (map slad-tangent objects))))
+	 (make-slad-bundle
+	  (apply f (slad-primal object) (map slad-primal objects))
+	  (apply f (slad-tangent object) (map slad-tangent objects))))
 	(else
 	 object)))
 
@@ -86,14 +87,17 @@
 	 (apply f form forms))
 	((variable? form) form)
 	((pair-form? form)
-	 (make-pair-form (apply slad-exp-map f (car-subform form) (map car-subform forms))
-			 (apply slad-exp-map f (cdr-subform form) (map cdr-subform forms))))
+	 (make-pair-form
+	  (apply slad-exp-map f (car-subform form) (map car-subform forms))
+	  (apply slad-exp-map f (cdr-subform form) (map cdr-subform forms))))
 	((lambda-form? form)
-	 (make-lambda-form (lambda-formal form)
-			   (apply slad-exp-map f (lambda-body form) (map lambda-body forms))))
+	 (make-lambda-form
+	  (lambda-formal form)
+	  (apply slad-exp-map f (lambda-body form) (map lambda-body forms))))
 	((application? form)
-	 (make-application (apply slad-exp-map f (operator-subform form) (map operator-subform forms))
-			   (apply slad-exp-map f (operand-subform form) (map operand-subform forms))))
+	 (make-application
+	  (apply slad-exp-map f (operator-subform form) (map operator-subform forms))
+	  (apply slad-exp-map f (operand-subform form) (map operand-subform forms))))
 	(else
 	 (error "Invalid expression type" form forms))))
 
