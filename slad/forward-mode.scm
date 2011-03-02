@@ -71,12 +71,12 @@
 				 (slad-primal perturbation))
 	  (transform-and-perturb (slad-tangent object)
 				 (slad-tangent perturbation))))
-	;; Notably, forward mode relegates to slad-map for
+	;; Notably, forward mode relegates to object-map for
 	;; closure objects.  This is because it does not acutally
 	;; need to make any changes to the closure bodies, except
 	;; maybe to avoid confusing perturbations.
 	(else
-	 (slad-map transform-and-perturb object perturbation))))
+	 (object-map transform-and-perturb object perturbation))))
 
 (define (slad-primal thing)
   (cond ((slad-bundle? thing)
@@ -86,7 +86,7 @@
 	((slad-real? thing)
 	 (error "Cannot take the primal of a non-bundle" thing))
 	(else
-	 (slad-map slad-primal thing))))
+	 (object-map slad-primal thing))))
 
 (define (slad-tangent thing)
   (cond ((slad-bundle? thing)
@@ -96,13 +96,13 @@
 	((slad-real? thing)
 	 (error "Cannot take the tangent of a non-bundle" thing))
 	(else
-	 (slad-map slad-tangent thing))))
+	 (object-map slad-tangent thing))))
 
 (define (zero object)
   (cond ((slad-real? object)
 	 0)
 	(else
-	 (slad-map zero object))))
+	 (object-map zero object))))
 
 (define forward-transforms (make-eq-hash-table))
 
