@@ -24,6 +24,26 @@
 	 `(not (equal? ,value (compiled ,(analyze-and-generate form)))))
 	(else #f)))
 
+(define (%scheme-eval code)
+  (eval code (nearest-repl/environment)))
+
+(define (eval-through-scheme program)
+  (let* ((interpreted-answer (dvl-eval program #t))
+	 (analysis (analyze program))
+	 (compiled-program (generate program analysis))
+	 (compiled-answer (%scheme-eval compiled-program))
+	 (pretty-compiled-answer (%scheme-eval (prettify-compiler-output compiled-program)))
+	 (direct-pretty-compiled-answer (%scheme-eval (compile-to-scheme program))))
+    (if (and (equal? interpreted-answer compiled-answer)
+	     (equal? interpreted-answer pretty-compiled-answer)
+	     (equal? interpreted-answer direct-pretty-compiled-answer))
+	compiled-answer
+	(error "DVL compiler disagreed with DVL interpreter"
+	       `((interpreted: ,interpreted-answer)
+		 (compiled: ,compiled-answer)
+		 (compiled-and-prettified ,pretty-compiled-answer)
+		 (pretty-compiled ,direct-pretty-compiled-answer))))))
+
 (in-test-group
  dvl
  (define-each-check
@@ -31,4 +51,9 @@
    (not (determined-form-breakage #f '(gensym= (gensym) (gensym))))
    (not (determined-form-breakage #t '(let ((x (gensym))) (gensym= x x))))
    (not (determined-form-breakage #f '(let ((x (gensym))) (gensym= x (gensym)))))
+
+   (equal? #t (eval-through-scheme
+	       '(let ((x (gensym))) (gensym= x (if (> (real 2) (real 1)) x (gensym))))))
+   (equal? #f (eval-through-scheme
+	       '(let ((x (gensym))) (gensym= x (if (< (real 2) (real 1)) x (gensym))))))
    ))

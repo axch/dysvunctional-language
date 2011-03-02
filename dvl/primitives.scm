@@ -158,7 +158,7 @@
 
 (add-primitive!
  (make-primitive 'real 1
-  (lambda (arg world win) (win (real x) world))
+  (lambda (arg world win) (win (real arg) world))
   (lambda (x world analysis win)
     (cond ((abstract-real? x) (win abstract-real world))
 	  ((number? x) (win abstract-real world))
@@ -227,6 +227,11 @@
    (lambda (value world) value)))
 
 ;;;; Gensym
+
+(define *the-gensym* 0)
+(define (gensym)
+  (set! *the-gensym* (+ *the-gensym* 1))
+  (make-gensym *the-gensym*))
 
 (define gensym-primitive
   (make-primitive 'gensym 0
