@@ -41,13 +41,13 @@
 
 (define dvl-real? real?)
 
-(define (dvl-map f object . objects)
+(define (object-map f object . objects)
   (cond ((closure? object)
 	 (make-closure
 	  (make-lambda-form
 	   (closure-formal object)
 	   (apply
-	    dvl-exp-map f (closure-body object) (map closure-body objects)))
+	    expression-map f (closure-body object) (map closure-body objects)))
 	  (apply f (closure-env object) (map closure-env objects))))
 	((env? object)
 	 (apply dvl-env-map f object objects))
@@ -57,7 +57,7 @@
 	(else
 	 object)))
 
-(define (dvl-exp-map f form . forms)
+(define (expression-map f form . forms)
   (cond ((quoted? form)
 	 `(quote ,(apply f (cadr form) (map cadr forms))))
 	((constant? form)
@@ -65,16 +65,16 @@
 	((variable? form) form)
 	((pair-form? form)
 	 (make-pair-form
-	  (apply dvl-exp-map f (car-subform form) (map car-subform forms))
-	  (apply dvl-exp-map f (cdr-subform form) (map cdr-subform forms))))
+	  (apply expression-map f (car-subform form) (map car-subform forms))
+	  (apply expression-map f (cdr-subform form) (map cdr-subform forms))))
 	((lambda-form? form)
 	 (make-lambda-form
 	  (lambda-formal form)
-	  (apply dvl-exp-map f (lambda-body form) (map lambda-body forms))))
+	  (apply expression-map f (lambda-body form) (map lambda-body forms))))
 	((application? form)
 	 (make-application
-	  (apply dvl-exp-map f (operator-subform form) (map operator-subform forms))
-	  (apply dvl-exp-map f (operand-subform form) (map operand-subform forms))))
+	  (apply expression-map f (operator-subform form) (map operator-subform forms))
+	  (apply expression-map f (operand-subform form) (map operand-subform forms))))
 	(else
 	 (error "Invalid expression type" form forms))))
 
