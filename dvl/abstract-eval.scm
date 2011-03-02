@@ -187,7 +187,7 @@
 ;;; STEP-ANALYSIS is U from [1].
 (define (step-analysis analysis)
   (make-analysis
-   (filter-bindings
+   (lset-union same-analysis-binding?
     (append (refine-analysis analysis)
 	    (expand-analysis analysis)))))
 

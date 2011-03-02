@@ -209,3 +209,46 @@
 	 (any depends-on-world? (map cdr (env-bindings thing))))
 	((abstract-gensym? thing) #t)
 	(else (error "Invalid abstract value" thing))))
+
+(define (world-update-value thing old-world new-world)
+  (if (or (any-world? old-world)
+	  (impossible-world? new-world)
+	  (impossible-world? old-world))
+      thing
+      (let loop ((thing thing))
+	(cond ((null? thing) thing)
+	      ((boolean? thing) thing)
+	      ((real? thing) thing)
+	      ((abstract-boolean? thing) thing)
+	      ((abstract-real? thing) thing)
+	      ((abstract-none? thing) thing)
+	      ((primitive? thing) thing)
+	      ((closure? thing)
+	       (make-closure
+		(closure-lambda thing)
+		(loop (closure-env thing))))
+	      ((pair? thing) (make-dvl-pair (loop (car thing))
+					    (loop (cdr thing))))
+	      ((env? thing)
+	       (make-env (map cons
+			      (map car (env-bindings thing))
+			      (map loop (map cdr (env-bindings thing))))))
+	      ((abstract-gensym? thing)
+	       (let ((difference (- (world-gensym new-world) (world-gensym old-world))))
+		 (make-abstract-gensym
+		  (+ (abstract-gensym-min thing) difference)
+		  (+ (abstract-gensym-max thing) difference))))
+	      (else (error "Invalid abstract value" thing))))))
+
+(define (world-update-world updatee old-world new-world)
+  (if (or (any-world? old-world)
+	  (impossible-world? new-world)
+	  (impossible-world? old-world)
+	  (any-world? updatee)
+	  (impossible-world? updatee))
+      updatee
+      (make-world
+       (world-io-version updatee)
+       (+ (world-gensym updatee)
+	  (- (world-gensym new-world)
+	     (world-gensym old-world))))))
