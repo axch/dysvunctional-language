@@ -172,7 +172,7 @@
 
 (define impossible-world (make-world #f #f))
 (define (impossible-world? thing)
-  (eq? thing impossible-world?))
+  (eq? thing impossible-world))
 
 (define any-world (make-world #t #t))
 (define (any-world? thing)
@@ -181,6 +181,7 @@
 (define (world-matches? world pattern)
   (or (any-world? pattern)
       (and (not (impossible-world? pattern))
+	   (not (impossible-world? world))
 	   (= (world-gensym world)
 	      (world-gensym pattern)))))
 
