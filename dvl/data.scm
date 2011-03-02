@@ -184,17 +184,11 @@
 (define (impossible-world? thing)
   (eq? thing impossible-world))
 
-(define any-world (make-world #t #t))
-(define (any-world? thing)
-  (eq? thing any-world))
-
 (define (world-matches? world pattern)
-  (or (any-world? pattern)
-      (and (not (impossible-world? pattern))
-	   (not (impossible-world? world))
-	   (not (any-world? world))
-	   (= (world-gensym world)
-	      (world-gensym pattern)))))
+  (and (not (impossible-world? pattern))
+       (not (impossible-world? world))
+       (= (world-gensym world)
+	  (world-gensym pattern))))
 
 (define (world-equal? world1 world2)
   (and (equal? (world-io-version world1) (world-io-version world2))

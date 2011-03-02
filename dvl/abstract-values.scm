@@ -212,8 +212,7 @@
 	(else (error "Invalid abstract value" thing))))
 
 (define (world-update-value thing old-world new-world)
-  (if (or (any-world? old-world)
-	  (impossible-world? new-world)
+  (if (or (impossible-world? new-world)
 	  (impossible-world? old-world))
       thing
       (let loop ((thing thing))
@@ -244,10 +243,8 @@
 	      (else (error "Invalid abstract value" thing))))))
 
 (define (world-update-world updatee old-world new-world)
-  (if (or (any-world? old-world)
-	  (impossible-world? new-world)
+  (if (or (impossible-world? new-world)
 	  (impossible-world? old-world)
-	  (any-world? updatee)
 	  (impossible-world? updatee))
       updatee
       (make-world
