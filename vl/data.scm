@@ -17,7 +17,15 @@
 
 ;;;; Closures
 
-(define-structure (closure (safe-accessors #t) (constructor %make-closure))
+(define-structure
+  (closure
+   safe-accessors
+   (constructor %make-closure)
+   (print-procedure
+    (simple-unparser-method 'closure
+     (lambda (closure)
+       (list (closure-exp closure)
+	     (closure-env closure))))))
   exp
   free-variables
   env)
