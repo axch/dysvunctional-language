@@ -191,11 +191,6 @@
 (define-structure (gensym safe-accessors)
   number)
 
-(define (do-i/o world)
-  (make-world
-   (+ 1 (world-io-version world))
-   (world-gensym world)))
-
 (define (union-world world1 world2)
   (cond ((impossible-world? world1) world2)
 	((impossible-world? world2) world1)

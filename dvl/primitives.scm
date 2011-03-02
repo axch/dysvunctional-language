@@ -128,8 +128,8 @@
 
 (add-primitive!
  (make-primitive 'read-real 0 
-  (lambda (arg world win) (win (read-real) (do-i/o world)))
-  (lambda (x world analysis win) (win abstract-real (do-i/o world)))
+  (lambda (arg world win) (win (read-real) world))
+  (lambda (x world analysis win) (win abstract-real world))
   (lambda (arg world analysis) '())))
 
 (define (write-real x)
@@ -139,8 +139,8 @@
 
 (add-primitive!
  (make-primitive 'write-real 1
-  (lambda (arg world win) (win (write-real x) (do-i/o world)))
-  (lambda (x world analysis win) (win x (do-i/o world)))
+  (lambda (arg world win) (win (write-real x) world))
+  (lambda (x world analysis win) (win x world))
   (lambda (arg world analysis) '())))
 
 ;;; We need a mechanism to introduce imprecision into the analysis.
