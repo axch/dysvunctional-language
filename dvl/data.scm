@@ -184,6 +184,10 @@
 	   (= (world-gensym world)
 	      (world-gensym pattern)))))
 
+(define (world-equal? world1 world2)
+  (and (equal? (world-io-version world1) (world-io-version world2))
+       (equal? (world-gensym world1) (world-gensym world2))))
+
 (define-structure (gensym safe-accessors)
   number)
 
