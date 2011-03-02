@@ -124,10 +124,7 @@
 	      ;; on the world in a way that's properly robust to the
 	      ;; analysis discovering later that does after all (if
 	      ;; that's possible).
-	      (make-binding exp env world (if (depends-on-world? value)
-					      world
-					      any-world)
-			    value new-world)))))
+	      (make-binding exp env world value new-world)))))
        (analysis-bindings analysis)))
 
 ;;;; Expansion
@@ -200,7 +197,6 @@
 		 (macroexpand program)
 		 (initial-dvl-user-env)
 		 (initial-dvl-world)
-		 any-world
 		 abstract-none
 		 impossible-world)))))
     (let loop ((old-analysis initial-analysis)

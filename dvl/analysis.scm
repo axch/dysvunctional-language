@@ -59,7 +59,6 @@
   exp
   env
   world
-  pattern
   value
   new-world)
 
@@ -97,13 +96,12 @@
 	 '()
 	 (win value world)))
    (lambda ()
-     (list (make-binding exp env world any-world abstract-none impossible-world)))))
+     (list (make-binding exp env world abstract-none impossible-world)))))
 
 (define (same-analysis-binding? binding1 binding2)
   (and (equal? (binding-exp binding1) (binding-exp binding2))
        (abstract-equal? (binding-env binding1) (binding-env binding2))
        (world-equal? (binding-world binding1) (binding-world binding2))
-       (world-equal? (binding-pattern binding1) (binding-pattern binding2))
        (abstract-equal? (binding-value binding1) (binding-value binding2))
        (world-equal? (binding-new-world binding1) (binding-new-world binding2))))
 
