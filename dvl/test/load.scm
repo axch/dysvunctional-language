@@ -16,7 +16,7 @@
 (define (determined-form-breakage value form)
   (cond ((not (equal? (macroexpand form) (macroexpand (macroexpand form))))
 	 `(not (equal? ,(macroexpand form) ,(macroexpand (macroexpand form)))))
-	((not (equal? value (dvl-eval form)))
+	((not (equal? value (dvl-eval form #t)))
 	 `(not (equal? ,value (interpreted ,(dvl-eval form)))))
 	((not (equal? value (analyzed-answer form)))
 	 `(not (equal? ,value (analyzed ,(analyzed-answer form)))))
