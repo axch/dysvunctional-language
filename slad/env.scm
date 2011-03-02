@@ -60,7 +60,7 @@
 	    (not (member (car binding) variables)))
 	  bindings))
 
-(define (slad-env-map f env . envs)
+(define (env-map f env . envs)
   (make-env
    (map cons
 	(map car (env-bindings env))

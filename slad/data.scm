@@ -68,7 +68,7 @@
 	   (apply expression-map f (closure-body object) (map closure-body objects)))
 	  (apply f (closure-env object) (map closure-env objects))))
 	((env? object)
-	 (apply slad-env-map f object objects))
+	 (apply env-map f object objects))
 	((slad-pair? object)
 	 (make-slad-pair (apply f (slad-car object) (map slad-car objects))
 			 (apply f (slad-cdr object) (map slad-cdr objects))))

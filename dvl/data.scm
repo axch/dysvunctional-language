@@ -50,7 +50,7 @@
 	    expression-map f (closure-body object) (map closure-body objects)))
 	  (apply f (closure-env object) (map closure-env objects))))
 	((env? object)
-	 (apply dvl-env-map f object objects))
+	 (apply env-map f object objects))
 	((dvl-pair? object)
 	 (make-dvl-pair (apply f (dvl-car object) (map dvl-car objects))
 			(apply f (dvl-cdr object) (map dvl-cdr objects))))
