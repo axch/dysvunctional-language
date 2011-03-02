@@ -236,7 +236,7 @@
 (add-primitive! gensym-primitive)
 
 (define (gensym= gensym1 gensym2)
-  (= (gensym-number gensym1) (gensym-number gensym1)))
+  (= (gensym-number gensym1) (gensym-number gensym2)))
 
 (define gensym=-primitive
   (make-primitive 'gensym= 2
