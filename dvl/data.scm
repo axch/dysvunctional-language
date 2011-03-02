@@ -209,9 +209,12 @@
    (world-gensym world)))
 
 (define (union-world world1 world2)
-  (make-world
-   (max (world-io-version world1) (world-io-version world2))
-   (max (world-gensym world1) (world-gensym world2))))
+  (cond ((impossible-world? world1) world2)
+	((impossible-world? world2) world1)
+	(else
+	 (make-world
+	  (max (world-io-version world1) (world-io-version world2))
+	  (max (world-gensym world1) (world-gensym world2))))))
 
 (define (current-gensym world)
   (make-gensym (world-gensym world)))
