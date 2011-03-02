@@ -204,7 +204,9 @@
 	       (count 0))
       (if (and (number? *analyze-wallp*)
 	       (= 0 (modulo count *analyze-wallp*)))
-	  (pp new-analysis))
+	  (begin (display new-analysis)
+		 (newline)
+		 (map pp (analysis-bindings new-analysis))))
       (if (step-changed-analysis? old-analysis new-analysis)
 	  (loop new-analysis (step-analysis new-analysis) (+ count 1))
 	  (begin (if *analyze-wallp*
