@@ -156,6 +156,7 @@
 			    (solved-abstractly? (cdr thing))))
 	((env? thing)
 	 (every solved-abstractly? (map cdr (env-bindings thing))))
+	((abstract-gensym? thing) #f)
 	(else (error "Invalid abstract value" thing))))
 
 ;;; If so, what's the Scheme code to make that value?

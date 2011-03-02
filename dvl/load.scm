@@ -26,10 +26,10 @@
    "analysis"
    "abstract-values"
    "abstract-eval"
-   ;"nomenclature"
-   ;"code-generator"
+   "../vl/nomenclature"
+   "code-generator"
    "primitives"
-   ;"post-processing"
+   "../vl/post-processing"
    "read"))
 
 (define (vl-run-file filename)
