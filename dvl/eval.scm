@@ -25,7 +25,7 @@
           (lambda (operator post-operator-world)
 	    (concrete-eval (operand-subform exp) env post-operator-world
              (lambda (operand new-world)
-	       (concrete-apply operator operand world win))))))
+	       (concrete-apply operator operand new-world win))))))
 	(else
 	 (error "Invalid expression type" exp))))
 
