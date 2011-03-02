@@ -16,7 +16,7 @@
 (load-relative "../vl/support/rule-system/load")
 
 (for-each
- load-relative
+ load-relative-compiled
  '("../vl/support/mit-profile"
    "data"
    "env"
