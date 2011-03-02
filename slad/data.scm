@@ -97,13 +97,6 @@
 	(else
 	 (error "Invalid expression type" form forms))))
 
-(define (slad-copy object)
-  (cond ((slad-primitive? object)
-	 (make-slad-primitive (slad-primitive-name object)
-			      (slad-primitive-implementation object)))
-	(else
-	 (slad-map slad-copy object))))
-
 (define (memoize f)
   (let ((cache (make-eq-hash-table)))
     (lambda (x)
