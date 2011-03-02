@@ -111,10 +111,8 @@
 (define (analysis-binding>= binding1 binding2)
   (and (equal? (binding-exp binding1) (binding-exp binding2))
        (abstract-equal? (binding-env binding1) (binding-env binding2))
-       (not (disjoint-worlds? (binding-pattern binding1) (binding-pattern binding2)))
        (abstract-value-superset? (binding-value binding1) (binding-value binding2))
-       (or (world-matches? (binding-pattern binding2) (binding-pattern binding1))
-	   (not (abstract-equal? (binding-value binding1) (binding-value binding2))))))
+       (world-matches? (binding-world binding2) (binding-pattern binding1))))
 
 (define (filter-bindings bindings)
   (if (null? bindings)
