@@ -78,13 +78,6 @@
 	(else
 	 (error "Invalid expression type" form forms))))
 
-(define (dvl-copy object)
-  (cond ((dvl-primitive? object)
-	 (make-dvl-primitive (dvl-primitive-name object)
-			     (dvl-primitive-implementation object)))
-	(else
-	 (dvl-map dvl-copy object))))
-
 (define (memoize f)
   (let ((cache (make-eq-hash-table)))
     (lambda (x)
