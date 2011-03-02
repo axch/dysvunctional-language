@@ -24,7 +24,7 @@
 	    (cdr answer)
 	    (error "Variable not found" exp env)))))
 
-;;; Extending a DVL environment involves destructuring the incoming
+;;; Extending an environment involves destructuring the incoming
 ;;; argument structure according to the formal parameter tree of the
 ;;; closure whose environment is being extended.
 
