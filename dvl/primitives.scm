@@ -204,7 +204,7 @@
 	   (alternate (cddr arg)))
        (define (expand-thunk-application thunk)
 	 (analysis-expand
-	  `(,(closure-expression thunk) ())
+	  `(,(closure-lambda thunk) ())
 	  (closure-env thunk)
 	  world
 	  analysis
