@@ -171,6 +171,8 @@
   (make-world 0 0))
 
 (define impossible-world (make-world #f #f))
+(define (impossible-world? thing)
+  (eq? thing impossible-world?))
 
 (define any-world (make-world #t #t))
 (define (any-world? thing)
@@ -178,8 +180,9 @@
 
 (define (world-matches? world pattern)
   (or (any-world? pattern)
-      (= (world-gensym world)
-	 (world-gensym pattern))))
+      (and (not (impossible-world? pattern))
+	   (= (world-gensym world)
+	      (world-gensym pattern)))))
 
 (define-structure (gensym safe-accessors)
   number)

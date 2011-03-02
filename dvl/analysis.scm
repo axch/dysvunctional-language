@@ -80,7 +80,7 @@
 
 ;;; ANALYSIS-GET is \bar E_1 from [1].
 (define (analysis-get exp env world analysis win)
-  (analysis-search exp env analysis
+  (analysis-search exp env world analysis
    win
    (lambda ()
      (win abstract-none impossible-world))))
@@ -114,7 +114,7 @@
 (define (filter-bindings bindings)
   (if (null? bindings)
       '()
-      (let ((binding (car binding)))
+      (let ((binding (car bindings)))
 	(cons binding
 	      (filter-bindings
 	       (filter (lambda (binding2)
