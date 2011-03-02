@@ -201,7 +201,7 @@
 	((abstract-boolean? thing) #f)
 	((abstract-real? thing) #f)
 	((abstract-none? thing) #f)
-	((primitive? thing) #t)
+	((primitive? thing) #f)
 	((closure? thing) (depends-on-world? (closure-env thing)))
 	((pair? thing) (or (depends-on-world? (car thing))
 			   (depends-on-world? (cdr thing))))
