@@ -72,7 +72,7 @@
 
 ;;; REFINE-EVAL is \bar E from [1].
 (define (refine-eval exp env analysis)
-  (cond ((constant? exp) exp)
+  (cond ((constant? exp) (constant-value exp))
 	((variable? exp) (lookup exp env))
 	((null? exp) '())
 	((pair? exp)
