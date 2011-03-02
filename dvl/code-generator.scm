@@ -79,8 +79,8 @@
 
 ;;; A VL CONS becomes a Scheme CONS.
 (define (compile-cons exp env enclosure analysis)
-  `(cons ,(compile (cadr exp) env enclosure analysis)
-	 ,(compile (caddr exp) env enclosure analysis)))
+  `(cons ,(compile (car-subform exp) env enclosure analysis)
+	 ,(compile (cdr-subform exp) env enclosure analysis)))
 
 ;;; The flow analysis fully determines the shape of every VL procedure
 ;;; that is called at any VL call site.  This allows applications to
@@ -88,8 +88,8 @@
 ;;; particular way I handled VL's IF makes it register as a primitive
 ;;; procedure, which needs to be handled specially.
 (define (compile-apply exp env enclosure analysis)
-  (let ((operator (simple-analysis-get (car exp) env analysis))
-	(operands (simple-analysis-get (cadr exp) env analysis)))
+  (let ((operator (simple-analysis-get (operator-subform exp) env analysis))
+	(operands (simple-analysis-get (operand-subform exp) env analysis)))
     (cond ((eq? primitive-if operator)
 	   (generate-if-statement
 	    exp env enclosure analysis operands))
@@ -220,11 +220,9 @@
 	(env (binding-env binding))
 	(value (binding-value binding)))
     (and (not (solved-abstractly? value))
-	 (pair? exp)
-	 (not (eq? (car exp) 'cons))
-	 (not (eq? (car exp) 'lambda))
-	 (let ((operator (simple-analysis-get (car exp) env analysis))
-	       (operands (simple-analysis-get (cadr exp) env analysis)))
+	 (application? exp)
+	 (let ((operator (simple-analysis-get (operator-subform exp) env analysis))
+	       (operands (simple-analysis-get (operand-subform exp) env analysis)))
 	   (and (closure? operator)
 		(cons operator operands))))))
 
