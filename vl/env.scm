@@ -59,3 +59,14 @@
   (filter (lambda (binding)
 	    (not (member (car binding) variables)))
 	  bindings))
+
+(define (env-map f env . envs)
+  (make-env
+   (map cons
+	(map car (env-bindings env))
+	(apply map
+	       f
+	       (map cdr (env-bindings env))
+	       (map (lambda (env)
+		      (map cdr (env-bindings env)))
+		    envs)))))
