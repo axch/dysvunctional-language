@@ -238,7 +238,27 @@
 (define (gensym= gensym1 gensym2)
   (= (gensym-number gensym1) (gensym-number gensym1)))
 
-(define-RxR->bool-primitive gensym=)
+(define gensym=-primitive
+  (make-primitive 'gensym= 2
+   (lambda (arg world win)
+     (win (gensym= (car arg) (cdr arg)) world))
+   (lambda (arg world analysis win)
+     (let ((first (car arg))
+	   (second (cdr arg)))
+       (let ((first-low   (abstract-gensym-min first))
+	     (first-high  (abstract-gensym-max first))
+	     (second-low  (abstract-gensym-min second))
+	     (second-high (abstract-gensym-max second)))
+	 (cond ((= first-low first-high second-low second-high)
+		(win #t world))
+	       ((< first-high second-low)
+		(win #f world))
+	       ((> first-low second-high)
+		(win #f world))
+	       (else
+		(win abstract-boolean world))))))
+   (lambda (arg world analysis) '())))
+(add-primitive! gensym=-primitive)
 
 (define (initial-dvl-user-env)
   (make-env
