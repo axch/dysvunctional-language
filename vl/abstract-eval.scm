@@ -74,24 +74,22 @@
 (define (refine-eval exp env analysis)
   (cond ((constant? exp) (constant-value exp))
 	((variable? exp) (lookup exp env))
-	((null? exp) '())
-	((pair? exp)
-	 (cond ((eq? (car exp) 'lambda)
-		(make-closure (cadr exp) (caddr exp) env))
-	       ((eq? (car exp) 'cons)
-		(let ((car-answer (analysis-get
-				   (cadr exp) env analysis))
-		      (cdr-answer (analysis-get
-				   (caddr exp) env analysis)))
-		  (if (and (not (abstract-none? car-answer))
-			   (not (abstract-none? cdr-answer)))
-		      (cons car-answer cdr-answer)
-		      abstract-none)))
-	       (else
-		(refine-apply
-		 (analysis-get (car exp) env analysis)
-		 (analysis-get (cadr exp) env analysis)
-		 analysis))))
+	((lambda-form? exp)
+	 (make-closure (lambda-formal exp) (lambda-body exp) env))
+	((pair-form? exp)
+	 (let ((car-answer (analysis-get
+			    (car-subform exp) env analysis))
+	       (cdr-answer (analysis-get
+			    (cdr-subform exp) env analysis)))
+	   (if (and (not (abstract-none? car-answer))
+		    (not (abstract-none? cdr-answer)))
+	       (cons car-answer cdr-answer)
+	       abstract-none)))
+	((application? exp)
+	 (refine-apply
+	  (analysis-get (operator-subform exp) env analysis)
+	  (analysis-get (operand-subform exp) env analysis)
+	  analysis))
 	(else
 	 (error "Invalid expression in abstract refiner"
 		exp env analysis))))
