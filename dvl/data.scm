@@ -189,6 +189,7 @@
   (or (any-world? pattern)
       (and (not (impossible-world? pattern))
 	   (not (impossible-world? world))
+	   (not (any-world? world))
 	   (= (world-gensym world)
 	      (world-gensym pattern)))))
 
