@@ -163,7 +163,14 @@
 	   (else
 	    (error "Invalid expression type" form forms))))))
 
-(define-structure (world (safe-accessors #t))
+(define-structure
+  (world
+   safe-accessors
+   (print-procedure
+    (simple-unparser-method 'world
+     (lambda (world)
+       (list (world-io-version world)
+	     (world-gensym world))))))
   io-version
   gensym)
 
