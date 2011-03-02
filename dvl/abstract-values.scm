@@ -248,7 +248,6 @@
 	  (impossible-world? updatee))
       updatee
       (make-world
-       (world-io-version updatee)
        (+ (world-gensym updatee)
 	  (- (world-gensym new-world)
 	     (world-gensym old-world))))))

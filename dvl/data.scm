@@ -172,21 +172,18 @@
    (print-procedure
     (simple-unparser-method 'world
      (lambda (world)
-       (list (world-io-version world)
-	     (world-gensym world))))))
-  io-version
+       (list (world-gensym world))))))
   gensym)
 
 (define (initial-dvl-world)
-  (make-world 0 0))
+  (make-world 0))
 
-(define impossible-world (make-world #f #f))
+(define impossible-world (make-world #f))
 (define (impossible-world? thing)
   (eq? thing impossible-world))
 
 (define (world-equal? world1 world2)
-  (and (equal? (world-io-version world1) (world-io-version world2))
-       (equal? (world-gensym world1) (world-gensym world2))))
+  (equal? (world-gensym world1) (world-gensym world2)))
 
 (define-structure (gensym safe-accessors)
   number)
@@ -196,7 +193,6 @@
 	((impossible-world? world2) world1)
 	(else
 	 (make-world
-	  (max (world-io-version world1) (world-io-version world2))
 	  (max (world-gensym world1) (world-gensym world2))))))
 
 (define (current-gensym world)
@@ -204,7 +200,6 @@
 
 (define (do-gensym world)
   (make-world
-   (world-io-version world)
    (+ 1 (world-gensym world))))
 
 (define (constructors-only? exp)
