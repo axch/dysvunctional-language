@@ -205,7 +205,7 @@
 (define (current-gensym world)
   (make-gensym (world-gensym world)))
 
-(define (do-i/o world)
+(define (do-gensym world)
   (make-world
    (world-io-version world)
    (+ 1 (world-gensym world))))
