@@ -89,14 +89,18 @@
 ;;;; Closures
 
 (define-structure (closure (safe-accessors #t) (constructor %make-closure))
-  formal
-  body
+  exp
   free-variables
   env)
 
+(define (closure-formal closure)
+  (lambda-formal (closure-exp closure)))
+
+(define (closure-body closure)
+  (lambda-body (closure-exp closure)))
+
 (define (closure-expression closure)
-  `(lambda ,(closure-formal closure)
-     ,(closure-body closure)))
+  (closure-exp closure))
 
 (define (env-slice env variables)
   (make-env
@@ -107,8 +111,9 @@
 ;;; To keep environments in canonical form, closures only keep the
 ;;; variables they want.
 (define (make-closure formal body env)
-  (let ((free (free-variables `(lambda ,formal ,body))))
-    (%make-closure formal body free (env-slice env free))))
+  (let ((exp `(lambda ,formal ,body)))
+    (let ((free (free-variables exp)))
+      (%make-closure exp free (env-slice env free)))))
 
 ;;;; "Foreign Interface"
 ;;; such as it is
