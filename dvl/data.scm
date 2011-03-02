@@ -7,14 +7,14 @@
 (define dvl-empty-list? null?)
 
 (define-structure (closure safe-accessors (constructor %make-closure))
-  lambda
+  exp
   env)
 
 (define (closure-formal closure)
-  (lambda-formal (closure-lambda closure)))
+  (lambda-formal (closure-exp closure)))
 
 (define (closure-body closure)
-  (lambda-body (closure-lambda closure)))
+  (lambda-body (closure-exp closure)))
 
 (define (env-slice env variables)
   (make-env
@@ -29,7 +29,7 @@
     (%make-closure exp (env-slice env free))))
 
 (define (closure-free-variables closure)
-  (free-variables (closure-lambda closure)))
+  (free-variables (closure-exp closure)))
 
 (define dvl-real? real?)
 

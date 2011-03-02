@@ -308,7 +308,7 @@
 	((primitive? thing) thing)
 	((closure? thing)
 	 (make-closure
-	  (closure-lambda thing)
+	  (closure-exp thing)
 	  (broaden-abstract-gensysms (closure-env thing))))
 	((pair? thing) (make-dvl-pair (broaden-abstract-gensysms (car thing))
 				      (broaden-abstract-gensysms (cdr thing))))
