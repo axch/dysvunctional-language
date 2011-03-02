@@ -6,6 +6,7 @@ def files
    "eval",
    "post-processing",
    "primitives",
+   "syntax",
    "data",
    "env",
    "analysis",

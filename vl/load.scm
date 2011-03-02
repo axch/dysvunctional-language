@@ -20,6 +20,7 @@
  '("support/mit-profile"
    "data"
    "env"
+   "syntax"
    "macro"
    "letrec"
    "eval"

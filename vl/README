@@ -207,6 +207,7 @@ macro.scm            Syntax preprocessor; Stage 1
 eval.scm             Direct interpreter (straight from the textbook)
 post-processing.scm  Post-processing; Stage 4
 primitives.scm       Primitive procedures
+syntax.scm           Abstract syntax post Stage 1
 data.scm             Completely boring data structures
 env.scm              Environments
 analysis.scm         Data structure for the full current analysis knowledge
