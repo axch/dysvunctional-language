@@ -121,26 +121,25 @@
 
 ;;; EXPAND-EVAL is \bar E' from [1].
 (define (expand-eval exp env analysis)
-  (cond ((variable? exp) '())
-	((null? exp) '())
-	((constant? exp) '())
-	((pair? exp)
-	 (cond ((eq? (car exp) 'lambda)
-		'())
-	       ((eq? (car exp) 'cons)
-		(lset-union
-		 same-analysis-binding?
-		 (analysis-expand (cadr exp) env analysis)
-		 (analysis-expand (caddr exp) env analysis)))
-	       (else
-		(lset-union
-		 same-analysis-binding?
-		 (analysis-expand (car exp) env analysis)
-		 (analysis-expand (cadr exp) env analysis)
-		 (expand-apply
-		  (analysis-get (car exp) env analysis)
-		  (analysis-get (cadr exp) env analysis)
-		  analysis)))))
+  (cond ((constant? exp) '())
+	((variable? exp) '())
+	((lambda-form? exp) '())
+	((pair-form? exp)
+	 (lset-union
+	  same-analysis-binding?
+	  (analysis-expand (car-subform exp) env analysis)
+	  (analysis-expand (cdr-subform exp) env analysis)))
+	((application? exp)
+	 (let ((operator (operator-subform exp))
+	       (operand (operand-subform exp)))
+	   (lset-union
+	    same-analysis-binding?
+	    (analysis-expand operator env analysis)
+	    (analysis-expand operand env analysis)
+	    (expand-apply
+	     (analysis-get operator env analysis)
+	     (analysis-get operand env analysis)
+	     analysis))))
 	(else
 	 (error "Invalid expression in abstract expander"
 		exp env analysis))))
