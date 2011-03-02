@@ -30,6 +30,7 @@
    "nomenclature"
    "code-generator"
    "primitives"
+   "output-syntax"
    "post-processing"
    "read"))
 

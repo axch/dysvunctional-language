@@ -213,6 +213,7 @@ env.scm              Environments
 analysis.scm         Data structure for the full current analysis knowledge
 abstract-values.scm  Shapes that values may be known to have
 nomenclature.scm     Synthesizing Scheme names for code generation
+output-syntax.scm    Syntax of generated output language
 load.scm             Putting it all together
 
 
