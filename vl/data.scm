@@ -7,7 +7,14 @@
 
 (define (constant? thing)
   (or (number? thing)
-      (boolean? thing)))
+      (boolean? thing)
+      (null? thing)
+      (quoted? thing)))
+
+(define (constant-value thing)
+  (if (quoted? thing)
+      (cadr thing)
+      thing))
 
 (define (variable? thing)
   (symbol? thing))
@@ -31,6 +38,8 @@
 
 (define (definiens definition)
   (caddr (normalize-definition definition)))
+
+(define quoted? (tagged-list? 'quote))
 
 (define (constructors-only? exp)
   (or (symbol? exp)
