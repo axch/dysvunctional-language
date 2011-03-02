@@ -59,6 +59,7 @@
   exp
   env
   world
+  pattern
   value
   new-world)
 
@@ -71,9 +72,9 @@
 	(lose)
 	(if (and (equal? exp (binding-exp (car bindings)))
 		 (abstract-equal? env (binding-env (car bindings)))
-		 (world-matches? world (binding-world (car bindings))))
+		 (world-matches? world (binding-pattern (car bindings))))
 	    (win (binding-value (car bindings))
-		 (if (any-world? (binding-world (car bindings)))
+		 (if (any-world? (binding-pattern (car bindings)))
 		     world ; TODO Check whether the expression does i/o?
 		     (binding-new-world (car bindings))))
 	    (loop (cdr bindings))))))
@@ -97,21 +98,23 @@
 	 '()
 	 (win value world)))
    (lambda ()
-     (list (make-binding exp env world abstract-none impossible-world)))))
+     (list (make-binding exp env world any-world abstract-none impossible-world)))))
 
 (define (same-analysis-binding? binding1 binding2)
   (and (equal? (binding-exp binding1) (binding-exp binding2))
        (abstract-equal? (binding-env binding1) (binding-env binding2))
        (world-equal? (binding-world binding1) (binding-world binding2))
+       (world-equal? (binding-pattern binding1) (binding-pattern binding2))
        (abstract-equal? (binding-value binding1) (binding-value binding2))
        (world-equal? (binding-new-world binding1) (binding-new-world binding2))))
 
-(define (analysis-binding> binding1 binding2)
+(define (analysis-binding>= binding1 binding2)
   (and (equal? (binding-exp binding1) (binding-exp binding2))
        (abstract-equal? (binding-env binding1) (binding-env binding2))
+       (not (disjoint-worlds? (binding-pattern binding1) (binding-pattern binding2)))
        (abstract-value-superset? (binding-value binding1) (binding-value binding2))
-       (or (not (abstract-equal? (binding-value binding1) (binding-value binding2)))
-	   (world-matches? (binding-world binding2) (binding-world binding1)))))
+       (or (world-matches? (binding-pattern binding2) (binding-pattern binding1))
+	   (not (abstract-equal? (binding-value binding1) (binding-value binding2))))))
 
 (define (filter-bindings bindings)
   (if (null? bindings)
@@ -120,7 +123,7 @@
 	(cons binding
 	      (filter-bindings
 	       (filter (lambda (binding2)
-			 (not (analysis-binding> binding binding2)))
+			 (not (analysis-binding>= binding binding2)))
 		       (cdr bindings)))))))
 
 (define (same-analysis? ana1 ana2)

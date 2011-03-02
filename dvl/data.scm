@@ -216,3 +216,10 @@
   (make-world
    (world-io-version world)
    (+ 1 (world-gensym world))))
+
+(define (disjoint-worlds? world1 world2)
+  (or (impossible-world? world1)
+      (impossible-world? world2)
+      (and (not (any-world? world1))
+	   (not (any-world? world2))
+	   (not (= (world-gensym world1) (world-gensym world2))))))
