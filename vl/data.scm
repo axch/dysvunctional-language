@@ -2,17 +2,16 @@
 ;;;; Free variables
 
 (define (free-variables exp)
-  (cond ((symbol? exp) (list exp))
-	((pair? exp)
-	 (cond ((eq? (car exp) 'lambda)
-		(lset-difference eq? (free-variables (caddr exp))
-				 (free-variables (cadr exp))))
-	       ((eq? (car exp) 'cons)
-		(lset-union eq? (free-variables (cadr exp))
-			    (free-variables (caddr exp))))
-	       (else
-		(lset-union eq? (free-variables (car exp))
-			    (free-variables (cdr exp))))))
+  (cond ((variable? exp) (list exp))
+	((lambda-form? exp)
+	 (lset-difference equal? (free-variables (lambda-body exp))
+			  (free-variables (lambda-formal exp))))
+	((pair-form? exp)
+	 (lset-union equal? (free-variables (car-subform exp))
+		     (free-variables (cdr-subform exp))))
+	((pair? exp) ; Not application? to handle formals lists
+	 (lset-union equal? (free-variables (car exp))
+		     (free-variables (cdr exp))))
 	(else '())))
 
 ;;;; Closures
