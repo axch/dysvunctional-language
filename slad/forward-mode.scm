@@ -72,7 +72,7 @@
 	  (transform-and-perturb (slad-tangent object)
 				 (slad-tangent perturbation))))
 	;; Notably, forward mode relegates to slad-map for
-	;; slad-closure objects.  This is because it does not acutally
+	;; closure objects.  This is because it does not acutally
 	;; need to make any changes to the closure bodies, except
 	;; maybe to avoid confusing perturbations.
 	(else

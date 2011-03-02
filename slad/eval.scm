@@ -14,7 +14,7 @@
 	 (make-slad-pair (slad-eval (car-subform form) env)
 			 (slad-eval (cdr-subform form) env)))
 	((lambda-form? form)
-	 (make-slad-closure form env))
+	 (make-closure form env))
 	((application? form)
 	 (slad-apply (slad-eval (operator-subform form) env)
 		     (slad-eval (operand-subform form) env)))
@@ -22,11 +22,11 @@
 	 (error "Invalid expression type" form env))))
 
 (define (slad-apply proc arg)
-  (cond ((slad-closure? proc)
-	 (slad-eval (slad-closure-body proc)
-		    (extend-env (slad-closure-formal proc)
+  (cond ((closure? proc)
+	 (slad-eval (closure-body proc)
+		    (extend-env (closure-formal proc)
 				arg
-				(slad-closure-env proc))))
+				(closure-env proc))))
 	((slad-primitive? proc)
 	 ((slad-primitive-implementation proc) arg))
 	(else

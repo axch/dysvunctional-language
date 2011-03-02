@@ -7,22 +7,22 @@
 (define slad-empty-list? null?)
 
 (define-structure
-  (slad-closure
+  (closure
    safe-accessors
-   (constructor %make-slad-closure)
+   (constructor %make-closure)
    (print-procedure
-    (simple-unparser-method 'slad-closure
+    (simple-unparser-method 'closure
      (lambda (closure)
-       (list (slad-closure-exp closure)
-	     (slad-closure-env closure))))))
+       (list (closure-exp closure)
+	     (closure-env closure))))))
   exp
   env)
 
-(define (slad-closure-formal closure)
-  (lambda-formal (slad-closure-exp closure)))
+(define (closure-formal closure)
+  (lambda-formal (closure-exp closure)))
 
-(define (slad-closure-body closure)
-  (lambda-body (slad-closure-exp closure)))
+(define (closure-body closure)
+  (lambda-body (closure-exp closure)))
 
 (define (env-slice env variables)
   (make-env
@@ -32,9 +32,9 @@
 
 ;;; To keep environments in canonical form, closures only keep the
 ;;; variables they want.
-(define (make-slad-closure exp env)
+(define (make-closure exp env)
   (let ((free (free-variables exp)))
-    (%make-slad-closure exp (env-slice env free))))
+    (%make-closure exp (env-slice env free))))
 
 (define-structure
   (slad-primitive
@@ -62,12 +62,12 @@
 
 
 (define (slad-map f object . objects)
-  (cond ((slad-closure? object)
-	 (make-slad-closure
+  (cond ((closure? object)
+	 (make-closure
 	  (make-lambda-form
-	   (slad-closure-formal object)
-	   (apply slad-exp-map f (slad-closure-body object) (map slad-closure-body objects)))
-	  (apply f (slad-closure-env object) (map slad-closure-env objects))))
+	   (closure-formal object)
+	   (apply slad-exp-map f (closure-body object) (map closure-body objects)))
+	  (apply f (closure-env object) (map closure-env objects))))
 	((env? object)
 	 (apply slad-env-map f object objects))
 	((slad-pair? object)

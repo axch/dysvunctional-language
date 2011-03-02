@@ -40,7 +40,7 @@
 
 (define (slad-procedure? thing)
   (or (slad-primitive? thing)
-      (slad-closure? thing)))
+      (closure? thing)))
 
 (unary-primitive 'procedure? slad-procedure?)
 
