@@ -10,8 +10,7 @@
       (boolean? thing)))
 
 (define (variable? thing)
-  (or (constant? thing)
-      (symbol? thing)))
+  (symbol? thing))
 
 (define variable<? symbol<?)
 
