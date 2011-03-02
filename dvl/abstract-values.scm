@@ -234,6 +234,7 @@
 	       (make-env (map cons
 			      (map car (env-bindings thing))
 			      (map loop (map cdr (env-bindings thing))))))
+	      ((eq? the-abstract-gensym thing) thing)
 	      ((abstract-gensym? thing)
 	       (let ((difference (- (world-gensym new-world) (world-gensym old-world))))
 		 (make-abstract-gensym
