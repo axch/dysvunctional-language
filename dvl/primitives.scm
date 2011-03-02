@@ -229,7 +229,9 @@
    (lambda (arg world win)
      (win (current-gensym world) (do-gensym world)))
    (lambda (arg world analysis win)
-     (win (current-gensym world) (do-gensym world)))
+     (win (trivial-abstract-gensym
+	   (current-gensym world))
+	  (do-gensym world)))
    (lambda (arg world analysis) '())))
 (add-primitive! gensym-primitive)
 

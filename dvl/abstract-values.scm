@@ -51,6 +51,9 @@
   min
   max)
 
+(define (trivial-abstract-gensym gensym)
+  (make-abstract-gensym (gensym-number gensym) (gensym-number gensym)))
+
 ;;; Equality of shapes
 
 (define (abstract-equal? thing1 thing2)
