@@ -221,6 +221,10 @@
 (define (abstract-result-of thunk-shape world analysis win)
   ;; N.B. ABSTRACT-RESULT-OF only exists because of the way I'm doing IF.
   (refine-apply thunk-shape '() world analysis win))
+
+(define (simple-abstract-result-of thunk-shape analysis)
+  (abstract-result-of thunk-shape (initial-dvl-world) analysis
+   (lambda (value world) value)))
 
 ;;;; Gensym
 
