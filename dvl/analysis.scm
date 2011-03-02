@@ -90,10 +90,12 @@
 ;;; a binding to be added to the new incarnation of ANALYSIS, should
 ;;; the current incarnation lack any binding already covering that
 ;;; question.
-(define (analysis-expand exp env world analysis)
+(define (analysis-expand exp env world analysis win)
   (analysis-search exp env world analysis
-   (lambda (value new-world)
-     '())
+   (lambda (value world)
+     (if (abstract-none? value)
+	 '()
+	 (win value world)))
    (lambda ()
      (list (make-binding exp env world abstract-none impossible-world)))))
 

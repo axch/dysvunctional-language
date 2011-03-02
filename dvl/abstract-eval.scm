@@ -136,26 +136,16 @@
 	((constant? exp) '())
 	((lambda-form? exp) '())
 	((pair-form? exp)
-	 (analysis-search (car-subform exp) env world analysis
+	 (analysis-expand (car-subform exp) env world analysis
 	  (lambda (car-value car-world)
-	    (analysis-search (cdr-subform exp) env car-world analysis
-	     (lambda (cdr-value cdr-world)
-	       '())
-	     (lambda ()
-	       (list (make-binding (cdr-subform exp) env car-world abstract-none impossible-world)))))
-	  (lambda ()
-	    (list (make-binding (car-subform exp) env world abstract-none impossible-world)))))
+	    (analysis-expand (cdr-subform exp) env car-world analysis
+	     (lambda (cdr-value cdr-world) '())))))
 	((application? exp)
-	 (analysis-search (operator-subform exp) env world analysis
+	 (analysis-expand (operator-subform exp) env world analysis
 	  (lambda (operator operator-world)
-	    (analysis-search (operand-subform exp) env operator-world analysis
+	    (analysis-expand (operand-subform exp) env operator-world analysis
 	     (lambda (operand operand-world)
-	       (expand-apply operator operand operand-world analysis))
-	     (lambda ()
-	       (list (make-binding
-		      (operand-subform exp) env operator-world abstract-none impossible-world)))))
-	  (lambda ()
-	    (list (make-binding (operator-subform exp) env world abstract-none impossible-world)))))
+	       (expand-apply operator operand operand-world analysis))))))
 	(else
 	 (error "Invalid expression in abstract expander"
 		exp env analysis))))
@@ -171,7 +161,8 @@
 	  (closure-body proc)
 	  (extend-env (closure-formal proc) arg (closure-env proc))
 	  world
-	  analysis))
+	  analysis
+	  (lambda (value world) '())))
 	(else
 	 (error "Expanding an application of a known non-procedure"
 		proc arg analysis))))

@@ -207,7 +207,8 @@
 	  `(,(closure-expression thunk) ())
 	  (closure-env thunk)
 	  world
-	  analysis))
+	  analysis
+	  (lambda (value world) '())))
        (if (not (abstract-boolean? predicate))
 	   (if predicate
 	       (expand-thunk-application consequent)
