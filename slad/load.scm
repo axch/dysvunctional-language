@@ -15,6 +15,7 @@
  load-relative-compiled
  '("data"
    "read"
+   "syntax"
    "macro"
    "letrec"
    "env"
