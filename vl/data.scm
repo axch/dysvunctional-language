@@ -110,10 +110,9 @@
 
 ;;; To keep environments in canonical form, closures only keep the
 ;;; variables they want.
-(define (make-closure formal body env)
-  (let ((exp `(lambda ,formal ,body)))
-    (let ((free (free-variables exp)))
-      (%make-closure exp free (env-slice env free)))))
+(define (make-closure exp env)
+  (let ((free (free-variables exp)))
+    (%make-closure exp free (env-slice env free))))
 
 ;;;; "Foreign Interface"
 ;;; such as it is

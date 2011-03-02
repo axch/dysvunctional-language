@@ -75,7 +75,7 @@
   (cond ((constant? exp) (constant-value exp))
 	((variable? exp) (lookup exp env))
 	((lambda-form? exp)
-	 (make-closure (lambda-formal exp) (lambda-body exp) env))
+	 (make-closure exp env))
 	((pair-form? exp)
 	 (let ((car-answer (analysis-get
 			    (car-subform exp) env analysis))
