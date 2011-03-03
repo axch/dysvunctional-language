@@ -34,7 +34,7 @@
    "../vl/post-processing"
    "read"))
 
-(define (vl-run-file filename)
+(define (dvl-run-file filename)
   (let* ((forms (read-source filename))
 	 (program `(let () ,@forms))
 	 (compiled-program (compile-to-scheme program))
