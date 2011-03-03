@@ -37,8 +37,7 @@
 (define (vl-run-file filename)
   (let* ((forms (read-source filename))
 	 (program `(let () ,@forms))
-	 (analysis (analyze program))
-	 (compiled-program (generate program analysis))
+	 (compiled-program (compile-to-scheme program))
 	 (compiled-answer
 	  (eval compiled-program (nearest-repl/environment))))
     (pp compiled-answer)))
