@@ -295,7 +295,7 @@
 	  ,@(structure-definitions analysis)
 	  ,@(procedure-definitions analysis emit-type-declarations?)
 	  ,(compile (macroexpand program)
-		    (initial-dvl-user-env)
+		    (initial-user-env)
 		    #f
 		    analysis)))
 

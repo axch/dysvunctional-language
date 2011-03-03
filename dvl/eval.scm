@@ -47,7 +47,7 @@
 
 (define (dvl-eval form #!optional suppress-print-world?)
   (concrete-eval
-   (macroexpand form) (initial-dvl-user-env) (initial-dvl-world)
+   (macroexpand form) (initial-user-env) (initial-world)
    (lambda (value world)
      (if (or (default-object? suppress-print-world?)
 	     (not suppress-print-world?))

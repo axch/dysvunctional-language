@@ -223,7 +223,7 @@
   (refine-apply thunk-shape '() world analysis win))
 
 (define (abstract-result-of thunk-shape analysis)
-  (abstract-result-in-world thunk-shape (initial-dvl-world) analysis
+  (abstract-result-in-world thunk-shape (initial-world) analysis
    (lambda (value world) value)))
 
 ;;;; Gensym
@@ -269,7 +269,7 @@
    (lambda (arg world analysis) '())))
 (add-primitive! gensym=-primitive)
 
-(define (initial-dvl-user-env)
+(define (initial-user-env)
   (make-env
    (map (lambda (primitive)
 	  (cons (primitive-name primitive) primitive))

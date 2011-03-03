@@ -195,8 +195,8 @@
 	 (make-analysis
 	  (list (make-binding
 		 (macroexpand program)
-		 (initial-dvl-user-env)
-		 (initial-dvl-world)
+		 (initial-user-env)
+		 (initial-world)
 		 abstract-none
 		 impossible-world)))))
     (let loop ((old-analysis initial-analysis)

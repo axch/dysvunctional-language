@@ -121,7 +121,7 @@
        (list (world-gensym world))))))
   gensym)
 
-(define (initial-dvl-world)
+(define (initial-world)
   (make-world 0))
 
 (define impossible-world (make-world #f))
