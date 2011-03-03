@@ -190,11 +190,11 @@
      (let ((predicate (car shape)))
        (if (not (abstract-boolean? predicate))
 	   (if predicate
-	       (abstract-result-of (cadr shape) world analysis win)
-	       (abstract-result-of (cddr shape) world analysis win))
-	   (abstract-result-of (cadr shape) world analysis
+	       (abstract-result-in-world (cadr shape) world analysis win)
+	       (abstract-result-in-world (cddr shape) world analysis win))
+	   (abstract-result-in-world (cadr shape) world analysis
             (lambda (first-value first-world)
-	      (abstract-result-of (cddr shape) world analysis
+	      (abstract-result-in-world (cddr shape) world analysis
                (lambda (second-value second-world)
 		 (win (abstract-union first-value second-value)
 		      (union-world first-world second-world)))))))))
@@ -218,12 +218,12 @@
 		       (expand-thunk-application alternate)))))))
 (add-primitive! primitive-if)
 
-(define (abstract-result-of thunk-shape world analysis win)
-  ;; N.B. ABSTRACT-RESULT-OF only exists because of the way I'm doing IF.
+(define (abstract-result-in-world thunk-shape world analysis win)
+  ;; N.B. ABSTRACT-RESULT-IN-WORLD only exists because of the way I'm doing IF.
   (refine-apply thunk-shape '() world analysis win))
 
 (define (simple-abstract-result-of thunk-shape analysis)
-  (abstract-result-of thunk-shape (initial-dvl-world) analysis
+  (abstract-result-in-world thunk-shape (initial-dvl-world) analysis
    (lambda (value world) value)))
 
 ;;;; Gensym
