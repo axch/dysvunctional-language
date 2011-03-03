@@ -186,7 +186,7 @@
 	 (make-analysis
 	  (list (make-binding
 		 (macroexpand program)
-		 (initial-vl-user-env)
+		 (initial-user-env)
 		 abstract-none)))))
     (let loop ((old-analysis initial-analysis)
 	       (new-analysis (step-analysis initial-analysis))

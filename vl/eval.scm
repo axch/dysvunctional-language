@@ -35,5 +35,5 @@
   ((primitive-implementation proc) arg))
 
 (define (vl-eval form)
-  (concrete-eval (macroexpand form) (initial-vl-user-env)))
+  (concrete-eval (macroexpand form) (initial-user-env)))
 
