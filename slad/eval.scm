@@ -36,7 +36,7 @@
 
 ;;; SLAD-DO evaluates a single SLAD form in a fresh initial environment.
 (define (slad-do form)
-  (slad-eval (macroexpand (slad-prepare form)) (initial-slad-user-env)))
+  (slad-eval (macroexpand (slad-prepare form)) (initial-user-env)))
 
 ;;; SLAD-EVAL-FILE reads a file of SLAD source and evaluates it in a
 ;;; fresh initial environment.

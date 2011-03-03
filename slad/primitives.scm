@@ -193,7 +193,7 @@
 (transforms-to-self! 'forward?)
 
 
-(define (initial-slad-user-env)
+(define (initial-user-env)
   (let ((answer
 	 (make-env
 	  (map (lambda (primitive)
