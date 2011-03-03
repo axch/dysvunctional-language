@@ -164,7 +164,8 @@
 
 (define (world-update-value thing old-world new-world)
   (if (or (impossible-world? new-world)
-	  (impossible-world? old-world))
+	  (impossible-world? old-world)
+	  (world-equal? old-world new-world))
       thing
       (let loop ((thing thing))
 	(cond ((eq? the-abstract-gensym thing) thing)

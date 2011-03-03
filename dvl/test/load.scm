@@ -62,7 +62,8 @@
    (lambda ()
      (let loop ((program (read)))
        (if (not (eof-object? program))
-	   (begin (define-test
+	   (begin (define-test ()
+		    (pp program)
 		    ;; Check that dvl-eval and compile-to-scheme agree
 		    (eval-through-scheme program))
 		  (loop (read)))))))
@@ -71,7 +72,8 @@
    (lambda ()
      (let loop ((program (read)))
        (if (not (eof-object? program))
-	   (begin (define-test
+	   (begin (define-test ()
+		    (pp program)
 		    ;; Check that dvl-eval and compile-to-scheme agree
 		    (eval-through-scheme program))
 		  (loop (read))))))))
