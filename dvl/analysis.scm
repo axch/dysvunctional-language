@@ -65,7 +65,7 @@
 (define-structure (analysis safe-accessors)
   bindings)
 
-(define (analysis-search exp env world analysis win lose)
+(define (analysis-search exp env analysis win lose)
   (let loop ((bindings (analysis-bindings analysis)))
     (if (null? bindings)
 	(lose)
@@ -84,7 +84,7 @@
 
 ;;; ANALYSIS-GET is \bar E_1 from [1].
 (define (analysis-get exp env world analysis win)
-  (analysis-search exp env world analysis
+  (analysis-search exp env analysis
    (lambda (binding)
      (world-update-binding binding world win))
    (lambda ()
@@ -100,7 +100,7 @@
 ;;; the current incarnation lack any binding already covering that
 ;;; question.
 (define (analysis-expand exp env world analysis win)
-  (analysis-search exp env world analysis
+  (analysis-search exp env analysis
    (lambda (binding)
      (if (abstract-none? (binding-value binding))
 	 '()
