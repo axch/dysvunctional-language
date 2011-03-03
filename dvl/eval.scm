@@ -19,7 +19,7 @@
           (lambda (car-value post-car-world)
 	    (concrete-eval (cdr-subform exp) env post-car-world
 	     (lambda (cdr-value new-world)
-	       (win (make-dvl-pair car-value cdr-value) new-world))))))
+	       (win (cons car-value cdr-value) new-world))))))
 	((application? exp)
 	 (concrete-eval (operator-subform exp) env world
           (lambda (operator post-operator-world)

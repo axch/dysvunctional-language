@@ -84,7 +84,7 @@
 	     (lambda (cdr-value cdr-world)
 	       (if (and (not (abstract-none? car-value))
 			(not (abstract-none? cdr-value)))
-		   (win (make-dvl-pair car-value cdr-value) cdr-world)
+		   (win (cons car-value cdr-value) cdr-world)
 		   (win abstract-none impossible-world)))))))
 	((application? exp)
 	 (analysis-get (operator-subform exp) env world analysis

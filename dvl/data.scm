@@ -1,11 +1,5 @@
 (declare (usual-integrations))
 
-(define make-dvl-pair cons)
-(define dvl-pair? pair?)
-(define dvl-car car)
-(define dvl-cdr cdr)
-(define dvl-empty-list? null?)
-
 (define-structure
   (closure
    safe-accessors
@@ -46,8 +40,8 @@
 	 (make-closure (closure-exp object) (f (closure-env object))))
 	((env? object)
 	 (env-map f object))
-	((dvl-pair? object)
-	 (make-dvl-pair (f (dvl-car object)) (f (dvl-cdr object))))
+	((pair? object)
+	 (cons (f (car object)) (f (cdr object))))
 	(else
 	 object)))
 
@@ -59,9 +53,9 @@
 	  (f (closure-env object1) (closure-env object2))))
 	((and (env? object1) (env? object2))
 	 (congruent-env-map f object1 object2 lose))
-	((and (dvl-pair? object1) (dvl-pair? object2))
-	 (make-dvl-pair (f (dvl-car object1) (dvl-car object2))
-			(f (dvl-cdr object1) (dvl-cdr object2))))
+	((and (pair? object1) (pair? object2))
+	 (cons (f (car object1) (car object2))
+	       (f (cdr object1) (cdr object2))))
 	(else
 	 (lose))))
 
@@ -70,8 +64,8 @@
 	 (reducer (list (closure-env object))))
 	((env? object)
 	 (reducer (map cdr (env-bindings object))))
-	((dvl-pair? object)
-	 (reducer (list (dvl-car object) (dvl-cdr object))))
+	((pair? object)
+	 (reducer (list (car object) (cdr object))))
 	(else
 	 (reducer '()))))
 
@@ -85,9 +79,9 @@
 		      (map car (env-bindings object2))))
 	 (reducer (map cdr (env-bindings object1))
 		  (map cdr (env-bindings object2))))
-	((and (dvl-pair? object1) (dvl-pair? object2))
-	 (reducer (list (dvl-car object1) (dvl-cdr object1))
-		  (list (dvl-car object2) (dvl-cdr object2))))
+	((and (pair? object1) (pair? object2))
+	 (reducer (list (car object1) (cdr object1))
+		  (list (car object2) (cdr object2))))
 	(else
 	 (lose))))
 

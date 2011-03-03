@@ -310,8 +310,8 @@
 	 (make-closure
 	  (closure-exp thing)
 	  (broaden-abstract-gensysms (closure-env thing))))
-	((pair? thing) (make-dvl-pair (broaden-abstract-gensysms (car thing))
-				      (broaden-abstract-gensysms (cdr thing))))
+	((pair? thing) (cons (broaden-abstract-gensysms (car thing))
+			     (broaden-abstract-gensysms (cdr thing))))
 	((env? thing)
 	 (make-env (map cons
 			(map car (env-bindings thing))
