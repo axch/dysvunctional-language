@@ -59,18 +59,13 @@
 	       (lambda () #f)))))
 
 (define (abstract-hash-mod thing modulus)
-  (cond ((closure? thing)
-	 (modulo (+ (equal-hash-mod (closure-body thing) modulus)
-		    (equal-hash-mod (closure-formal thing) modulus)
-		    (abstract-hash-mod (closure-env thing) modulus))
-		 modulus))
-	((pair? thing)
-	 (modulo (+ (abstract-hash-mod (car thing) modulus)
-		    (abstract-hash-mod (cdr thing) modulus))
-		 modulus))
-	((env? thing)
-	 (abstract-hash-mod (env-bindings thing) modulus))
-	(else (eqv-hash-mod thing modulus))))
+  (let loop ((thing thing))
+    (cond ((or (closure? thing) (pair? thing) (env? thing))
+	   (object-reduce
+	    (lambda (lst)
+	      (equal-hash-mod (map loop lst) modulus))
+	    thing))
+	  (else (eqv-hash-mod thing modulus)))))
 
 (define make-abstract-hash-table
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #t))
