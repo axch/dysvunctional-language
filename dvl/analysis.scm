@@ -83,7 +83,7 @@
 	new-world (binding-world binding))))
 
 ;;; ANALYSIS-GET is \bar E_1 from [1].
-(define (analysis-get exp env world analysis win)
+(define (analysis-get-in-world exp env world analysis win)
   (analysis-search exp env analysis
    (lambda (binding)
      (world-update-binding binding world win))

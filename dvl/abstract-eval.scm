@@ -78,18 +78,18 @@
 	((lambda-form? exp)
 	 (win (make-closure exp env) world))
 	((pair-form? exp)
-	 (analysis-get (car-subform exp) env world analysis
+	 (analysis-get-in-world (car-subform exp) env world analysis
           (lambda (car-value car-world)
-	    (analysis-get (cdr-subform exp) env car-world analysis
+	    (analysis-get-in-world (cdr-subform exp) env car-world analysis
 	     (lambda (cdr-value cdr-world)
 	       (if (and (not (abstract-none? car-value))
 			(not (abstract-none? cdr-value)))
 		   (win (cons car-value cdr-value) cdr-world)
 		   (win abstract-none impossible-world)))))))
 	((application? exp)
-	 (analysis-get (operator-subform exp) env world analysis
+	 (analysis-get-in-world (operator-subform exp) env world analysis
           (lambda (operator operator-world)
-	    (analysis-get (operand-subform exp) env operator-world analysis
+	    (analysis-get-in-world (operand-subform exp) env operator-world analysis
 	     (lambda (operand operand-world)
 	       (refine-apply operator operand operand-world analysis win))))))
 	(else
@@ -103,7 +103,7 @@
 	((primitive? proc)
 	 ((primitive-abstract-implementation proc) arg world analysis win))
 	((closure? proc)
-	 (analysis-get
+	 (analysis-get-in-world
 	  (closure-body proc)
 	  (extend-env (closure-formal proc) arg (closure-env proc))
 	  world
