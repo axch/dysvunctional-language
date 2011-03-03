@@ -83,15 +83,15 @@
 	new-world (binding-world binding))))
 
 ;;; ANALYSIS-GET is \bar E_1 from [1].
+(define (analysis-get exp env analysis)
+  (analysis-search exp env analysis binding-value (lambda () abstract-none)))
+
 (define (analysis-get-in-world exp env world analysis win)
   (analysis-search exp env analysis
    (lambda (binding)
      (world-update-binding binding world win))
    (lambda ()
      (win abstract-none impossible-world))))
-
-(define (simple-analysis-get exp env analysis)
-  (analysis-search exp env analysis binding-value (lambda () abstract-none)))
 
 ;;; EXPAND-ANALYSIS is \bar E_1' from [1].
 ;;; It registers interest in the evaluation of EXP in ENV by producing

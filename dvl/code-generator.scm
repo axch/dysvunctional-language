@@ -46,7 +46,7 @@
 
 ;;; COMPILE is C from [1].
 (define (compile exp env enclosure analysis)
-  (let ((value (simple-analysis-get exp env analysis)))
+  (let ((value (analysis-get exp env analysis)))
     (if (solved-abstractly? value)
 	(solved-abstract-value->constant value)
 	(cond ((variable? exp)
@@ -73,7 +73,7 @@
 ;;; solved by the flow analysis, ordered by their VL variable names.
 (define (compile-lambda exp env enclosure analysis)
   (cons (abstract-closure->scheme-constructor-name
-	 (simple-analysis-get exp env analysis))
+	 (analysis-get exp env analysis))
 	(map (lambda (var) (compile var env enclosure analysis))
 	     (interesting-variables exp env))))
 
@@ -88,8 +88,8 @@
 ;;; particular way I handled VL's IF makes it register as a primitive
 ;;; procedure, which needs to be handled specially.
 (define (compile-apply exp env enclosure analysis)
-  (let ((operator (simple-analysis-get (operator-subform exp) env analysis))
-	(operands (simple-analysis-get (operand-subform exp) env analysis)))
+  (let ((operator (analysis-get (operator-subform exp) env analysis))
+	(operands (analysis-get (operand-subform exp) env analysis)))
     (cond ((eq? primitive-if operator)
 	   (generate-if-statement
 	    exp env enclosure analysis operands))
@@ -221,8 +221,8 @@
 	(value (binding-value binding)))
     (and (not (solved-abstractly? value))
 	 (application? exp)
-	 (let ((operator (simple-analysis-get (operator-subform exp) env analysis))
-	       (operands (simple-analysis-get (operand-subform exp) env analysis)))
+	 (let ((operator (analysis-get (operator-subform exp) env analysis))
+	       (operands (analysis-get (operand-subform exp) env analysis)))
 	   (and (closure? operator)
 		(cons operator operands))))))
 
