@@ -91,8 +91,7 @@
      (win abstract-none impossible-world))))
 
 (define (simple-analysis-get exp env analysis)
-  (analysis-get exp env (initial-dvl-world) analysis
-   (lambda (value world) value)))
+  (analysis-search exp env analysis binding-value (lambda () abstract-none)))
 
 ;;; EXPAND-ANALYSIS is \bar E_1' from [1].
 ;;; It registers interest in the evaluation of EXP in ENV by producing
