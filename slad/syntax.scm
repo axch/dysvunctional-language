@@ -8,7 +8,7 @@
 (define (constant? thing)
   (or (number? thing)
       (boolean? thing)
-      (slad-bundle? thing)
+      (bundle? thing)
       (null? thing)
       (quoted? thing)))
 

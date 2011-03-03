@@ -59,14 +59,14 @@
 	 (error "Cannot transform primitives whose transforms are not known"
 		object perturbation))
 	((slad-real? object)
-	 (make-slad-bundle object perturbation))
-	((slad-bundle? object)
+	 (make-bundle object perturbation))
+	((bundle? object)
 	 ;; This interleaves new perturbations into existing bundles.
 	 ;; The alternative would have been to just cons them on, with
-	 (make-slad-bundle object perturbation)
+	 (make-bundle object perturbation)
 	 ;; TODO Which way? Cons or interleave? This has to agree with
 	 ;; the access pattern to avoid perturbation confusion.
-	 #;(make-slad-bundle
+	 #;(make-bundle
 	  (transform-and-perturb (slad-primal object)
 				 (slad-primal perturbation))
 	  (transform-and-perturb (slad-tangent object)
@@ -83,8 +83,8 @@
 	 object)))
 
 (define (slad-primal thing)
-  (cond ((slad-bundle? thing)
-	 (slad-bundle-primal thing))
+  (cond ((bundle? thing)
+	 (bundle-primal thing))
 	((primal-cached? thing)
 	 (cached-primal thing))
 	((slad-real? thing)
@@ -93,8 +93,8 @@
 	 (object-map slad-primal thing))))
 
 (define (slad-tangent thing)
-  (cond ((slad-bundle? thing)
-	 (slad-bundle-tangent thing))
+  (cond ((bundle? thing)
+	 (bundle-tangent thing))
 	((tangent-cached? thing)
 	 (cached-tangent thing))
 	((slad-real? thing)

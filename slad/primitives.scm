@@ -92,7 +92,7 @@
 (binary-primitive 'bundle transform-and-perturb)
 (unary-primitive 'primal slad-primal)
 (unary-primitive 'tangent slad-tangent)
-(unary-primitive 'forward? slad-bundle?)
+(unary-primitive 'forward? bundle?)
 
 
 (define unev-forward-transforms (make-eq-hash-table))

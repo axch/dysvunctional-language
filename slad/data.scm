@@ -39,7 +39,7 @@
 (define slad-real? real?)
 
 (define-structure
-  (slad-bundle
+  (bundle
    safe-accessors
    (print-procedure
     (lambda (unparser-state bundle)
@@ -47,7 +47,7 @@
 	(lambda (port)
 	  (with-output-to-port port
 	    (lambda ()
-	      (write (list 'forward (slad-bundle-primal bundle) (slad-bundle-tangent bundle))))))))))
+	      (write (list 'forward (bundle-primal bundle) (bundle-tangent bundle))))))))))
   primal tangent)
 
 (define (object-map f object)
@@ -59,8 +59,8 @@
 	 (env-map f object))
 	((slad-pair? object)
 	 (make-slad-pair (f (slad-car object)) (f (slad-cdr object))))
-	((slad-bundle? object)
-	 (make-slad-bundle (f (slad-primal object)) (f (slad-tangent object))))
+	((bundle? object)
+	 (make-bundle (f (slad-primal object)) (f (slad-tangent object))))
 	(else
 	 object)))
 
@@ -75,8 +75,8 @@
 	((and (slad-pair? object1) (slad-pair? object2))
 	 (make-slad-pair (f (slad-car object1) (slad-car object2))
 			 (f (slad-cdr object1) (slad-cdr object2))))
-	((and (slad-bundle? object1) (slad-bundle? object2))
-	 (make-slad-bundle
+	((and (bundle? object1) (bundle? object2))
+	 (make-bundle
 	  (f (slad-primal object1) (slad-primal object2))
 	  (f (slad-tangent object1) (slad-tangent object2))))
 	(else
