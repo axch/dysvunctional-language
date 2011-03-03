@@ -60,22 +60,37 @@
 	      (write (list 'forward (slad-bundle-primal bundle) (slad-bundle-tangent bundle))))))))))
   primal tangent)
 
-(define (object-map f object . objects)
+(define (object-map f object)
   (cond ((closure? object)
 	 (make-closure
-	  (apply expression-map f (closure-exp object) (map closure-exp objects))
-	  (apply f (closure-env object) (map closure-env objects))))
+	  (expression-map f (closure-exp object))
+	  (f (closure-env object))))
 	((env? object)
-	 (apply env-map f object objects))
+	 (env-map f object))
 	((slad-pair? object)
-	 (make-slad-pair (apply f (slad-car object) (map slad-car objects))
-			 (apply f (slad-cdr object) (map slad-cdr objects))))
+	 (make-slad-pair (f (slad-car object)) (f (slad-cdr object))))
 	((slad-bundle? object)
-	 (make-slad-bundle
-	  (apply f (slad-primal object) (map slad-primal objects))
-	  (apply f (slad-tangent object) (map slad-tangent objects))))
+	 (make-slad-bundle (f (slad-primal object)) (f (slad-tangent object))))
 	(else
 	 object)))
+
+(define (congruent-map f object1 object2 lose)
+  (cond ((and (closure? object1) (closure? object2))
+	 (make-closure
+	  ;; TODO lose (not error) if expressions not congruent
+	  (expression-map f (closure-exp object1) (closure-exp object2))
+	  (f (closure-env object1) (closure-env object2))))
+	((and (env? object1) (env? object2))
+	 (env-map f object1 object2))
+	((and (slad-pair? object1) (slad-pair? object2))
+	 (make-slad-pair (f (slad-car object1) (slad-car object2))
+			 (f (slad-cdr object1) (slad-cdr object2))))
+	((and (slad-bundle? object1) (slad-bundle? object2))
+	 (make-slad-bundle
+	  (f (slad-primal object1) (slad-primal object2))
+	  (f (slad-tangent object1) (slad-tangent object2))))
+	(else
+	 (lose))))
 
 (define (expression-map f form . forms)
   (cond ((quoted? form)

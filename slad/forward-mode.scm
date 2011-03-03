@@ -75,8 +75,12 @@
 	;; closure objects.  This is because it does not acutally
 	;; need to make any changes to the closure bodies, except
 	;; maybe to avoid confusing perturbations.
-	(else
-	 (object-map transform-and-perturb object perturbation))))
+	((or (closure? object) (env? object) (slad-pair? object))
+	 (congruent-map transform-and-perturb object perturbation
+          (lambda ()
+	    (error "Object and perturbation are not congruent"))))
+	(else ; trivial tangent space, TODO check congruence
+	 object)))
 
 (define (slad-primal thing)
   (cond ((slad-bundle? thing)
