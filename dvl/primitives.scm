@@ -19,54 +19,50 @@
 (define (add-primitive! primitive)
   (set! *primitives* (cons primitive *primitives*)))
 
-(define (pure-primitive name arity implementation
-			abstract-implementation expand-implementation)
+(define (simple-primitive name arity implementation abstract-implementation)
   (make-primitive name arity
    (lambda (arg world win)
      (win (implementation arg) world))
    (lambda (arg world analysis win)
-     (win (abstract-implementation arg analysis) world))
+     (win (abstract-implementation arg) world))
    (lambda (arg world analysis)
-     (expand-implementation arg analysis))))
+     '())))
 
 ;;; Most primitives fall into a few natural classes:
 
 ;;; Unary numeric primitives just have to handle getting abstract
 ;;; values for arguments (to wit, ABSTRACT-REAL).
 (define (unary-primitive name base abstract-answer)
-  (pure-primitive name 1
+  (simple-primitive name 1
    base
-   (lambda (arg analysis)
+   (lambda (arg)
      (if (abstract-real? arg)
 	 abstract-answer
-	 (base arg)))
-   (lambda (arg analysis) '())))
+	 (base arg)))))
 
 ;;; Binary numeric primitives also have to destructure their input,
 ;;; because the VL system will hand it in as a pair.
 (define (binary-primitive name base abstract-answer)
-  (pure-primitive name 2
+  (simple-primitive name 2
    (lambda (arg)
      (base (car arg) (cdr arg)))
-   (lambda (arg analysis)
+   (lambda (arg)
      (let ((first (car arg))
 	   (second (cdr arg)))
        (if (or (abstract-real? first)
 	       (abstract-real? second))
 	   abstract-answer
-	   (base first second))))
-   (lambda (arg analysis) '())))
+	   (base first second))))))
 
 ;;; Type predicates need to take care to respect the possible abstract
 ;;; types.
 (define (primitive-type-predicate name base)
-  (pure-primitive name 1
+  (simple-primitive name 1
    base
-   (lambda (arg analysis)
+   (lambda (arg)
      (if (abstract-real? arg)
 	 (eq? base real?)
-	 (base arg)))
-   (lambda (arg analysis) '())))
+	 (base arg)))))
 
 (define-syntax define-R->R-primitive
   (syntax-rules ()
@@ -137,10 +133,9 @@
 (define read-real read)
 
 (add-primitive!
- (pure-primitive 'read-real 0
-  (lambda (arg world win) (read-real))
-  (lambda (arg analysis) abstract-real)
-  (lambda (arg analysis) '())))
+ (simple-primitive 'read-real 0
+  (lambda (arg) (read-real))
+  (lambda (arg) abstract-real)))
 
 (define (write-real x)
   (write x)
@@ -148,10 +143,9 @@
   x)
 
 (add-primitive!
- (pure-primitive 'write-real 1
+ (simple-primitive 'write-real 1
   write-real
-  (lambda (arg analysis) arg)
-  (lambda (arg analysis) '())))
+  (lambda (arg) arg)))
 
 ;;; We need a mechanism to introduce imprecision into the analysis.
 
@@ -167,13 +161,12 @@
 ;;; was computed.
 
 (add-primitive!
- (pure-primitive 'real 1
+ (simple-primitive 'real 1
   real
-  (lambda (x analysis)
+  (lambda (x)
     (cond ((abstract-real? x) abstract-real)
 	  ((number? x) abstract-real)
-	  (else (error "A known non-real is declared real" x))))
-  (lambda (arg analysis) '())))
+	  (else (error "A known non-real is declared real" x))))))
 
 ;;; IF-PROCEDURE is special because it is the only primitive that
 ;;; accepts VL closures as arguments and invokes them internally.
@@ -258,10 +251,10 @@
   (= (gensym-number gensym1) (gensym-number gensym2)))
 
 (define gensym=-primitive
-  (pure-primitive 'gensym= 2
+  (simple-primitive 'gensym= 2
    (lambda (arg)
      (gensym= (car arg) (cdr arg)))
-   (lambda (arg analysis)
+   (lambda (arg)
      (let ((first (car arg))
 	   (second (cdr arg)))
        (let ((first-low   (abstract-gensym-min first))
@@ -275,8 +268,7 @@
 	       ((> first-low second-high)
 		#f)
 	       (else
-		abstract-boolean)))))
-   (lambda (arg analysis) '())))
+		abstract-boolean)))))))
 (add-primitive! gensym=-primitive)
 
 (define (initial-user-env)
