@@ -99,7 +99,7 @@
 ;;; Union of shapes --- can be either this or that.  ABSTRACT-UNION is
 ;;; only used on the return values of IF statements.
 
-(define (abstract-union thing1 thing2 #!optional lose)
+(define (abstract-union thing1 thing2)
   (cond ((abstract-equal? thing1 thing2)
 	 thing1)
 	((abstract-none? thing1)
@@ -129,9 +129,7 @@
 	  (min (abstract-gensym-min thing1) (abstract-gensym-min thing2))
 	  (max (abstract-gensym-max thing1) (abstract-gensym-max thing2))))
 	(else
-	 (if (default-object? lose)
-	     (error "This program is not union-free:" thing1 thing2)
-	     (lose)))))
+	 (error "This program is not union-free:" thing1 thing2))))
 ;;;; Things the code generator wants to know about abstract values
 
 ;;; Is this shape completely determined by the analysis?
