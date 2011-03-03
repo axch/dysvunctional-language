@@ -27,8 +27,8 @@
 		    (extend-env (closure-formal proc)
 				arg
 				(closure-env proc))))
-	((slad-primitive? proc)
-	 ((slad-primitive-implementation proc) arg))
+	((primitive? proc)
+	 ((primitive-implementation proc) arg))
 	(else
 	 (error "Invalid procedure type" proc arg))))
 

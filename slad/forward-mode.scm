@@ -55,7 +55,7 @@
   ;; exactly the same type and shape as the original object.
   (cond ((forward-transform-known? object)
 	 ((get-forward-transform object) perturbation))
-	((slad-primitive? object)
+	((primitive? object)
 	 (error "Cannot transform primitives whose transforms are not known"
 		object perturbation))
 	((slad-real? object)

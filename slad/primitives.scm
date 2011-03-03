@@ -1,12 +1,12 @@
 (declare (usual-integrations))
 
 (define-structure
-  (slad-primitive
+  (primitive
    safe-accessors
    (print-procedure
-    (simple-unparser-method 'slad-primitive
+    (simple-unparser-method 'primitive
      (lambda (prim)
-       (list (slad-primitive-name prim))))))
+       (list (primitive-name prim))))))
   name
   implementation)
 
@@ -16,11 +16,11 @@
   (set! *primitives* (cons primitive *primitives*)))
 
 (define (unary-primitive name proc)
-  (add-primitive! (make-slad-primitive name proc)))
+  (add-primitive! (make-primitive name proc)))
 
 (define (binary-primitive name proc)
   (add-primitive!
-   (make-slad-primitive name (lambda (arg)
+   (make-primitive name (lambda (arg)
 			       (proc (slad-car arg) (slad-cdr arg))))))
 
 (define-syntax define-unary-primitive
@@ -49,7 +49,7 @@
 (define-unary-primitive pair?)
 
 (define (slad-procedure? thing)
-  (or (slad-primitive? thing)
+  (or (primitive? thing)
       (closure? thing)))
 
 (unary-primitive 'procedure? slad-procedure?)
@@ -74,7 +74,7 @@
 	(slad-apply c '())
 	(slad-apply a '()))))
 
-(add-primitive! (make-slad-primitive 'if-procedure slad-if-procedure))
+(add-primitive! (make-primitive 'if-procedure slad-if-procedure))
 
 (define (slad-write thing)
   (write thing)
@@ -197,7 +197,7 @@
   (let ((answer
 	 (make-env
 	  (map (lambda (primitive)
-		 (cons (slad-primitive-name primitive) primitive))
+		 (cons (primitive-name primitive) primitive))
 	       *primitives*))))
     (for-each (lambda (name)
 		(set-forward-transform!
