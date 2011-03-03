@@ -206,31 +206,14 @@
 	  (impossible-world? old-world))
       thing
       (let loop ((thing thing))
-	(cond ((null? thing) thing)
-	      ((boolean? thing) thing)
-	      ((real? thing) thing)
-	      ((abstract-boolean? thing) thing)
-	      ((abstract-real? thing) thing)
-	      ((abstract-none? thing) thing)
-	      ((primitive? thing) thing)
-	      ((closure? thing)
-	       (make-closure
-		(closure-exp thing)
-		(loop (closure-env thing))))
-	      ((pair? thing) (make-dvl-pair (loop (car thing))
-					    (loop (cdr thing))))
-	      ((env? thing)
-	       (make-env (map cons
-			      (map car (env-bindings thing))
-			      (map loop (map cdr (env-bindings thing))))))
-	      ((eq? the-abstract-gensym thing) thing)
+	(cond ((eq? the-abstract-gensym thing) thing)
 	      ((abstract-gensym? thing)
 	       (let ((difference
 		      (- (world-gensym new-world) (world-gensym old-world))))
 		 (make-abstract-gensym
 		  (+ (abstract-gensym-min thing) difference)
 		  (+ (abstract-gensym-max thing) difference))))
-	      (else (error "Invalid abstract value" thing))))))
+	      (else (object-map loop thing))))))
 
 (define (world-update-world updatee old-world new-world)
   (if (or (impossible-world? new-world)
