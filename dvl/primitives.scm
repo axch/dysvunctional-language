@@ -222,7 +222,7 @@
   ;; N.B. ABSTRACT-RESULT-IN-WORLD only exists because of the way I'm doing IF.
   (refine-apply thunk-shape '() world analysis win))
 
-(define (simple-abstract-result-of thunk-shape analysis)
+(define (abstract-result-of thunk-shape analysis)
   (abstract-result-in-world thunk-shape (initial-dvl-world) analysis
    (lambda (value world) value)))
 

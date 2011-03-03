@@ -115,7 +115,7 @@
   (define (if-procedure-expression-alternate exp)
     (caddr (caddr (cadr exp))))
   (define (generate-if-branch invokee-shape branch-exp)
-    (let ((answer-shape (simple-abstract-result-of invokee-shape analysis)))
+    (let ((answer-shape (abstract-result-of invokee-shape analysis)))
       (if (solved-abstractly? answer-shape)
 	  (solved-abstract-value->constant answer-shape)
 	  (generate-closure-application
