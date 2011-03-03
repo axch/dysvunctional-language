@@ -63,9 +63,7 @@
 (define (object-map f object . objects)
   (cond ((closure? object)
 	 (make-closure
-	  (make-lambda-form
-	   (closure-formal object)
-	   (apply expression-map f (closure-body object) (map closure-body objects)))
+	  (apply expression-map f (closure-exp object) (map closure-exp objects))
 	  (apply f (closure-env object) (map closure-env objects))))
 	((env? object)
 	 (apply env-map f object objects))
