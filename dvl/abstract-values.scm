@@ -168,20 +168,11 @@
 	(else (error "shape->type-declaration loses!" thing))))
 
 (define (depends-on-world? thing)
-  (cond ((null? thing) #f)
-	((boolean? thing) #f)
-	((real? thing) #f)
-	((abstract-boolean? thing) #f)
-	((abstract-real? thing) #f)
-	((abstract-none? thing) #f)
-	((primitive? thing) #f)
-	((closure? thing) (depends-on-world? (closure-env thing)))
-	((pair? thing) (or (depends-on-world? (car thing))
-			   (depends-on-world? (cdr thing))))
-	((env? thing)
-	 (any depends-on-world? (map cdr (env-bindings thing))))
-	((abstract-gensym? thing) #t)
-	(else (error "Invalid abstract value" thing))))
+  (cond ((abstract-gensym? thing) #t)
+	(else
+	 (object-reduce
+	  (lambda (lst) (any depends-on-world? lst))
+	  thing))))
 
 (define (world-update-value thing old-world new-world)
   (if (or (impossible-world? new-world)
