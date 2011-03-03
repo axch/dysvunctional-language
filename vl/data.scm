@@ -46,22 +46,6 @@
 (define (make-closure exp env)
   (let ((free (free-variables exp)))
     (%make-closure exp free (env-slice env free))))
-
-;;;; "Foreign Interface"
-;;; such as it is
-
-(define (vl-value->scheme-value thing)
-  (cond ((pair? thing)
-	 (cons (vl-value->scheme-value (car thing))
-	       (vl-value->scheme-value (cdr thing))))
-	((closure? thing)
-	 (lambda args
-	   (concrete-apply thing (map scheme-value->vl-value args))))
-	(else
-	 thing)))
-
-(define (scheme-value->vl-value thing)
-  thing)
 
 (define (congruent-map f object1 object2 lose)
   (cond ((and (closure? object1) (closure? object2)

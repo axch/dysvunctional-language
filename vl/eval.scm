@@ -5,8 +5,6 @@
 ;;; inside).  CONS is a special form.  LAMBDA and CONS are the only
 ;;; non-macro special forms.  IF macroexpands into the only primitive
 ;;; procedure that accepts and calls VL procedures as arguments.
-;;; VL-VALUE->SCHEME-VALUE suffices to let it work its magic properly
-;;; in the concrete evaluator.
 
 (define (concrete-eval exp env)
   (cond ((constant? exp) (constant-value exp))
