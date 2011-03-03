@@ -28,7 +28,7 @@
    "abstract-values"
    "abstract-eval"
    "../vl/nomenclature"
-   "code-generator"
+   "../vl/code-generator"
    "primitives"
    "../vl/output-syntax"
    "../vl/post-processing"
