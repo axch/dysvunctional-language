@@ -54,6 +54,8 @@
 (define (trivial-abstract-gensym gensym)
   (make-abstract-gensym (gensym-number gensym) (gensym-number gensym)))
 
+(define the-abstract-gensym (make-abstract-gensym #f #f))
+
 ;;; Equality of shapes
 
 (define (abstract-equal? thing1 thing2)
@@ -186,3 +188,34 @@
        (+ (world-gensym updatee)
 	  (- (world-gensym new-world)
 	     (world-gensym old-world))))))
+
+(define (broaden-abstract-gensysms thing)
+  (cond ((analysis? thing)
+	 (make-analysis
+	  (map broaden-abstract-gensysms (analysis-bindings thing))))
+	((binding? thing)
+	 (make-binding (binding-exp thing)
+		       (broaden-abstract-gensysms (binding-env thing))
+		       (binding-world thing)
+		       (broaden-abstract-gensysms (binding-value thing))
+		       (binding-new-world thing)))
+	((null? thing) thing)
+	((boolean? thing) thing)
+	((real? thing) thing)
+	((abstract-boolean? thing) thing)
+	((abstract-real? thing) thing)
+	((abstract-none? thing) thing)
+	((primitive? thing) thing)
+	((closure? thing)
+	 (make-closure
+	  (closure-exp thing)
+	  (broaden-abstract-gensysms (closure-env thing))))
+	((pair? thing) (cons (broaden-abstract-gensysms (car thing))
+			     (broaden-abstract-gensysms (cdr thing))))
+	((env? thing)
+	 (make-env (map cons
+			(map car (env-bindings thing))
+			(map broaden-abstract-gensysms (map cdr (env-bindings thing))))))
+	((abstract-gensym? thing)
+	 the-abstract-gensym)
+	(else (error "Invalid abstract value" thing))))
