@@ -15,16 +15,12 @@
 	(lose)
 	(if (and (equal? exp (binding-exp (car bindings)))
 		 (abstract-equal? env (binding-env (car bindings))))
-	    (win (binding-value (car bindings)))
+	    (win (car bindings))
 	    (loop (cdr bindings))))))
 
 ;;; ANALYSIS-GET is \bar E_1 from [1].
 (define (analysis-get exp env analysis)
-  (analysis-search exp env analysis
-   (lambda (value)
-     value)
-   (lambda ()
-     abstract-none)))
+  (analysis-search exp env analysis binding-value (lambda () abstract-none)))
 
 ;;; EXPAND-ANALYSIS is \bar E_1' from [1].
 ;;; It registers interest in the evaluation of EXP in ENV by producing
@@ -33,7 +29,7 @@
 ;;; question.
 (define (analysis-expand exp env analysis)
   (analysis-search exp env analysis
-   (lambda (value)
+   (lambda (binding)
      '())
    (lambda ()
      (list (make-binding exp env abstract-none)))))
