@@ -41,16 +41,15 @@
 
 (define dvl-real? real?)
 
-(define (object-map f object . objects)
+(define (object-map f object)
   (cond ((closure? object)
 	 (make-closure
-	  (apply expression-map f (closure-exp object) (map closure-exp objects))
-	  (apply f (closure-env object) (map closure-env objects))))
+	  (apply expression-map f (closure-exp object))
+	  (f (closure-env object))))
 	((env? object)
-	 (apply env-map f object objects))
+	 (env-map f object))
 	((dvl-pair? object)
-	 (make-dvl-pair (apply f (dvl-car object) (map dvl-car objects))
-			(apply f (dvl-cdr object) (map dvl-cdr objects))))
+	 (make-dvl-pair (f (dvl-car object)) (f (dvl-cdr object))))
 	(else
 	 object)))
 
