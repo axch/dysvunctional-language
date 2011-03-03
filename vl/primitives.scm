@@ -181,7 +181,9 @@
 (define primitive-if
   (make-primitive 'if-procedure 3
    (lambda (arg)
-     (if-procedure (car arg) (cadr arg) (cddr arg)))
+     (if (car arg)
+	 (concrete-apply (cadr arg) '())
+	 (concrete-apply (cddr arg) '())))
    (lambda (shape analysis)
      (let ((predicate (car shape)))
        (if (not (abstract-boolean? predicate))

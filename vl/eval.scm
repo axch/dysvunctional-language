@@ -34,7 +34,7 @@
 	 (error "Invalid procedure type" proc))))
 
 (define (apply-primitive proc arg)
-  ((primitive-implementation proc) (vl-value->scheme-value arg)))
+  ((primitive-implementation proc) arg))
 
 (define (vl-eval form)
   (concrete-eval (macroexpand form) (initial-vl-user-env)))
