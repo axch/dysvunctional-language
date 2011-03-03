@@ -2,8 +2,6 @@
 
 (define make-slad-pair cons)
 (define slad-pair? pair?)
-(define slad-car car)
-(define slad-cdr cdr)
 (define slad-empty-list? null?)
 
 (define-structure
@@ -56,7 +54,7 @@
 	((env? object)
 	 (env-map f object))
 	((slad-pair? object)
-	 (make-slad-pair (f (slad-car object)) (f (slad-cdr object))))
+	 (make-slad-pair (f (car object)) (f (cdr object))))
 	((bundle? object)
 	 (make-bundle (f (primal object)) (f (tangent object))))
 	(else
@@ -71,8 +69,8 @@
 	((and (env? object1) (env? object2))
 	 (congruent-env-map f object1 object2 lose))
 	((and (slad-pair? object1) (slad-pair? object2))
-	 (make-slad-pair (f (slad-car object1) (slad-car object2))
-			 (f (slad-cdr object1) (slad-cdr object2))))
+	 (make-slad-pair (f (car object1) (car object2))
+			 (f (cdr object1) (cdr object2))))
 	((and (bundle? object1) (bundle? object2))
 	 (make-bundle
 	  (f (primal object1) (primal object2))

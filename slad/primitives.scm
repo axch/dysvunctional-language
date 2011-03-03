@@ -21,7 +21,7 @@
 (define (binary-primitive name proc)
   (add-primitive!
    (make-primitive name (lambda (arg)
-			       (proc (slad-car arg) (slad-cdr arg))))))
+			  (proc (car arg) (cdr arg))))))
 
 (define-syntax define-unary-primitive
   (syntax-rules ()
