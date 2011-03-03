@@ -62,3 +62,43 @@
 
 (define (scheme-value->vl-value thing)
   thing)
+
+(define (congruent-map f object1 object2 lose)
+  (cond ((and (closure? object1) (closure? object2)
+	      (equal? (closure-exp object1) (closure-exp object2)))
+	 (make-closure
+	  (closure-exp object1)
+	  (f (closure-env object1) (closure-env object2))))
+	((and (env? object1) (env? object2))
+	 (congruent-env-map f object1 object2 lose))
+	((and (dvl-pair? object1) (dvl-pair? object2))
+	 (make-dvl-pair (f (dvl-car object1) (dvl-car object2))
+			(f (dvl-cdr object1) (dvl-cdr object2))))
+	(else
+	 (lose))))
+
+(define (object-reduce reducer object)
+  (cond ((closure? object)
+	 (reducer (list (closure-env object))))
+	((env? object)
+	 (reducer (map cdr (env-bindings object))))
+	((dvl-pair? object)
+	 (reducer (list (dvl-car object) (dvl-cdr object))))
+	(else
+	 (reducer '()))))
+
+(define (congruent-reduce reducer object1 object2 lose)
+  (cond ((and (closure? object1) (closure? object2)
+	      (equal? (closure-exp object1) (closure-exp object2)))
+	 (reducer (list (closure-env object1))
+		  (list (closure-env object2))))
+	((and (env? object1) (env? object2)
+	      (equal? (map car (env-bindings object1))
+		      (map car (env-bindings object2))))
+	 (reducer (map cdr (env-bindings object1))
+		  (map cdr (env-bindings object2))))
+	((and (dvl-pair? object1) (dvl-pair? object2))
+	 (reducer (list (dvl-car object1) (dvl-cdr object1))
+		  (list (dvl-car object2) (dvl-cdr object2))))
+	(else
+	 (lose))))
