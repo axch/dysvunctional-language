@@ -59,22 +59,14 @@
 (define (abstract-equal? thing1 thing2)
   (cond ((eqv? thing1 thing2)
 	 #t)
-	((and (closure? thing1) (closure? thing2))
-	 (and ;; TODO alpha-renaming?
-	      (equal? (closure-exp thing1)
-		      (closure-exp thing2))
-	      (abstract-equal? (closure-env thing1)
-			       (closure-env thing2))))
-	((and (pair? thing1) (pair? thing2))
-	 (and (abstract-equal? (car thing1) (car thing2))
-	      (abstract-equal? (cdr thing1) (cdr thing2))))
-	((and (env? thing1) (env? thing2))
-	 (abstract-equal? (env-bindings thing1)
-			  (env-bindings thing2)))
 	((and (abstract-gensym? thing1) (abstract-gensym? thing2))
 	 (and (= (abstract-gensym-min thing1) (abstract-gensym-min thing2))
 	      (= (abstract-gensym-max thing1) (abstract-gensym-max thing2))))
-	(else #f)))
+	(else (congruent-reduce
+	       (lambda (lst1 lst2) (every abstract-equal? lst1 lst2))
+	       thing1
+	       thing2
+	       (lambda () #f)))))
 
 (define (abstract-hash-mod thing modulus)
   (let loop ((thing thing))

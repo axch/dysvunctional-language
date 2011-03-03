@@ -78,6 +78,22 @@
 	(else
 	 (reducer '()))))
 
+(define (congruent-reduce reducer object1 object2 lose)
+  (cond ((and (closure? object1) (closure? object2)
+	      (equal? (closure-exp object1) (closure-exp object2)))
+	 (reducer (list (closure-env object1))
+		  (list (closure-env object2))))
+	((and (env? object1) (env? object2)
+	      (equal? (map car (env-bindings object1))
+		      (map car (env-bindings object2))))
+	 (reducer (map cdr (env-bindings object1))
+		  (map cdr (env-bindings object2))))
+	((and (dvl-pair? object1) (dvl-pair? object2))
+	 (reducer (list (dvl-car object1) (dvl-cdr object1))
+		  (list (dvl-car object2) (dvl-cdr object2))))
+	(else
+	 (lose))))
+
 (define (expression-map f form . forms)
   (cond ((quoted? form)
 	 `(quote ,(apply f (cadr form) (map cadr forms))))
