@@ -1,19 +1,4 @@
 (declare (usual-integrations))
-;;;; Free variables
-
-(define (free-variables exp)
-  (cond ((variable? exp) (list exp))
-	((lambda-form? exp)
-	 (lset-difference equal? (free-variables (lambda-body exp))
-			  (free-variables (lambda-formal exp))))
-	((pair-form? exp)
-	 (lset-union equal? (free-variables (car-subform exp))
-		     (free-variables (cdr-subform exp))))
-	((pair? exp) ; Not application? to handle formals lists
-	 (lset-union equal? (free-variables (car exp))
-		     (free-variables (cdr exp))))
-	(else '())))
-
 ;;;; Closures
 
 (define-structure
@@ -86,3 +71,18 @@
 		  (list (car object2) (cdr object2))))
 	(else
 	 (lose))))
+
+;;;; Free variables
+
+(define (free-variables exp)
+  (cond ((variable? exp) (list exp))
+	((lambda-form? exp)
+	 (lset-difference equal? (free-variables (lambda-body exp))
+			  (free-variables (lambda-formal exp))))
+	((pair-form? exp)
+	 (lset-union equal? (free-variables (car-subform exp))
+		     (free-variables (cdr-subform exp))))
+	((pair? exp) ; Not application? to handle formals lists
+	 (lset-union equal? (free-variables (car exp))
+		     (free-variables (cdr exp))))
+	(else '())))
