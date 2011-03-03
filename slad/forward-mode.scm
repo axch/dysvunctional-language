@@ -58,7 +58,7 @@
 	((primitive? object)
 	 (error "Cannot transform primitives whose transforms are not known"
 		object perturbation))
-	((slad-real? object)
+	((real? object)
 	 (make-bundle object perturbation))
 	((bundle? object)
 	 ;; This interleaves new perturbations into existing bundles.
@@ -87,7 +87,7 @@
 	 (bundle-primal thing))
 	((primal-cached? thing)
 	 (cached-primal thing))
-	((slad-real? thing)
+	((real? thing)
 	 (error "Cannot take the primal of a non-bundle" thing))
 	(else
 	 (object-map primal thing))))
@@ -97,13 +97,13 @@
 	 (bundle-tangent thing))
 	((tangent-cached? thing)
 	 (cached-tangent thing))
-	((slad-real? thing)
+	((real? thing)
 	 (error "Cannot take the tangent of a non-bundle" thing))
 	(else
 	 (object-map tangent thing))))
 
 (define (zero object)
-  (cond ((slad-real? object)
+  (cond ((real? object)
 	 0)
 	(else
 	 (object-map zero object))))

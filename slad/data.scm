@@ -36,8 +36,6 @@
   (let ((free (free-variables exp)))
     (%make-closure exp (env-slice env free))))
 
-(define slad-real? real?)
-
 (define-structure
   (bundle
    safe-accessors
