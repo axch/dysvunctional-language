@@ -45,7 +45,7 @@
 ;;;   (bundle_2 (bundle_1 foo bar) (bundle_1 baz quux)).
 
 ;;; Complementary to TRANSFORM-AND-PERTURB are three other
-;;; bundle-manipulation procedures: PRIMAL, SLAD-TANGENT, and
+;;; bundle-manipulation procedures: PRIMAL, TANGENT, and
 ;;; ZERO.  The first two extract their respective components of
 ;;; bundles (untransforming procedures along the way), and the third
 ;;; constructs the zero of the perturbation space of its argument.
@@ -69,8 +69,8 @@
 	 #;(make-bundle
 	  (transform-and-perturb (primal object)
 				 (primal perturbation))
-	  (transform-and-perturb (slad-tangent object)
-				 (slad-tangent perturbation))))
+	  (transform-and-perturb (tangent object)
+				 (tangent perturbation))))
 	;; Notably, forward mode relegates to object-map for
 	;; closure objects.  This is because it does not acutally
 	;; need to make any changes to the closure bodies, except
@@ -92,7 +92,7 @@
 	(else
 	 (object-map primal thing))))
 
-(define (slad-tangent thing)
+(define (tangent thing)
   (cond ((bundle? thing)
 	 (bundle-tangent thing))
 	((tangent-cached? thing)
@@ -100,7 +100,7 @@
 	((slad-real? thing)
 	 (error "Cannot take the tangent of a non-bundle" thing))
 	(else
-	 (object-map slad-tangent thing))))
+	 (object-map tangent thing))))
 
 (define (zero object)
   (cond ((slad-real? object)

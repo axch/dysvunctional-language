@@ -91,7 +91,7 @@
 (define-unary-primitive zero)
 (binary-primitive 'bundle transform-and-perturb)
 (unary-primitive 'primal primal)
-(unary-primitive 'tangent slad-tangent)
+(unary-primitive 'tangent tangent)
 (unary-primitive 'forward? bundle?)
 
 
