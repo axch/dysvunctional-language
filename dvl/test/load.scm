@@ -56,4 +56,22 @@
 	       '(let ((x (gensym))) (gensym= x (if (> (real 2) (real 1)) x (gensym))))))
    (equal? #f (eval-through-scheme
 	       '(let ((x (gensym))) (gensym= x (if (< (real 2) (real 1)) x (gensym))))))
-   ))
+   )
+
+ (with-input-from-file "../vl/examples.scm"
+   (lambda ()
+     (let loop ((program (read)))
+       (if (not (eof-object? program))
+	   (begin (define-test
+		    ;; Check that dvl-eval and compile-to-scheme agree
+		    (eval-through-scheme program))
+		  (loop (read)))))))
+
+ (with-input-from-file "../vl/test/test-vl-programs.scm"
+   (lambda ()
+     (let loop ((program (read)))
+       (if (not (eof-object? program))
+	   (begin (define-test
+		    ;; Check that dvl-eval and compile-to-scheme agree
+		    (eval-through-scheme program))
+		  (loop (read))))))))
