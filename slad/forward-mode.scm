@@ -75,7 +75,7 @@
 	;; closure objects.  This is because it does not acutally
 	;; need to make any changes to the closure bodies, except
 	;; maybe to avoid confusing perturbations.
-	((or (closure? object) (env? object) (slad-pair? object))
+	((or (closure? object) (env? object) (pair? object))
 	 (congruent-map transform-and-perturb object perturbation
           (lambda ()
 	    (error "Object and perturbation are not congruent"))))

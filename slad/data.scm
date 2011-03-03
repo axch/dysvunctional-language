@@ -1,9 +1,5 @@
 (declare (usual-integrations))
 
-(define make-slad-pair cons)
-(define slad-pair? pair?)
-(define slad-empty-list? null?)
-
 (define-structure
   (closure
    safe-accessors
@@ -53,8 +49,8 @@
 	  (f (closure-env object))))
 	((env? object)
 	 (env-map f object))
-	((slad-pair? object)
-	 (make-slad-pair (f (car object)) (f (cdr object))))
+	((pair? object)
+	 (cons (f (car object)) (f (cdr object))))
 	((bundle? object)
 	 (make-bundle (f (primal object)) (f (tangent object))))
 	(else
@@ -68,9 +64,9 @@
 	  (f (closure-env object1) (closure-env object2))))
 	((and (env? object1) (env? object2))
 	 (congruent-env-map f object1 object2 lose))
-	((and (slad-pair? object1) (slad-pair? object2))
-	 (make-slad-pair (f (car object1) (car object2))
-			 (f (cdr object1) (cdr object2))))
+	((and (pair? object1) (pair? object2))
+	 (cons (f (car object1) (car object2))
+	       (f (cdr object1) (cdr object2))))
 	((and (bundle? object1) (bundle? object2))
 	 (make-bundle
 	  (f (primal object1) (primal object2))
