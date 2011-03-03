@@ -291,14 +291,13 @@
   (initialize-name-caches!)
   (if (default-object? emit-type-declarations?)
       (set! emit-type-declarations? #f))
-  (let ((analysis (broaden-abstract-gensysms analysis)))
-    `(begin ,@(type-declaration-macro emit-type-declarations?)
-	    ,@(structure-definitions analysis)
-	    ,@(procedure-definitions analysis emit-type-declarations?)
-	    ,(compile (macroexpand program)
-		      (initial-dvl-user-env)
-		      #f
-		      analysis))))
+  `(begin ,@(type-declaration-macro emit-type-declarations?)
+	  ,@(structure-definitions analysis)
+	  ,@(procedure-definitions analysis emit-type-declarations?)
+	  ,(compile (macroexpand program)
+		    (initial-dvl-user-env)
+		    #f
+		    analysis)))
 
 (define (analyze-and-generate program)
   (generate program (analyze program)))
