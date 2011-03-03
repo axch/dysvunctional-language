@@ -71,18 +71,19 @@
 	(lose)
 	(if (and (equal? exp (binding-exp (car bindings)))
 		 (abstract-equal? env (binding-env (car bindings))))
-	    (win (world-update-value
-		  (binding-value (car bindings))
-		  world (binding-world (car bindings)))
-		 (world-update-world
-		  (binding-new-world (car bindings))
-		  world (binding-world (car bindings))))
+	    (win (car bindings))
 	    (loop (cdr bindings))))))
 
 ;;; ANALYSIS-GET is \bar E_1 from [1].
 (define (analysis-get exp env world analysis win)
   (analysis-search exp env world analysis
-   win
+   (lambda (binding)
+     (win (world-update-value
+	   (binding-value binding)
+	   world (binding-world binding))
+	  (world-update-world
+	   (binding-new-world binding)
+	   world (binding-world binding))))
    (lambda ()
      (win abstract-none impossible-world))))
 
@@ -97,10 +98,15 @@
 ;;; question.
 (define (analysis-expand exp env world analysis win)
   (analysis-search exp env world analysis
-   (lambda (value world)
-     (if (abstract-none? value)
+   (lambda (binding)
+     (if (abstract-none? (binding-value binding))
 	 '()
-	 (win value world)))
+	 (win (world-update-value
+	       (binding-value binding)
+	       world (binding-world binding))
+	      (world-update-world
+	       (binding-new-world binding)
+	       world (binding-world binding)))))
    (lambda ()
      (list (make-binding exp env world abstract-none impossible-world)))))
 
