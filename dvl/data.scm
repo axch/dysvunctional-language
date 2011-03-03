@@ -68,6 +68,16 @@
 	(else
 	 (lose))))
 
+(define (object-reduce reducer object)
+  (cond ((closure? object)
+	 (reducer (list (closure-env object))))
+	((env? object)
+	 (reducer (map cdr (env-bindings object))))
+	((dvl-pair? object)
+	 (reducer (list (dvl-car object) (dvl-cdr object))))
+	(else
+	 (reducer '()))))
+
 (define (expression-map f form . forms)
   (cond ((quoted? form)
 	 `(quote ,(apply f (cadr form) (map cadr forms))))

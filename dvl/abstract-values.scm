@@ -122,20 +122,14 @@
 
 ;;; Is this shape completely determined by the analysis?
 (define (solved-abstractly? thing)
-  (cond ((null? thing) #t)
-	((boolean? thing) #t)
-	((real? thing) #t)
-	((abstract-boolean? thing) #f)
+  (cond ((abstract-boolean? thing) #f)
 	((abstract-real? thing) #f)
 	((abstract-none? thing) #f)
-	((primitive? thing) #t)
-	((closure? thing) (solved-abstractly? (closure-env thing)))
-	((pair? thing) (and (solved-abstractly? (car thing))
-			    (solved-abstractly? (cdr thing))))
-	((env? thing)
-	 (every solved-abstractly? (map cdr (env-bindings thing))))
 	((abstract-gensym? thing) #f)
-	(else (error "Invalid abstract value" thing))))
+	(else
+	 (object-reduce
+	  (lambda (lst) (every solved-abstractly? lst))
+	  thing))))
 
 ;;; If so, what's the Scheme code to make that value?
 (define (solved-abstract-value->constant thing)
