@@ -95,12 +95,6 @@
 
 (define make-abstract-hash-table
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #t))
-
-(define (abstract-value-superset? thing1 thing2)
-  (let ((unique (list 'unique))
-	(union (abstract-union thing1 thing2 (lambda () unique))))
-    (and (not (eq? unique union))
-	 (abstract-equal? thing1 union))))
 
 ;;; Union of shapes --- can be either this or that.  ABSTRACT-UNION is
 ;;; only used on the return values of IF statements.
