@@ -45,7 +45,7 @@
 ;;;   (bundle_2 (bundle_1 foo bar) (bundle_1 baz quux)).
 
 ;;; Complementary to TRANSFORM-AND-PERTURB are three other
-;;; bundle-manipulation procedures: SLAD-PRIMAL, SLAD-TANGENT, and
+;;; bundle-manipulation procedures: PRIMAL, SLAD-TANGENT, and
 ;;; ZERO.  The first two extract their respective components of
 ;;; bundles (untransforming procedures along the way), and the third
 ;;; constructs the zero of the perturbation space of its argument.
@@ -67,8 +67,8 @@
 	 ;; TODO Which way? Cons or interleave? This has to agree with
 	 ;; the access pattern to avoid perturbation confusion.
 	 #;(make-bundle
-	  (transform-and-perturb (slad-primal object)
-				 (slad-primal perturbation))
+	  (transform-and-perturb (primal object)
+				 (primal perturbation))
 	  (transform-and-perturb (slad-tangent object)
 				 (slad-tangent perturbation))))
 	;; Notably, forward mode relegates to object-map for
@@ -82,7 +82,7 @@
 	(else ; trivial tangent space, TODO check congruence
 	 object)))
 
-(define (slad-primal thing)
+(define (primal thing)
   (cond ((bundle? thing)
 	 (bundle-primal thing))
 	((primal-cached? thing)
@@ -90,7 +90,7 @@
 	((slad-real? thing)
 	 (error "Cannot take the primal of a non-bundle" thing))
 	(else
-	 (object-map slad-primal thing))))
+	 (object-map primal thing))))
 
 (define (slad-tangent thing)
   (cond ((bundle? thing)

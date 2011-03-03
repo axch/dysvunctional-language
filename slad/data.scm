@@ -60,7 +60,7 @@
 	((slad-pair? object)
 	 (make-slad-pair (f (slad-car object)) (f (slad-cdr object))))
 	((bundle? object)
-	 (make-bundle (f (slad-primal object)) (f (slad-tangent object))))
+	 (make-bundle (f (primal object)) (f (slad-tangent object))))
 	(else
 	 object)))
 
@@ -77,7 +77,7 @@
 			 (f (slad-cdr object1) (slad-cdr object2))))
 	((and (bundle? object1) (bundle? object2))
 	 (make-bundle
-	  (f (slad-primal object1) (slad-primal object2))
+	  (f (primal object1) (primal object2))
 	  (f (slad-tangent object1) (slad-tangent object2))))
 	(else
 	 (lose))))
