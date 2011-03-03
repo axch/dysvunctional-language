@@ -1,5 +1,15 @@
 (declare (usual-integrations))
 
+(define-structure
+  (slad-primitive
+   safe-accessors
+   (print-procedure
+    (simple-unparser-method 'slad-primitive
+     (lambda (prim)
+       (list (slad-primitive-name prim))))))
+  name
+  implementation)
+
 (define *primitives* '())
 
 (define (add-primitive! primitive)

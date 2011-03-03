@@ -36,16 +36,6 @@
   (let ((free (free-variables exp)))
     (%make-closure exp (env-slice env free))))
 
-(define-structure
-  (slad-primitive
-   safe-accessors
-   (print-procedure
-    (simple-unparser-method 'slad-primitive
-     (lambda (prim)
-       (list (slad-primitive-name prim))))))
-  name
-  implementation)
-
 (define slad-real? real?)
 
 (define-structure
