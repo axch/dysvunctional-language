@@ -43,9 +43,7 @@
 
 (define (object-map f object)
   (cond ((closure? object)
-	 (make-closure
-	  (apply expression-map f (closure-exp object))
-	  (f (closure-env object))))
+	 (make-closure (closure-exp object) (f (closure-env object))))
 	((env? object)
 	 (env-map f object))
 	((dvl-pair? object)
@@ -92,27 +90,6 @@
 		  (list (dvl-car object2) (dvl-cdr object2))))
 	(else
 	 (lose))))
-
-(define (expression-map f form . forms)
-  (cond ((quoted? form)
-	 `(quote ,(apply f (cadr form) (map cadr forms))))
-	((constant? form)
-	 (apply f form forms))
-	((variable? form) form)
-	((pair-form? form)
-	 (make-pair-form
-	  (apply expression-map f (car-subform form) (map car-subform forms))
-	  (apply expression-map f (cdr-subform form) (map cdr-subform forms))))
-	((lambda-form? form)
-	 (make-lambda-form
-	  (lambda-formal form)
-	  (apply expression-map f (lambda-body form) (map lambda-body forms))))
-	((application? form)
-	 (make-application
-	  (apply expression-map f (operator-subform form) (map operator-subform forms))
-	  (apply expression-map f (operand-subform form) (map operand-subform forms))))
-	(else
-	 (error "Invalid expression type" form forms))))
 
 (define (memoize f)
   (let ((cache (make-eq-hash-table)))

@@ -174,11 +174,6 @@
 		 (make-abstract-gensym
 		  (+ (abstract-gensym-min thing) difference)
 		  (+ (abstract-gensym-max thing) difference))))
-	      ((closure? thing)
-	       ;; Explicitly prevent rebuilding closure exps TODO Fold into map?
-	       (make-closure
-		(closure-exp thing)
-		(loop (closure-env thing))))
 	      (else (object-map loop thing))))))
 
 (define (world-update-world updatee old-world new-world)
