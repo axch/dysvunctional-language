@@ -258,10 +258,10 @@
   (= (gensym-number gensym1) (gensym-number gensym2)))
 
 (define gensym=-primitive
-  (make-primitive 'gensym= 2
-   (lambda (arg world win)
-     (win (gensym= (car arg) (cdr arg)) world))
-   (lambda (arg world analysis win)
+  (pure-primitive 'gensym= 2
+   (lambda (arg)
+     (gensym= (car arg) (cdr arg)))
+   (lambda (arg analysis)
      (let ((first (car arg))
 	   (second (cdr arg)))
        (let ((first-low   (abstract-gensym-min first))
@@ -269,14 +269,14 @@
 	     (second-low  (abstract-gensym-min second))
 	     (second-high (abstract-gensym-max second)))
 	 (cond ((= first-low first-high second-low second-high)
-		(win #t world))
+		#t)
 	       ((< first-high second-low)
-		(win #f world))
+		#f)
 	       ((> first-low second-high)
-		(win #f world))
+		#f)
 	       (else
-		(win abstract-boolean world))))))
-   (lambda (arg world analysis) '())))
+		abstract-boolean)))))
+   (lambda (arg analysis) '())))
 (add-primitive! gensym=-primitive)
 
 (define (initial-user-env)
