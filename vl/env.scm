@@ -60,13 +60,18 @@
 	    (not (member (car binding) variables)))
 	  bindings))
 
-(define (env-map f env . envs)
+(define (env-map f env)
   (make-env
    (map cons
 	(map car (env-bindings env))
-	(apply map
-	       f
-	       (map cdr (env-bindings env))
-	       (map (lambda (env)
-		      (map cdr (env-bindings env)))
-		    envs)))))
+	(map f (map cdr (env-bindings env))))))
+
+(define (congruent-env-map f env1 env2 lose)
+  (let ((names (map car (env-bindings env1))))
+    (if (not (equal? names (map car (env-bindings env2))))
+	(lose)
+	(make-env
+	 (map cons
+	      names
+	      (map f (map cdr (env-bindings env1))
+		   (map cdr (env-bindings env2))))))))

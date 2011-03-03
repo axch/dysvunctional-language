@@ -81,7 +81,7 @@
 	  (expression-map f (closure-exp object1) (closure-exp object2))
 	  (f (closure-env object1) (closure-env object2))))
 	((and (env? object1) (env? object2))
-	 (env-map f object1 object2))
+	 (congruent-env-map f object1 object2 lose))
 	((and (slad-pair? object1) (slad-pair? object2))
 	 (make-slad-pair (f (slad-car object1) (slad-car object2))
 			 (f (slad-cdr object1) (slad-cdr object2))))
