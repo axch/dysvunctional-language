@@ -236,40 +236,38 @@
   (set! *the-gensym* (+ *the-gensym* 1))
   (make-gensym *the-gensym*))
 
-(define gensym-primitive
-  (make-primitive 'gensym 0
-   (lambda (arg world win)
-     (win (current-gensym world) (do-gensym world)))
-   (lambda (arg world analysis win)
-     (win (trivial-abstract-gensym
-	   (current-gensym world))
-	  (do-gensym world)))
-   (lambda (arg world analysis) '())))
-(add-primitive! gensym-primitive)
+(add-primitive!
+ (make-primitive 'gensym 0
+  (lambda (arg world win)
+    (win (current-gensym world) (do-gensym world)))
+  (lambda (arg world analysis win)
+    (win (trivial-abstract-gensym
+	  (current-gensym world))
+	 (do-gensym world)))
+  (lambda (arg world analysis) '())))
 
 (define (gensym= gensym1 gensym2)
   (= (gensym-number gensym1) (gensym-number gensym2)))
 
-(define gensym=-primitive
-  (simple-primitive 'gensym= 2
-   (lambda (arg)
-     (gensym= (car arg) (cdr arg)))
-   (lambda (arg)
-     (let ((first (car arg))
-	   (second (cdr arg)))
-       (let ((first-low   (abstract-gensym-min first))
-	     (first-high  (abstract-gensym-max first))
-	     (second-low  (abstract-gensym-min second))
-	     (second-high (abstract-gensym-max second)))
-	 (cond ((= first-low first-high second-low second-high)
-		#t)
-	       ((< first-high second-low)
-		#f)
-	       ((> first-low second-high)
-		#f)
-	       (else
-		abstract-boolean)))))))
-(add-primitive! gensym=-primitive)
+(add-primitive!
+ (simple-primitive 'gensym= 2
+  (lambda (arg)
+    (gensym= (car arg) (cdr arg)))
+  (lambda (arg)
+    (let ((first (car arg))
+	  (second (cdr arg)))
+      (let ((first-low   (abstract-gensym-min first))
+	    (first-high  (abstract-gensym-max first))
+	    (second-low  (abstract-gensym-min second))
+	    (second-high (abstract-gensym-max second)))
+	(cond ((= first-low first-high second-low second-high)
+	       #t)
+	      ((< first-high second-low)
+	       #f)
+	      ((> first-low second-high)
+	       #f)
+	      (else
+	       abstract-boolean)))))))
 
 (define (initial-user-env)
   (make-env
