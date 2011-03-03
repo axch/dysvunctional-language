@@ -45,28 +45,28 @@
 ;;; Binary numeric primitives also have to destructure their input,
 ;;; because the VL system will hand it in as a pair.
 (define (binary-primitive name base abstract-answer)
-  (make-primitive name 2
-   (lambda (arg world win)
-     (win (base (car arg) (cdr arg)) world))
-   (lambda (arg world analysis win)
+  (pure-primitive name 2
+   (lambda (arg)
+     (base (car arg) (cdr arg)))
+   (lambda (arg analysis)
      (let ((first (car arg))
 	   (second (cdr arg)))
        (if (or (abstract-real? first)
 	       (abstract-real? second))
-	   (win abstract-answer world)
-	   (win (base first second) world))))
-   (lambda (arg world analysis) '())))
+	   abstract-answer
+	   (base first second))))
+   (lambda (arg analysis) '())))
 
 ;;; Type predicates need to take care to respect the possible abstract
 ;;; types.
 (define (primitive-type-predicate name base)
-  (make-primitive name 1
-   (lambda (arg world win) (win (base arg) world))
-   (lambda (arg world analysis win)
+  (pure-primitive name 1
+   base
+   (lambda (arg analysis)
      (if (abstract-real? arg)
-	 (win (eq? base real?) world)
-	 (win (base arg) world)))
-   (lambda (arg world analysis) '())))
+	 (eq? base real?)
+	 (base arg)))
+   (lambda (arg analysis) '())))
 
 (define-syntax define-R->R-primitive
   (syntax-rules ()
@@ -137,10 +137,10 @@
 (define read-real read)
 
 (add-primitive!
- (make-primitive 'read-real 0 
-  (lambda (arg world win) (win (read-real) world))
-  (lambda (x world analysis win) (win abstract-real world))
-  (lambda (arg world analysis) '())))
+ (pure-primitive 'read-real 0
+  (lambda (arg world win) (read-real))
+  (lambda (arg analysis) abstract-real)
+  (lambda (arg analysis) '())))
 
 (define (write-real x)
   (write x)
@@ -148,10 +148,10 @@
   x)
 
 (add-primitive!
- (make-primitive 'write-real 1
-  (lambda (arg world win) (win (write-real x) world))
-  (lambda (x world analysis win) (win x world))
-  (lambda (arg world analysis) '())))
+ (pure-primitive 'write-real 1
+  write-real
+  (lambda (arg analysis) arg)
+  (lambda (arg analysis) '())))
 
 ;;; We need a mechanism to introduce imprecision into the analysis.
 
@@ -167,13 +167,13 @@
 ;;; was computed.
 
 (add-primitive!
- (make-primitive 'real 1
-  (lambda (arg world win) (win (real arg) world))
-  (lambda (x world analysis win)
-    (cond ((abstract-real? x) (win abstract-real world))
-	  ((number? x) (win abstract-real world))
+ (pure-primitive 'real 1
+  real
+  (lambda (x analysis)
+    (cond ((abstract-real? x) abstract-real)
+	  ((number? x) abstract-real)
 	  (else (error "A known non-real is declared real" x))))
-  (lambda (arg world analysis) '())))
+  (lambda (arg analysis) '())))
 
 ;;; IF-PROCEDURE is special because it is the only primitive that
 ;;; accepts VL closures as arguments and invokes them internally.
