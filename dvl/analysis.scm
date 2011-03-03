@@ -55,14 +55,14 @@
 ;;; incoming world, then the expression only has i/o effects (if any)
 ;;; on the world.
 
-(define-structure (binding (safe-accessors #t))
+(define-structure (binding safe-accessors)
   exp
   env
   world
   value
   new-world)
 
-(define-structure (analysis (safe-accessors #t))
+(define-structure (analysis safe-accessors)
   bindings)
 
 (define (analysis-search exp env world analysis win lose)

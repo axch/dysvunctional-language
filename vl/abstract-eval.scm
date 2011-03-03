@@ -111,10 +111,10 @@
 
 (define (refine-analysis analysis)
   (map (lambda (binding)
-	 (let ((exp (car binding))
-	       (env (cadr binding))
-	       (val (caddr binding)))
-	   (list exp env (refine-eval exp env analysis))))
+	 (let ((exp (binding-exp binding))
+	       (env (binding-env binding))
+	       (val (binding-value binding)))
+	   (make-binding exp env (refine-eval exp env analysis))))
        (analysis-bindings analysis)))
 
 ;;;; Expansion
@@ -160,8 +160,8 @@
 		proc arg analysis))))
 
 (define (analysis-expand-binding binding analysis)
-  (let ((exp (car binding))
-	(env (cadr binding)))
+  (let ((exp (binding-exp binding))
+	(env (binding-env binding)))
     (expand-eval exp env analysis)))
 
 (define (expand-analysis analysis)
@@ -184,9 +184,10 @@
 (define (analyze program)
   (let ((initial-analysis
 	 (make-analysis
-	  (list (list (macroexpand program)
-		      (initial-vl-user-env)
-		      abstract-none)))))
+	  (list (make-binding
+		 (macroexpand program)
+		 (initial-vl-user-env)
+		 abstract-none)))))
     (let loop ((old-analysis initial-analysis)
 	       (new-analysis (step-analysis initial-analysis))
 	       (count 0))

@@ -4,10 +4,10 @@
   (let ((candidate
 	 (let ((full-prog (macroexpand program)))
 	   (let loop ((bindings (analysis-bindings (analyze program))))
-	     (cond ((null? bindings) '())
+	     (cond ((null? bindings) #f)
 		   ((equal? full-prog (binding-exp (car bindings)))
 		    (car bindings))
-		   (loop (cdr bindings)))))))
+		   (else (loop (cdr bindings))))))))
     (if (not candidate)
 	(error "Analysis makes no binding for the original program"
 	       program)

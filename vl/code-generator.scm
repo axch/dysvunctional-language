@@ -183,7 +183,7 @@
   (map abstract-value->structure-definition
        (delete-duplicates
 	(filter needs-structure-definition?
-		(map caddr (analysis-bindings analysis)))
+		(map binding-value (analysis-bindings analysis)))
 	abstract-equal?)))
 
 (define (needs-structure-definition? abstract-value)
@@ -216,9 +216,9 @@
 ;;; argument shape to which it is ever applied (producing a non-solved
 ;;; value) needs to become a Scheme procedure definition.
 (define ((binding->maybe-call-shape analysis) binding)
-  (let ((exp (car binding))
-	(env (cadr binding))
-	(value (caddr binding)))
+  (let ((exp (binding-exp binding))
+	(env (binding-env binding))
+	(value (binding-value binding)))
     (and (not (solved-abstractly? value))
 	 (application? exp)
 	 (let ((operator (analysis-get (operator-subform exp) env analysis))
