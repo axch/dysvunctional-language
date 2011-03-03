@@ -54,6 +54,20 @@
 	(else
 	 object)))
 
+(define (congruent-map f object1 object2 lose)
+  (cond ((and (closure? object1) (closure? object2)
+	      (equal? (closure-exp object1) (closure-exp object2)))
+	 (make-closure
+	  (closure-exp object1)
+	  (f (closure-env object1) (closure-env object2))))
+	((and (env? object1) (env? object2))
+	 (env-map f object1 object2))
+	((and (dvl-pair? object1) (dvl-pair? object2))
+	 (make-dvl-pair (f (dvl-car object1) (dvl-car object2))
+			(f (dvl-cdr object1) (dvl-cdr object2))))
+	(else
+	 (lose))))
+
 (define (expression-map f form . forms)
   (cond ((quoted? form)
 	 `(quote ,(apply f (cadr form) (map cadr forms))))

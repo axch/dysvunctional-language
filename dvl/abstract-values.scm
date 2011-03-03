@@ -110,26 +110,14 @@
 	 abstract-boolean)
 	((and (some-real? thing1) (some-real? thing2))
 	 abstract-real)
-	((and (closure? thing1) (closure? thing2)
-	      (equal? (closure-exp thing1)
-		      (closure-exp thing2)))
-	 (make-closure (closure-exp thing1)
-		       (abstract-union (closure-env thing1)
-				       (closure-env thing2))))
-	((and (pair? thing1) (pair? thing2))
-	 (cons (abstract-union (car thing1) (car thing2))
-	       (abstract-union (cdr thing1) (cdr thing2))))
-	((and (env? thing1)
-	      (env? thing2))
-	 (make-env
-	  (abstract-union (env-bindings thing1)
-			  (env-bindings thing2))))
 	((and (abstract-gensym? thing1) (abstract-gensym? thing2))
 	 (make-abstract-gensym
 	  (min (abstract-gensym-min thing1) (abstract-gensym-min thing2))
 	  (max (abstract-gensym-max thing1) (abstract-gensym-max thing2))))
 	(else
-	 (error "This program is not union-free:" thing1 thing2))))
+	 (congruent-map abstract-union thing1 thing2
+          (lambda ()
+	    (error "This program is not union-free:" thing1 thing2))))))
 ;;;; Things the code generator wants to know about abstract values
 
 ;;; Is this shape completely determined by the analysis?
