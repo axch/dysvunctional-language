@@ -19,18 +19,28 @@
 (define (add-primitive! primitive)
   (set! *primitives* (cons primitive *primitives*)))
 
+(define (pure-primitive name arity implementation
+			abstract-implementation expand-implementation)
+  (make-primitive name arity
+   (lambda (arg world win)
+     (win (implementation arg) world))
+   (lambda (arg world analysis win)
+     (win (abstract-implementation arg analysis) world))
+   (lambda (arg world analysis)
+     (expand-implementation arg analysis))))
+
 ;;; Most primitives fall into a few natural classes:
 
 ;;; Unary numeric primitives just have to handle getting abstract
 ;;; values for arguments (to wit, ABSTRACT-REAL).
 (define (unary-primitive name base abstract-answer)
-  (make-primitive name 1
-   (lambda (arg world win) (win (base arg) world))
-   (lambda (arg world analysis win)
+  (pure-primitive name 1
+   base
+   (lambda (arg analysis)
      (if (abstract-real? arg)
-	 (win abstract-answer world)
-	 (win (base arg) world)))
-   (lambda (arg world analysis) '())))
+	 abstract-answer
+	 (base arg)))
+   (lambda (arg analysis) '())))
 
 ;;; Binary numeric primitives also have to destructure their input,
 ;;; because the VL system will hand it in as a pair.
