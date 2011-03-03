@@ -33,8 +33,6 @@
 (define (closure-free-variables closure)
   (free-variables (closure-exp closure)))
 
-(define dvl-real? real?)
-
 (define (object-map f object)
   (cond ((closure? object)
 	 (make-closure (closure-exp object) (f (closure-env object))))
