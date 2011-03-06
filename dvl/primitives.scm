@@ -8,11 +8,11 @@
 ;;; and name and arity slots, respectively.
 
 (define-structure (primitive (safe-accessors #t))
-  name					; concrete eval and code generator
-  arity					; code generator
+  name					; source language
   implementation			; concrete eval
   abstract-implementation		; abstract eval
-  expand-implementation)		; abstract eval
+  expand-implementation	        	; abstract eval
+  generate)				; code generator
 
 (define *primitives* '())
 
@@ -20,13 +20,14 @@
   (set! *primitives* (cons primitive *primitives*)))
 
 (define (simple-primitive name arity implementation abstract-implementation)
-  (make-primitive name arity
+  (make-primitive name
    (lambda (arg world win)
      (win (implementation arg) world))
    (lambda (arg world analysis win)
      (win (abstract-implementation arg) world))
    (lambda (arg world analysis)
-     '())))
+     '())
+   (simple-primitive-application name arity)))
 
 ;;; Most primitives fall into a few natural classes:
 
@@ -184,7 +185,7 @@
   (if p (c) (a)))
 
 (define primitive-if
-  (make-primitive 'if-procedure 3
+  (make-primitive 'if-procedure
    (lambda (arg world win)
      (if (car arg)
 	 (concrete-apply (cadr arg) '() world win)
@@ -218,7 +219,8 @@
 	       (expand-thunk-application alternate))
 	   (lset-union same-analysis-binding?
 		       (expand-thunk-application consequent)
-		       (expand-thunk-application alternate)))))))
+		       (expand-thunk-application alternate)))))
+   generate-if-statement))
 (add-primitive! primitive-if)
 
 (define (abstract-result-in-world thunk-shape world analysis win)
@@ -237,14 +239,15 @@
   (make-gensym *the-gensym*))
 
 (add-primitive!
- (make-primitive 'gensym 0
+ (make-primitive 'gensym
   (lambda (arg world win)
     (win (current-gensym world) (do-gensym world)))
   (lambda (arg world analysis win)
     (win (trivial-abstract-gensym
 	  (current-gensym world))
 	 (do-gensym world)))
-  (lambda (arg world analysis) '())))
+  (lambda (arg world analysis) '())
+  (simple-primitive-application 'gensym 0)))
 
 (define (gensym= gensym1 gensym2)
   (= (gensym-number gensym1) (gensym-number gensym2)))

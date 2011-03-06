@@ -8,11 +8,11 @@
 ;;; and name and arity slots, respectively.
 
 (define-structure (primitive (safe-accessors #t))
-  name					; concrete eval and code generator
-  arity					; code generator
+  name					; source language
   implementation			; concrete eval
   abstract-implementation		; abstract eval
-  expand-implementation)		; abstract eval
+  expand-implementation	        	; abstract eval
+  generate)                             ; code generator
 
 (define *primitives* '())
 
@@ -20,11 +20,12 @@
   (set! *primitives* (cons primitive *primitives*)))
 
 (define (simple-primitive name arity implementation abstract-implementation)
-  (make-primitive name arity implementation
+  (make-primitive name implementation
    (lambda (arg analysis)
      (abstract-implementation arg))
    (lambda (arg analysis)
-     '())))
+     '())
+   (simple-primitive-application name arity)))
 
 ;;; Most primitives fall into a few natural classes:
 
@@ -177,7 +178,7 @@
   (if p (c) (a)))
 
 (define primitive-if
-  (make-primitive 'if-procedure 3
+  (make-primitive 'if-procedure
    (lambda (arg)
      (if (car arg)
 	 (concrete-apply (cadr arg) '())
@@ -206,7 +207,38 @@
 	       (expand-thunk-application alternate))
 	   (lset-union same-analysis-binding?
 		       (expand-thunk-application consequent)
-		       (expand-thunk-application alternate)))))))
+		       (expand-thunk-application alternate)))))
+   ;generate-if-statement
+   ;; TODO For some mysterious reason, the MIT Scheme compiler seems
+   ;; to prefer having this lambda written out here, instead of being
+   ;; named generate-if-statement in code-generator.scm.  It seems to
+   ;; make a difference of about 2-3x in the speed of the test suite.
+   ;; I am mystified.
+   (lambda (exp env enclosure analysis)
+     (let ((operands (analysis-get (operand-subform exp) env analysis)))
+       (define (if-procedure-expression-consequent exp)
+	 (cadr (caddr (cadr exp))))
+       (define (if-procedure-expression-alternate exp)
+	 (caddr (caddr (cadr exp))))
+       (define (generate-if-branch invokee-shape branch-exp)
+	 (let ((answer-shape (abstract-result-of invokee-shape analysis)))
+	   (if (solved-abstractly? answer-shape)
+	       (solved-abstract-value->constant answer-shape)
+	       (generate-closure-application
+		invokee-shape '()
+		(compile branch-exp env enclosure analysis)
+		'(vector)))))
+       (if (solved-abstractly? (car operands))
+	   (if (car operands)
+	       (generate-if-branch
+		(cadr operands) (if-procedure-expression-consequent exp))
+	       (generate-if-branch
+		(cddr operands) (if-procedure-expression-alternate exp)))
+	   `(if ,(compile (cadr (cadr exp)) env enclosure analysis)
+		,(generate-if-branch
+		  (cadr operands) (if-procedure-expression-consequent exp))
+		,(generate-if-branch
+		  (cddr operands) (if-procedure-expression-alternate exp))))))))
 (add-primitive! primitive-if)
 
 (define (abstract-result-of thunk-shape analysis)
