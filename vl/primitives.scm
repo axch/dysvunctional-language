@@ -208,37 +208,7 @@
 	   (lset-union same-analysis-binding?
 		       (expand-thunk-application consequent)
 		       (expand-thunk-application alternate)))))
-   ;generate-if-statement
-   ;; TODO For some mysterious reason, the MIT Scheme compiler seems
-   ;; to prefer having this lambda written out here, instead of being
-   ;; named generate-if-statement in code-generator.scm.  It seems to
-   ;; make a difference of about 2-3x in the speed of the test suite.
-   ;; I am mystified.
-   (lambda (exp env enclosure analysis)
-     (let ((operands (analysis-get (operand-subform exp) env analysis)))
-       (define (if-procedure-expression-consequent exp)
-	 (cadr (caddr (cadr exp))))
-       (define (if-procedure-expression-alternate exp)
-	 (caddr (caddr (cadr exp))))
-       (define (generate-if-branch invokee-shape branch-exp)
-	 (let ((answer-shape (abstract-result-of invokee-shape analysis)))
-	   (if (solved-abstractly? answer-shape)
-	       (solved-abstract-value->constant answer-shape)
-	       (generate-closure-application
-		invokee-shape '()
-		(compile branch-exp env enclosure analysis)
-		'(vector)))))
-       (if (solved-abstractly? (car operands))
-	   (if (car operands)
-	       (generate-if-branch
-		(cadr operands) (if-procedure-expression-consequent exp))
-	       (generate-if-branch
-		(cddr operands) (if-procedure-expression-alternate exp)))
-	   `(if ,(compile (cadr (cadr exp)) env enclosure analysis)
-		,(generate-if-branch
-		  (cadr operands) (if-procedure-expression-consequent exp))
-		,(generate-if-branch
-		  (cddr operands) (if-procedure-expression-alternate exp))))))))
+   generate-if-statement))
 (add-primitive! primitive-if)
 
 (define (abstract-result-of thunk-shape analysis)
