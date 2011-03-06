@@ -19,44 +19,48 @@
 (define (add-primitive! primitive)
   (set! *primitives* (cons primitive *primitives*)))
 
+(define (simple-primitive name arity implementation abstract-implementation)
+  (make-primitive name arity implementation
+   (lambda (arg analysis)
+     (abstract-implementation arg))
+   (lambda (arg analysis)
+     '())))
+
 ;;; Most primitives fall into a few natural classes:
 
 ;;; Unary numeric primitives just have to handle getting abstract
 ;;; values for arguments (to wit, ABSTRACT-REAL).
 (define (unary-primitive name base abstract-answer)
-  (make-primitive name 1
+  (simple-primitive name 1
    base
-   (lambda (arg analysis)
+   (lambda (arg)
      (if (abstract-real? arg)
 	 abstract-answer
-	 (base arg)))
-   (lambda (arg analysis) '())))
+	 (base arg)))))
 
 ;;; Binary numeric primitives also have to destructure their input,
 ;;; because the VL system will hand it in as a pair.
 (define (binary-primitive name base abstract-answer)
-  (make-primitive name 2
+  (simple-primitive name 2
    (lambda (arg)
      (base (car arg) (cdr arg)))
-   (lambda (arg analysis)
+   (lambda (arg)
      (let ((first (car arg))
 	   (second (cdr arg)))
        (if (or (abstract-real? first)
 	       (abstract-real? second))
 	   abstract-answer
-	   (base first second))))
-   (lambda (arg analysis) '())))
+	   (base first second))))))
 
 ;;; Type predicates need to take care to respect the possible abstract
 ;;; types.
 (define (primitive-type-predicate name base)
-  (make-primitive name 1
+  (simple-primitive name 1
    base
-   (lambda (arg analysis)
+   (lambda (arg)
      (if (abstract-real? arg)
 	 (eq? base real?)
-	 (base arg)))
-   (lambda (arg analysis) '())))
+	 (base arg)))))
 
 (define-syntax define-R->R-primitive
   (syntax-rules ()
@@ -127,9 +131,7 @@
 (define read-real read)
 
 (add-primitive!
- (make-primitive 'read-real 0 read-real
-  (lambda (x analysis) abstract-real)
-  (lambda (arg analysis) '())))
+ (simple-primitive 'read-real 0 read-real (lambda (x) abstract-real)))
 
 (define (write-real x)
   (write x)
@@ -137,9 +139,7 @@
   x)
 
 (add-primitive!
- (make-primitive 'write-real 1 write-real
-  (lambda (x analysis) x)
-  (lambda (arg analysis) '())))
+ (simple-primitive 'write-real 1 write-real (lambda (x) x)))
 
 ;;; We need a mechanism to introduce imprecision into the analysis.
 
@@ -155,13 +155,11 @@
 ;;; was computed.
 
 (add-primitive!
- (make-primitive 'real 1
-  real
-  (lambda (x analysis)
+ (simple-primitive 'real 1 real
+  (lambda (x)
     (cond ((abstract-real? x) abstract-real)
 	  ((number? x) abstract-real)
-	  (else (error "A known non-real is declared real" x))))
-  (lambda (arg analysis) '())))
+	  (else (error "A known non-real is declared real" x))))))
 
 ;;; IF-PROCEDURE is special because it is the only primitive that
 ;;; accepts VL closures as arguments and invokes them internally.
