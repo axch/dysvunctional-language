@@ -272,6 +272,8 @@
 	      (else
 	       abstract-boolean)))))))
 
+(define-primitive-type-predicate gensym?)
+
 (define (initial-user-env)
   (make-env
    (map (lambda (primitive)
