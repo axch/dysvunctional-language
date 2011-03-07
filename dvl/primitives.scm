@@ -241,7 +241,7 @@
 (define *the-gensym* 0)
 (define (gensym)
   (set! *the-gensym* (+ *the-gensym* 1))
-  (make-gensym *the-gensym*))
+  (make-gensym (- *the-gensym* 1)))
 
 (add-primitive!
  (make-primitive 'gensym
