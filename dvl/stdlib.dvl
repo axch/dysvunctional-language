@@ -1,0 +1,32 @@
+;;; -*- scheme -*-
+
+(define (car (cons x y) x))
+(define (cdr (cons x y) x))
+
+(define bundle-tag (gensym))
+(define (make-bundle epsilon primal tangent)
+  (list bundle-tag epsilon primal tangent))
+(define (bundle? thing win lose)
+  (if (and (pair? thing)
+	   (gensym? (car thing))
+	   (gensym= (car thing) bundle-tag))
+      (win (bundle-epsilon thing)
+	   (bundle-primal thing)
+	   (bundle-tangent thing))
+      (lose)))
+(define (bundle-epsilon thing)
+  (car (cdr (thing))))
+(define (bundle-primal thing)
+  (car (cdr (cdr (thing)))))
+(define (bundle-tangent thing)
+  (car (cdr (cdr (cdr (thing))))))
+
+(define (primal epsilon thing)
+  (bundle? thing (lambda (thing-eps thing-prim thing-tang)
+		   (if (gensym= thing-eps epsilon)
+		       thing-prim
+		       (bundle thing-eps
+			       (primal epsilon thing-prim)
+			       (primal epsilon thing-tang))))
+	   (lambda ()
+	     )))
