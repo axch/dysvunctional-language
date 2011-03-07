@@ -172,11 +172,9 @@
       (let loop ((thing thing))
 	(cond ((eq? the-abstract-gensym thing) thing)
 	      ((abstract-gensym? thing)
-	       (let ((difference
-		      (- (world-gensym new-world) (world-gensym old-world))))
-		 (make-abstract-gensym
-		  (+ (abstract-gensym-min thing) difference)
-		  (+ (abstract-gensym-max thing) difference))))
+	       (make-abstract-gensym
+		(world-update-gensym-number (abstract-gensym-min thing) old-world new-world)
+		(world-update-gensym-number (abstract-gensym-max thing) old-world new-world)))
 	      (else (object-map loop thing))))))
 
 (define (world-update-world updatee old-world new-world)
@@ -188,6 +186,13 @@
        (+ (world-gensym updatee)
 	  (- (world-gensym new-world)
 	     (world-gensym old-world))))))
+
+(define (world-update-gensym-number number old-world new-world)
+  (if (< number (world-gensym old-world))
+      ;; Already existed
+      number
+      ;; Newly made
+      (+ number (- (world-gensym new-world) (world-gensym old-world)))))
 
 (define (broaden-abstract-gensysms thing)
   ;; TODO Why is broadening abstract gensyms necessary before code generation?
