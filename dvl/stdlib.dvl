@@ -15,11 +15,11 @@
 	   (bundle-tangent thing))
       (lose)))
 (define (bundle-epsilon thing)
-  (car (cdr (thing))))
+  (car (cdr thing)))
 (define (bundle-primal thing)
-  (car (cdr (cdr (thing)))))
+  (car (cdr (cdr thing))))
 (define (bundle-tangent thing)
-  (car (cdr (cdr (cdr (thing))))))
+  (car (cdr (cdr (cdr thing)))))
 
 (define (primal epsilon thing)
   (bundle?
