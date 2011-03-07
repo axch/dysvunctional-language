@@ -88,18 +88,18 @@
 ;;; particular way I handled VL's IF makes it register as a primitive
 ;;; procedure, which needs to be handled specially.
 (define (compile-apply exp env enclosure analysis)
-  (let ((operator (analysis-get (operator-subform exp) env analysis))
-	(operands (analysis-get (operand-subform exp) env analysis)))
+  (let ((operator (analysis-get (operator-subform exp) env analysis)))
     (cond ((primitive? operator)
 	   ((primitive-generate operator) exp env enclosure analysis))
 	  ((closure? operator)
 	   (generate-closure-application
-	    operator operands
-	    (compile (car exp) env enclosure analysis)
-	    (compile (cadr exp) env enclosure analysis)))
+	    operator
+	    (analysis-get (operand-subform exp) env analysis)
+	    (compile (operator-subform exp) env enclosure analysis)
+	    (compile (operand-subform exp) env enclosure analysis)))
 	  (else
 	   (error "Invalid operator in code generation"
-		  exp operator operands env analysis)))))
+		  exp operator env analysis)))))
 
 ;;; A VL IF statement becomes a Scheme IF statement (unless the
 ;;; predicate was solved by the analysis, in which case we can just
