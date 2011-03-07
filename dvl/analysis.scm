@@ -77,10 +77,12 @@
 (define (world-update-binding binding new-world win)
   (win (world-update-value
 	(binding-value binding)
-	new-world (binding-world binding))
+	(binding-world binding)
+	new-world)
        (world-update-world
 	(binding-new-world binding)
-	new-world (binding-world binding))))
+	(binding-world binding)
+	new-world)))
 
 ;;; ANALYSIS-GET is \bar E_1 from [1].
 (define (analysis-get exp env analysis)
