@@ -20,6 +20,8 @@
   (car (cdr (cdr thing))))
 (define (bundle-tangent thing)
   (car (cdr (cdr (cdr thing)))))
+(define (bundle?* thing)
+  (bundle? thing (lambda (x y z) #t) (lambda () #f)))
 
 (define (primal epsilon thing)
   (bundle?
