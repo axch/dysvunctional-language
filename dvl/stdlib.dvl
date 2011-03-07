@@ -1,7 +1,7 @@
 ;;; -*- scheme -*-
 
 (define (car (cons x y)) x)
-(define (cdr (cons x y)) x)
+(define (cdr (cons x y)) y)
 
 (define bundle-tag (gensym))
 (define (make-bundle epsilon primal tangent)
