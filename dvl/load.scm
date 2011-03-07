@@ -34,6 +34,11 @@
    "../vl/post-processing"
    "read"))
 
+(define (dvl-prepare form)
+  (let* ((stdlib (read-source "stdlib.dvl"))
+	 (program `(let () ,@stdlib ,form)))
+    program))
+
 (define (dvl-run-file filename)
   (let* ((forms (read-source filename))
 	 (program `(let () ,@forms))
