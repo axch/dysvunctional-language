@@ -61,9 +61,14 @@
   (simple-primitive name 1
    base
    (lambda (arg)
-     (if (abstract-real? arg)
-	 (eq? base real?)
-	 (base arg)))))
+     (cond ((abstract-real? arg)
+	    (eq? base real?))
+	   ((abstract-boolean? arg)
+	    (eq? base boolean?))
+	   ((abstract-gensym? arg)
+	    (eq? base gensym?))
+	   (else
+	    (base arg))))))
 
 (define-syntax define-R->R-primitive
   (syntax-rules ()
