@@ -233,8 +233,11 @@
   (refine-apply thunk-shape '() world analysis win))
 
 (define (abstract-result-of thunk-shape analysis)
-  (abstract-result-in-world thunk-shape (initial-world) analysis
-   (lambda (value world) value)))
+  (analysis-get (closure-body thunk-shape)
+		(extend-env (closure-formal thunk-shape)
+			    '()
+			    (closure-env thunk-shape))
+		analysis))
 
 ;;;; Gensym
 
