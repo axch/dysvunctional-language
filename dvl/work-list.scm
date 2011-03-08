@@ -125,7 +125,7 @@
   (map pp (analysis-bindings analysis))
   (pp (analysis-queue analysis)))
 
-(define (analyze program)
+(define (%analyze program)
   (let ((analysis (initial-analysis (macroexpand program))))
     (let loop ((continue? #t)
 	       (count 0))
@@ -137,4 +137,7 @@
 	  (begin
 	    (if *analyze-wallp*
 		(show-analysis analysis))
-	    (broaden-abstract-gensysms% analysis))))))
+	    analysis)))))
+
+(define (analyze program)
+  (broaden-abstract-gensysms% (%analyze program)))
