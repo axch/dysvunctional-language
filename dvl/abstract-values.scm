@@ -47,7 +47,14 @@
 (define-structure abstract-none)
 (define abstract-none (make-abstract-none))
 
-(define-structure (abstract-gensym safe-accessors)
+(define-structure
+  (abstract-gensym
+   safe-accessors
+   (print-procedure
+    (simple-unparser-method 'abstract-gensym
+     (lambda (abs-gensym)
+       (list (abstract-gensym-min abs-gensym)
+	     (abstract-gensym-max abs-gensym))))))
   min
   max)
 
