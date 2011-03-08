@@ -27,6 +27,7 @@
    "analysis"
    "abstract-values"
    "abstract-eval"
+   "work-list"
    "../vl/nomenclature"
    "../vl/code-generator"
    "primitives"
