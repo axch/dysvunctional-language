@@ -120,10 +120,6 @@
 	       (world (binding-world binding)))
 	   (refine-eval exp env world analysis
             (lambda (value new-world)
-	      ;; Except I need to account for the value not depending
-	      ;; on the world in a way that's properly robust to the
-	      ;; analysis discovering later that does after all (if
-	      ;; that's possible).
 	      (make-binding exp env world value new-world)))))
        (analysis-bindings analysis)))
 
