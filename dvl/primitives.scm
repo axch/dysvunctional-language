@@ -230,7 +230,12 @@
 
 (define (abstract-result-in-world thunk-shape world analysis win)
   ;; N.B. ABSTRACT-RESULT-IN-WORLD only exists because of the way I'm doing IF.
-  (refine-apply thunk-shape '() world analysis win))
+  (analysis-get-in-world
+   `(,(closure-exp thunk-shape) ())
+   (closure-env thunk-shape)
+   world
+   analysis
+   win))
 
 (define (abstract-result-of thunk-shape analysis)
   (analysis-get (closure-body thunk-shape)
