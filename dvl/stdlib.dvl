@@ -74,3 +74,24 @@
 	 (g:+ (tangent eps thing1) tang)))
       (lambda ()
 	(+ thing1 thing2))))))
+
+(define (g:* thing1 thing2)
+  (bundle?
+   thing1
+   (lambda (eps prim tang)
+     (let ((prim2 (primal eps thing2)))
+       (make-bundle
+	eps
+	(g:* prim prim2)
+	(g:+ (g:* tang prim2) (g:* prim (tangent eps thing2))))))
+   (lambda ()
+     (bundle?
+      thing2
+      (lambda (eps prim tang)
+	(let ((prim1 (primal eps thing1)))
+	  (make-bundle
+	   eps
+	   (g:* prim1 prim)
+	   (g:+ (g:* (tangent eps thing1) prim) (g:* prim1 tang)))))
+      (lambda ()
+	(* thing1 thing2))))))
