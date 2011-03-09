@@ -207,4 +207,4 @@
 	  (loop new-analysis (step-analysis new-analysis) (+ count 1))
 	  (begin (if *analyze-wallp*
 		     (pp new-analysis))
-		 (broaden-abstract-gensysms new-analysis))))))
+		 new-analysis)))))

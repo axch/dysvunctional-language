@@ -61,8 +61,6 @@
 (define (trivial-abstract-gensym gensym)
   (make-abstract-gensym (gensym-number gensym) (gensym-number gensym)))
 
-(define the-abstract-gensym (make-abstract-gensym #f #f))
-
 ;;; Equality of shapes
 
 (define (abstract-equal? thing1 thing2)
@@ -177,8 +175,7 @@
 	  (world-equal? old-world new-world))
       thing
       (let loop ((thing thing))
-	(cond ((eq? the-abstract-gensym thing) thing)
-	      ((abstract-gensym? thing)
+	(cond ((abstract-gensym? thing)
 	       (make-abstract-gensym
 		(world-update-gensym-number (abstract-gensym-min thing) old-world new-world)
 		(world-update-gensym-number (abstract-gensym-max thing) old-world new-world)))
@@ -200,18 +197,3 @@
       number
       ;; Newly made
       (+ number (- (world-gensym new-world) (world-gensym old-world)))))
-
-(define (broaden-abstract-gensysms thing)
-  ;; TODO Why is broadening abstract gensyms necessary before code generation?
-  (cond ((analysis? thing)
-	 (make-analysis
-	  (map broaden-abstract-gensysms (analysis-bindings thing))))
-	((binding? thing)
-	 (make-binding (binding-exp thing)
-		       (broaden-abstract-gensysms (binding-env thing))
-		       (binding-world thing)
-		       (broaden-abstract-gensysms (binding-value thing))
-		       (binding-new-world thing)))
-	((abstract-gensym? thing)
-	 the-abstract-gensym)
-	(else (object-map broaden-abstract-gensysms thing))))

@@ -102,30 +102,13 @@
 				 (binding-notify binding))
 		       #t))))))))))
 
-(define (broaden-abstract-gensysms% thing)
-  ;; TODO Why is broadening abstract gensyms necessary before code generation?
-  (cond ((analysis? thing)
-	 (make-analysis
-	  (map broaden-abstract-gensysms% (analysis-bindings thing))
-	  '()))
-	((binding? thing)
-	 (make-binding (binding-exp thing)
-		       (broaden-abstract-gensysms% (binding-env thing))
-		       (binding-world thing)
-		       (broaden-abstract-gensysms% (binding-value thing))
-		       (binding-new-world thing)
-		       '()))
-	((abstract-gensym? thing)
-	 the-abstract-gensym)
-	(else (object-map broaden-abstract-gensysms% thing))))
-
 (define (show-analysis analysis)
   (display analysis)
   (newline)
   (map pp (analysis-bindings analysis))
   (pp (analysis-queue analysis)))
 
-(define (%analyze program)
+(define (analyze program)
   (let ((analysis (initial-analysis (macroexpand program))))
     (let loop ((continue? #t)
 	       (count 0))
@@ -138,6 +121,3 @@
 	    (if *analyze-wallp*
 		(show-analysis analysis))
 	    analysis)))))
-
-(define (analyze program)
-  (%analyze program))
