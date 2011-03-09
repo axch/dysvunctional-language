@@ -24,8 +24,8 @@
   (if (list? output)
       (tidy
        (strip-argument-types
-	(inline
-	 (scalar-replace-aggregates
+	(scalar-replace-aggregates
+	 (inline
 	  (structure-definitions->vectors
 	   output)))))
       output))
