@@ -7,6 +7,8 @@
 ;;; We have:
 ;;; - STRUCTURE-DEFINITIONS->VECTORS
 ;;;   Replace DEFINE-STRUCTURE with explicit vectors.
+;;; - INLINE
+;;;   Inline non-recursive function definitions.
 ;;; - SCALAR-REPLACE-AGGREGATES
 ;;;   Replace aggregates with scalars at procedure boundaries.
 ;;;   This relies on argument-type annotations being emitted by the
@@ -15,8 +17,6 @@
 ;;;   Remove argument-type annotations, if they have been emitted by
 ;;;   the code generator (because SCALAR-REPLACE-AGGREGATES is the
 ;;;   only thing that needs them).
-;;; - INLINE
-;;;   Inline non-recursive function definitions.
 ;;; - TIDY
 ;;;   Clean up and optimize locally by term-rewriting.
 
