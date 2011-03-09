@@ -266,6 +266,10 @@
 	     (?? body))
 	  (let ((occurrence-count (count-free-occurrences name body)))
 	    (and (or (= 0 occurrence-count)
+		     ;; TODO It turns out that this check is not good
+		     ;; enough.  I need full alpha renaming to inline
+		     ;; expressions properly.
+		     #;
 		     (and (not (memq exp (append (map car bindings1)
 						 (map car bindings2))))
 			  (or (= 1 occurrence-count)
