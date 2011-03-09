@@ -23,8 +23,8 @@
 (define (prettify-compiler-output output)
   (if (list? output)
       (tidy
-       (inline
-	(strip-argument-types
+       (strip-argument-types
+	(inline
 	 (scalar-replace-aggregates
 	  (structure-definitions->vectors
 	   output)))))
@@ -231,7 +231,8 @@
   (define (non-self-calling? defn)
     (= 0 (count-in-tree (definiendum defn) (definiens defn))))
   (define (inline-defn defn forms)
-    (replace-free-occurrences (definiendum defn) (definiens defn) forms))
+    (let ((defn (strip-argument-types defn)))
+      (replace-free-occurrences (definiendum defn) (definiens defn) forms)))
   (let loop ((forms forms))
     (let scan ((done '()) (forms forms))
       (cond ((null? forms) (reverse done))
