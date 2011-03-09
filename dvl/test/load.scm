@@ -17,7 +17,7 @@
   (cond ((not (equal? (macroexpand form) (macroexpand (macroexpand form))))
 	 `(not (equal? ,(macroexpand form) ,(macroexpand (macroexpand form)))))
 	((not (equal? value (dvl-eval form #t)))
-	 `(not (equal? ,value (interpreted ,(dvl-eval form)))))
+	 `(not (equal? ,value (interpreted ,(dvl-eval form #t)))))
 	((not (equal? value (analyzed-answer form)))
 	 `(not (equal? ,value (analyzed ,(analyzed-answer form)))))
 	((not (equal? `(begin ,value) (analyze-and-generate form)))
