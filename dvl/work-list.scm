@@ -140,4 +140,4 @@
 	    analysis)))))
 
 (define (analyze program)
-  (broaden-abstract-gensysms% (%analyze program)))
+  (%analyze program))
