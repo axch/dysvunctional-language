@@ -8,6 +8,7 @@
 
  (define-each-check
    (not (tidy-non-soundness
+	 ;; Carelessly inlining y will change the scope of x
 	 '(let ((x (vector 1 2)))
 	    (cons x (cons x (let ((y (vector 3 x))
 				  (x (vector 4)))
