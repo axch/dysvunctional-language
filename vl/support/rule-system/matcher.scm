@@ -8,14 +8,78 @@
 ;;; to.  Match procedures can be combined to apply to compound data
 ;;; items.
 
-;;; A match procedure takes a list containing a data item, a
-;;; dictionary, and a success continuation.  The dictionary
-;;; accumulates the assignments of match variables to values found in
-;;; the data.  The success continuation takes two arguments: the new
-;;; dictionary, and the number of items absorbed from the list by the
-;;; match.  If a match procedure fails it returns #f.
+;;; A match procedure takes a data item, a dictionary, and a success
+;;; continuation.  The dictionary accumulates the assignments of match
+;;; variables to values found in the data.  The success continuation
+;;; takes the new dictionary as an argument.  If a match procedure
+;;; fails it returns #f.
 
-;;; Primitive match procedures:
+;;; Segment variables introduce some additional trouble.  Unlike other
+;;; matchers, a segment variable is not tested against a fixed datum
+;;; that it either matches or not, but against a list such that it may
+;;; match any prefix.  This means that in general, segment variables
+;;; must search, trying one match and possibly backtracking.  There
+;;; are, however, two circumstances when the search can be avoided: if
+;;; the variable is already bound, the bound value needs to be checked
+;;; against the data, but no guessing as to how much data to consume
+;;; is required.  Also, if the segment variable is the last matcher in
+;;; its enclosing list (which actually happens quite often!) then the
+;;; list matcher already knows how much data must be matched, and no
+;;; search is needed.
+
+;;; How should the bound values of segment variables be represented?
+;;; The naive approach would just be to copy the segment of the list
+;;; that is bound --- that is, notionally, the value, after all.
+;;; However, this introduces an unnecessary linear slowdown in the
+;;; case when the current guess as to the length of the segment is
+;;; proven false without needing to examine the bound variable, for
+;;; instance if the next matcher doesn't match.  Therefore, segment
+;;; variables should be represented as pointers to the beginning and
+;;; end of the data in the segment, whence the actual list value can
+;;; be derived when needed.
+
+;;; Finally, the list matcher needs to behave differently when giving
+;;; data to a segment as opposed to a regular matcher: the segment
+;;; should be given the whole (remaining) list in contrast with just
+;;; the first data item for the regular matcher, and the segment may
+;;; (in fact, probably will) consume more than one element, so it
+;;; needs to pass the data remaining to its success continuation.  All
+;;; matchers could be made uniform by giving them all the interface of
+;;; the segment matcher, but I think it's less ugly to take advantage
+;;; of the fact that segment matchers can only occur as submatchers of
+;;; list matchers and make their interface special.
+
+;;; Segments
+
+(define-structure (segment (constructor make-segment (head tail)))
+  head
+  tail
+  (body-cache #f))
+
+(define (segment-body segment)
+  (define (compute-segment-body)
+    (if (null? tail)
+	(segment-head segment)
+	(let loop ((head (segment-head segment))
+		   (tail (segment-tail segment)))
+	  (cond ((eq? head tail)
+		 '())
+		((null? head)
+		 (error "Tail pointer did not point into head's list" segment))
+		(else
+		 (cons (car head) (loop (cdr head) tail)))))))
+  (if (segment-body-cache segment)
+      (segment-body-cache segment)
+      (let ((answer (compute-segment-body)))
+	(set-segment-body-cache! segment answer)
+	answer)))
+
+(define (interpret-segment thing)
+  (if (segment? thing)
+      (segment-body thing)
+      thing))
+
+;;; Primitive match procedures
 
 (define (match:eqv pattern-constant)
   (define (eqv-match data dictionary succeed)
@@ -37,8 +101,7 @@
 	       (succeed (dict:bind variable data dictionary))))))
   element-match)
 
-
-;;; Support for the dictionary.
+;;; The dictionary
 
 (define (dict:bind variable data-object dictionary)
   (cons (list variable data-object) dictionary))
@@ -46,45 +109,37 @@
 (define (dict:lookup variable dictionary)
   (assq variable dictionary))
 
+;;; I am choosing to have the dictionary hide the fact that segments
+;;; have a special representation.
 (define (dict:value vcell)
-  (cadr vcell))
+  (interpret-segment (cadr vcell)))
+
+(define (interpret-segments-in-dictionary dict)
+  (map (lambda (entry)
+	 (list (car entry) (interpret-segment (cadr entry))))
+       dict))
 
-;;; TODO match:segment need not search under two circumstances.  One
-;;; is encoded here: if the variable's value is already known, no
-;;; search is needed.  The other is if this segment variable is the
-;;; last segment variable in its enclosing list matcher.  Then the
-;;; list matcher can compute the exact quantity of things in the list
-;;; that this variable must match (because if it matches any other
-;;; number, the enclosing list match is sure to fail due to a length
-;;; mismatch).  This extra optimization can save a factor linear in
-;;; the length of the list being matched.  (In cases of complete tail
-;;; position maybe even quadratic, because knowing that an unbound
-;;; variable has to match all the available data can obviate a
-;;; quadratic amount of work taking useless list-heads).
 (define (match:segment variable)
   (define (segment-match data dictionary succeed)
     (and (list? data)
 	 (let ((vcell (dict:lookup variable dictionary)))
 	   (if vcell
 	       (let lp ((data data)
-			(pattern (dict:value vcell))
-			(n 0))
+			(pattern (dict:value vcell)))
 		 (cond ((pair? pattern)
 			(if (and (pair? data)
 				 (equal? (car data) (car pattern)))
-			    (lp (cdr data) (cdr pattern) (+ n 1))
+			    (lp (cdr data) (cdr pattern))
 			    #f))
 		       ((not (null? pattern)) #f)
-		       (else (succeed dictionary n))))
-	       (let ((n (length data)))
-		 (let lp ((i 0))
-		   (if (<= i n)
-		       (or (succeed (dict:bind variable
-					       (list-head data i)
-					       dictionary)
-				    i)
-			   (lp (+ i 1)))
-		       #f)))))))
+		       (else (succeed dictionary data))))
+	       (let lp ((tail data))
+		 (or (succeed (dict:bind variable
+					 (make-segment data tail)
+					 dictionary)
+			      tail)
+		     (and (pair? tail)
+			  (lp (cdr tail)))))))))
   (segment-matcher! segment-match)
   segment-match)
 
@@ -99,10 +154,10 @@
 	    (lp (cdr data) (cdr matchers) new-dictionary))))
       (define (try-segment submatcher)
 	(submatcher data dictionary
-          (lambda (new-dictionary n)
-	    (if (> n (length data))
-		(error "Matcher ate too much." n))
-	    (lp (list-tail data n) (cdr matchers) new-dictionary))))
+          (lambda (new-dictionary #!optional remaining-data)
+	    (if (default-object? remaining-data)
+		(set! remaining-data '()))
+	    (lp remaining-data (cdr matchers) new-dictionary))))
       (cond ((pair? matchers)
 	     (if (segment-matcher? (car matchers))
 		 (try-segment (car matchers))
@@ -116,7 +171,8 @@
 ;;; Sticky notes
 
 (define (segment-matcher! thing)
-  (eq-put! thing 'segment-matcher #t))
+  (eq-put! thing 'segment-matcher #t)
+  thing)
 (define (segment-matcher? thing)
   (eq-get thing 'segment-matcher))
 
@@ -156,10 +212,21 @@
   (lambda (pattern) (match:segment (match:variable-name pattern)))
   match:segment?)
 
-(defhandler match:->combinators
-  (lambda (pattern)
-    (apply match:list (map match:->combinators pattern)))
-  match:list?)
+;;; list-pattern->combinators is complicated because it detects the
+;;; last submatcher in the pattern and, if it's a segment variable,
+;;; arranges for it to avoid its search.
+(define (list-pattern->combinators pattern)
+  (define (last-list-submatcher subpattern)
+    (if (match:segment? subpattern)
+	(segment-matcher! (match:element (match:variable-name subpattern) '()))
+	(match:->combinators subpattern)))
+  (if (null? pattern)
+      (match:eqv '())
+      (apply match:list
+	     (append (map match:->combinators (except-last-pair pattern))
+		     (list (last-list-submatcher (car (last-pair pattern))))))))
+
+(defhandler match:->combinators list-pattern->combinators match:list?)
 
 (define (matcher pattern)
   (let ((match-combinator (match:->combinators pattern)))
