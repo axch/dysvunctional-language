@@ -20,4 +20,4 @@
 (define (rule-memoize f) f)
 
 (load-relative-compiled "pattern-directed-invocation")
-(load-relative-compiled "rules")
+(load-relative-compiled "simplification")
