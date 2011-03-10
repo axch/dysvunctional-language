@@ -19,15 +19,6 @@
 	     (handler dict (lambda (value fail) value) fail))
 	   (lambda () data))))))
 
-(define (try-rules data rules succeed fail)
-  (let per-rule ((rules rules))
-    (if (null? rules)
-	(fail)
-	(let ((answer ((car rules) data)))
-	  (if (eq? data answer)
-	      (per-rule (cdr rules))
-	      (succeed answer (lambda () (per-rule (cdr rules)))))))))
-
 ;;; The user-handler is expected to be a procedure that binds the
 ;;; variables that appear in the match and uses them somehow.  This
 ;;; converts it into a combinator that accepts the match dictionary,

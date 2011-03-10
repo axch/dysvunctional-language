@@ -1,5 +1,14 @@
 (declare (usual-integrations))
 
+(define (try-rules data rules succeed fail)
+  (let per-rule ((rules rules))
+    (if (null? rules)
+	(fail)
+	(let ((answer ((car rules) data)))
+	  (if (eq? data answer)
+	      (per-rule (cdr rules))
+	      (succeed answer (lambda () (per-rule (cdr rules)))))))))
+
 (define (rule-simplifier the-rules)
   (define (simplify-expression expression)
     (let ((subexpressions-simplified
