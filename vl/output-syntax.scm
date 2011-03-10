@@ -46,15 +46,7 @@
 	     0
 	     (count-free-occurrences name (cddr exp))))
 	((let-form? exp)
-	 (let ((bindings (cadr exp))
-	       (body (cddr exp)))
-	   (apply +
-		  (if (memq name (map car bindings))
-		      0
-		      (count-free-occurrences name body))
-		  (map (lambda (binding)
-			 (count-free-occurrences name (cadr binding)))
-		       bindings))))
+	 (count-free-occurrences name (->lambda exp)))
 	((pair-form? exp)
 	 (+ (count-free-occurrences name (car-subform exp))
 	    (count-free-occurrences name (cdr-subform exp))))
