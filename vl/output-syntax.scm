@@ -32,7 +32,7 @@
       (constant? exp)
       (null? exp)
       (and (pair? exp)
-	   (memq (car exp) '(cons vector real))
+	   (memq (car exp) '(cons vector real car cdr vector-ref))
 	   (every constructors-only? (cdr exp)))))
 
 (define (count-in-tree thing tree)
