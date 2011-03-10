@@ -7,6 +7,8 @@
 ;;; We have:
 ;;; - STRUCTURE-DEFINITIONS->VECTORS
 ;;;   Replace DEFINE-STRUCTURE with explicit vectors.
+;;; - INLINE
+;;;   Inline non-recursive function definitions.
 ;;; - SCALAR-REPLACE-AGGREGATES
 ;;;   Replace aggregates with scalars at procedure boundaries.
 ;;;   This relies on argument-type annotations being emitted by the
@@ -15,19 +17,18 @@
 ;;;   Remove argument-type annotations, if they have been emitted by
 ;;;   the code generator (because SCALAR-REPLACE-AGGREGATES is the
 ;;;   only thing that needs them).
-;;; - INLINE
-;;;   Inline non-recursive function definitions.
 ;;; - TIDY
 ;;;   Clean up and optimize locally by term-rewriting.
 
 (define (prettify-compiler-output output)
   (if (list? output)
       (tidy
-       (inline
+       (full-alpha-rename
 	(strip-argument-types
 	 (scalar-replace-aggregates
-	  (structure-definitions->vectors
-	   output)))))
+	  (inline
+	   (structure-definitions->vectors
+	    output))))))
       output))
 
 (define (compile-to-scheme program)
@@ -231,7 +232,8 @@
   (define (non-self-calling? defn)
     (= 0 (count-in-tree (definiendum defn) (definiens defn))))
   (define (inline-defn defn forms)
-    (replace-free-occurrences (definiendum defn) (definiens defn) forms))
+    (let ((defn (strip-argument-types defn)))
+      (replace-free-occurrences (definiendum defn) (definiens defn) forms)))
   (let loop ((forms forms))
     (let scan ((done '()) (forms forms))
       (cond ((null? forms) (reverse done))
@@ -242,6 +244,17 @@
 	       ;; Can insert other inlining restrictions here
 	       (loop (inline-defn defn others))))
 	    (else (scan (cons (car forms) done) (cdr forms)))))))
+
+(define (full-alpha-rename program)
+  ;; TODO Fix the bookkeeping of what names the primitives rely on
+  (define (needed-names primitive)
+    (list (primitive-name primitive)))
+  (alpha-rename program
+   (map (lambda (name)
+	  (cons name name))
+	(delete-duplicates
+	 `(cons car cdr if define let lambda vector vector-ref
+		,@(append-map needed-names *primitives*))))))
 
 ;;;; Term-rewriting tidier
 
@@ -265,10 +278,8 @@
 	     (?? body))
 	  (let ((occurrence-count (count-free-occurrences name body)))
 	    (and (or (= 0 occurrence-count)
-		     (and (not (memq exp (append (map car bindings1)
-						 (map car bindings2))))
-			  (or (= 1 occurrence-count)
-			      (constructors-only? exp))))
+		     (= 1 occurrence-count)
+		     (constructors-only? exp))
 		 `(let (,@bindings1
 			,@bindings2)
 		    ,@(replace-free-occurrences name exp body))))))))

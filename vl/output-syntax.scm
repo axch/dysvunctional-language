@@ -1,14 +1,38 @@
 (declare (usual-integrations))
 ;;;; Syntax and manipulations of the output language
 
+(define (try-rule-toplevel the-rule)
+  (lambda (data)
+    (the-rule data (lambda (value fail) value) (lambda () data))))
+
 (define let-form? (tagged-list? 'let))
+
+(define ->lambda
+  (try-rule-toplevel
+   (rule `(let (? bindings) (?? body))
+	 `((lambda ,(map car bindings)
+	     ,@body)
+	   ,@(map cadr bindings)))))
+
+(define ->let
+  (try-rule-toplevel
+   (rule `((lambda (? names) (?? body)) (?? args))
+	 `(let ,(map list names args) ,@body))))
+
+(define reconstitute-definition
+  (try-rule-toplevel
+   (rule `(define (? name)
+	    (lambda (? names)
+	      (?? body)))
+	 `(define (,name ,@names)
+	    ,@body))))
 
 (define (constructors-only? exp)
   (or (symbol? exp)
       (constant? exp)
       (null? exp)
       (and (pair? exp)
-	   (memq (car exp) '(cons vector real))
+	   (memq (car exp) '(cons vector real car cdr vector-ref))
 	   (every constructors-only? (cdr exp)))))
 
 (define (count-in-tree thing tree)
@@ -69,4 +93,37 @@
 	((pair? exp)
 	 (cons (replace-free-occurrences name new (car exp))
 	       (replace-free-occurrences name new (cdr exp))))
+	(else exp)))
+
+(define (alpha-extend env names)
+  (append
+   (map cons
+	names
+	(map (lambda (name)
+	       (if (assq name env)
+		   (make-name (symbol name '-))
+		   name))
+	     names))
+   env))
+
+(define (alpha-rename exp env)
+  (cond ((assq exp env) => cdr)
+	((lambda-form? exp)
+	 (let ((names (lambda-formal exp))
+	       (body (lambda-body exp)))
+	   (let ((new-env (alpha-extend env names)))
+	     (make-lambda-form
+	      (map (lambda (name)
+		     (cdr (assq name new-env)))
+		   names)
+	      (alpha-rename body new-env)))))
+	((let-form? exp)
+	 (->let (alpha-rename (->lambda exp) env)))
+	((definition? exp)
+	 ;; Assume the definiendum is already unique
+	 (reconstitute-definition
+	  `(define ,(definiendum exp)
+	     ,(alpha-rename (definiens exp) env))))
+	((pair? exp)
+	 (cons (alpha-rename (car exp) env) (alpha-rename (cdr exp) env)))
 	(else exp)))

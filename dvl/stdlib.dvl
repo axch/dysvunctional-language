@@ -1,0 +1,97 @@
+;;; -*- scheme -*-
+
+(define (car (cons x y)) x)
+(define (cdr (cons x y)) y)
+
+(define bundle-tag (gensym))
+(define (make-bundle epsilon primal tangent)
+  (list bundle-tag epsilon primal tangent))
+(define (bundle? thing win lose)
+  (if (and (pair? thing)
+	   (gensym? (car thing))
+	   (gensym= (car thing) bundle-tag))
+      (win (bundle-epsilon thing)
+	   (bundle-primal thing)
+	   (bundle-tangent thing))
+      (lose)))
+(define (bundle-epsilon thing)
+  (car (cdr thing)))
+(define (bundle-primal thing)
+  (car (cdr (cdr thing))))
+(define (bundle-tangent thing)
+  (car (cdr (cdr (cdr thing)))))
+(define (bundle?* thing)
+  (bundle? thing (lambda (x y z) #t) (lambda () #f)))
+
+(define (primal epsilon thing)
+  (bundle?
+   thing
+   (lambda (thing-eps thing-prim thing-tang)
+     (if (gensym= thing-eps epsilon)
+	 thing-prim
+	 (make-bundle thing-eps
+		      (primal epsilon thing-prim)
+		      (primal epsilon thing-tang))))
+   (lambda ()
+     (if (real? thing)
+	 thing
+	 (/ (real 1) (real 0))))))
+
+(define (tangent epsilon thing)
+  (bundle?
+   thing
+   (lambda (thing-eps thing-prim thing-tang)
+     (if (gensym= thing-eps epsilon)
+	 thing-tang
+	 (make-bundle thing-eps
+		      (tangent epsilon thing-prim)
+		      (tangent epsilon thing-tang))))
+   (lambda ()
+     (if (real? thing)
+	 0
+	 (/ (real 1) (real 0))))))
+
+(define (derivative f)
+  (let ((epsilon (gensym)))
+    (lambda (x)
+      (tangent epsilon (f (make-bundle epsilon x (real 1)))))))
+
+(define (g:+ thing1 thing2)
+  (bundle?
+   thing1
+   (lambda (eps prim tang)
+     (make-bundle
+      eps
+      (g:+ prim (primal eps thing2))
+      (g:+ tang (tangent eps thing2))))
+   (lambda ()
+     (bundle?
+      thing2
+      (lambda (eps prim tang)
+	(make-bundle
+	 eps
+	 (g:+ (primal eps thing1) prim)
+	 (g:+ (tangent eps thing1) tang)))
+      (lambda ()
+	(+ thing1 thing2))))))
+
+(define (g:* thing1 thing2)
+  (bundle?
+   thing1
+   (lambda (eps prim tang)
+     (let ((prim2 (primal eps thing2)))
+       (make-bundle
+	eps
+	(g:* prim prim2)
+	(g:+ (g:* tang prim2) (g:* prim (tangent eps thing2))))))
+   (lambda ()
+     (bundle?
+      thing2
+      (lambda (eps prim tang)
+	(let ((prim1 (primal eps thing1)))
+	  (make-bundle
+	   eps
+	   (g:* prim1 prim)
+	   (g:+ (g:* (tangent eps thing1) prim) (g:* prim1 tang)))))
+      (lambda ()
+	(* thing1 thing2))))))

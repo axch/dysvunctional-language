@@ -88,80 +88,80 @@
 ;;; particular way I handled VL's IF makes it register as a primitive
 ;;; procedure, which needs to be handled specially.
 (define (compile-apply exp env enclosure analysis)
-  (let ((operator (analysis-get (operator-subform exp) env analysis))
-	(operands (analysis-get (operand-subform exp) env analysis)))
-    (cond ((eq? primitive-if operator)
-	   (generate-if-statement
-	    exp env enclosure analysis operands))
-	  ((primitive? operator)
-	   (generate-primitive-application
-	    operator operands
-	    (compile (cadr exp) env enclosure analysis)))
+  (let ((operator (analysis-get (operator-subform exp) env analysis)))
+    (cond ((primitive? operator)
+	   ((primitive-generate operator) exp env enclosure analysis))
 	  ((closure? operator)
 	   (generate-closure-application
-	    operator operands
-	    (compile (car exp) env enclosure analysis)
-	    (compile (cadr exp) env enclosure analysis)))
+	    operator
+	    (analysis-get (operand-subform exp) env analysis)
+	    (compile (operator-subform exp) env enclosure analysis)
+	    (compile (operand-subform exp) env enclosure analysis)))
 	  (else
 	   (error "Invalid operator in code generation"
-		  exp operator operands env analysis)))))
+		  exp operator env analysis)))))
 
 ;;; A VL IF statement becomes a Scheme IF statement (unless the
 ;;; predicate was solved by the analysis, in which case we can just
 ;;; use the right branch).
-(define (generate-if-statement exp env enclosure analysis operands)
-  (define (if-procedure-expression-consequent exp)
-    (cadr (caddr (cadr exp))))
-  (define (if-procedure-expression-alternate exp)
-    (caddr (caddr (cadr exp))))
-  (define (generate-if-branch invokee-shape branch-exp)
-    (let ((answer-shape (abstract-result-of invokee-shape analysis)))
-      (if (solved-abstractly? answer-shape)
-	  (solved-abstract-value->constant answer-shape)
-	  (generate-closure-application
-	   invokee-shape '()
-	   (compile branch-exp env enclosure analysis)
-	   '(vector)))))
-  (if (solved-abstractly? (car operands))
-      (if (car operands)
-	  (generate-if-branch
-	   (cadr operands) (if-procedure-expression-consequent exp))
-	  (generate-if-branch
-	   (cddr operands) (if-procedure-expression-alternate exp)))
-      `(if ,(compile (cadr (cadr exp)) env enclosure analysis)
-	   ,(generate-if-branch
+(define (generate-if-statement exp env enclosure analysis)
+  (let ((operands (analysis-get (operand-subform exp) env analysis)))
+    (define (if-procedure-expression-consequent exp)
+      (cadr (caddr (cadr exp))))
+    (define (if-procedure-expression-alternate exp)
+      (caddr (caddr (cadr exp))))
+    (define (generate-if-branch invokee-shape branch-exp)
+      (let ((answer-shape (abstract-result-of invokee-shape analysis)))
+	(if (solved-abstractly? answer-shape)
+	    (solved-abstract-value->constant answer-shape)
+	    (generate-closure-application
+	     invokee-shape '()
+	     (compile branch-exp env enclosure analysis)
+	     '(vector)))))
+    (if (solved-abstractly? (car operands))
+	(if (car operands)
+	    (generate-if-branch
 	     (cadr operands) (if-procedure-expression-consequent exp))
-	   ,(generate-if-branch
-	     (cddr operands) (if-procedure-expression-alternate exp)))))
+	    (generate-if-branch
+	     (cddr operands) (if-procedure-expression-alternate exp)))
+	`(if ,(compile (cadr (cadr exp)) env enclosure analysis)
+	     ,(generate-if-branch
+	       (cadr operands) (if-procedure-expression-consequent exp))
+	     ,(generate-if-branch
+	       (cddr operands) (if-procedure-expression-alternate exp))))))
 
 ;;; A VL primitive application becomes an inlined call to a Scheme
 ;;; primitive (destructuring the incoming argument if needed).
-(define (generate-primitive-application primitive arg-shape arg-code)
-  (cond ((= 0 (primitive-arity primitive))
-	 (if (not (null? arg-shape))
-	     (error "Wrong arguments to nullary primitive procedure"
-		    primitive arg-shape arg-code)
-	     `(,(primitive-name primitive))))
-	((= 1 (primitive-arity primitive))
-	 (if (abstract-none? arg-shape)
-	     (error "Unary primitive procedure given fully unknown argument"
-		    primitive arg-shape arg-code))
-	 `(,(primitive-name primitive) ,arg-code))
-	((= 2 (primitive-arity primitive))
-	 (if (not (pair? arg-shape))
-	     (error "Wrong arguments to binary primitive procedure"
-		    primitive arg-shape arg-code))
-	 (let ((temp (fresh-temporary)))
-	   (define (access-code access access-name)
-	     (if (solved-abstractly? (access arg-shape))
-		 (solved-abstract-value->constant (access arg-shape))
-		 `(,access-name ,temp)))
-	   `(let ((,temp ,arg-code))
-	      (,(primitive-name primitive)
-	       ,(access-code car 'car)
-	       ,(access-code cdr 'cdr)))))
-	(else
-	 (error "Unsupported arity of primitive operation" primitive))))
+(define ((simple-primitive-application name arity)
+	 exp env enclosure analysis)
+  (let ((primitive (analysis-get (operator-subform exp) env analysis))
+	(arg-shape (analysis-get (operand-subform exp) env analysis))
+	(arg-code (compile (operand-subform exp) env enclosure analysis)))
+    (cond ((= 0 arity)
+	   (if (not (null? arg-shape))
+	       (error "Wrong arguments to nullary primitive procedure"
+		      primitive arg-shape arg-code))
+	   `(,name))
+	  ((= 1 arity)
+	   (if (abstract-none? arg-shape)
+	       (error "Unary primitive procedure given fully unknown argument"
+		      primitive arg-shape arg-code))
+	   `(,name ,arg-code))
+	  ((= 2 arity)
+	   (if (not (pair? arg-shape))
+	       (error "Wrong arguments to binary primitive procedure"
+		      primitive arg-shape arg-code))
+	   (let ((temp (fresh-temporary)))
+	     (define (access-code access access-name)
+	       (if (solved-abstractly? (access arg-shape))
+		   (solved-abstract-value->constant (access arg-shape))
+		   `(,access-name ,temp)))
+	     `(let ((,temp ,arg-code))
+		(,name
+		 ,(access-code car 'car)
+		 ,(access-code cdr 'cdr)))))
+	  (else
+	   (error "Unsupported arity of primitive operation" primitive)))))
 
 ;;; A VL compound procedure application becomes a call to the
 ;;; generated Scheme procedure that corresponds to the application of

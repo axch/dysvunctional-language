@@ -27,6 +27,7 @@
    "analysis"
    "abstract-values"
    "abstract-eval"
+   "work-list"
    "../vl/nomenclature"
    "../vl/code-generator"
    "primitives"
@@ -34,9 +35,14 @@
    "../vl/post-processing"
    "read"))
 
+(define (dvl-prepare form)
+  (let* ((stdlib (read-source "stdlib.dvl"))
+	 (program `(let () ,@stdlib ,form)))
+    program))
+
 (define (dvl-run-file filename)
   (let* ((forms (read-source filename))
-	 (program `(let () ,@forms))
+	 (program (dvl-prepare `(let () ,@forms)))
 	 (compiled-program (compile-to-scheme program))
 	 (compiled-answer
 	  (eval compiled-program (nearest-repl/environment))))

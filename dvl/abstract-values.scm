@@ -47,14 +47,19 @@
 (define-structure abstract-none)
 (define abstract-none (make-abstract-none))
 
-(define-structure (abstract-gensym safe-accessors)
+(define-structure
+  (abstract-gensym
+   safe-accessors
+   (print-procedure
+    (simple-unparser-method 'abstract-gensym
+     (lambda (abs-gensym)
+       (list (abstract-gensym-min abs-gensym)
+	     (abstract-gensym-max abs-gensym))))))
   min
   max)
 
 (define (trivial-abstract-gensym gensym)
   (make-abstract-gensym (gensym-number gensym) (gensym-number gensym)))
-
-(define the-abstract-gensym (make-abstract-gensym #f #f))
 
 ;;; Equality of shapes
 
@@ -170,13 +175,10 @@
 	  (world-equal? old-world new-world))
       thing
       (let loop ((thing thing))
-	(cond ((eq? the-abstract-gensym thing) thing)
-	      ((abstract-gensym? thing)
-	       (let ((difference
-		      (- (world-gensym new-world) (world-gensym old-world))))
-		 (make-abstract-gensym
-		  (+ (abstract-gensym-min thing) difference)
-		  (+ (abstract-gensym-max thing) difference))))
+	(cond ((abstract-gensym? thing)
+	       (make-abstract-gensym
+		(world-update-gensym-number (abstract-gensym-min thing) old-world new-world)
+		(world-update-gensym-number (abstract-gensym-max thing) old-world new-world)))
 	      (else (object-map loop thing))))))
 
 (define (world-update-world updatee old-world new-world)
@@ -189,17 +191,9 @@
 	  (- (world-gensym new-world)
 	     (world-gensym old-world))))))
 
-(define (broaden-abstract-gensysms thing)
-  ;; TODO Why is broadening abstract gensyms necessary before code generation?
-  (cond ((analysis? thing)
-	 (make-analysis
-	  (map broaden-abstract-gensysms (analysis-bindings thing))))
-	((binding? thing)
-	 (make-binding (binding-exp thing)
-		       (broaden-abstract-gensysms (binding-env thing))
-		       (binding-world thing)
-		       (broaden-abstract-gensysms (binding-value thing))
-		       (binding-new-world thing)))
-	((abstract-gensym? thing)
-	 the-abstract-gensym)
-	(else (object-map broaden-abstract-gensysms thing))))
+(define (world-update-gensym-number number old-world new-world)
+  (if (< number (world-gensym old-world))
+      ;; Already existed
+      number
+      ;; Newly made
+      (+ number (- (world-gensym new-world) (world-gensym old-world)))))

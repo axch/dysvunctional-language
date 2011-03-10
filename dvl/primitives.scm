@@ -8,11 +8,11 @@
 ;;; and name and arity slots, respectively.
 
 (define-structure (primitive (safe-accessors #t))
-  name					; concrete eval and code generator
-  arity					; code generator
+  name					; source language
   implementation			; concrete eval
   abstract-implementation		; abstract eval
-  expand-implementation)		; abstract eval
+  expand-implementation	        	; abstract eval
+  generate)				; code generator
 
 (define *primitives* '())
 
@@ -20,13 +20,14 @@
   (set! *primitives* (cons primitive *primitives*)))
 
 (define (simple-primitive name arity implementation abstract-implementation)
-  (make-primitive name arity
+  (make-primitive name
    (lambda (arg world win)
      (win (implementation arg) world))
    (lambda (arg world analysis win)
      (win (abstract-implementation arg) world))
    (lambda (arg world analysis)
-     '())))
+     '())
+   (simple-primitive-application name arity)))
 
 ;;; Most primitives fall into a few natural classes:
 
@@ -60,9 +61,14 @@
   (simple-primitive name 1
    base
    (lambda (arg)
-     (if (abstract-real? arg)
-	 (eq? base real?)
-	 (base arg)))))
+     (cond ((abstract-real? arg)
+	    (eq? base real?))
+	   ((abstract-boolean? arg)
+	    (eq? base boolean?))
+	   ((abstract-gensym? arg)
+	    (eq? base gensym?))
+	   (else
+	    (base arg))))))
 
 (define-syntax define-R->R-primitive
   (syntax-rules ()
@@ -184,7 +190,7 @@
   (if p (c) (a)))
 
 (define primitive-if
-  (make-primitive 'if-procedure 3
+  (make-primitive 'if-procedure
    (lambda (arg world win)
      (if (car arg)
 	 (concrete-apply (cadr arg) '() world win)
@@ -218,33 +224,43 @@
 	       (expand-thunk-application alternate))
 	   (lset-union same-analysis-binding?
 		       (expand-thunk-application consequent)
-		       (expand-thunk-application alternate)))))))
+		       (expand-thunk-application alternate)))))
+   generate-if-statement))
 (add-primitive! primitive-if)
 
 (define (abstract-result-in-world thunk-shape world analysis win)
   ;; N.B. ABSTRACT-RESULT-IN-WORLD only exists because of the way I'm doing IF.
-  (refine-apply thunk-shape '() world analysis win))
+  (analysis-get-in-world
+   `(,(closure-exp thunk-shape) ())
+   (closure-env thunk-shape)
+   world
+   analysis
+   win))
 
 (define (abstract-result-of thunk-shape analysis)
-  (abstract-result-in-world thunk-shape (initial-world) analysis
-   (lambda (value world) value)))
+  (analysis-get (closure-body thunk-shape)
+		(extend-env (closure-formal thunk-shape)
+			    '()
+			    (closure-env thunk-shape))
+		analysis))
 
 ;;;; Gensym
 
 (define *the-gensym* 0)
 (define (gensym)
   (set! *the-gensym* (+ *the-gensym* 1))
-  (make-gensym *the-gensym*))
+  (make-gensym (- *the-gensym* 1)))
 
 (add-primitive!
- (make-primitive 'gensym 0
+ (make-primitive 'gensym
   (lambda (arg world win)
     (win (current-gensym world) (do-gensym world)))
   (lambda (arg world analysis win)
     (win (trivial-abstract-gensym
 	  (current-gensym world))
 	 (do-gensym world)))
-  (lambda (arg world analysis) '())))
+  (lambda (arg world analysis) '())
+  (simple-primitive-application 'gensym 0)))
 
 (define (gensym= gensym1 gensym2)
   (= (gensym-number gensym1) (gensym-number gensym2)))
@@ -268,6 +284,8 @@
 	       #f)
 	      (else
 	       abstract-boolean)))))))
+
+(define-primitive-type-predicate gensym?)
 
 (define (initial-user-env)
   (make-env
