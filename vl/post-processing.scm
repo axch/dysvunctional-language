@@ -233,7 +233,12 @@
     (= 0 (count-in-tree (definiendum defn) (definiens defn))))
   (define (inline-defn defn forms)
     (let ((defn (strip-argument-types defn)))
-      (replace-free-occurrences (definiendum defn) (definiens defn) forms)))
+      (let ((name (definiendum defn))
+	    (replacement (definiens defn)))
+	((on-subexpressions
+	  (rule `(,name (?? args))
+		(->let `(,replacement ,@args))))
+	 forms))))
   (let loop ((forms forms))
     (let scan ((done '()) (forms forms))
       (cond ((null? forms) (reverse done))
