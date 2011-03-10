@@ -27,7 +27,7 @@
 	   (if (list? expression)
 	       (map simplify-expression expression)
 	       expression)))
-      ((rule-list (list the-rule)) subexpressions-simplified)))
+      (the-rule subexpressions-simplified)))
   (rule-memoize simplify-expression))
 
 (define (list<? x y)
