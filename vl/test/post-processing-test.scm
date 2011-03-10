@@ -1,6 +1,8 @@
 (define (tidy-non-soundness program)
-  (cond ((not (equal? (%scheme-eval program) (%scheme-eval (tidy program))))
-	 `(not (equal? ,(%scheme-eval program) (after-tidy ,(%scheme-eval (tidy program))))))
+  (cond ((not (equal? (%scheme-eval program)
+		      (%scheme-eval (tidy (full-alpha-rename program)))))
+	 `(not (equal? ,(%scheme-eval program)
+		       (after-tidy ,(%scheme-eval (tidy (full-alpha-rename program)))))))
 	(else #f)))
 
 (in-test-group

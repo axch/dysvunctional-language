@@ -23,11 +23,12 @@
 (define (prettify-compiler-output output)
   (if (list? output)
       (tidy
-       (strip-argument-types
-	(scalar-replace-aggregates
-	 (inline
-	  (structure-definitions->vectors
-	   output)))))
+       (full-alpha-rename
+	(strip-argument-types
+	 (scalar-replace-aggregates
+	  (inline
+	   (structure-definitions->vectors
+	    output))))))
       output))
 
 (define (compile-to-scheme program)
@@ -244,6 +245,17 @@
 	       (loop (inline-defn defn others))))
 	    (else (scan (cons (car forms) done) (cdr forms)))))))
 
+(define (full-alpha-rename program)
+  ;; TODO Fix the bookkeeping of what names the primitives rely on
+  (define (needed-names primitive)
+    (list (primitive-name primitive)))
+  (alpha-rename program
+   (map (lambda (name)
+	  (cons name name))
+	(delete-duplicates
+	 `(cons car cdr if define let lambda vector vector-ref
+		,@(append-map needed-names *primitives*))))))
+
 ;;;; Term-rewriting tidier
 
 (define tidy
@@ -266,14 +278,8 @@
 	     (?? body))
 	  (let ((occurrence-count (count-free-occurrences name body)))
 	    (and (or (= 0 occurrence-count)
-		     ;; TODO It turns out that this check is not good
-		     ;; enough.  I need full alpha renaming to inline
-		     ;; expressions properly.
-		     #;
-		     (and (not (memq exp (append (map car bindings1)
-						 (map car bindings2))))
-			  (or (= 1 occurrence-count)
-			      (constructors-only? exp))))
+		     (= 1 occurrence-count)
+		     (constructors-only? exp))
 		 `(let (,@bindings1
 			,@bindings2)
 		    ,@(replace-free-occurrences name exp body))))))))
