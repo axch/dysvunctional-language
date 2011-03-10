@@ -13,15 +13,11 @@
       (make-rule pattern (user-handler->system-handler
 			  handler (match:pattern-names pattern)))
       (let ((pattern-combinator (->combinators pattern)))
-	(lambda (data #!optional succeed fail)
-	  (if (default-object? succeed)
-	      (set! succeed (lambda (value fail) value)))
-	  (if (default-object? fail)
-	      (set! fail (lambda () data)))
+	(lambda (data)
 	  (pattern-combinator data
 	   (lambda (dict fail)
-	     (handler dict succeed fail))
-	   fail)))))
+	     (handler dict (lambda (value fail) value) fail))
+	   (lambda () data))))))
 
 (define (try-rules data rules succeed fail)
   (let per-rule ((rules rules))
