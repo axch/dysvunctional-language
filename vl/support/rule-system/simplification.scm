@@ -1,13 +1,13 @@
 (declare (usual-integrations))
 
-(define (try-rules data rules succeed fail)
+(define (try-rules data rules)
   (let per-rule ((rules rules))
     (if (null? rules)
-	(fail)
+	data
 	(let ((answer ((car rules) data)))
 	  (if (eq? data answer)
 	      (per-rule (cdr rules))
-	      (succeed answer (lambda () (per-rule (cdr rules)))))))))
+	      answer)))))
 
 (define (rule-simplifier the-rules)
   (define (simplify-expression expression)
@@ -15,11 +15,10 @@
 	   (if (list? expression)
 	       (map simplify-expression expression)
 	       expression)))
-      (try-rules subexpressions-simplified the-rules
-       (lambda (result fail)
-	 (simplify-expression result))
-       (lambda ()
-	 subexpressions-simplified))))
+      (let ((answer (try-rules subexpressions-simplified the-rules)))
+	(if (eq? answer subexpressions-simplified)
+	    answer
+	    (simplify-expression answer)))))
   (rule-memoize simplify-expression))
 
 (define (recursively-try-once the-rule)
@@ -28,9 +27,7 @@
 	   (if (list? expression)
 	       (map simplify-expression expression)
 	       expression)))
-      (try-rules subexpressions-simplified (list the-rule)
-       (lambda (result fail) result)
-       (lambda () subexpressions-simplified))))
+      (try-rules subexpressions-simplified (list the-rule))))
   (rule-memoize simplify-expression))
 
 (define (list<? x y)
