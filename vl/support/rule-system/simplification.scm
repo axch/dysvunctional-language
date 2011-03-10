@@ -9,17 +9,13 @@
 	      (per-rule (cdr rules))
 	      answer)))))
 
-(define (rule-simplifier the-rules)
-  (define (simplify-expression expression)
-    (let ((subexpressions-simplified
-	   (if (list? expression)
-	       (map simplify-expression expression)
-	       expression)))
-      (let ((answer ((rule-list the-rules) subexpressions-simplified)))
-	(if (eq? answer subexpressions-simplified)
-	    answer
-	    (simplify-expression answer)))))
-  (rule-memoize simplify-expression))
+(define (iterated the-rule)
+  (lambda (data)
+    (let loop ((data data)
+	       (answer (the-rule data)))
+      (if (eq? answer data)
+	  answer
+	  (loop answer (the-rule answer))))))
 
 (define (on-subexpressions the-rule)
   (define (on-expression expression)
@@ -29,6 +25,22 @@
 	       expression)))
       (the-rule subexpressions-simplified)))
   (rule-memoize on-expression))
+
+(define (iterated-on-subexpressions the-rule)
+  ;; Unfortunately, this is not just a composition of the prior two.
+  (define (simplify-expression expression)
+    (let ((subexpressions-simplified
+	   (if (list? expression)
+	       (map simplify-expression expression)
+	       expression)))
+      (let ((answer (the-rule subexpressions-simplified)))
+	(if (eq? answer subexpressions-simplified)
+	    answer
+	    (simplify-expression answer)))))
+  (rule-memoize simplify-expression))
+
+(define (rule-simplifier the-rules)
+  (iterated-on-subexpressions (rule-list the-rules)))
 
 (define (list<? x y)
   (let ((nx (length x)) (ny (length y)))
