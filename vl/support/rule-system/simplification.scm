@@ -1,6 +1,6 @@
 (declare (usual-integrations))
 
-(define (try-rules data rules)
+(define ((rule-list rules) data)
   (let per-rule ((rules rules))
     (if (null? rules)
 	data
@@ -15,7 +15,7 @@
 	   (if (list? expression)
 	       (map simplify-expression expression)
 	       expression)))
-      (let ((answer (try-rules subexpressions-simplified the-rules)))
+      (let ((answer ((rule-list the-rules) subexpressions-simplified)))
 	(if (eq? answer subexpressions-simplified)
 	    answer
 	    (simplify-expression answer)))))
@@ -27,7 +27,7 @@
 	   (if (list? expression)
 	       (map simplify-expression expression)
 	       expression)))
-      (try-rules subexpressions-simplified (list the-rule))))
+      ((rule-list (list the-rule)) subexpressions-simplified)))
   (rule-memoize simplify-expression))
 
 (define (list<? x y)
