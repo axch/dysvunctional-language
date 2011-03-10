@@ -63,16 +63,7 @@
 	     `(lambda ,(lambda-formal exp)
 		,@(replace-free-occurrences name new (cddr exp)))))
 	((let-form? exp)
-	 (let ((bindings (cadr exp))
-	       (body (cddr exp)))
-	   `(let ,(map (lambda (binding)
-			 (list (car binding)
-			       (replace-free-occurrences
-				name new (cadr binding))))
-		       bindings)
-	      ,@(if (memq name (map car bindings))
-		    body
-		    (replace-free-occurrences name new body)))))
+	 (->let (replace-free-occurrences name new (->lambda exp))))
 	((pair-form? exp)
 	 `(cons ,(replace-free-occurrences name new (car-subform exp))
 		,(replace-free-occurrences name new (cdr-subform exp))))
