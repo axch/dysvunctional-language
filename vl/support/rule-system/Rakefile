@@ -1,18 +1,0 @@
-def files
-  ["ps-src.txt", "load.scm", "matcher.scm",
-   "pattern-directed-invocation.scm", "rules.scm"]
-end
-
-file "ps.txt" => files do
-  sh "cat ps-src.txt > ps.txt"
-  files[1..-1].each do |file|
-    sh "echo  >> ps.txt"
-    sh "cat #{file} >> ps.txt"
-  end
-end
-
-file "ps.ps" => "ps.txt" do
-  sh "~/print-code -o ps.ps -f Courier-Bold12 -i4 ps.txt"
-end
-
-task :default => "ps.ps"
