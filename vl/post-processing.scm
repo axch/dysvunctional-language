@@ -189,7 +189,7 @@
   (define (do-sra-definition sra-result done rest)
     (let ((sra-call-site-rule (car sra-result))
 	  (replacement-form (cdr sra-result)))
-      (let ((sra-call-sites (recursively-try-once sra-call-site-rule)))
+      (let ((sra-call-sites (on-subexpressions sra-call-site-rule)))
 	(let ((fixed-replacement-form
 	       `(,(car replacement-form) ,(cadr replacement-form)
 		 ,(caddr replacement-form)

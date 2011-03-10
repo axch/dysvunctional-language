@@ -21,14 +21,14 @@
 	    (simplify-expression answer)))))
   (rule-memoize simplify-expression))
 
-(define (recursively-try-once the-rule)
-  (define (simplify-expression expression)
+(define (on-subexpressions the-rule)
+  (define (on-expression expression)
     (let ((subexpressions-simplified
 	   (if (list? expression)
-	       (map simplify-expression expression)
+	       (map on-expression expression)
 	       expression)))
       (the-rule subexpressions-simplified)))
-  (rule-memoize simplify-expression))
+  (rule-memoize on-expression))
 
 (define (list<? x y)
   (let ((nx (length x)) (ny (length y)))
