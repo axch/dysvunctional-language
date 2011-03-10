@@ -30,23 +30,23 @@
 	   restrictions))
   (define (element-match data dictionary succeed)
     (and (ok? data)
-	 (let ((vcell (match:lookup variable dictionary)))
+	 (let ((vcell (dict:lookup variable dictionary)))
 	   (if vcell
-	       (and (equal? (match:value vcell) data)
+	       (and (equal? (dict:value vcell) data)
 		    (succeed dictionary))
-	       (succeed (match:bind variable data dictionary))))))
+	       (succeed (dict:bind variable data dictionary))))))
   element-match)
 
 
 ;;; Support for the dictionary.
 
-(define (match:bind variable data-object dictionary)
+(define (dict:bind variable data-object dictionary)
   (cons (list variable data-object) dictionary))
 
-(define (match:lookup variable dictionary)
+(define (dict:lookup variable dictionary)
   (assq variable dictionary))
 
-(define (match:value vcell)
+(define (dict:value vcell)
   (cadr vcell))
 
 ;;; TODO match:segment need not search under two circumstances.  One
@@ -64,10 +64,10 @@
 (define (match:segment variable)
   (define (segment-match data dictionary succeed)
     (and (list? data)
-	 (let ((vcell (match:lookup variable dictionary)))
+	 (let ((vcell (dict:lookup variable dictionary)))
 	   (if vcell
 	       (let lp ((data data)
-			(pattern (match:value vcell))
+			(pattern (dict:value vcell))
 			(n 0))
 		 (cond ((pair? pattern)
 			(if (and (pair? data)
@@ -79,9 +79,9 @@
 	       (let ((n (length data)))
 		 (let lp ((i 0))
 		   (if (<= i n)
-		       (or (succeed (match:bind variable
-						(list-head data i)
-						dictionary)
+		       (or (succeed (dict:bind variable
+					       (list-head data i)
+					       dictionary)
 				    i)
 			   (lp (+ i 1)))
 		       #f)))))))

@@ -60,8 +60,8 @@
     (system-handler!
      (lambda (dict succeed fail)
        (define (matched-value name)
-	 (match:value
-	  (or (match:lookup name dict)
+	 (dict:value
+	  (or (dict:lookup name dict)
 	      (error "Handler asked for unknown name"
 		     name dict))))
        (let* ((argument-list (map matched-value handler-argl))
