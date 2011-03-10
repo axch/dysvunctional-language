@@ -19,25 +19,25 @@
 
 (define (on-subexpressions the-rule)
   (define (on-expression expression)
-    (let ((subexpressions-simplified
+    (let ((subexpressions-done
 	   (if (list? expression)
 	       (map on-expression expression)
 	       expression)))
-      (the-rule subexpressions-simplified)))
+      (the-rule subexpressions-done)))
   (rule-memoize on-expression))
 
 (define (iterated-on-subexpressions the-rule)
   ;; Unfortunately, this is not just a composition of the prior two.
-  (define (simplify-expression expression)
-    (let ((subexpressions-simplified
+  (define (on-expression expression)
+    (let ((subexpressions-done
 	   (if (list? expression)
-	       (map simplify-expression expression)
+	       (map on-expression expression)
 	       expression)))
-      (let ((answer (the-rule subexpressions-simplified)))
-	(if (eq? answer subexpressions-simplified)
+      (let ((answer (the-rule subexpressions-done)))
+	(if (eq? answer subexpressions-done)
 	    answer
-	    (simplify-expression answer)))))
-  (rule-memoize simplify-expression))
+	    (on-expression answer)))))
+  (rule-memoize on-expression))
 
 (define (rule-simplifier the-rules)
   (iterated-on-subexpressions (rule-list the-rules)))
