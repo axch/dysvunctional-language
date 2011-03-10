@@ -1,31 +1,24 @@
 (declare (usual-integrations))
 ;;;; Syntax and manipulations of the output language
 
-(define (try-rule-toplevel the-rule)
-  (lambda (data)
-    (the-rule data (lambda (value fail) value) (lambda () data))))
-
 (define let-form? (tagged-list? 'let))
 
 (define ->lambda
-  (try-rule-toplevel
-   (rule `(let (? bindings) (?? body))
-	 `((lambda ,(map car bindings)
-	     ,@body)
-	   ,@(map cadr bindings)))))
+  (rule `(let (? bindings) (?? body))
+	`((lambda ,(map car bindings)
+	    ,@body)
+	  ,@(map cadr bindings))))
 
 (define ->let
-  (try-rule-toplevel
-   (rule `((lambda (? names) (?? body)) (?? args))
-	 `(let ,(map list names args) ,@body))))
+  (rule `((lambda (? names) (?? body)) (?? args))
+	`(let ,(map list names args) ,@body)))
 
 (define reconstitute-definition
-  (try-rule-toplevel
-   (rule `(define (? name)
-	    (lambda (? names)
-	      (?? body)))
-	 `(define (,name ,@names)
-	    ,@body))))
+  (rule `(define (? name)
+	   (lambda (? names)
+	     (?? body)))
+	`(define (,name ,@names)
+	   ,@body)))
 
 (define (constructors-only? exp)
   (or (symbol? exp)
