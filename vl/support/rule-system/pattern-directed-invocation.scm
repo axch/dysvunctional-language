@@ -6,8 +6,8 @@
 ;;; value from them.  Once constructed, a rule is a procedure that
 ;;; accepts a datum, and returns either #f if the pattern doesn't
 ;;; match or the value of the handler when applied to the dictionary
-;;; if it does.  This code contains a solution to the consequent
-;;; sentinel value issue, but I don't like it.
+;;; if it does.  This code does not solve the consequent sentinel
+;;; value issue.
 
 (define (make-rule pattern handler)
   (if (user-handler? handler)
