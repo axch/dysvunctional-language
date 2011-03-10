@@ -27,9 +27,10 @@
   (let per-rule ((rules rules))
     (if (null? rules)
 	(fail)
-	((car rules) data succeed
-	 (lambda ()
-	   (per-rule (cdr rules)))))))
+	(let ((answer ((car rules) data)))
+	  (if (eq? data answer)
+	      (per-rule (cdr rules))
+	      (succeed answer (lambda () (per-rule (cdr rules)))))))))
 
 ;;; The user-handler is expected to be a procedure that binds the
 ;;; variables that appear in the match and uses them somehow.  This
