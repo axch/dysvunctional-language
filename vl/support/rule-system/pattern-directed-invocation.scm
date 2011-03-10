@@ -23,23 +23,6 @@
     (try-rules arguments (entity-extra self) succeed fail))
   (make-entity operator (if (default-object? rules) '() rules)))
 
-(define (attach-rule! operator rule)
-  (set-entity-extra! operator
-   (cons rule (entity-extra operator))))
-
-(define (rule-simplifier the-rules)
-  (define (simplify-expression expression)
-    (let ((subexpressions-simplified
-	   (if (list? expression)
-	       (map simplify-expression expression)
-	       expression)))
-      (try-rules subexpressions-simplified the-rules
-       (lambda (result fail)
-	 (simplify-expression result))
-       (lambda ()
-	 subexpressions-simplified))))
-  (rule-memoize simplify-expression))
-
 (define (try-rules data rules succeed fail)
   (let per-rule ((rules rules))
     (if (null? rules)
@@ -48,16 +31,9 @@
 	 (lambda ()
 	   (per-rule (cdr rules)))))))
 
-(define (recursively-try-once the-rule)
-  (define (simplify-expression expression)
-    (let ((subexpressions-simplified
-	   (if (list? expression)
-	       (map simplify-expression expression)
-	       expression)))
-      (try-rules subexpressions-simplified (list the-rule)
-       (lambda (result fail) result)
-       (lambda () subexpressions-simplified))))
-  (rule-memoize simplify-expression))
+(define (attach-rule! operator rule)
+  (set-entity-extra! operator
+   (cons rule (entity-extra operator))))
 
 ;;; The user-handler is expected to be a procedure that binds the
 ;;; variables that appear in the match and uses them somehow.  This

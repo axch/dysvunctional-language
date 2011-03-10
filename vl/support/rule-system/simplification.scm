@@ -1,5 +1,29 @@
 (declare (usual-integrations))
 
+(define (rule-simplifier the-rules)
+  (define (simplify-expression expression)
+    (let ((subexpressions-simplified
+	   (if (list? expression)
+	       (map simplify-expression expression)
+	       expression)))
+      (try-rules subexpressions-simplified the-rules
+       (lambda (result fail)
+	 (simplify-expression result))
+       (lambda ()
+	 subexpressions-simplified))))
+  (rule-memoize simplify-expression))
+
+(define (recursively-try-once the-rule)
+  (define (simplify-expression expression)
+    (let ((subexpressions-simplified
+	   (if (list? expression)
+	       (map simplify-expression expression)
+	       expression)))
+      (try-rules subexpressions-simplified (list the-rule)
+       (lambda (result fail) result)
+       (lambda () subexpressions-simplified))))
+  (rule-memoize simplify-expression))
+
 (define (list<? x y)
   (let ((nx (length x)) (ny (length y)))
     (cond ((< nx ny) #t)
