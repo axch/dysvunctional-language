@@ -24,7 +24,7 @@
 	       (map on-expression expression)
 	       expression)))
       (the-rule subexpressions-done)))
-  (rule-memoize on-expression))
+  on-expression)
 
 (define (iterated-on-subexpressions the-rule)
   ;; Unfortunately, this is not just a composition of the prior two.
@@ -37,7 +37,7 @@
 	(if (eq? answer subexpressions-done)
 	    answer
 	    (on-expression answer)))))
-  (rule-memoize on-expression))
+  on-expression)
 
 (define (rule-simplifier the-rules)
   (iterated-on-subexpressions (rule-list the-rules)))
