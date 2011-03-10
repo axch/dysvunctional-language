@@ -202,7 +202,7 @@
       (if (null? forms)
 	  (reverse done)
 	  (let ((sra-attempt (sra-definition-rule (car forms))))
-	    (if sra-attempt
+	    (if (not (eq? (car forms) sra-attempt))
 		(loop (do-sra-definition sra-attempt done (cdr forms)))
 		(scan (cons (car forms) done) (cdr forms))))))))
 

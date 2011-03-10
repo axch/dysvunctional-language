@@ -4,10 +4,9 @@
 ;;; pattern determines the applicability of the rule and the match
 ;;; bindings that enable it, and the handler can compute an arbitrary
 ;;; value from them.  Once constructed, a rule is a procedure that
-;;; accepts a datum, and returns either #f if the pattern doesn't
+;;; accepts a datum returns either the datum back if the pattern doesn't
 ;;; match or the value of the handler when applied to the dictionary
-;;; if it does.  This code does not solve the consequent sentinel
-;;; value issue.
+;;; if it does.
 
 (define (make-rule pattern handler)
   (if (user-handler? handler)
@@ -18,7 +17,7 @@
 	  (if (default-object? succeed)
 	      (set! succeed (lambda (value fail) value)))
 	  (if (default-object? fail)
-	      (set! fail (lambda () #f)))
+	      (set! fail (lambda () data)))
 	  (pattern-combinator data
 	   (lambda (dict fail)
 	     (handler dict succeed fail))
