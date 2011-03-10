@@ -14,11 +14,12 @@
 	`(let ,(map list names args) ,@body)))
 
 (define reconstitute-definition
-  (rule `(define (? name)
-	   (lambda (? names)
-	     (?? body)))
-	`(define (,name ,@names)
-	   ,@body)))
+  (iterated
+   (rule `(define (? name)
+	    (lambda (? names)
+	      (?? body)))
+	 `(define (,name ,@names)
+	    ,@body))))
 
 (define (constructors-only? exp)
   (or (symbol? exp)
