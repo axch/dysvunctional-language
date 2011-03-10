@@ -258,7 +258,7 @@
    (map (lambda (name)
 	  (cons name name))
 	(delete-duplicates
-	 `(cons car cdr if define let lambda vector vector-ref
+	 `(cons car cdr if define let vector vector-ref
 		,@(append-map needed-names *primitives*))))))
 
 ;;;; Term-rewriting tidier
@@ -273,9 +273,6 @@
     (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
 	  (list-ref stuff index))
     (rule `(let (((? name ,symbol?) (? exp))) (? name)) exp)
-
-    (rule `((lambda (? names) (?? body)) (?? args))
-	  `(let ,(map list names args) ,@body))
 
     (rule `(let ((?? bindings1)
 		 ((? name ,symbol?) (? exp))
