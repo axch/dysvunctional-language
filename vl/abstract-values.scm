@@ -51,21 +51,21 @@
 
 (define (abstract-equal? thing1 thing2)
   (cond ((eqv? thing1 thing2)
-	 #t)
-	(else (congruent-reduce
-	       (lambda (lst1 lst2) (every abstract-equal? lst1 lst2))
-	       thing1
-	       thing2
-	       (lambda () #f)))))
+         #t)
+        (else (congruent-reduce
+               (lambda (lst1 lst2) (every abstract-equal? lst1 lst2))
+               thing1
+               thing2
+               (lambda () #f)))))
 
 (define (abstract-hash-mod thing modulus)
   (let loop ((thing thing))
     (cond ((or (closure? thing) (pair? thing) (env? thing))
-	   (object-reduce
-	    (lambda (lst)
-	      (equal-hash-mod (map loop lst) modulus))
-	    thing))
-	  (else (eqv-hash-mod thing modulus)))))
+           (object-reduce
+            (lambda (lst)
+              (equal-hash-mod (map loop lst) modulus))
+            thing))
+          (else (eqv-hash-mod thing modulus)))))
 
 (define make-abstract-hash-table
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #t))
@@ -75,62 +75,62 @@
 
 (define (abstract-union thing1 thing2)
   (cond ((abstract-equal? thing1 thing2)
-	 thing1)
-	((abstract-none? thing1)
-	 thing2)
-	((abstract-none? thing2)
-	 thing1)
-	((and (some-boolean? thing1) (some-boolean? thing2))
-	 abstract-boolean)
-	((and (some-real? thing1) (some-real? thing2))
-	 abstract-real)
-	(else
-	 (congruent-map abstract-union thing1 thing2
+         thing1)
+        ((abstract-none? thing1)
+         thing2)
+        ((abstract-none? thing2)
+         thing1)
+        ((and (some-boolean? thing1) (some-boolean? thing2))
+         abstract-boolean)
+        ((and (some-real? thing1) (some-real? thing2))
+         abstract-real)
+        (else
+         (congruent-map abstract-union thing1 thing2
           (lambda ()
-	    (error "This program is not union-free:" thing1 thing2))))))
+            (error "This program is not union-free:" thing1 thing2))))))
 ;;;; Things the code generator wants to know about abstract values
 
 ;;; Is this shape completely determined by the analysis?
 (define (solved-abstractly? thing)
   (cond ((abstract-boolean? thing) #f)
-	((abstract-real? thing) #f)
-	((abstract-none? thing) #f)
-	(else
-	 (object-reduce
-	  (lambda (lst) (every solved-abstractly? lst))
-	  thing))))
+        ((abstract-real? thing) #f)
+        ((abstract-none? thing) #f)
+        (else
+         (object-reduce
+          (lambda (lst) (every solved-abstractly? lst))
+          thing))))
 
 ;;; If so, what's the Scheme code to make that value?
 (define (solved-abstract-value->constant thing)
   (cond ((or (null? thing) (boolean? thing) (real? thing)) thing)
-	((primitive? thing) (primitive-name thing))
-	((pair? thing)
-	 (list 'cons (solved-abstract-value->constant (car thing))
-	       (solved-abstract-value->constant (cdr thing))))
-	(else '(vector))))
+        ((primitive? thing) (primitive-name thing))
+        ((pair? thing)
+         (list 'cons (solved-abstract-value->constant (car thing))
+               (solved-abstract-value->constant (cdr thing))))
+        (else '(vector))))
 
 ;;; What variables in this expression need determining at runtime?
 (define (interesting-variables exp env)
   (define (interesting-variable? var)
     (not (solved-abstractly? (lookup var env))))
   (sort (filter interesting-variable? (free-variables exp))
-	symbol<?))
+        symbol<?))
 
 ;;; What type does this shape represent?
 (define (shape->type-declaration thing)
   (define (interesting-environment-values closure)
     (let ((vars (closure-free-variables closure))
-	  (env (closure-env closure)))
+          (env (closure-env closure)))
       (map (lambda (var) (lookup var env))
-	   (interesting-variables vars env))))
+           (interesting-variables vars env))))
   (cond ((abstract-real? thing) 'real)
-	((abstract-boolean? thing) 'boolean)
-	((solved-abstractly? thing) '(vector))
-	((closure? thing)
-	 (cons (abstract-closure->scheme-structure-name thing)
-	       (map shape->type-declaration
-		    (interesting-environment-values thing))))
-	((pair? thing)
-	 `(cons ,(shape->type-declaration (car thing))
-		,(shape->type-declaration (cdr thing))))
-	(else (error "shape->type-declaration loses!" thing))))
+        ((abstract-boolean? thing) 'boolean)
+        ((solved-abstractly? thing) '(vector))
+        ((closure? thing)
+         (cons (abstract-closure->scheme-structure-name thing)
+               (map shape->type-declaration
+                    (interesting-environment-values thing))))
+        ((pair? thing)
+         `(cons ,(shape->type-declaration (car thing))
+                ,(shape->type-declaration (cdr thing))))
+        (else (error "shape->type-declaration loses!" thing))))

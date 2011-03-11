@@ -21,7 +21,7 @@
 (define (binary-primitive name proc)
   (add-primitive!
    (make-primitive name (lambda (arg)
-			  (proc (car arg) (cdr arg))))))
+                          (proc (car arg) (cdr arg))))))
 
 (define-syntax define-unary-primitive
   (syntax-rules ()
@@ -68,11 +68,11 @@
 
 (define (slad-if-procedure arg)
   (let ((p (car arg))
-	(c (cadr arg))
-	(a (cddr arg)))
+        (c (cadr arg))
+        (a (cddr arg)))
     (if p
-	(slad-apply c '())
-	(slad-apply a '()))))
+        (slad-apply c '())
+        (slad-apply a '()))))
 
 (add-primitive! (make-primitive 'if-procedure slad-if-procedure))
 
@@ -116,17 +116,17 @@
    name
    `(lambda (b)
       (let* ((p (primal b))
-	     (answer (,name p)))
-	(bundle answer (zero answer))))))
+             (answer (,name p)))
+        (bundle answer (zero answer))))))
 
 (define (operates-on-primals! name)
   (set-forward-transform-unevaluated!
    name
    `(lambda (b1 b2)
       (let* ((p1 (primal b1))
-	     (p2 (primal b2))
-	     (answer (,name p1 p2)))
-	(bundle answer (zero answer))))))
+             (p2 (primal b2))
+             (answer (,name p1 p2)))
+        (bundle answer (zero answer))))))
 
 (transforms-to-self! 'null?)
 (transforms-to-self! 'boolean?)
@@ -147,22 +147,22 @@
    name
    `(lambda (b)
       (let ((p (primal b))
-	    (t (tangent b)))
-	(bundle
-	 (,name p)
-	 (* ,expr t))))))
+            (t (tangent b)))
+        (bundle
+         (,name p)
+         (* ,expr t))))))
 
 (define (binary-derivative-expression! name exprx expry)
   (set-forward-transform-unevaluated!
    name
    `(lambda (x y)
       (let ((px (primal x))
-	    (tx (tangent x))
-	    (py (primal y))
-	    (ty (tangent y)))
-	(bundle
-	 (,name px py)
-	 (+ (* ,exprx tx) (* ,expry ty)))))))
+            (tx (tangent x))
+            (py (primal y))
+            (ty (tangent y)))
+        (bundle
+         (,name px py)
+         (+ (* ,exprx tx) (* ,expry ty)))))))
 
 (unary-derivative-expression!  'exp  '(exp p))
 (unary-derivative-expression!  'sin  '(cos p))
@@ -183,8 +183,8 @@
  'if-procedure
  '(lambda (b1 c a)
     (if (primal b1)
-	(c)
-	(a))))
+        (c)
+        (a))))
 
 (transforms-to-self! 'bundle)
 (transforms-to-self! 'primal)
@@ -195,14 +195,14 @@
 
 (define (initial-user-env)
   (let ((answer
-	 (make-env
-	  (map (lambda (primitive)
-		 (cons (primitive-name primitive) primitive))
-	       *primitives*))))
+         (make-env
+          (map (lambda (primitive)
+                 (cons (primitive-name primitive) primitive))
+               *primitives*))))
     (for-each (lambda (name)
-		(set-forward-transform!
-		 (cdr (assq name (env-bindings answer)))
-		 (slad-eval (macroexpand (unev-forward-transform name)) answer)))
-	      (filter has-unev-forward-transform?
-		      (map car (env-bindings answer))))
+                (set-forward-transform!
+                 (cdr (assq name (env-bindings answer)))
+                 (slad-eval (macroexpand (unev-forward-transform name)) answer)))
+              (filter has-unev-forward-transform?
+                      (map car (env-bindings answer))))
     answer))
