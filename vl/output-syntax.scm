@@ -4,25 +4,34 @@
 ;;; FOL is a simple-minded first-order language, which serves as the
 ;;; compilation target for VL and DVL.  FOL has several design
 ;;; objectives:
-;;;   FOL must be a convenient backend for flow analysis + code generation
+;;;   FOL must be a convenient target for code generation after flow analysis
 ;;;   FOL must be compilable to efficient machine code
 ;;;   FOL should not be unduly illegible
 ;;; In pursuit of these design objectives, FOL is a first-oder subset
 ;;; of MIT Scheme, supporting a limited range of constructs.
-
-;;; I express the syntax of FOL as Scheme data structures.  This may
-;;; be parsed from a file or constructed directly in memory, as
+;;;
+;;; The syntax of FOL is expressed as Scheme data structures.  This
+;;; may be parsed from a file or constructed directly in memory, as
 ;;; appropriate for the application.
-
+;;;
+;;; FOL follows the following grammar:
+;;;
 ;;; program    = (begin <definition> ... <expression>)
 ;;;            | <expression>
 ;;;
-;;; definition = (define (<global> <local> ...) <expression>)
+;;; definition = (define (<proc-var> <data-var> ...) <expression>)
 ;;;
-;;; expression = <local>
-;;;            | (<global> <expression> ...)
+;;; expression = <data-var>
+;;;            | <number>
+;;;            | (<proc-var> <expression> ...)
 ;;;            | (if <expression> <expression> <expression>)
-;;;            | (let ((<local> <expression>) ...) <expression>)
+;;;            | (let ((<data-var> <expression>) ...) <expression>)
+;;;
+;;; FOL distinguishes two types of variables, one for holding
+;;; procedures and one for holding data.  Both are Scheme symbols; the
+;;; procedure variables have global scope, must be globally unique,
+;;; and may only be bound by DEFINE forms.
+;;;
 
 ;;; Procedures may only be defined at the top level.  Procedure
 ;;; names must be unique.
