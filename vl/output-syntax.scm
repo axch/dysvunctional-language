@@ -43,8 +43,6 @@
 ;;; language for post-flow-analysis code generation, and make FOL
 ;;; considerably easier to compile to efficient code.
 ;;;
-;;; FOL is specified to be tail-recursive and memory-managed.
-;;;
 ;;; FOL comes with the following procedures predefined:
 ;;;
 ;;;   CONS, CAR, CDR, VECTOR, VECTOR-REF, ABS, EXP, LOG, SIN, COS,
@@ -59,6 +57,36 @@
 ;;; GENSYM? tests whether an object was created by GENSYM.  GENSYM=
 ;;; tests whether two objects were created by the same dynamic call to
 ;;; GENSYM.
+;;;
+;;; FOL is specified to be tail-recursive and memory-managed.  Order
+;;; of evaluation of procedure arguments is unspecified.  As of the
+;;; present writing, the compilation may fail to preserve the order
+;;; (or even presence!) of side-effects.  FOL is notionally strict,
+;;; but the compilation may rearrange the order of evaluation of
+;;; various subexpressions, even across procedure boundaries.  TODO is
+;;; the dead variable elimination good enough to make the same
+;;; termination guarantees that laziness does?
+
+;;; Being a subset of Scheme, FOL can be executed directly in MIT
+;;; Scheme (in an image that contains definitions for the non-standard
+;;; primitives --- loading this code provides the necessary runtime
+;;; support).
+;;;
+;;; I also provide a FOL->FOL optimizing compiler called
+;;; PRETTIFY-COMPILER-OUTPUT.  This has three main pieces, each of
+;;; which can also be applied separately from the others: aggressive
+;;; procedure inlining, aggressive replacement of aggregates with
+;;; scalars, and elimination of unused or once-used variables.
+;;; Details elsewhere.
+;;;
+;;; I have not yet experimented with compiling FOL to any other target
+;;; language.  Obvious candidates include compilation to machine code
+;;; or C with the MIT Scheme compiler, or direct custom translation to
+;;; C (or C--) for further processing with, e.g., gcc.  The latter
+;;; activity may not be a trivial variation on the former, because in
+;;; so doing the semantics of FOL may perhaps be fruitfully made
+;;; somewhat different from Scheme semantics, particularly with
+;;; respect to the numeric tower.
 
 ;;;; Syntax and manipulations of the output language
 
