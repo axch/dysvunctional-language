@@ -36,8 +36,8 @@
 
 (define (vl-run-file filename)
   (let* ((forms (read-source filename))
-	 (program `(let () ,@forms))
-	 (compiled-program (compile-to-scheme program))
-	 (compiled-answer
-	  (eval compiled-program (nearest-repl/environment))))
+         (program `(let () ,@forms))
+         (compiled-program (compile-to-scheme program))
+         (compiled-answer
+          (eval compiled-program (nearest-repl/environment))))
     (pp compiled-answer)))

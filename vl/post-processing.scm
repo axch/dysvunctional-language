@@ -24,11 +24,11 @@
   (if (list? output)
       (tidy
        (full-alpha-rename
-	(strip-argument-types
-	 (scalar-replace-aggregates
-	  (inline
-	   (structure-definitions->vectors
-	    output))))))
+        (strip-argument-types
+         (scalar-replace-aggregates
+          (inline
+           (structure-definitions->vectors
+            output))))))
       output))
 
 (define (compile-to-scheme program)
@@ -80,26 +80,26 @@
 (define (expand-if-structure-definition form)
   (if (structure-definition? form)
       (let ((name (cadr form))
-	    (fields (cddr form)))
-	`((define ,(symbol 'make- name) vector)
-	  ,@(map (lambda (field index)
-		   `(define (,(symbol name '- field) thing)
-		      (vector-ref thing ,index)))
-		 fields
-		 (iota (length fields)))))
+            (fields (cddr form)))
+        `((define ,(symbol 'make- name) vector)
+          ,@(map (lambda (field index)
+                   `(define (,(symbol name '- field) thing)
+                      (vector-ref thing ,index)))
+                 fields
+                 (iota (length fields)))))
       (list form)))
 
 (define (structure-definitions->vectors forms)
   (let ((structure-names
-	 (map cadr (filter structure-definition? forms))))
+         (map cadr (filter structure-definition? forms))))
     (define (fix-argument-types forms)
       (let loop ((forms forms)
-		 (structure-names structure-names))
-	(if (null? structure-names)
-	    forms
-	    (loop (replace-free-occurrences
-		   (car structure-names) 'vector forms)
-		  (cdr structure-names)))))
+                 (structure-names structure-names))
+        (if (null? structure-names)
+            forms
+            (loop (replace-free-occurrences
+                   (car structure-names) 'vector forms)
+                  (cdr structure-names)))))
     (fix-argument-types
      (append-map expand-if-structure-definition forms))))
 
@@ -135,46 +135,46 @@
       (argument-types
        (?? stuff1)
        ((? formal) ((? constructor ,cons-or-vector?)
-		    (?? slot-shapes)))
+                    (?? slot-shapes)))
        (?? stuff2))
       (?? body))
    (let ((slot-names (map (lambda (shape)
-			    (make-name (symbol formal '-)))
-			  slot-shapes))
-	 (arg-index (length formals1))
-	 (num-slots (length slot-shapes))
-	 (arg-count (+ (length formals1) 1 (length formals2))))
+                            (make-name (symbol formal '-)))
+                          slot-shapes))
+         (arg-index (length formals1))
+         (num-slots (length slot-shapes))
+         (arg-count (+ (length formals1) 1 (length formals2))))
      (cons (sra-call-site-rule
-	    name constructor arg-index num-slots arg-count)
-	   `(define (,name ,@formals1 ,@slot-names ,@formals2)
-	      (argument-types
-	       ,@stuff1
-	       ,@(map list slot-names slot-shapes)
-	       ,@stuff2)
-	      (let ((,formal (,constructor ,@slot-names)))
-		,@body))))))
+            name constructor arg-index num-slots arg-count)
+           `(define (,name ,@formals1 ,@slot-names ,@formals2)
+              (argument-types
+               ,@stuff1
+               ,@(map list slot-names slot-shapes)
+               ,@stuff2)
+              (let ((,formal (,constructor ,@slot-names)))
+                ,@body))))))
 
 (define (sra-call-site-rule
-	 operation-name constructor arg-index num-slots arg-count)
+         operation-name constructor arg-index num-slots arg-count)
   (rule
    `(,operation-name (?? args))
    (and (= (length args) arg-count)
-	(let ((args1 (take args arg-index))
-	      (arg (list-ref args arg-index))
-	      (args2 (drop args (+ arg-index 1)))
-	      (temp-name (make-name 'temp-)))
-	  `(let ((,temp-name ,arg))
-	     (,operation-name
-	      ,@args1
-	      ,@(call-site-replacement temp-name constructor num-slots)
-	      ,@args2))))))
+        (let ((args1 (take args arg-index))
+              (arg (list-ref args arg-index))
+              (args2 (drop args (+ arg-index 1)))
+              (temp-name (make-name 'temp-)))
+          `(let ((,temp-name ,arg))
+             (,operation-name
+              ,@args1
+              ,@(call-site-replacement temp-name constructor num-slots)
+              ,@args2))))))
 
 (define (call-site-replacement temp-name constructor-type count)
   (if (eq? 'cons constructor-type)
       `((car ,temp-name) (cdr ,temp-name))
       (map (lambda (index)
-	     `(vector-ref ,temp-name ,index))
-	   (iota count))))
+             `(vector-ref ,temp-name ,index))
+           (iota count))))
 
 ;;; The actual SCALAR-REPLACE-AGGREGATES procedure just tries
 ;;; SRA-DEFINITION-RULE on all the possible definitions as many times
@@ -188,23 +188,23 @@
 (define (scalar-replace-aggregates forms)
   (define (do-sra-definition sra-result done rest)
     (let ((sra-call-site-rule (car sra-result))
-	  (replacement-form (cdr sra-result)))
+          (replacement-form (cdr sra-result)))
       (let ((sra-call-sites (on-subexpressions sra-call-site-rule)))
-	(let ((fixed-replacement-form
-	       `(,(car replacement-form) ,(cadr replacement-form)
-		 ,(caddr replacement-form)
-		 ,(sra-call-sites (cadddr replacement-form))))
-	      (fixed-done (sra-call-sites (reverse done)))
-	      (fixed-rest (sra-call-sites rest)))
-	  (append fixed-done (list fixed-replacement-form) fixed-rest)))))
+        (let ((fixed-replacement-form
+               `(,(car replacement-form) ,(cadr replacement-form)
+                 ,(caddr replacement-form)
+                 ,(sra-call-sites (cadddr replacement-form))))
+              (fixed-done (sra-call-sites (reverse done)))
+              (fixed-rest (sra-call-sites rest)))
+          (append fixed-done (list fixed-replacement-form) fixed-rest)))))
   (let loop ((forms forms))
     (let scan ((done '()) (forms forms))
       (if (null? forms)
-	  (reverse done)
-	  (let ((sra-attempt (sra-definition-rule (car forms))))
-	    (if (not (eq? (car forms) sra-attempt))
-		(loop (do-sra-definition sra-attempt done (cdr forms)))
-		(scan (cons (car forms) done) (cdr forms))))))))
+          (reverse done)
+          (let ((sra-attempt (sra-definition-rule (car forms))))
+            (if (not (eq? (car forms) sra-attempt))
+                (loop (do-sra-definition sra-attempt done (cdr forms)))
+                (scan (cons (car forms) done) (cdr forms))))))))
 
 ;;; Getting rid the argument-types declarations once we're done with
 ;;; them is easy.
@@ -213,14 +213,14 @@
   (rule-simplifier
    (list
     (rule `(begin (define-syntax argument-types (?? etc))
-		  (?? stuff))
-	  `(begin
-	     ,@stuff))
+                  (?? stuff))
+          `(begin
+             ,@stuff))
     (rule `(define (? formals)
-	     (argument-types (?? etc))
-	     (?? body))
-	  `(define ,formals
-	     ,@body)))))
+             (argument-types (?? etc))
+             (?? body))
+          `(define ,formals
+             ,@body)))))
 ;;;; Inlining procedure definitions
 
 ;;; Every procedure that does not call itself can be inlined.  To do
@@ -234,21 +234,21 @@
   (define (inline-defn defn forms)
     (let ((defn (strip-argument-types defn)))
       (let ((name (definiendum defn))
-	    (replacement (definiens defn)))
-	((on-subexpressions
-	  (rule `(,name (?? args))
-		(->let `(,replacement ,@args))))
-	 forms))))
+            (replacement (definiens defn)))
+        ((on-subexpressions
+          (rule `(,name (?? args))
+                (->let `(,replacement ,@args))))
+         forms))))
   (let loop ((forms forms))
     (let scan ((done '()) (forms forms))
       (cond ((null? forms) (reverse done))
-	    ((and (definition? (car forms))
-		  (non-self-calling? (car forms)))
-	     (let ((defn (car forms))
-		   (others (append (reverse done) (cdr forms))))
-	       ;; Can insert other inlining restrictions here
-	       (loop (inline-defn defn others))))
-	    (else (scan (cons (car forms) done) (cdr forms)))))))
+            ((and (definition? (car forms))
+                  (non-self-calling? (car forms)))
+             (let ((defn (car forms))
+                   (others (append (reverse done) (cdr forms))))
+               ;; Can insert other inlining restrictions here
+               (loop (inline-defn defn others))))
+            (else (scan (cons (car forms) done) (cdr forms)))))))
 
 (define (full-alpha-rename program)
   ;; TODO Fix the bookkeeping of what names the primitives rely on
@@ -256,10 +256,10 @@
     (list (primitive-name primitive)))
   (alpha-rename program
    (map (lambda (name)
-	  (cons name name))
-	(delete-duplicates
-	 `(cons car cdr if define let vector vector-ref
-		,@(append-map needed-names *primitives*))))))
+          (cons name name))
+        (delete-duplicates
+         `(cons car cdr if define let vector vector-ref
+                ,@(append-map needed-names *primitives*))))))
 
 ;;;; Term-rewriting tidier
 
@@ -271,17 +271,17 @@
     (rule `(car (cons (? a) (? d))) a)
     (rule `(cdr (cons (? a) (? d))) d)
     (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
-	  (list-ref stuff index))
+          (list-ref stuff index))
     (rule `(let (((? name ,symbol?) (? exp))) (? name)) exp)
 
     (rule `(let ((?? bindings1)
-		 ((? name ,symbol?) (? exp))
-		 (?? bindings2))
-	     (?? body))
-	  (let ((occurrence-count (count-free-occurrences name body)))
-	    (and (or (= 0 occurrence-count)
-		     (= 1 occurrence-count)
-		     (constructors-only? exp))
-		 `(let (,@bindings1
-			,@bindings2)
-		    ,@(replace-free-occurrences name exp body))))))))
+                 ((? name ,symbol?) (? exp))
+                 (?? bindings2))
+             (?? body))
+          (let ((occurrence-count (count-free-occurrences name body)))
+            (and (or (= 0 occurrence-count)
+                     (= 1 occurrence-count)
+                     (constructors-only? exp))
+                 `(let (,@bindings1
+                        ,@bindings2)
+                    ,@(replace-free-occurrences name exp body))))))))

@@ -73,54 +73,54 @@
 ;;; REFINE-EVAL is \bar E from [1].
 (define (refine-eval exp env world analysis win)
   (cond ((constant? exp) (win (constant-value exp) world))
-	((variable? exp) (win (lookup exp env) world))
-	((null? exp) (win '() world))
-	((lambda-form? exp)
-	 (win (make-closure exp env) world))
-	((pair-form? exp)
-	 (analysis-get-in-world (car-subform exp) env world analysis
+        ((variable? exp) (win (lookup exp env) world))
+        ((null? exp) (win '() world))
+        ((lambda-form? exp)
+         (win (make-closure exp env) world))
+        ((pair-form? exp)
+         (analysis-get-in-world (car-subform exp) env world analysis
           (lambda (car-value car-world)
-	    (analysis-get-in-world (cdr-subform exp) env car-world analysis
-	     (lambda (cdr-value cdr-world)
-	       (if (and (not (abstract-none? car-value))
-			(not (abstract-none? cdr-value)))
-		   (win (cons car-value cdr-value) cdr-world)
-		   (win abstract-none impossible-world)))))))
-	((application? exp)
-	 (analysis-get-in-world (operator-subform exp) env world analysis
+            (analysis-get-in-world (cdr-subform exp) env car-world analysis
+             (lambda (cdr-value cdr-world)
+               (if (and (not (abstract-none? car-value))
+                        (not (abstract-none? cdr-value)))
+                   (win (cons car-value cdr-value) cdr-world)
+                   (win abstract-none impossible-world)))))))
+        ((application? exp)
+         (analysis-get-in-world (operator-subform exp) env world analysis
           (lambda (operator operator-world)
-	    (analysis-get-in-world (operand-subform exp) env operator-world analysis
-	     (lambda (operand operand-world)
-	       (refine-apply operator operand operand-world analysis win))))))
-	(else
-	 (error "Invalid expression in abstract refiner"
-		exp env analysis))))
+            (analysis-get-in-world (operand-subform exp) env operator-world analysis
+             (lambda (operand operand-world)
+               (refine-apply operator operand operand-world analysis win))))))
+        (else
+         (error "Invalid expression in abstract refiner"
+                exp env analysis))))
 
 ;;; REFINE-APPLY is \bar A from [1].
 (define (refine-apply proc arg world analysis win)
   (cond ((abstract-none? arg) (win abstract-none impossible-world))
-	((abstract-none? proc) (win abstract-none impossible-world))
-	((primitive? proc)
-	 ((primitive-abstract-implementation proc) arg world analysis win))
-	((closure? proc)
-	 (analysis-get-in-world
-	  (closure-body proc)
-	  (extend-env (closure-formal proc) arg (closure-env proc))
-	  world
-	  analysis
-	  win))
-	(else
-	 (error "Refining an application of a known non-procedure"
-		proc arg analysis))))
+        ((abstract-none? proc) (win abstract-none impossible-world))
+        ((primitive? proc)
+         ((primitive-abstract-implementation proc) arg world analysis win))
+        ((closure? proc)
+         (analysis-get-in-world
+          (closure-body proc)
+          (extend-env (closure-formal proc) arg (closure-env proc))
+          world
+          analysis
+          win))
+        (else
+         (error "Refining an application of a known non-procedure"
+                proc arg analysis))))
 
 (define (refine-analysis analysis)
   (map (lambda (binding)
-	 (let ((exp (binding-exp binding))
-	       (env (binding-env binding))
-	       (world (binding-world binding)))
-	   (refine-eval exp env world analysis
+         (let ((exp (binding-exp binding))
+               (env (binding-env binding))
+               (world (binding-world binding)))
+           (refine-eval exp env world analysis
             (lambda (value new-world)
-	      (make-binding exp env world value new-world)))))
+              (make-binding exp env world value new-world)))))
        (analysis-bindings analysis)))
 
 ;;;; Expansion
@@ -128,52 +128,52 @@
 ;;; EXPAND-EVAL is \bar E' from [1].
 (define (expand-eval exp env world analysis)
   (cond ((variable? exp) '())
-	((null? exp) '())
-	((constant? exp) '())
-	((lambda-form? exp) '())
-	((pair-form? exp)
-	 (analysis-expand (car-subform exp) env world analysis
-	  (lambda (car-value car-world)
-	    (analysis-expand (cdr-subform exp) env car-world analysis
-	     (lambda (cdr-value cdr-world) '())))))
-	((application? exp)
-	 (analysis-expand (operator-subform exp) env world analysis
-	  (lambda (operator operator-world)
-	    (analysis-expand (operand-subform exp) env operator-world analysis
-	     (lambda (operand operand-world)
-	       (expand-apply operator operand operand-world analysis))))))
-	(else
-	 (error "Invalid expression in abstract expander"
-		exp env analysis))))
+        ((null? exp) '())
+        ((constant? exp) '())
+        ((lambda-form? exp) '())
+        ((pair-form? exp)
+         (analysis-expand (car-subform exp) env world analysis
+          (lambda (car-value car-world)
+            (analysis-expand (cdr-subform exp) env car-world analysis
+             (lambda (cdr-value cdr-world) '())))))
+        ((application? exp)
+         (analysis-expand (operator-subform exp) env world analysis
+          (lambda (operator operator-world)
+            (analysis-expand (operand-subform exp) env operator-world analysis
+             (lambda (operand operand-world)
+               (expand-apply operator operand operand-world analysis))))))
+        (else
+         (error "Invalid expression in abstract expander"
+                exp env analysis))))
 
 ;;; EXPAND-APPLY is \bar A' from [1].
 (define (expand-apply proc arg world analysis)
   (cond ((abstract-none? arg) '())
-	((abstract-none? proc) '())
-	((primitive? proc)
-	 ((primitive-expand-implementation proc) arg world analysis))
-	((closure? proc)
-	 (analysis-expand
-	  (closure-body proc)
-	  (extend-env (closure-formal proc) arg (closure-env proc))
-	  world
-	  analysis
-	  (lambda (value world) '())))
-	(else
-	 (error "Expanding an application of a known non-procedure"
-		proc arg analysis))))
+        ((abstract-none? proc) '())
+        ((primitive? proc)
+         ((primitive-expand-implementation proc) arg world analysis))
+        ((closure? proc)
+         (analysis-expand
+          (closure-body proc)
+          (extend-env (closure-formal proc) arg (closure-env proc))
+          world
+          analysis
+          (lambda (value world) '())))
+        (else
+         (error "Expanding an application of a known non-procedure"
+                proc arg analysis))))
 
 (define (analysis-expand-binding binding analysis)
   (let ((exp (binding-exp binding))
-	(env (binding-env binding))
-	(world (binding-world binding)))
+        (env (binding-env binding))
+        (world (binding-world binding)))
     (expand-eval exp env world analysis)))
 
 (define (expand-analysis analysis)
   (apply lset-union same-analysis-binding?
-	 (map (lambda (binding)
-		(analysis-expand-binding binding analysis))
-	      (analysis-bindings analysis))))
+         (map (lambda (binding)
+                (analysis-expand-binding binding analysis))
+              (analysis-bindings analysis))))
 
 ;;;; Flow analysis
 
@@ -182,29 +182,29 @@
   (make-analysis
    (lset-union same-analysis-binding?
     (append (refine-analysis analysis)
-	    (expand-analysis analysis)))))
+            (expand-analysis analysis)))))
 
 (define *analyze-wallp* #f)
 
 (define (analyze program)
   (let ((initial-analysis
-	 (make-analysis
-	  (list (make-binding
-		 (macroexpand program)
-		 (initial-user-env)
-		 (initial-world)
-		 abstract-none
-		 impossible-world)))))
+         (make-analysis
+          (list (make-binding
+                 (macroexpand program)
+                 (initial-user-env)
+                 (initial-world)
+                 abstract-none
+                 impossible-world)))))
     (let loop ((old-analysis initial-analysis)
-	       (new-analysis (step-analysis initial-analysis))
-	       (count 0))
+               (new-analysis (step-analysis initial-analysis))
+               (count 0))
       (if (and (number? *analyze-wallp*)
-	       (= 0 (modulo count *analyze-wallp*)))
-	  (begin (display new-analysis)
-		 (newline)
-		 (map pp (analysis-bindings new-analysis))))
+               (= 0 (modulo count *analyze-wallp*)))
+          (begin (display new-analysis)
+                 (newline)
+                 (map pp (analysis-bindings new-analysis))))
       (if (step-changed-analysis? old-analysis new-analysis)
-	  (loop new-analysis (step-analysis new-analysis) (+ count 1))
-	  (begin (if *analyze-wallp*
-		     (pp new-analysis))
-		 new-analysis)))))
+          (loop new-analysis (step-analysis new-analysis) (+ count 1))
+          (begin (if *analyze-wallp*
+                     (pp new-analysis))
+                 new-analysis)))))

@@ -73,48 +73,48 @@
 ;;; REFINE-EVAL is \bar E from [1].
 (define (refine-eval exp env analysis)
   (cond ((constant? exp) (constant-value exp))
-	((variable? exp) (lookup exp env))
-	((lambda-form? exp)
-	 (make-closure exp env))
-	((pair-form? exp)
-	 (let ((car-answer (analysis-get
-			    (car-subform exp) env analysis))
-	       (cdr-answer (analysis-get
-			    (cdr-subform exp) env analysis)))
-	   (if (and (not (abstract-none? car-answer))
-		    (not (abstract-none? cdr-answer)))
-	       (cons car-answer cdr-answer)
-	       abstract-none)))
-	((application? exp)
-	 (refine-apply
-	  (analysis-get (operator-subform exp) env analysis)
-	  (analysis-get (operand-subform exp) env analysis)
-	  analysis))
-	(else
-	 (error "Invalid expression in abstract refiner"
-		exp env analysis))))
+        ((variable? exp) (lookup exp env))
+        ((lambda-form? exp)
+         (make-closure exp env))
+        ((pair-form? exp)
+         (let ((car-answer (analysis-get
+                            (car-subform exp) env analysis))
+               (cdr-answer (analysis-get
+                            (cdr-subform exp) env analysis)))
+           (if (and (not (abstract-none? car-answer))
+                    (not (abstract-none? cdr-answer)))
+               (cons car-answer cdr-answer)
+               abstract-none)))
+        ((application? exp)
+         (refine-apply
+          (analysis-get (operator-subform exp) env analysis)
+          (analysis-get (operand-subform exp) env analysis)
+          analysis))
+        (else
+         (error "Invalid expression in abstract refiner"
+                exp env analysis))))
 
 ;;; REFINE-APPLY is \bar A from [1].
 (define (refine-apply proc arg analysis)
   (cond ((abstract-none? arg) abstract-none)
-	((abstract-none? proc) abstract-none)
-	((primitive? proc)
-	 ((primitive-abstract-implementation proc) arg analysis))
-	((closure? proc)
-	 (analysis-get
-	  (closure-body proc)
-	  (extend-env (closure-formal proc) arg (closure-env proc))
-	  analysis))
-	(else
-	 (error "Refining an application of a known non-procedure"
-		proc arg analysis))))
+        ((abstract-none? proc) abstract-none)
+        ((primitive? proc)
+         ((primitive-abstract-implementation proc) arg analysis))
+        ((closure? proc)
+         (analysis-get
+          (closure-body proc)
+          (extend-env (closure-formal proc) arg (closure-env proc))
+          analysis))
+        (else
+         (error "Refining an application of a known non-procedure"
+                proc arg analysis))))
 
 (define (refine-analysis analysis)
   (map (lambda (binding)
-	 (let ((exp (binding-exp binding))
-	       (env (binding-env binding))
-	       (val (binding-value binding)))
-	   (make-binding exp env (refine-eval exp env analysis))))
+         (let ((exp (binding-exp binding))
+               (env (binding-env binding))
+               (val (binding-value binding)))
+           (make-binding exp env (refine-eval exp env analysis))))
        (analysis-bindings analysis)))
 
 ;;;; Expansion
@@ -122,53 +122,53 @@
 ;;; EXPAND-EVAL is \bar E' from [1].
 (define (expand-eval exp env analysis)
   (cond ((constant? exp) '())
-	((variable? exp) '())
-	((lambda-form? exp) '())
-	((pair-form? exp)
-	 (lset-union
-	  same-analysis-binding?
-	  (analysis-expand (car-subform exp) env analysis)
-	  (analysis-expand (cdr-subform exp) env analysis)))
-	((application? exp)
-	 (let ((operator (operator-subform exp))
-	       (operand (operand-subform exp)))
-	   (lset-union
-	    same-analysis-binding?
-	    (analysis-expand operator env analysis)
-	    (analysis-expand operand env analysis)
-	    (expand-apply
-	     (analysis-get operator env analysis)
-	     (analysis-get operand env analysis)
-	     analysis))))
-	(else
-	 (error "Invalid expression in abstract expander"
-		exp env analysis))))
+        ((variable? exp) '())
+        ((lambda-form? exp) '())
+        ((pair-form? exp)
+         (lset-union
+          same-analysis-binding?
+          (analysis-expand (car-subform exp) env analysis)
+          (analysis-expand (cdr-subform exp) env analysis)))
+        ((application? exp)
+         (let ((operator (operator-subform exp))
+               (operand (operand-subform exp)))
+           (lset-union
+            same-analysis-binding?
+            (analysis-expand operator env analysis)
+            (analysis-expand operand env analysis)
+            (expand-apply
+             (analysis-get operator env analysis)
+             (analysis-get operand env analysis)
+             analysis))))
+        (else
+         (error "Invalid expression in abstract expander"
+                exp env analysis))))
 
 ;;; EXPAND-APPLY is \bar A' from [1].
 (define (expand-apply proc arg analysis)
   (cond ((abstract-none? arg) '())
-	((abstract-none? proc) '())
-	((primitive? proc)
-	 ((primitive-expand-implementation proc) arg analysis))
-	((closure? proc)
-	 (analysis-expand
-	  (closure-body proc)
-	  (extend-env (closure-formal proc) arg (closure-env proc))
-	  analysis))
-	(else
-	 (error "Expanding an application of a known non-procedure"
-		proc arg analysis))))
+        ((abstract-none? proc) '())
+        ((primitive? proc)
+         ((primitive-expand-implementation proc) arg analysis))
+        ((closure? proc)
+         (analysis-expand
+          (closure-body proc)
+          (extend-env (closure-formal proc) arg (closure-env proc))
+          analysis))
+        (else
+         (error "Expanding an application of a known non-procedure"
+                proc arg analysis))))
 
 (define (analysis-expand-binding binding analysis)
   (let ((exp (binding-exp binding))
-	(env (binding-env binding)))
+        (env (binding-env binding)))
     (expand-eval exp env analysis)))
 
 (define (expand-analysis analysis)
   (apply lset-union same-analysis-binding?
-	 (map (lambda (binding)
-		(analysis-expand-binding binding analysis))
-	      (analysis-bindings analysis))))
+         (map (lambda (binding)
+                (analysis-expand-binding binding analysis))
+              (analysis-bindings analysis))))
 
 ;;;; Flow analysis
 
@@ -176,26 +176,26 @@
 (define (step-analysis analysis)
   (make-analysis
    (lset-union same-analysis-binding?
-	       (refine-analysis analysis)
-	       (expand-analysis analysis))))
+               (refine-analysis analysis)
+               (expand-analysis analysis))))
 
 (define *analyze-wallp* #f)
 
 (define (analyze program)
   (let ((initial-analysis
-	 (make-analysis
-	  (list (make-binding
-		 (macroexpand program)
-		 (initial-user-env)
-		 abstract-none)))))
+         (make-analysis
+          (list (make-binding
+                 (macroexpand program)
+                 (initial-user-env)
+                 abstract-none)))))
     (let loop ((old-analysis initial-analysis)
-	       (new-analysis (step-analysis initial-analysis))
-	       (count 0))
+               (new-analysis (step-analysis initial-analysis))
+               (count 0))
       (if (and (number? *analyze-wallp*)
-	       (= 0 (modulo count *analyze-wallp*)))
-	  (pp new-analysis))
+               (= 0 (modulo count *analyze-wallp*)))
+          (pp new-analysis))
       (if (step-changed-analysis? old-analysis new-analysis)
-	  (loop new-analysis (step-analysis new-analysis) (+ count 1))
-	  (begin (if *analyze-wallp*
-		     (pp new-analysis))
-		 new-analysis)))))
+          (loop new-analysis (step-analysis new-analysis) (+ count 1))
+          (begin (if *analyze-wallp*
+                     (pp new-analysis))
+                 new-analysis)))))

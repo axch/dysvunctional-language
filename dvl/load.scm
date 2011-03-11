@@ -37,13 +37,13 @@
 
 (define (dvl-prepare form)
   (let* ((stdlib (read-source "stdlib.dvl"))
-	 (program `(let () ,@stdlib ,form)))
+         (program `(let () ,@stdlib ,form)))
     program))
 
 (define (dvl-run-file filename)
   (let* ((forms (read-source filename))
-	 (program (dvl-prepare `(let () ,@forms)))
-	 (compiled-program (compile-to-scheme program))
-	 (compiled-answer
-	  (eval compiled-program (nearest-repl/environment))))
+         (program (dvl-prepare `(let () ,@forms)))
+         (compiled-program (compile-to-scheme program))
+         (compiled-answer
+          (eval compiled-program (nearest-repl/environment))))
     (pp compiled-answer)))

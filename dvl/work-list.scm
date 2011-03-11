@@ -20,11 +20,11 @@
 (define (analysis-search exp env analysis win lose)
   (let loop ((bindings (analysis-bindings analysis)))
     (if (null? bindings)
-	(lose)
-	(if (and (equal? exp (binding-exp (car bindings)))
-		 (abstract-equal? env (binding-env (car bindings))))
-	    (win (car bindings))
-	    (loop (cdr bindings))))))
+        (lose)
+        (if (and (equal? exp (binding-exp (car bindings)))
+                 (abstract-equal? env (binding-env (car bindings))))
+            (win (car bindings))
+            (loop (cdr bindings))))))
 
 (define (analysis-new-binding! analysis binding)
   (set-analysis-bindings! analysis (cons binding (analysis-bindings analysis)))
@@ -39,8 +39,8 @@
   (if (null? (analysis-queue analysis))
       (error "Popping an empty queue")
       (let ((answer (car (analysis-queue analysis))))
-	(set-analysis-queue! analysis (cdr (analysis-queue analysis)))
-	answer)))
+        (set-analysis-queue! analysis (cdr (analysis-queue analysis)))
+        answer)))
 
 ;; This one is for use during abstract evaluation; it is always "on
 ;; behalf of" some binding that is therefore assumed to depend on the
@@ -55,10 +55,10 @@
    search-win
    (lambda ()
      (if (impossible-world? world)
-	 (win abstract-none impossible-world)
-	 (let ((binding (make-binding exp env world abstract-none impossible-world '())))
-	   (analysis-new-binding! analysis binding)
-	   (search-win binding))))))
+         (win abstract-none impossible-world)
+         (let ((binding (make-binding exp env world abstract-none impossible-world '())))
+           (analysis-new-binding! analysis binding)
+           (search-win binding))))))
 
 ;; This one is just for querying the analysis, for example during code
 ;; generation.
@@ -69,13 +69,13 @@
 
 (define (initial-analysis program)
   (let ((initial-binding
-	 (make-binding
-	  program
-	  (initial-user-env)
-	  (initial-world)
-	  abstract-none
-	  impossible-world
-	  '())))
+         (make-binding
+          program
+          (initial-user-env)
+          (initial-world)
+          abstract-none
+          impossible-world
+          '())))
     (make-analysis
      (list initial-binding)
      (list initial-binding))))
@@ -84,23 +84,23 @@
   (if (null? (analysis-queue analysis))
       #f
       (let ((binding (analysis-queue-pop! analysis)))
-	(fluid-let ((*on-behalf-of* binding))
-	  (let ((exp (binding-exp binding))
-		(env (binding-env binding))
-		(world (binding-world binding))
-		(value (binding-value binding)))
-	    (refine-eval exp env world analysis
-	     (lambda (new-value new-world)
-	       (let ((new-value (abstract-union value new-value)))
-		 (if (abstract-equal? value new-value)
-		     #t
-		     (begin
-		       (set-binding-value! binding new-value)
-		       (set-binding-new-world! binding new-world)
-		       (for-each (lambda (dependency)
-				   (analysis-notify! analysis dependency))
-				 (binding-notify binding))
-		       #t))))))))))
+        (fluid-let ((*on-behalf-of* binding))
+          (let ((exp (binding-exp binding))
+                (env (binding-env binding))
+                (world (binding-world binding))
+                (value (binding-value binding)))
+            (refine-eval exp env world analysis
+             (lambda (new-value new-world)
+               (let ((new-value (abstract-union value new-value)))
+                 (if (abstract-equal? value new-value)
+                     #t
+                     (begin
+                       (set-binding-value! binding new-value)
+                       (set-binding-new-world! binding new-world)
+                       (for-each (lambda (dependency)
+                                   (analysis-notify! analysis dependency))
+                                 (binding-notify binding))
+                       #t))))))))))
 
 (define (show-analysis analysis)
   (display analysis)
@@ -111,13 +111,13 @@
 (define (analyze program)
   (let ((analysis (initial-analysis (macroexpand program))))
     (let loop ((continue? #t)
-	       (count 0))
+               (count 0))
       (if (and (number? *analyze-wallp*)
-	       (= 0 (modulo count *analyze-wallp*)))
-	  (show-analysis analysis))
+               (= 0 (modulo count *analyze-wallp*)))
+          (show-analysis analysis))
       (if continue?
-	  (loop (step-analysis! analysis) (+ count 1))
-	  (begin
-	    (if *analyze-wallp*
-		(show-analysis analysis))
-	    analysis)))))
+          (loop (step-analysis! analysis) (+ count 1))
+          (begin
+            (if *analyze-wallp*
+                (show-analysis analysis))
+            analysis)))))

@@ -48,17 +48,17 @@
 (define (compile exp env enclosure analysis)
   (let ((value (analysis-get exp env analysis)))
     (if (solved-abstractly? value)
-	(solved-abstract-value->constant value)
-	(cond ((variable? exp)
-	       (compile-variable exp enclosure))
-	      ((lambda-form? exp)
-	       (compile-lambda exp env enclosure analysis))
-	      ((pair-form? exp)
-	       (compile-cons exp env enclosure analysis))
-	      ((application? exp)
-	       (compile-apply exp env enclosure analysis))
-	      (else (error "Invaid expression in code generation"
-			   exp env enclosure analysis))))))
+        (solved-abstract-value->constant value)
+        (cond ((variable? exp)
+               (compile-variable exp enclosure))
+              ((lambda-form? exp)
+               (compile-lambda exp env enclosure analysis))
+              ((pair-form? exp)
+               (compile-cons exp env enclosure analysis))
+              ((application? exp)
+               (compile-apply exp env enclosure analysis))
+              (else (error "Invaid expression in code generation"
+                           exp env enclosure analysis))))))
 
 ;;; A VL variable access becomes either a Scheme variable access if
 ;;; the VL variable was bound by the immediately nearest VL LAMBDA, or
@@ -73,14 +73,14 @@
 ;;; solved by the flow analysis, ordered by their VL variable names.
 (define (compile-lambda exp env enclosure analysis)
   (cons (abstract-closure->scheme-constructor-name
-	 (analysis-get exp env analysis))
-	(map (lambda (var) (compile var env enclosure analysis))
-	     (interesting-variables exp env))))
+         (analysis-get exp env analysis))
+        (map (lambda (var) (compile var env enclosure analysis))
+             (interesting-variables exp env))))
 
 ;;; A VL CONS becomes a Scheme CONS.
 (define (compile-cons exp env enclosure analysis)
   `(cons ,(compile (car-subform exp) env enclosure analysis)
-	 ,(compile (cdr-subform exp) env enclosure analysis)))
+         ,(compile (cdr-subform exp) env enclosure analysis)))
 
 ;;; The flow analysis fully determines the shape of every VL procedure
 ;;; that is called at any VL call site.  This allows applications to
@@ -90,16 +90,16 @@
 (define (compile-apply exp env enclosure analysis)
   (let ((operator (analysis-get (operator-subform exp) env analysis)))
     (cond ((primitive? operator)
-	   ((primitive-generate operator) exp env enclosure analysis))
-	  ((closure? operator)
-	   (generate-closure-application
-	    operator
-	    (analysis-get (operand-subform exp) env analysis)
-	    (compile (operator-subform exp) env enclosure analysis)
-	    (compile (operand-subform exp) env enclosure analysis)))
-	  (else
-	   (error "Invalid operator in code generation"
-		  exp operator env analysis)))))
+           ((primitive-generate operator) exp env enclosure analysis))
+          ((closure? operator)
+           (generate-closure-application
+            operator
+            (analysis-get (operand-subform exp) env analysis)
+            (compile (operator-subform exp) env enclosure analysis)
+            (compile (operand-subform exp) env enclosure analysis)))
+          (else
+           (error "Invalid operator in code generation"
+                  exp operator env analysis)))))
 
 ;;; A VL IF statement becomes a Scheme IF statement (unless the
 ;;; predicate was solved by the analysis, in which case we can just
@@ -112,56 +112,56 @@
       (caddr (caddr (cadr exp))))
     (define (generate-if-branch invokee-shape branch-exp)
       (let ((answer-shape (abstract-result-of invokee-shape analysis)))
-	(if (solved-abstractly? answer-shape)
-	    (solved-abstract-value->constant answer-shape)
-	    (generate-closure-application
-	     invokee-shape '()
-	     (compile branch-exp env enclosure analysis)
-	     '(vector)))))
+        (if (solved-abstractly? answer-shape)
+            (solved-abstract-value->constant answer-shape)
+            (generate-closure-application
+             invokee-shape '()
+             (compile branch-exp env enclosure analysis)
+             '(vector)))))
     (if (solved-abstractly? (car operands))
-	(if (car operands)
-	    (generate-if-branch
-	     (cadr operands) (if-procedure-expression-consequent exp))
-	    (generate-if-branch
-	     (cddr operands) (if-procedure-expression-alternate exp)))
-	`(if ,(compile (cadr (cadr exp)) env enclosure analysis)
-	     ,(generate-if-branch
-	       (cadr operands) (if-procedure-expression-consequent exp))
-	     ,(generate-if-branch
-	       (cddr operands) (if-procedure-expression-alternate exp))))))
+        (if (car operands)
+            (generate-if-branch
+             (cadr operands) (if-procedure-expression-consequent exp))
+            (generate-if-branch
+             (cddr operands) (if-procedure-expression-alternate exp)))
+        `(if ,(compile (cadr (cadr exp)) env enclosure analysis)
+             ,(generate-if-branch
+               (cadr operands) (if-procedure-expression-consequent exp))
+             ,(generate-if-branch
+               (cddr operands) (if-procedure-expression-alternate exp))))))
 
 ;;; A VL primitive application becomes an inlined call to a Scheme
 ;;; primitive (destructuring the incoming argument if needed).
 (define ((simple-primitive-application name arity)
-	 exp env enclosure analysis)
+         exp env enclosure analysis)
   (let ((primitive (analysis-get (operator-subform exp) env analysis))
-	(arg-shape (analysis-get (operand-subform exp) env analysis))
-	(arg-code (compile (operand-subform exp) env enclosure analysis)))
+        (arg-shape (analysis-get (operand-subform exp) env analysis))
+        (arg-code (compile (operand-subform exp) env enclosure analysis)))
     (cond ((= 0 arity)
-	   (if (not (null? arg-shape))
-	       (error "Wrong arguments to nullary primitive procedure"
-		      primitive arg-shape arg-code))
-	   `(,name))
-	  ((= 1 arity)
-	   (if (abstract-none? arg-shape)
-	       (error "Unary primitive procedure given fully unknown argument"
-		      primitive arg-shape arg-code))
-	   `(,name ,arg-code))
-	  ((= 2 arity)
-	   (if (not (pair? arg-shape))
-	       (error "Wrong arguments to binary primitive procedure"
-		      primitive arg-shape arg-code))
-	   (let ((temp (fresh-temporary)))
-	     (define (access-code access access-name)
-	       (if (solved-abstractly? (access arg-shape))
-		   (solved-abstract-value->constant (access arg-shape))
-		   `(,access-name ,temp)))
-	     `(let ((,temp ,arg-code))
-		(,name
-		 ,(access-code car 'car)
-		 ,(access-code cdr 'cdr)))))
-	  (else
-	   (error "Unsupported arity of primitive operation" primitive)))))
+           (if (not (null? arg-shape))
+               (error "Wrong arguments to nullary primitive procedure"
+                      primitive arg-shape arg-code))
+           `(,name))
+          ((= 1 arity)
+           (if (abstract-none? arg-shape)
+               (error "Unary primitive procedure given fully unknown argument"
+                      primitive arg-shape arg-code))
+           `(,name ,arg-code))
+          ((= 2 arity)
+           (if (not (pair? arg-shape))
+               (error "Wrong arguments to binary primitive procedure"
+                      primitive arg-shape arg-code))
+           (let ((temp (fresh-temporary)))
+             (define (access-code access access-name)
+               (if (solved-abstractly? (access arg-shape))
+                   (solved-abstract-value->constant (access arg-shape))
+                   `(,access-name ,temp)))
+             `(let ((,temp ,arg-code))
+                (,name
+                 ,(access-code car 'car)
+                 ,(access-code cdr 'cdr)))))
+          (else
+           (error "Unsupported arity of primitive operation" primitive)))))
 
 ;;; A VL compound procedure application becomes a call to the
 ;;; generated Scheme procedure that corresponds to the application of
@@ -173,7 +173,7 @@
 ;;; pair tree of arguments.  One or both may be eliminated by the post
 ;;; processing if they were solved by the analysis.
 (define (generate-closure-application
-	 closure arg-shape closure-code arg-code)
+         closure arg-shape closure-code arg-code)
   (let ((call-name (call-site->scheme-function-name closure arg-shape)))
     (list call-name closure-code arg-code)))
 
@@ -182,9 +182,9 @@
 (define (structure-definitions analysis)
   (map abstract-value->structure-definition
        (delete-duplicates
-	(filter needs-structure-definition?
-		(map binding-value (analysis-bindings analysis)))
-	abstract-equal?)))
+        (filter needs-structure-definition?
+                (map binding-value (analysis-bindings analysis)))
+        abstract-equal?)))
 
 (define (needs-structure-definition? abstract-value)
   (and (closure? abstract-value)
@@ -195,36 +195,36 @@
 ;;; values.  The slots are ordered by their VL variable names.
 (define (abstract-value->structure-definition value)
   (cond ((closure? value)
-	 `(define-structure ,(abstract-closure->scheme-structure-name value)
-	    ,@(map vl-variable->scheme-field-name
-		   (interesting-variables
-		    (closure-free-variables value) (closure-env value)))))
-	(else
-	 (error "Not compiling non-closure aggregates to Scheme structures"
-		value))))
+         `(define-structure ,(abstract-closure->scheme-structure-name value)
+            ,@(map vl-variable->scheme-field-name
+                   (interesting-variables
+                    (closure-free-variables value) (closure-env value)))))
+        (else
+         (error "Not compiling non-closure aggregates to Scheme structures"
+                value))))
 
 ;;;; Procedure definitions
 
 (define (procedure-definitions analysis emit-type-declarations?)
   (map (procedure-definition analysis emit-type-declarations?)
        (delete-duplicates
-	(filter-map (binding->maybe-call-shape analysis)
-		    (analysis-bindings analysis))
-	abstract-equal?)))
+        (filter-map (binding->maybe-call-shape analysis)
+                    (analysis-bindings analysis))
+        abstract-equal?)))
 
 ;;; Every VL application of every compound VL procedure to every
 ;;; argument shape to which it is ever applied (producing a non-solved
 ;;; value) needs to become a Scheme procedure definition.
 (define ((binding->maybe-call-shape analysis) binding)
   (let ((exp (binding-exp binding))
-	(env (binding-env binding))
-	(value (binding-value binding)))
+        (env (binding-env binding))
+        (value (binding-value binding)))
     (and (not (solved-abstractly? value))
-	 (application? exp)
-	 (let ((operator (analysis-get (operator-subform exp) env analysis))
-	       (operands (analysis-get (operand-subform exp) env analysis)))
-	   (and (closure? operator)
-		(cons operator operands))))))
+         (application? exp)
+         (let ((operator (analysis-get (operator-subform exp) env analysis))
+               (operands (analysis-get (operand-subform exp) env analysis)))
+           (and (closure? operator)
+                (cons operator operands))))))
 
 ;;; Every generated Scheme procedure receives two arguments (either or
 ;;; both of which will be eliminated by the post processing if they
@@ -238,53 +238,53 @@
 ;;; include a declaration of the types of its arguments, to enable
 ;;; scalar replacement of aggregates in the post processing.
 (define ((procedure-definition analysis emit-type-declarations?)
-	 operator.operands)
+         operator.operands)
   (define (destructuring-let-bindings formal-tree arg-tree)
     (define (xxx part1 part2)
       (append (replace-free-occurrences
-	       'the-formals '(car the-formals)
-	       (destructuring-let-bindings part1 (car arg-tree)))
-	      (replace-free-occurrences
-	       'the-formals '(cdr the-formals)
-	       (destructuring-let-bindings part2 (cdr arg-tree)))))
+               'the-formals '(car the-formals)
+               (destructuring-let-bindings part1 (car arg-tree)))
+              (replace-free-occurrences
+               'the-formals '(cdr the-formals)
+               (destructuring-let-bindings part2 (cdr arg-tree)))))
     (cond ((null? formal-tree)
-	   '())
-	  ((symbol? formal-tree)
-	   (if (solved-abstractly? arg-tree)
-	       '()
-	       `((,formal-tree the-formals))))
-	  ((pair? formal-tree)
-	   (if (eq? (car formal-tree) 'cons)
-	       (xxx (cadr formal-tree) (caddr formal-tree))
-	       (xxx (car formal-tree) (cdr formal-tree))))))
+           '())
+          ((symbol? formal-tree)
+           (if (solved-abstractly? arg-tree)
+               '()
+               `((,formal-tree the-formals))))
+          ((pair? formal-tree)
+           (if (eq? (car formal-tree) 'cons)
+               (xxx (cadr formal-tree) (caddr formal-tree))
+               (xxx (car formal-tree) (cdr formal-tree))))))
   (let ((operator (car operator.operands))
-	(operands (cdr operator.operands)))
+        (operands (cdr operator.operands)))
     (define (type-declaration)
       `(argument-types
-	(the-closure ,(shape->type-declaration operator))
-	(the-formals ,(shape->type-declaration operands))))
+        (the-closure ,(shape->type-declaration operator))
+        (the-formals ,(shape->type-declaration operands))))
     (let ((name (call-site->scheme-function-name operator operands)))
       `(define (,name the-closure the-formals)
-	 ,@(if emit-type-declarations? (list (type-declaration)) '())
-	 (let ,(destructuring-let-bindings
-		(car (closure-formal operator))
-		operands)
-	   ,(compile (closure-body operator)
-		     (extend-env
-		      (closure-formal operator)
-		      operands
-		      (closure-env operator))
-		     operator
-		     analysis))))))
+         ,@(if emit-type-declarations? (list (type-declaration)) '())
+         (let ,(destructuring-let-bindings
+                (car (closure-formal operator))
+                operands)
+           ,(compile (closure-body operator)
+                     (extend-env
+                      (closure-formal operator)
+                      operands
+                      (closure-env operator))
+                     operator
+                     analysis))))))
 
 ;;;; Code generation
 
 (define (type-declaration-macro emit-type-declarations?)
   (if emit-type-declarations?
       '((define-syntax argument-types
-	  (syntax-rules ()
-	    ((_ arg ...)
-	     (begin)))))
+          (syntax-rules ()
+            ((_ arg ...)
+             (begin)))))
       '()))
 
 (define (generate program analysis #!optional emit-type-declarations?)
@@ -292,12 +292,12 @@
   (if (default-object? emit-type-declarations?)
       (set! emit-type-declarations? #f))
   `(begin ,@(type-declaration-macro emit-type-declarations?)
-	  ,@(structure-definitions analysis)
-	  ,@(procedure-definitions analysis emit-type-declarations?)
-	  ,(compile (macroexpand program)
-		    (initial-user-env)
-		    #f
-		    analysis)))
+          ,@(structure-definitions analysis)
+          ,@(procedure-definitions analysis emit-type-declarations?)
+          ,(compile (macroexpand program)
+                    (initial-user-env)
+                    #f
+                    analysis)))
 
 (define (analyze-and-generate program)
   (generate program (analyze program)))
