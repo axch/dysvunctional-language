@@ -1,4 +1,41 @@
 (declare (usual-integrations))
+;;;; FOL (First-Order Language)
+
+;;; FOL is a simple-minded first-order language, which serves as the
+;;; compilation target for VL and DVL.  FOL has several design
+;;; objectives:
+;;;   FOL must be a convenient backend for flow analysis + code generation
+;;;   FOL must be compilable to efficient machine code
+;;;   FOL should not be unduly illegible
+;;; In pursuit of these design objectives, FOL is a first-oder subset
+;;; of MIT Scheme, supporting a limited range of constructs.
+
+;;; I express the syntax of FOL as Scheme data structures.  This may
+;;; be parsed from a file or constructed directly in memory, as
+;;; appropriate for the application.
+
+;;; program    = (begin <definition> ... <expression>)
+;;;            | <expression>
+;;;
+;;; definition = (define (<global> <local> ...) <expression>)
+;;;
+;;; expression = <local>
+;;;            | (<global> <expression> ...)
+;;;            | (if <expression> <expression> <expression>)
+;;;            | (let ((<local> <expression>) ...) <expression>)
+
+;;; Procedures may only be defined at the top level.  Procedure
+;;; names must be unique.
+
+;;; A FOL program is a list, whose first symbol is BEGIN, whose last
+;;; element is a FOL expression, and all of whose intermediate
+;;; elements are FOL procedure definitions.  In the event of absence
+;;; of procedure definitions, the outer list with the BEGIN may be
+;;; omitted.
+
+;;; has the following special forms:
+;;; begin, define, if, let
+
 ;;;; Syntax and manipulations of the output language
 
 (define let-form? (tagged-list? 'let))
