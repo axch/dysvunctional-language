@@ -9,15 +9,15 @@
 ;;;   FOL should not be unduly illegible
 ;;; In pursuit of these design objectives, FOL is a first-oder subset
 ;;; of MIT Scheme, supporting a limited range of constructs.
-;;;
+
 ;;; The syntax of FOL is expressed as Scheme data structures.  This
 ;;; may be parsed from a file or constructed directly in memory, as
 ;;; appropriate for the application.
 ;;;
 ;;; FOL follows the following grammar:
 ;;;
-;;; program    = (begin <definition> ... <expression>)
-;;;            | <expression>
+;;; program    = <expression>
+;;;            | (begin <definition> ... <expression>)
 ;;;
 ;;; definition = (define (<proc-var> <data-var> ...) <expression>)
 ;;;
@@ -28,22 +28,37 @@
 ;;;            | (let ((<data-var> <expression>) ...) <expression>)
 ;;;
 ;;; FOL distinguishes two types of variables, one for holding
-;;; procedures and one for holding data.  Both are Scheme symbols; the
-;;; procedure variables have global scope, must be globally unique,
-;;; and may only be bound by DEFINE forms.
+;;; procedures and one for holding data; both are represented as
+;;; Scheme symbols.  The procedure variables have global scope, must
+;;; be globally unique, and may only be bound by DEFINE forms.  The
+;;; data variables are lexically scoped with shadowing, and may be
+;;; bound by LET forms and the formal parameter positions of DEFINE
+;;; forms.
 ;;;
-
-;;; Procedures may only be defined at the top level.  Procedure
-;;; names must be unique.
-
-;;; A FOL program is a list, whose first symbol is BEGIN, whose last
-;;; element is a FOL expression, and all of whose intermediate
-;;; elements are FOL procedure definitions.  In the event of absence
-;;; of procedure definitions, the outer list with the BEGIN may be
-;;; omitted.
-
-;;; has the following special forms:
-;;; begin, define, if, let
+;;; You may note in the above grammar several restrictions, as
+;;; compared to Scheme.  Procedures may only be defined at the top
+;;; level.  Procedure names must be unique.  Applications may only
+;;; apply procedures directly by name --- procedures are second-class
+;;; in FOL.  These restrictions are consistent with being the target
+;;; language for post-flow-analysis code generation, and make FOL
+;;; considerably easier to compile to efficient code.
+;;;
+;;; FOL is specified to be tail-recursive and memory-managed.
+;;;
+;;; FOL comes with the following procedures predefined:
+;;;
+;;;   CONS, CAR, CDR, VECTOR, VECTOR-REF, ABS, EXP, LOG, SIN, COS,
+;;;   TAN, ASIN, ACOS, SQRT, +, -, *, /, ATAN, EXPT, PAIR?, NULL?,
+;;;   REAL?, <, <=, >, >=, =, ZERO?, POSITIVE?, NEGATIVE?, READ-REAL,
+;;;   WRITE-REAL, REAL, GENSYM, GENSYM?, and GENSYM=.
+;;;
+;;; Those with Scheme equivalents have the same semantics.  REAL is
+;;; the identity function.  READ-REAL and WRITE-REAL do i/o;
+;;; WRITE-REAL returns the number written.  GENSYM synthesizes a fresh
+;;; object that is guaranteed to be distinct from all other objects.
+;;; GENSYM? tests whether an object was created by GENSYM.  GENSYM=
+;;; tests whether two objects were created by the same dynamic call to
+;;; GENSYM.
 
 ;;;; Syntax and manipulations of the output language
 
