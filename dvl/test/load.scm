@@ -74,4 +74,16 @@
 	   (begin (define-test
 		    ;; Check that dvl-eval and compile-to-scheme agree
 		    (eval-through-scheme program))
-		  (loop (read))))))))
+		  (loop (read)))))))
+
+ ;; TODO Make the tangent-of-function test acceptably fast
+ #;
+ (define-test (tangent-of-function)
+   (check (equal? 1 (eval-through-scheme
+                     (dvl-prepare
+                      '(let ()
+                         (define (adder n)
+                           (lambda (x)
+                             (g:+ x n)))
+                         (((derivative adder) (real 3)) (real 4))))))))
+ )
