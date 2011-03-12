@@ -107,6 +107,7 @@
          0)
         (else
          (object-map zero object))))
+;; TODO Actually cache the transforms of things once they are computed?
 
 (define forward-transforms (make-eq-hash-table))
 
@@ -126,6 +127,7 @@
 (define (get-forward-transform object)
   (hash-table/get forward-transforms object #f))
 
+;; TODO Change these to use hash-table/lookup so they answer correctly on #f.
 (define primal-cache (make-eq-hash-table))
 (define (primal-cached? object)
   (hash-table/get primal-cache object #f))
