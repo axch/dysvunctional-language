@@ -55,18 +55,18 @@
 	   (macroexpand '((lambda () 1))))
    (not (determined-form-breakage 1 '((lambda () 1))))
 
-   (equal? 3 (vl-eval 3))
-   (equal? 1 (vl-eval '((lambda (x) 1) 3)))
-   (equal? 3 (vl-eval '((lambda (x y) 3) 1 2)))
-   (equal? 3 (vl-eval '((lambda ((cons x y)) 3) (cons 1 2))))
-   (equal? 2 (vl-eval '((lambda ((cons x y)) y) (cons 1 2))))
-   (equal? '(1 . 3) (vl-eval '((lambda (x (y . z) w)
+   (equal? 3 (interpret 3))
+   (equal? 1 (interpret '((lambda (x) 1) 3)))
+   (equal? 3 (interpret '((lambda (x y) 3) 1 2)))
+   (equal? 3 (interpret '((lambda ((cons x y)) 3) (cons 1 2))))
+   (equal? 2 (interpret '((lambda ((cons x y)) y) (cons 1 2))))
+   (equal? '(1 . 3) (interpret '((lambda (x (y . z) w)
 				 (cons x z))
 			       1 (cons 2 3) 4)))
-   (equal? 4 (vl-eval '(+ 1 3)))
-   (equal? 3 (vl-eval '(let ((x 3)) x)))
+   (equal? 4 (interpret '(+ 1 3)))
+   (equal? 3 (interpret '(let ((x 3)) x)))
    (equal? '(8 . 16)
-	   (vl-eval '(let ((double (lambda (x)
+	   (interpret '(let ((double (lambda (x)
 				     (+ x x)))
 			   (square (lambda (x)
 				     (* x x)))
@@ -167,7 +167,7 @@
      (let loop ((program (read)))
        (if (not (eof-object? program))
 	   (begin (define-test
-		    ;; Check that vl-eval and compile-to-scheme agree
+		    ;; Check that interpret and compile-to-scheme agree
 		    (eval-through-scheme program))
 		  (loop (read)))))))
 
@@ -176,7 +176,7 @@
      (let loop ((program (read)))
        (if (not (eof-object? program))
 	   (begin (define-test
-		    ;; Check that vl-eval and compile-to-scheme agree
+		    ;; Check that interpret and compile-to-scheme agree
 		    (eval-through-scheme program))
 		  (loop (read)))))))
  )

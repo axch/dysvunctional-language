@@ -34,6 +34,6 @@
 (define (apply-primitive proc arg)
   ((primitive-implementation proc) arg))
 
-(define (vl-eval form)
+(define (interpret form)
   (concrete-eval (macroexpand form) (initial-user-env)))
 
