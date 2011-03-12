@@ -263,6 +263,19 @@
 
 ;;;; Term-rewriting tidier
 
+(define intraprocedural-sra-rule
+  (rule `(let ((?? bindings1)
+               ((? name ,symbol?) ((? constructor ,cons-or-vector?) (?? args)))
+               (?? bindings2))
+           (?? body))
+        (let ((slot-names (map (lambda (arg)
+                                 (make-name (symbol name '-)))
+                               args)))
+          `(let (,@bindings1
+                 ,@(map list slot-names args)
+                 ,@bindings2)
+             ,@(replace-free-occurrences name `(,constructor ,@slot-names) body)))))
+
 (define tidy
   (rule-simplifier
    (list
@@ -274,6 +287,25 @@
           (list-ref stuff index))
     (rule `(let (((? name ,symbol?) (? exp))) (? name)) exp)
 
+    (rule `(car
+            (let (? bindings)
+              (cons (? a) (? d))))
+          `(let ,bindings
+             (car ,body)))
+
+    (rule `(cdr
+            (let (? bindings)
+              (? body)))
+          `(let ,bindings
+             (cdr ,body)))
+
+    (rule `(vector-ref
+            (let (? bindings)
+              (? body))
+            (? index ,integer?))
+          `(let ,bindings
+             (vector-ref ,body ,index)))
+
     (rule `(let ((?? bindings1)
                  ((? name ,symbol?) (? exp))
                  (?? bindings2))
@@ -284,4 +316,6 @@
                      (constructors-only? exp))
                  `(let (,@bindings1
                         ,@bindings2)
-                    ,@(replace-free-occurrences name exp body))))))))
+                    ,@(replace-free-occurrences name exp body)))))
+
+    intraprocedural-sra-rule)))
