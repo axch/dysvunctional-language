@@ -15,23 +15,9 @@
 	       '(let ((x (gensym))) (gensym= x (if (< (real 2) (real 1)) x (gensym))))))
    )
 
- (with-input-from-file "../vl/examples.scm"
-   (lambda ()
-     (let loop ((program (read)))
-       (if (not (eof-object? program))
-	   (begin (define-test
-		    ;; Check that interpret and compile-to-scheme agree
-		    (union-free-answer program))
-		  (loop (read)))))))
-
- (with-input-from-file "../vl/test/test-vl-programs.scm"
-   (lambda ()
-     (let loop ((program (read)))
-       (if (not (eof-object? program))
-	   (begin (define-test
-		    ;; Check that interpret and compile-to-scheme agree
-		    (union-free-answer program))
-		  (loop (read)))))))
+ (for-each-example "../vl/examples.scm" define-union-free-example-test)
+ (for-each-example "../vl/test/test-vl-programs.scm"
+                   define-union-free-example-test)
 
  ;; TODO Make the tangent-of-function test acceptably fast
  #;
