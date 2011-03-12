@@ -285,7 +285,6 @@
     (rule `(cdr (cons (? a) (? d))) d)
     (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
           (list-ref stuff index))
-    (rule `(let (((? name ,symbol?) (? exp))) (? name)) exp)
 
     (rule `(car
             (let (? bindings)
