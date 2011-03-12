@@ -86,3 +86,22 @@
 	 `(not (equal? ,(fol-eval program)
 		       (after-tidy ,(fol-eval (tidy (full-alpha-rename program)))))))
 	(else #f)))
+
+(define (for-each-example filename proc)
+  (with-input-from-file filename
+    (lambda ()
+      (let* ((first (read))
+             (second (read)))
+        (let loop ((first first)
+                   (second second)
+                   (third (read)))
+          (cond ((eof-object? first)
+                 'done)
+                ((eq? '===> second)
+                 (proc first third)
+                 (let* ((new-first (read))
+                        (new-second (read)))
+                   (loop new-first new-second (read))))
+                (else
+                 (proc first)
+                 (loop second third (read)))))))))
