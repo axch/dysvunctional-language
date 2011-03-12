@@ -17,43 +17,43 @@
 
    (equal? '((lambda ((cons x y)) x) (cons 1 2))
 	   (macroexpand '((lambda (x y) x) (cons 1 2))))
-   (not (determined-form-breakage 1 '((lambda (x y) x) (cons 1 2))))
-   (not (determined-form-breakage 2 '((lambda (x y) y) (cons 1 2))))
+   (equal? 1 (determined-answer '((lambda (x y) x) (cons 1 2))))
+   (equal? 2 (determined-answer '((lambda (x y) y) (cons 1 2))))
 
    (equal? '((lambda ((cons x y)) x) (cons 1 2))
 	   (macroexpand '((lambda (x y) x) 1 2)))
-   (not (determined-form-breakage 1 '((lambda (x y) x) 1 2)))
-   (not (determined-form-breakage 2 '((lambda (x y) y) 1 2)))
+   (equal? 1 (determined-answer '((lambda (x y) x) 1 2)))
+   (equal? 2 (determined-answer '((lambda (x y) y) 1 2)))
 
    (equal? '((lambda ((cons x (cons y z))) x) (cons 1 (cons 2 3)))
 	   (macroexpand '((lambda (x y z) x) 1 2 3)))
-   (not (determined-form-breakage 1 '((lambda (x y z) x) 1 2 3)))
-   (not (determined-form-breakage 2 '((lambda (x y z) y) 1 2 3)))
-   (not (determined-form-breakage 3 '((lambda (x y z) z) 1 2 3)))
+   (equal? 1 (determined-answer '((lambda (x y z) x) 1 2 3)))
+   (equal? 2 (determined-answer '((lambda (x y z) y) 1 2 3)))
+   (equal? 3 (determined-answer '((lambda (x y z) z) 1 2 3)))
 
    (equal? '((lambda ((cons (cons x y) z)) x) (cons (cons 1 2) 3))
 	   (macroexpand '((lambda ((cons x y) z) x) (cons 1 2) 3)))
-   (not (determined-form-breakage 1 '((lambda ((cons x y) z) x) (cons 1 2) 3)))
-   (not (determined-form-breakage 2 '((lambda ((cons x y) z) y) (cons 1 2) 3)))
-   (not (determined-form-breakage 3 '((lambda ((cons x y) z) z) (cons 1 2) 3)))
+   (equal? 1 (determined-answer '((lambda ((cons x y) z) x) (cons 1 2) 3)))
+   (equal? 2 (determined-answer '((lambda ((cons x y) z) y) (cons 1 2) 3)))
+   (equal? 3 (determined-answer '((lambda ((cons x y) z) z) (cons 1 2) 3)))
 
    (equal? '((lambda ((cons (cons x (cons y ())) z)) x)
 	     (cons (cons 1 (cons 2 ())) 3))
 	   (macroexpand '((lambda ((x y) z) x)
 			  (cons 1 (cons 2 ())) 3)))
-   (not (determined-form-breakage 1
-         '((lambda ((x y) z) x)
-	   (cons 1 (cons 2 ())) 3)))
-   (not (determined-form-breakage 2
-         '((lambda ((x y) z) y)
-	   (cons 1 (cons 2 ())) 3)))
-   (not (determined-form-breakage 3
-         '((lambda ((x y) z) z)
-	   (cons 1 (cons 2 ())) 3)))
+   (equal? 1 (determined-answer
+              '((lambda ((x y) z) x)
+                (cons 1 (cons 2 ())) 3)))
+   (equal? 2 (determined-answer
+              '((lambda ((x y) z) y)
+                (cons 1 (cons 2 ())) 3)))
+   (equal? 3 (determined-answer
+              '((lambda ((x y) z) z)
+                (cons 1 (cons 2 ())) 3)))
 
    (equal? '((lambda (()) 1) ())
 	   (macroexpand '((lambda () 1))))
-   (not (determined-form-breakage 1 '((lambda () 1))))
+   (equal? 1 (determined-answer '((lambda () 1))))
 
    (equal? 3 (interpret 3))
    (equal? 1 (interpret '((lambda (x) 1) 3)))
@@ -100,7 +100,7 @@
 		       (lambda (x) (f (g x))))))
 	(cons ((compose double square) (real 2))
 	      ((compose square double) (real 2))))))
-   (equal? '(8 . 16) 
+   (equal? '(8 . 16)
     (eval-through-scheme
      '(let ((double (lambda (x)
 		      (+ x x)))

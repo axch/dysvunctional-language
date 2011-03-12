@@ -87,7 +87,4 @@
 		       (after-tidy ,(fol-eval (tidy (full-alpha-rename program)))))))
 	(else #f)))
 
-(define (determined-form-breakage value form)
-  (not (equal? value (determined-answer form))))
-
 (define eval-through-scheme union-free-answer)

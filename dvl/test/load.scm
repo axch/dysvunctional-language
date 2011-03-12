@@ -4,10 +4,10 @@
 (in-test-group
  dvl
  (define-each-check
-   (not (determined-form-breakage 3 '(+ 1 2)))
-   (not (determined-form-breakage #f '(gensym= (gensym) (gensym))))
-   (not (determined-form-breakage #t '(let ((x (gensym))) (gensym= x x))))
-   (not (determined-form-breakage #f '(let ((x (gensym))) (gensym= x (gensym)))))
+   (equal? 3 (determined-answer '(+ 1 2)))
+   (equal? #f (determined-answer '(gensym= (gensym) (gensym))))
+   (equal? #t (determined-answer '(let ((x (gensym))) (gensym= x x))))
+   (equal? #f (determined-answer '(let ((x (gensym))) (gensym= x (gensym)))))
 
    (equal? #t (eval-through-scheme
 	       '(let ((x (gensym))) (gensym= x (if (> (real 2) (real 1)) x (gensym))))))
