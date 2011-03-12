@@ -288,7 +288,7 @@
 
     (rule `(car
             (let (? bindings)
-              (cons (? a) (? d))))
+              (? body)))
           `(let ,bindings
              (car ,body)))
 
