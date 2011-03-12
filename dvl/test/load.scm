@@ -38,7 +38,7 @@
 	     (equal? interpreted-answer pretty-compiled-answer)
 	     (equal? interpreted-answer direct-pretty-compiled-answer))
 	compiled-answer
-	(error "DVL compiler disagreed with DVL interpreter"
+	(error "Compiler disagreed with interpreter"
 	       `((interpreted: ,interpreted-answer)
 		 (compiled: ,compiled-answer)
 		 (compiled-and-prettified ,pretty-compiled-answer)
