@@ -209,6 +209,13 @@
 ;;; Getting rid the argument-types declarations once we're done with
 ;;; them is easy.
 
+(define remove-defn-argument-types
+  (rule `(define (? formals)
+           (argument-types (?? etc))
+           (?? body))
+        `(define ,formals
+           ,@body)))
+
 (define strip-argument-types
   (rule-simplifier
    (list
@@ -216,11 +223,7 @@
                   (?? stuff))
           `(begin
              ,@stuff))
-    (rule `(define (? formals)
-             (argument-types (?? etc))
-             (?? body))
-          `(define ,formals
-             ,@body)))))
+    remove-defn-argument-types)))
 ;;;; Inlining procedure definitions
 
 ;;; Every procedure that does not call itself can be inlined.  To do
@@ -231,7 +234,7 @@
   (define (non-self-calling? defn)
     (= 0 (count-in-tree (definiendum defn) (definiens defn))))
   (define (inline-defn defn forms)
-    (let ((defn (strip-argument-types defn)))
+    (let ((defn (remove-defn-argument-types defn)))
       (let ((name (definiendum defn))
             (replacement (definiens defn)))
         ((on-subexpressions
