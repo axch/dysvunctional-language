@@ -45,11 +45,15 @@
 (define (apply-primitive proc arg world win)
   ((primitive-implementation proc) arg world win))
 
-(define (dvl-eval form #!optional suppress-print-world?)
+(define (interpret form)
   (concrete-eval
    (macroexpand form) (initial-user-env) (initial-world)
    (lambda (value world)
-     (if (or (default-object? suppress-print-world?)
-             (not suppress-print-world?))
-         (pp world))
+     value)))
+
+(define (dvl-eval form)
+  (concrete-eval
+   (macroexpand form) (initial-user-env) (initial-world)
+   (lambda (value world)
+     (pp world)
      value)))

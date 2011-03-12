@@ -16,8 +16,8 @@
 (define (determined-form-breakage value form)
   (cond ((not (equal? (macroexpand form) (macroexpand (macroexpand form))))
 	 `(not (equal? ,(macroexpand form) ,(macroexpand (macroexpand form)))))
-	((not (equal? value (dvl-eval form #t)))
-	 `(not (equal? ,value (interpreted ,(dvl-eval form #t)))))
+	((not (equal? value (interpret form)))
+	 `(not (equal? ,value (interpreted ,(interpret form)))))
 	((not (equal? value (analyzed-answer form)))
 	 `(not (equal? ,value (analyzed ,(analyzed-answer form)))))
 	((not (equal? `(begin ,value) (analyze-and-generate form)))
@@ -28,7 +28,7 @@
   (eval code (nearest-repl/environment)))
 
 (define (eval-through-scheme program)
-  (let* ((interpreted-answer (dvl-eval program #t))
+  (let* ((interpreted-answer (interpret program))
 	 (analysis (analyze program))
 	 (compiled-program (generate program analysis))
 	 (compiled-answer (%scheme-eval compiled-program))
@@ -63,7 +63,7 @@
      (let loop ((program (read)))
        (if (not (eof-object? program))
 	   (begin (define-test
-		    ;; Check that dvl-eval and compile-to-scheme agree
+		    ;; Check that interpret and compile-to-scheme agree
 		    (eval-through-scheme program))
 		  (loop (read)))))))
 
@@ -72,7 +72,7 @@
      (let loop ((program (read)))
        (if (not (eof-object? program))
 	   (begin (define-test
-		    ;; Check that dvl-eval and compile-to-scheme agree
+		    ;; Check that interpret and compile-to-scheme agree
 		    (eval-through-scheme program))
 		  (loop (read)))))))
 
