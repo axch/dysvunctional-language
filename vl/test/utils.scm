@@ -77,36 +77,8 @@
              (binding-value (car bindings)))
             (else (loop (cdr bindings)))))))
 
-(define (determined-form-breakage value form)
-  (cond ((not (equal? (macroexpand form) (macroexpand (macroexpand form))))
-	 `(not (equal? ,(macroexpand form) ,(macroexpand (macroexpand form)))))
-	((not (equal? value (interpret form)))
-	 `(not (equal? ,value (interpreted ,(interpret form)))))
-	((not (equal? value (analyzed-answer form)))
-	 `(not (equal? ,value (analyzed ,(analyzed-answer form)))))
-	((not (equal? `(begin ,value) (analyze-and-generate form)))
-	 `(not (equal? ,value (compiled ,(analyze-and-generate form)))))
-	(else #f)))
-
 (define (fol-eval code)
   (eval code (nearest-repl/environment)))
-
-(define (eval-through-scheme program)
-  (let* ((interpreted-answer (interpret program))
-	 (analysis (analyze program))
-	 (compiled-program (generate program analysis))
-	 (compiled-answer (fol-eval compiled-program))
-	 (pretty-compiled-answer (fol-eval (prettify-compiler-output compiled-program)))
-	 (direct-pretty-compiled-answer (fol-eval (compile-to-scheme program))))
-    (if (and (equal? interpreted-answer compiled-answer)
-	     (equal? interpreted-answer pretty-compiled-answer)
-	     (equal? interpreted-answer direct-pretty-compiled-answer))
-	compiled-answer
-	(error "Compiler disagreed with interpreter"
-	       `((interpreted: ,interpreted-answer)
-		 (compiled: ,compiled-answer)
-		 (compiled-and-prettified ,pretty-compiled-answer)
-		 (pretty-compiled ,direct-pretty-compiled-answer))))))
 
 (define (tidy-non-soundness program)
   (cond ((not (equal? (fol-eval program)
@@ -114,3 +86,8 @@
 	 `(not (equal? ,(fol-eval program)
 		       (after-tidy ,(fol-eval (tidy (full-alpha-rename program)))))))
 	(else #f)))
+
+(define (determined-form-breakage value form)
+  (not (equal? value (determined-answer form))))
+
+(define eval-through-scheme union-free-answer)
