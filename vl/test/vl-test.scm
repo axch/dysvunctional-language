@@ -162,14 +162,7 @@
    (equal? #f (union-free-answer '(negative? (real 3))))
    )
 
- (for-each-example "../examples.scm"
-  (lambda (program #!optional value)
-    (if (not (default-object? value))
-        (define-test
-          (check (equal? value (union-free-answer program))))
-        (define-test
-          ;; At least check that interpret and compile-to-scheme agree
-          (union-free-answer program)))))
+ (for-each-example "../examples.scm" define-union-free-example-test)
 
  (with-input-from-file "test-vl-programs.scm"
    (lambda ()

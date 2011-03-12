@@ -105,3 +105,11 @@
                 (else
                  (proc first)
                  (loop second third (read)))))))))
+
+(define (define-union-free-example-test program #!optional value)
+  (if (not (default-object? value))
+        (define-test
+          (check (equal? value (union-free-answer program))))
+        (define-test
+          ;; At least check that interpret and compile-to-scheme agree
+          (union-free-answer program))))
