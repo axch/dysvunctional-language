@@ -86,5 +86,3 @@
 	 `(not (equal? ,(fol-eval program)
 		       (after-tidy ,(fol-eval (tidy (full-alpha-rename program)))))))
 	(else #f)))
-
-(define eval-through-scheme union-free-answer)

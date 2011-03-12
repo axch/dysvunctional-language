@@ -9,9 +9,9 @@
    (equal? #t (determined-answer '(let ((x (gensym))) (gensym= x x))))
    (equal? #f (determined-answer '(let ((x (gensym))) (gensym= x (gensym)))))
 
-   (equal? #t (eval-through-scheme
+   (equal? #t (union-free-answer
 	       '(let ((x (gensym))) (gensym= x (if (> (real 2) (real 1)) x (gensym))))))
-   (equal? #f (eval-through-scheme
+   (equal? #f (union-free-answer
 	       '(let ((x (gensym))) (gensym= x (if (< (real 2) (real 1)) x (gensym))))))
    )
 
@@ -21,7 +21,7 @@
        (if (not (eof-object? program))
 	   (begin (define-test
 		    ;; Check that interpret and compile-to-scheme agree
-		    (eval-through-scheme program))
+		    (union-free-answer program))
 		  (loop (read)))))))
 
  (with-input-from-file "../vl/test/test-vl-programs.scm"
@@ -30,13 +30,13 @@
        (if (not (eof-object? program))
 	   (begin (define-test
 		    ;; Check that interpret and compile-to-scheme agree
-		    (eval-through-scheme program))
+		    (union-free-answer program))
 		  (loop (read)))))))
 
  ;; TODO Make the tangent-of-function test acceptably fast
  #;
  (define-test (tangent-of-function)
-   (check (equal? 1 (eval-through-scheme
+   (check (equal? 1 (union-free-answer
                      (dvl-prepare
                       '(let ()
                          (define (adder n)

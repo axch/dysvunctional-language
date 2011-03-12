@@ -101,7 +101,7 @@
 	(cons ((compose double square) (real 2))
 	      ((compose square double) (real 2))))))
    (equal? '(8 . 16)
-    (eval-through-scheme
+    (union-free-answer
      '(let ((double (lambda (x)
 		      (+ x x)))
 	    (square (lambda (x)
@@ -111,22 +111,22 @@
 	(cons ((compose double square) (real 2))
 	      ((compose square double) (real 2))))))
    (equal? 8
-    (eval-through-scheme
+    (union-free-answer
      '(let ((addn (lambda (n) (lambda (x) (+ n x)))))
 	(let ((add5 (addn (real 5))))
 	  (add5 (real 3))))))
    (equal? 8
-    (eval-through-scheme
+    (union-free-answer
      '(let ((addn (lambda (n) (lambda (x) (+ n x)))))
 	(let ((add5 (addn (real 5))))
 	  (add5 3)))))
    (equal? 8
-    (eval-through-scheme
+    (union-free-answer
      '(let ((addn (lambda (n) (lambda (x) (+ n x)))))
 	(let ((add5 (addn 5)))
 	  (add5 (real 3))))))
    (equal? 27
-    (eval-through-scheme
+    (union-free-answer
      '(let ((cube (lambda (x)
 		    (* x (* x x)))))
 	(let ((enlarge-upto (lambda (bound)
@@ -136,30 +136,30 @@
 				    x)))))
 	  ((enlarge-upto (real 20)) (real 3))))))
    (equal? 1
-    (eval-through-scheme
+    (union-free-answer
      '(letrec ((fact (lambda (n)
 		       (if (= n 1)
 			   1
 			   (* n (fact (- n 1)))))))
 	(fact 1))))
    (equal? 120
-    (eval-through-scheme
+    (union-free-answer
      '(letrec ((fact (lambda (n)
 		       (if (= n 1)
 			   1
 			   (* n (fact (- n 1)))))))
 	(fact (real 5)))))
    (equal? 10
-    (eval-through-scheme
+    (union-free-answer
      '(let loop ((count (real 0)))
 	(if (< count 10)
 	    (loop (+ count 1))
 	    count))))
-   (equal? #f (eval-through-scheme '(pair? (real 3))))
-   (equal? #t (eval-through-scheme '(real? (real 3))))
-   (equal? #f (eval-through-scheme '(zero? (real 3))))
-   (equal? #t (eval-through-scheme '(positive? (real 3))))
-   (equal? #f (eval-through-scheme '(negative? (real 3))))
+   (equal? #f (union-free-answer '(pair? (real 3))))
+   (equal? #t (union-free-answer '(real? (real 3))))
+   (equal? #f (union-free-answer '(zero? (real 3))))
+   (equal? #t (union-free-answer '(positive? (real 3))))
+   (equal? #f (union-free-answer '(negative? (real 3))))
    )
 
  (with-input-from-file "../examples.scm"
@@ -168,7 +168,7 @@
        (if (not (eof-object? program))
 	   (begin (define-test
 		    ;; Check that interpret and compile-to-scheme agree
-		    (eval-through-scheme program))
+		    (union-free-answer program))
 		  (loop (read)))))))
 
  (with-input-from-file "test-vl-programs.scm"
@@ -177,6 +177,6 @@
        (if (not (eof-object? program))
 	   (begin (define-test
 		    ;; Check that interpret and compile-to-scheme agree
-		    (eval-through-scheme program))
+		    (union-free-answer program))
 		  (loop (read)))))))
  )
