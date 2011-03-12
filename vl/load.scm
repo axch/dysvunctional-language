@@ -31,6 +31,7 @@
    "code-generator"
    "primitives"
    "output-syntax"
+   "feedback-vertex-set"
    "post-processing"
    "read"))
 

@@ -32,6 +32,7 @@
    "../vl/code-generator"
    "primitives"
    "../vl/output-syntax"
+   "../vl/feedback-vertex-set"
    "../vl/post-processing"
    "read"))
 

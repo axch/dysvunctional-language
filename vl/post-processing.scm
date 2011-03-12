@@ -252,6 +252,33 @@
                (loop (inline-defn defn others))))
             (else (scan (cons (car forms) done) (cdr forms)))))))
 
+(define (inline forms)
+  (let* ((definitions (filter definition? forms))
+         (call-graph
+          (map cons definitions
+               (map (lambda (defn)
+                      (filter
+                       (lambda (other-defn)
+                         (occurs-in-tree? (definiendum other-defn)
+                                          (definiens defn)))
+                       definitions))
+                    definitions)))
+         (non-inlinees (feedback-vertex-set call-graph))
+         (inlinees (lset-difference eq? definitions non-inlinees))
+         (inline-alist
+          (map cons (map definiendum inlinees)
+               (map definiens (map remove-defn-argument-types inlinees)))))
+    (define (not-inline? form)
+      (or (not (definition? form))
+          (memq form non-inlinees)))
+    (define (inline? name)
+      (assq name inline-alist))
+    (let walk ((program (filter not-inline? forms)))
+      ((on-subexpressions
+        (rule `((? name ,inline?) (?? args))
+              (walk (->let `(,(cdr (assq name inline-alist)) ,@args)))))
+       program))))
+
 (define (full-alpha-rename program)
   ;; TODO Fix the bookkeeping of what names the primitives rely on
   (define (needed-names primitive)
