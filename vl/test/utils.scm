@@ -1,3 +1,15 @@
+;;; Invariants:
+;;;   macroexpand is idempotent
+;;;   interpret produces the same answer as analyze, generate, and eval
+;;;   for solved programs, analyze binds the answer to the program
+;;;     and generate emits `(begin ,answer).
+;;;   each stage of FOL compilation does not affect the answer
+;;;   each stage of FOL compilation is idempotent
+;;;   any chain of FOL stages ending in TIDY is idempotent
+;;;   for union-free programs, optimized FOL does not cons
+;;;   the code generator emits syntactically correct and type correct FOL
+;;;   FOL compilation preserves syntactic and type correctness stepwise
+
 (define (analyzed-answer program)
   (let ((full-prog (macroexpand program)))
     (let loop ((bindings (analysis-bindings (analyze program))))
