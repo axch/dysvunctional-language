@@ -1,15 +1,12 @@
 (define (analyzed-answer program)
-  (let ((candidate
-	 (let ((full-prog (macroexpand program)))
-	   (let loop ((bindings (analysis-bindings (analyze program))))
-	     (cond ((null? bindings) #f)
-		   ((equal? full-prog (binding-exp (car bindings)))
-		    (car bindings))
-		   (else (loop (cdr bindings))))))))
-    (if (not candidate)
-	(error "Analysis makes no binding for the original program"
-	       program)
-	(binding-value candidate))))
+  (let ((full-prog (macroexpand program)))
+    (let loop ((bindings (analysis-bindings (analyze program))))
+      (cond ((null? bindings)
+             (error "Analysis makes no binding for the original program"
+                    program))
+            ((equal? full-prog (binding-exp (car bindings)))
+             (binding-value (car bindings)))
+            (else (loop (cdr bindings)))))))
 
 (define (determined-form-breakage value form)
   (cond ((not (equal? (macroexpand form) (macroexpand (macroexpand form))))
