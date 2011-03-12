@@ -131,4 +131,5 @@
  (define (square-root x)
    (numeric-fix (heron-step x) (real 1.0) close-enuf?))
 
- (cons (sqrt 2) (square-root 2))) ===> (1.4142135623730951 . 1.4142135623746899)
+ (cons (sqrt 2) (square-root (real 2))))
+===> (1.4142135623730951 . 1.4142135623746899)
