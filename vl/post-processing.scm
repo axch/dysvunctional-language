@@ -286,24 +286,12 @@
     (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
           (list-ref stuff index))
 
-    (rule `(car
-            (let (? bindings)
-              (? body)))
-          `(let ,bindings
-             (car ,body)))
-
-    (rule `(cdr
-            (let (? bindings)
-              (? body)))
-          `(let ,bindings
-             (cdr ,body)))
-
-    (rule `(vector-ref
-            (let (? bindings)
-              (? body))
-            (? index ,integer?))
-          `(let ,bindings
-             (vector-ref ,body ,index)))
+    (rule `(car (let (? bindings) (? body)))
+          `(let ,bindings (car ,body)))
+    (rule `(cdr (let (? bindings) (? body)))
+          `(let ,bindings (cdr ,body)))
+    (rule `(vector-ref (let (? bindings) (? body)) (? index ,integer?))
+          `(let ,bindings (vector-ref ,body ,index)))
 
     (rule `(let ((?? bindings1)
                  ((? name ,symbol?) (? exp))
