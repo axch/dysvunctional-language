@@ -224,9 +224,8 @@
 ;;;; Inlining procedure definitions
 
 ;;; Every procedure that does not call itself can be inlined.  To do
-;;; that, just replace references to that procedure's name with
-;;; anonymous lambda expressions that do the same job.  The
-;;; term-rewriter TIDY will clean up the mess nicely.
+;;; that, just replace calls to that procedure with the corresponding
+;;; LET form.
 
 (define (inline forms)
   (define (non-self-calling? defn)
