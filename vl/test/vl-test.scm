@@ -163,13 +163,5 @@
    )
 
  (for-each-example "../examples.scm" define-union-free-example-test)
-
- (with-input-from-file "test-vl-programs.scm"
-   (lambda ()
-     (let loop ((program (read)))
-       (if (not (eof-object? program))
-	   (begin (define-test
-		    ;; Check that interpret and compile-to-scheme agree
-		    (union-free-answer program))
-		  (loop (read)))))))
+ (for-each-example "test-vl-programs.scm" define-union-free-example-test)
  )
