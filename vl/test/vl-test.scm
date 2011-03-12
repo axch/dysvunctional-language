@@ -162,14 +162,14 @@
    (equal? #f (union-free-answer '(negative? (real 3))))
    )
 
- (with-input-from-file "../examples.scm"
-   (lambda ()
-     (let loop ((program (read)))
-       (if (not (eof-object? program))
-	   (begin (define-test
-		    ;; Check that interpret and compile-to-scheme agree
-		    (union-free-answer program))
-		  (loop (read)))))))
+ (for-each-example "../examples.scm"
+  (lambda (program #!optional value)
+    (if (not (default-object? value))
+        (define-test
+          (check (equal? value (union-free-answer program))))
+        (define-test
+          ;; At least check that interpret and compile-to-scheme agree
+          (union-free-answer program)))))
 
  (with-input-from-file "test-vl-programs.scm"
    (lambda ()
