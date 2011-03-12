@@ -5,7 +5,7 @@
 (let ((addn (lambda (n)
               (lambda (x) (+ n x)))))
   (let ((add5 (addn (real 5))))
-    (add5 (real 3))))
+    (add5 (real 3)))) ===> 8
 
 ;;; Doubling and squaring do not commute under composition
 
@@ -14,7 +14,7 @@
       (compose (lambda (f g)
                  (lambda (x) (f (g x))))))
   (cons ((compose double square) (real 2))
-        ((compose square double) (real 2))))
+        ((compose square double) (real 2)))) ===> (8 . 16)
 
 ;;; Cubing 3 if it's less than 20
 
@@ -24,15 +24,15 @@
                           (if (< x bound)
                               (cube x)
                               x)))))
-    ((enlarge-upto (real 20)) (real 3))))
+    ((enlarge-upto (real 20)) (real 3)))) ===> 27
 
 ;;; Variations on destructuring
 
 (let ((my-add (lambda (x y) (+ x y))))
-  (my-add (real 3) (real 6)))
+  (my-add (real 3) (real 6))) ===> 9
 
 (let ((my-add (lambda (x.y) (+ x.y))))
-  (my-add (real 3) (real 6)))
+  (my-add (real 3) (real 6))) ===> 9
 
 ;;; Factorial
 
@@ -40,7 +40,7 @@
                  (if (= n 1)
                      1
                      (* n (fact (- n 1)))))))
-  (fact (real 5)))
+  (fact (real 5))) ===> 120
 
 ;;; Factorial, computed at compile time
 
@@ -48,7 +48,7 @@
                  (if (= n 1)
                      1
                      (* n (fact (- n 1)))))))
-  (fact 5))
+  (fact 5)) ===> 120
 
 ;;; Parity testing
 
@@ -60,25 +60,25 @@
                  (if (= n 0)
                      #f
                      (even? (- n 1))))))
-  (even? (real 5)))
+  (even? (real 5))) ===> #f
 
 ;;; Counting to 10
 
 (let loop ((count (real 0)))
   (if (< count 10)
       (loop (+ count 1))
-      count))
+      count)) ===> 10
 
 (let loop ((count (real 10)))
   (if (> count 0)
       (+ (loop (- count 1)) 1)
-      count))
+      count)) ===> 10
 
 (abs
  (let loop ((count (real 0)))
    (if (> count -10)
        (loop (- count 1))
-       count)))
+       count))) ===> 10
 ;;; Mapping different functions over different length lists.
 
 (let ((increment (lambda (x) (+ x 1)))
@@ -90,7 +90,7 @@
                       ()
                       (cons (f (car lst)) (map f (cdr lst)))))))
     (cons (map increment (real 1) (real 2) (real 3) ())
-          (map double (real 4) (real 5) ()))))
+          (map double (real 4) (real 5) ())))) ===> ((2 3 4) 8 10)
 
 ;;; Vector addition
 
@@ -109,7 +109,7 @@
            (+ structure1 structure2))))
   (cons (v+ (real 1) (real 2))
         (v+ (cons (real 10) (real 20))
-            (cons (real 1) (real 2)))))
+            (cons (real 1) (real 2))))) ===> (3 11 . 22)
 
 ;;; Square root by iteration to fixed point
 
@@ -131,4 +131,4 @@
  (define (square-root x)
    (numeric-fix (heron-step x) (real 1.0) close-enuf?))
 
- (cons (sqrt 2) (square-root 2)))
+ (cons (sqrt 2) (square-root 2))) ===> (1.4142135623730951 . 1.4142135623746899)
