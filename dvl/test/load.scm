@@ -1,6 +1,15 @@
 (load-relative "../../testing/load")
 (load-relative "../../vl/test/utils")
 
+(define slad->dvl
+  (on-subexpressions
+   (rule-list
+    (list
+     (rule `(? thing ,number?)
+           `(real ,thing))
+     (rule '+ 'g:+)
+     (rule '* 'g:*)))))
+
 (in-test-group
  dvl
  (define-each-check
@@ -29,4 +38,11 @@
                            (lambda (x)
                              (g:+ x n)))
                          (((derivative adder) (real 3)) (real 4))))))))
+
+ ;; TODO Make compiling the essential examples acceptably fast
+ #;
+ (for-each-example "../slad/essential-examples.scm"
+  (lambda (program #!optional value)
+    (define-union-free-example-test
+      (dvl-prepare (slad->dvl program)) value)))
  )
