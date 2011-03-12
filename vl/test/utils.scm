@@ -51,3 +51,9 @@
 		 (compiled-and-prettified ,pretty-compiled-answer)
 		 (pretty-compiled ,direct-pretty-compiled-answer))))))
 
+(define (tidy-non-soundness program)
+  (cond ((not (equal? (%scheme-eval program)
+		      (%scheme-eval (tidy (full-alpha-rename program)))))
+	 `(not (equal? ,(%scheme-eval program)
+		       (after-tidy ,(%scheme-eval (tidy (full-alpha-rename program)))))))
+	(else #f)))
