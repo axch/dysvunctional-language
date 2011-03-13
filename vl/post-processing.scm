@@ -334,6 +334,19 @@
                  ,@bindings2)
              ,@(replace-free-occurrences name `(,constructor ,@slot-names) body)))))
 
+(define intraprocedural-variable-elimination-rule
+  (rule `(let ((?? bindings1)
+               ((? name ,symbol?) (? exp))
+               (?? bindings2))
+           (?? body))
+        (let ((occurrence-count (count-free-occurrences name body)))
+          (and (or (= 0 occurrence-count)
+                   (= 1 occurrence-count)
+                   (constructors-only? exp))
+               `(let (,@bindings1
+                      ,@bindings2)
+                  ,@(replace-free-occurrences name exp body))))))
+
 (define tidy
   (rule-simplifier
    (list
@@ -358,16 +371,34 @@
     (rule `(* 1 (? thing)) thing)
     (rule `(* (? thing) 1) thing)
 
-    (rule `(let ((?? bindings1)
-                 ((? name ,symbol?) (? exp))
-                 (?? bindings2))
-             (?? body))
-          (let ((occurrence-count (count-free-occurrences name body)))
-            (and (or (= 0 occurrence-count)
-                     (= 1 occurrence-count)
-                     (constructors-only? exp))
-                 `(let (,@bindings1
-                        ,@bindings2)
-                    ,@(replace-free-occurrences name exp body)))))
-
+    intraprocedural-variable-elimination-rule
     intraprocedural-sra-rule)))
+
+(define tidy
+  (iterated
+   (in-order
+    (top-down
+     (rule-list
+      (list
+       (rule `(let () (? body)) body)
+       (rule `(begin (? body)) body)
+       (rule `(car (cons (? a) (? d))) a)
+       (rule `(cdr (cons (? a) (? d))) d)
+       (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
+             (list-ref stuff index))
+
+       (rule `(car (let (? bindings) (? body)))
+             `(let ,bindings (car ,body)))
+       (rule `(cdr (let (? bindings) (? body)))
+             `(let ,bindings (cdr ,body)))
+       (rule `(vector-ref (let (? bindings) (? body)) (? index ,integer?))
+             `(let ,bindings (vector-ref ,body ,index)))
+
+       (rule `(* 0 (? thing)) 0)
+       (rule `(* (? thing) 0) 0)
+       (rule `(+ 0 (? thing)) thing)
+       (rule `(+ (? thing) 0) thing)
+       (rule `(* 1 (? thing)) thing)
+       (rule `(* (? thing) 1) thing))))
+    (on-subexpressions intraprocedural-variable-elimination-rule)
+    (on-subexpressions intraprocedural-sra-rule))))
