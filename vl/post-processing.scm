@@ -22,13 +22,14 @@
 
 (define (prettify-compiler-output output)
   (if (list? output)
-      (tidy
-       (full-alpha-rename
-        (strip-argument-types
-         (scalar-replace-aggregates
-          (inline
-           (structure-definitions->vectors
-            output))))))
+      ((lambda (x) x) ; This makes tidying show up in the stack sampler
+       (tidy
+        (full-alpha-rename
+         (strip-argument-types
+          (scalar-replace-aggregates
+           (inline
+            (structure-definitions->vectors
+             output)))))))
       output))
 
 (define (compile-to-scheme program)
