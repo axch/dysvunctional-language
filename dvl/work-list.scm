@@ -28,13 +28,7 @@
   (hash-table/datum-list (analysis-map analysis)))
 
 (define (analysis-search exp env analysis win lose)
-  (let loop ((bindings (analysis-bindings analysis)))
-    (if (null? bindings)
-        (lose)
-        (if (and (equal? exp (binding-exp (car bindings)))
-                 (abstract-equal? env (binding-env (car bindings))))
-            (win (car bindings))
-            (loop (cdr bindings))))))
+  (hash-table/lookup (analysis-map analysis) (cons exp env) win lose))
 
 (define (analysis-new-binding! analysis binding)
   (hash-table/put! (analysis-map analysis)
