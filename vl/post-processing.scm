@@ -351,6 +351,13 @@
     (rule `(vector-ref (let (? bindings) (? body)) (? index ,integer?))
           `(let ,bindings (vector-ref ,body ,index)))
 
+    (rule `(* 0 (? thing)) 0)
+    (rule `(* (? thing) 0) 0)
+    (rule `(+ 0 (? thing)) thing)
+    (rule `(+ (? thing) 0) thing)
+    (rule `(* 1 (? thing)) thing)
+    (rule `(* (? thing) 1) thing)
+
     (rule `(let ((?? bindings1)
                  ((? name ,symbol?) (? exp))
                  (?? bindings2))
