@@ -232,7 +232,7 @@
 
 (define (inline forms)
   (define (non-self-calling? defn)
-    (= 0 (count-in-tree (definiendum defn) (definiens defn))))
+    (not (occurs-in-tree? (definiendum defn) (definiens defn))))
   (define (inline-defn defn forms)
     (let ((defn (remove-defn-argument-types defn)))
       (let ((name (definiendum defn))
