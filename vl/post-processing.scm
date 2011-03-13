@@ -253,15 +253,27 @@
             (else (scan (cons (car forms) done) (cdr forms)))))))
 
 (define (inline forms)
+  (define (hash-table/put-alist! table alist)
+    (for-each (lambda (k.v)
+                (hash-table/put! table (car k.v) (cdr k.v)))
+              alist))
+  (define (alist->eq-hash-table alist)
+    (let ((answer (make-eq-hash-table)))
+      (hash-table/put-alist! answer alist)
+      answer))
   (let* ((definitions (filter definition? forms))
+         (defn-map (alist->eq-hash-table
+                    (map (lambda (defn)
+                           (cons (definiendum defn) defn))
+                         definitions)))
          (call-graph
           (map cons definitions
                (map (lambda (defn)
-                      (filter
-                       (lambda (other-defn)
-                         (occurs-in-tree? (definiendum other-defn)
-                                          (definiens defn)))
-                       definitions))
+                      (delete-duplicates
+                       (filter-map-tree (lambda (leaf)
+                                          (hash-table/get defn-map leaf #f))
+                                        (definiens defn))
+                       eq?))
                     definitions)))
          (non-inlinees (feedback-vertex-set call-graph))
          (inlinees (lset-difference eq? definitions non-inlinees))

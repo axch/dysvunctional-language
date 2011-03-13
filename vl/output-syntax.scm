@@ -127,6 +127,15 @@
              (occurs-in-tree? thing (cdr tree))))
         (else #f)))
 
+(define (filter-map-tree proc tree)
+  (let walk ((tree tree) (answer '()))
+    (if (pair? tree)
+        (walk (car tree) (walk (cdr tree) answer))
+        (let ((elt (proc tree)))
+          (if elt
+              (cons elt answer)
+              answer)))))
+
 (define (count-free-occurrences name exp)
   (cond ((eq? exp name) 1)
         ((lambda-form? exp)
