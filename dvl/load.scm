@@ -58,7 +58,24 @@
     (rule-list
      (list
       (rule '+ 'g:+)
+      (rule '- 'g:-)
       (rule '* 'g:*)
+      (rule '/ 'g:/)
+      (rule 'sqrt 'g:sqrt)
+      (rule 'exp 'g:exp)
+      (rule 'log 'g:log)
+      (rule 'sin 'g:sin)
+      (rule 'cos 'g:cos)
+      (rule 'atan 'g:atan)
+      (rule '= 'g:=)
+      (rule '< 'g:<)
+      (rule '> 'g:>)
+      (rule '<= 'g:<=)
+      (rule '>= 'g:>=)
+      (rule 'zero? 'g:zero?)
+      (rule 'positive? 'g:positive?)
+      (rule 'negative? 'g:negative?)
+      (rule 'real? 'g:real?)
       (rule `(? number ,inexact-number?) `(real ,number)))))
    ((rule-simplifier
      (list
