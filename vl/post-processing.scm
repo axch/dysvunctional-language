@@ -279,16 +279,17 @@
          (inlinees (lset-difference eq? definitions non-inlinees))
          (inline-alist
           (map cons (map definiendum inlinees)
-               (map definiens (map remove-defn-argument-types inlinees)))))
+               (map definiens (map remove-defn-argument-types inlinees))))
+         (inline-map (alist->eq-hash-table inline-alist)))
+    (define (inline? name)
+      (hash-table/get inline-map name #f))
     (define (not-inline? form)
       (or (not (definition? form))
-          (memq form non-inlinees)))
-    (define (inline? name)
-      (assq name inline-alist))
+          (not (inline? (definiendum form)))))
     (let walk ((program (filter not-inline? forms)))
       ((on-subexpressions
         (rule `((? name ,inline?) (?? args))
-              (walk (->let `(,(cdr (assq name inline-alist)) ,@args)))))
+              (walk (->let `(,(hash-table/get inline-map name #f) ,@args)))))
        program))))
 
 (define (full-alpha-rename program)
