@@ -17,6 +17,8 @@
 	  answer
 	  (loop answer (the-rule answer))))))
 
+;; TODO on-subexpressions and rule-simplifier do not preserve eq?-ness
+;; of their input even if they don't change it.  This is unfortunate.
 (define (on-subexpressions the-rule)
   (define (on-expression expression)
     (let ((subexpressions-done
