@@ -45,9 +45,32 @@
          (program `(let () ,@stdlib ,form)))
     program))
 
+(define (dvl-supersedes? name)
+  (memq name '(derivative derivative-f derivative-using-j* j*
+               gradient-f jacobian-using-j* car cdr)))
+
+(define (inexact-number? thing)
+  (and (number? thing)
+       (inexact? thing)))
+
+(define (vlad->dvl forms)
+  ((on-subexpressions
+    (rule-list
+     (list
+      (rule '+ 'g:+)
+      (rule '* 'g:*)
+      (rule `(? number ,inexact-number?) `(real ,number)))))
+   ((rule-simplifier
+     (list
+      (rule `((?? context1)
+              (define ((? name ,dvl-supersedes?) (?? stuff)) (?? more-stuff))
+              (?? context2))
+            `(,@context1
+              ,@context2)))) forms)))
+
 (define (dvl-run-file filename)
   (let* ((forms (read-source filename))
-         (program (dvl-prepare `(let () ,@forms)))
+         (program (dvl-prepare (vlad->dvl `(let () ,@forms))))
          (compiled-program (compile-to-scheme program))
          (compiled-answer
           (eval compiled-program (nearest-repl/environment))))
