@@ -91,18 +91,33 @@
       (list form)))
 
 (define (structure-definitions->vectors forms)
-  (let ((structure-names
-         (map cadr (filter structure-definition? forms))))
-    (define (fix-argument-types forms)
-      (let loop ((forms forms)
-                 (structure-names structure-names))
-        (if (null? structure-names)
-            forms
-            (loop (replace-free-occurrences
-                   (car structure-names) 'vector forms)
-                  (cdr structure-names)))))
-    (fix-argument-types
-     (append-map expand-if-structure-definition forms))))
+  (define (hash-table/put-alist! table alist)
+    (for-each (lambda (k.v)
+                (hash-table/put! table (car k.v) (cdr k.v)))
+              alist))
+  (define (alist->eq-hash-table alist)
+    (let ((answer (make-eq-hash-table)))
+      (hash-table/put-alist! answer alist)
+      answer))
+  (let* ((structure-names
+          (map cadr (filter structure-definition? forms)))
+         (structure-name-map
+          (alist->eq-hash-table
+           (map (lambda (name) (cons name #t)) structure-names))))
+    (define (structure-name? name)
+      (hash-table/get structure-name-map name #f))
+    (define structure-names->vectors
+      (on-subexpressions
+       (rule `(? type ,structure-name?) 'vector)))
+    (define fix-argument-types
+      (rule `(define (? formals)
+               (argument-types (?? arg-types))
+               (?? body))
+            `(define ,formals
+               (argument-types ,@(structure-names->vectors arg-types))
+               ,@body)))
+    (map fix-argument-types
+         (append-map expand-if-structure-definition forms))))
 
 ;;;; Scalar replacement of aggregates
 
