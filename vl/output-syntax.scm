@@ -128,7 +128,11 @@
         (else 0)))
 
 (define (occurs-in-tree? thing tree)
-  (> (count-in-tree thing tree) 0))
+  (cond ((equal? thing tree) #t)
+        ((pair? tree)
+         (or (occurs-in-tree? thing (car tree))
+             (occurs-in-tree? thing (cdr tree))))
+        (else #f)))
 
 (define (count-free-occurrences name exp)
   (cond ((eq? exp name) 1)
