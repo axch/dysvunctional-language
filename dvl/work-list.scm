@@ -13,9 +13,19 @@
       'ok
       (set-binding-notify! binding (cons notifee (binding-notify binding)))))
 
-(define-structure (analysis safe-accessors)
-  bindings
+(define-structure (analysis safe-accessors (constructor %make-analysis))
+  map
   queue)
+
+(define (make-analysis bindings)
+  (let* ((binding-map (make-abstract-hash-table))
+         (answer (%make-analysis binding-map '())))
+    (for-each (lambda (binding)
+                (analysis-new-binding! answer binding)) bindings)
+    answer))
+
+(define (analysis-bindings analysis)
+  (hash-table/datum-list (analysis-map analysis)))
 
 (define (analysis-search exp env analysis win lose)
   (let loop ((bindings (analysis-bindings analysis)))
@@ -27,7 +37,9 @@
             (loop (cdr bindings))))))
 
 (define (analysis-new-binding! analysis binding)
-  (set-analysis-bindings! analysis (cons binding (analysis-bindings analysis)))
+  (hash-table/put! (analysis-map analysis)
+                   (cons (binding-exp binding) (binding-env binding))
+                   binding)
   (analysis-notify! analysis binding))
 
 (define (analysis-notify! analysis binding)
@@ -68,17 +80,15 @@
 (define *on-behalf-of* #f)
 
 (define (initial-analysis program)
-  (let ((initial-binding
-         (make-binding
-          program
-          (initial-user-env)
-          (initial-world)
-          abstract-none
-          impossible-world
-          '())))
-    (make-analysis
-     (list initial-binding)
-     (list initial-binding))))
+  (make-analysis
+   (list
+    (make-binding
+     program
+     (initial-user-env)
+     (initial-world)
+     abstract-none
+     impossible-world
+     '()))))
 
 (define (step-analysis! analysis)
   (if (null? (analysis-queue analysis))
