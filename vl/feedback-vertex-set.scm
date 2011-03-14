@@ -83,7 +83,7 @@
                 (* (in-degree node2) (out-degree node2)))
              node1)
             (else node2)))
-    (fold node-max #f (hash-table/datum-list node-map)))
+    (fold node-max #f (filter-map vertex-node (map car graph))))
   
   (let prune ((old-nodes-left (hash-table/count node-map)))
     (for-each
