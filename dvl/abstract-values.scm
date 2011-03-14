@@ -75,18 +75,21 @@
                thing2
                (lambda () #f)))))
 
+(define abstract-hash
+  (memoize (make-eq-hash-table)
+   (lambda (thing)
+     (cond ((abstract-gensym? thing)
+            (+ (eqv-hash (abstract-gensym-min thing))
+               (eqv-hash (abstract-gensym-max thing))))
+           ((or (closure? thing) (pair? thing) (env? thing))
+            (object-reduce
+             (lambda (lst)
+               (equal-hash (map abstract-hash lst)))
+             thing))
+           (else (eqv-hash thing))))))
+
 (define (abstract-hash-mod thing modulus)
-  (let loop ((thing thing))
-    (cond ((abstract-gensym? thing)
-           (modulo (+ (loop (abstract-gensym-min thing))
-                      (loop (abstract-gensym-max thing)))
-                   modulus))
-          ((or (closure? thing) (pair? thing) (env? thing))
-           (object-reduce
-            (lambda (lst)
-              (equal-hash-mod (map loop lst) modulus))
-            thing))
-          (else (eqv-hash-mod thing modulus)))))
+  (modulo (abstract-hash thing) modulus))
 
 (define make-abstract-hash-table
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #t))
