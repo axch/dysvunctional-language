@@ -380,7 +380,16 @@
     (rule `(* (? thing) 1) thing)
 
     intraprocedural-variable-elimination-rule
-    intraprocedural-sra-rule)))
+    intraprocedural-sra-rule
+    (rule `(let ((?? bindings1)
+                 ((? name ,symbol?) (let (? in-bindings) (? exp)))
+                 (?? bindings2))
+             (?? body))
+          `(let ,in-bindings
+             (let (,@bindings1
+                   (,name ,exp)
+                   ,@bindings2)
+               ,@body))))))
 #;
 (define tidy
   (iterated
