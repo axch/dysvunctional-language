@@ -99,18 +99,17 @@
                                (car tail2) (cdr tail2))))))
           (apply every pred lis1 lists)))))
 
-(define (memoize f)
-  (let ((cache (make-eq-hash-table)))
-    (lambda (x)
-      (hash-table/lookup cache x
-       (lambda (datum) datum)
-       (lambda ()
-         (let ((answer (f x)))
-           (hash-table/put! cache x answer)
-           answer))))))
+(define (memoize cache f)
+  (lambda (x)
+    (hash-table/lookup cache x
+     (lambda (datum) datum)
+     (lambda ()
+       (let ((answer (f x)))
+         (hash-table/put! cache x answer)
+         answer)))))
 
 (define free-variables
-  (memoize
+  (memoize (make-eq-hash-table)
    (lambda (form)
      (cond ((constant? form)
             '())
