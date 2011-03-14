@@ -365,6 +365,7 @@
                  ,@bindings2)
              ,@(replace-free-occurrences name `(,constructor ,@slot-names) body)))))
 
+;; This is safe assuming the program has been alpha renamed
 (define intraprocedural-variable-elimination-rule
   (rule `(let ((?? bindings1)
                ((? name ,symbol?) (? exp))
@@ -378,6 +379,7 @@
                       ,@bindings2)
                   ,@(replace-free-occurrences name exp body))))))
 
+;; This is safe assuming the program has been alpha renamed
 (define let-lifting-rule
   (rule `(let ((?? bindings1)
                ((? name ,symbol?) (let (? in-bindings) (? exp)))
