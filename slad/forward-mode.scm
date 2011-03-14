@@ -54,66 +54,67 @@
   ;; Assume without checking that the perturbation is an object of
   ;; exactly the same type and shape as the original object.
   (cond ((forward-transform-known? object)
-	 ((get-forward-transform object) perturbation))
-	((primitive? object)
-	 (error "Cannot transform primitives whose transforms are not known"
-		object perturbation))
-	((real? object)
-	 (make-bundle object perturbation))
-	((bundle? object)
-	 ;; This interleaves new perturbations into existing bundles.
-	 ;; The alternative would have been to just cons them on, with
-	 (make-bundle object perturbation)
-	 ;; TODO Which way? Cons or interleave? This has to agree with
-	 ;; the access pattern to avoid perturbation confusion.
-	 #;(make-bundle
-	  (transform-and-perturb (primal object)
-				 (primal perturbation))
-	  (transform-and-perturb (tangent object)
-				 (tangent perturbation))))
-	;; Notably, forward mode relegates to object-map for
-	;; closure objects.  This is because it does not acutally
-	;; need to make any changes to the closure bodies, except
-	;; maybe to avoid confusing perturbations.
-	((or (closure? object) (env? object) (pair? object))
-	 (congruent-map transform-and-perturb object perturbation
+         ((get-forward-transform object) perturbation))
+        ((primitive? object)
+         (error "Cannot transform primitives whose transforms are not known"
+                object perturbation))
+        ((real? object)
+         (make-bundle object perturbation))
+        ((bundle? object)
+         ;; This interleaves new perturbations into existing bundles.
+         ;; The alternative would have been to just cons them on, with
+         (make-bundle object perturbation)
+         ;; TODO Which way? Cons or interleave? This has to agree with
+         ;; the access pattern to avoid perturbation confusion.
+         #;(make-bundle
+          (transform-and-perturb (primal object)
+                                 (primal perturbation))
+          (transform-and-perturb (tangent object)
+                                 (tangent perturbation))))
+        ;; Notably, forward mode relegates to object-map for
+        ;; closure objects.  This is because it does not acutally
+        ;; need to make any changes to the closure bodies, except
+        ;; maybe to avoid confusing perturbations.
+        ((or (closure? object) (env? object) (pair? object))
+         (congruent-map transform-and-perturb object perturbation
           (lambda ()
-	    (error "Object and perturbation are not congruent"))))
-	(else ; trivial tangent space, TODO check congruence
-	 object)))
+            (error "Object and perturbation are not congruent"))))
+        (else ; trivial tangent space, TODO check congruence
+         object)))
 
 (define (primal thing)
   (cond ((bundle? thing)
-	 (bundle-primal thing))
-	((primal-cached? thing)
-	 (cached-primal thing))
-	((real? thing)
-	 (error "Cannot take the primal of a non-bundle" thing))
-	(else
-	 (object-map primal thing))))
+         (bundle-primal thing))
+        ((primal-cached? thing)
+         (cached-primal thing))
+        ((real? thing)
+         (error "Cannot take the primal of a non-bundle" thing))
+        (else
+         (object-map primal thing))))
 
 (define (tangent thing)
   (cond ((bundle? thing)
-	 (bundle-tangent thing))
-	((tangent-cached? thing)
-	 (cached-tangent thing))
-	((real? thing)
-	 (error "Cannot take the tangent of a non-bundle" thing))
-	(else
-	 (object-map tangent thing))))
+         (bundle-tangent thing))
+        ((tangent-cached? thing)
+         (cached-tangent thing))
+        ((real? thing)
+         (error "Cannot take the tangent of a non-bundle" thing))
+        (else
+         (object-map tangent thing))))
 
 (define (zero object)
   (cond ((real? object)
-	 0)
-	(else
-	 (object-map zero object))))
+         0)
+        (else
+         (object-map zero object))))
+;; TODO Actually cache the transforms of things once they are computed?
 
 (define forward-transforms (make-eq-hash-table))
 
 (define (set-forward-transform! object transform)
   ;; All standard forward transforms ignore the perturbation
   (hash-table/put! forward-transforms object (lambda (perturbation)
-					       transform))
+                                               transform))
   (hash-table/put! primal-cache transform object)
   (hash-table/put! tangent-cache transform object)
   'forward-transform-assigned)
@@ -126,6 +127,7 @@
 (define (get-forward-transform object)
   (hash-table/get forward-transforms object #f))
 
+;; TODO Change these to use hash-table/lookup so they answer correctly on #f.
 (define primal-cache (make-eq-hash-table))
 (define (primal-cached? object)
   (hash-table/get primal-cache object #f))

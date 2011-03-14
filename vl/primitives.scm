@@ -8,10 +8,10 @@
 ;;; and name and arity slots, respectively.
 
 (define-structure (primitive (safe-accessors #t))
-  name					; source language
-  implementation			; concrete eval
-  abstract-implementation		; abstract eval
-  expand-implementation	        	; abstract eval
+  name                                  ; source language
+  implementation                        ; concrete eval
+  abstract-implementation               ; abstract eval
+  expand-implementation                 ; abstract eval
   generate)                             ; code generator
 
 (define *primitives* '())
@@ -36,8 +36,8 @@
    base
    (lambda (arg)
      (if (abstract-real? arg)
-	 abstract-answer
-	 (base arg)))))
+         abstract-answer
+         (base arg)))))
 
 ;;; Binary numeric primitives also have to destructure their input,
 ;;; because the VL system will hand it in as a pair.
@@ -47,11 +47,11 @@
      (base (car arg) (cdr arg)))
    (lambda (arg)
      (let ((first (car arg))
-	   (second (cdr arg)))
+           (second (cdr arg)))
        (if (or (abstract-real? first)
-	       (abstract-real? second))
-	   abstract-answer
-	   (base first second))))))
+               (abstract-real? second))
+           abstract-answer
+           (base first second))))))
 
 ;;; Type predicates need to take care to respect the possible abstract
 ;;; types.
@@ -60,8 +60,8 @@
    base
    (lambda (arg)
      (if (abstract-real? arg)
-	 (eq? base real?)
-	 (base arg)))))
+         (eq? base real?)
+         (base arg)))))
 
 (define-syntax define-R->R-primitive
   (syntax-rules ()
@@ -159,8 +159,8 @@
  (simple-primitive 'real 1 real
   (lambda (x)
     (cond ((abstract-real? x) abstract-real)
-	  ((number? x) abstract-real)
-	  (else (error "A known non-real is declared real" x))))))
+          ((number? x) abstract-real)
+          (else (error "A known non-real is declared real" x))))))
 
 ;;; IF-PROCEDURE is special because it is the only primitive that
 ;;; accepts VL closures as arguments and invokes them internally.
@@ -181,33 +181,33 @@
   (make-primitive 'if-procedure
    (lambda (arg)
      (if (car arg)
-	 (concrete-apply (cadr arg) '())
-	 (concrete-apply (cddr arg) '())))
+         (concrete-apply (cadr arg) '())
+         (concrete-apply (cddr arg) '())))
    (lambda (shape analysis)
      (let ((predicate (car shape)))
        (if (not (abstract-boolean? predicate))
-	   (if predicate
-	       (abstract-result-of (cadr shape) analysis)
-	       (abstract-result-of (cddr shape) analysis))
-	   (abstract-union
-	    (abstract-result-of (cadr shape) analysis)
-	    (abstract-result-of (cddr shape) analysis)))))
+           (if predicate
+               (abstract-result-of (cadr shape) analysis)
+               (abstract-result-of (cddr shape) analysis))
+           (abstract-union
+            (abstract-result-of (cadr shape) analysis)
+            (abstract-result-of (cddr shape) analysis)))))
    (lambda (arg analysis)
      (let ((predicate (car arg))
-	   (consequent (cadr arg))
-	   (alternate (cddr arg)))
+           (consequent (cadr arg))
+           (alternate (cddr arg)))
        (define (expand-thunk-application thunk)
-	 (analysis-expand
-	  `(,(closure-exp thunk) ())
-	  (closure-env thunk)
-	  analysis))
+         (analysis-expand
+          `(,(closure-exp thunk) ())
+          (closure-env thunk)
+          analysis))
        (if (not (abstract-boolean? predicate))
-	   (if predicate
-	       (expand-thunk-application consequent)
-	       (expand-thunk-application alternate))
-	   (lset-union same-analysis-binding?
-		       (expand-thunk-application consequent)
-		       (expand-thunk-application alternate)))))
+           (if predicate
+               (expand-thunk-application consequent)
+               (expand-thunk-application alternate))
+           (lset-union same-analysis-binding?
+                       (expand-thunk-application consequent)
+                       (expand-thunk-application alternate)))))
    generate-if-statement))
 (add-primitive! primitive-if)
 
@@ -218,5 +218,5 @@
 (define (initial-user-env)
   (make-env
    (map (lambda (primitive)
-	  (cons (primitive-name primitive) primitive))
-	*primitives*)))
+          (cons (primitive-name primitive) primitive))
+        *primitives*)))

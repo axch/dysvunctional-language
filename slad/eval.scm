@@ -7,30 +7,30 @@
 
 (define (slad-eval form env)
   (cond ((constant? form)
-	 (constant-value form))
-	((variable? form)
-	 (lookup form env))
-	((pair-form? form)
-	 (cons (slad-eval (car-subform form) env)
-	       (slad-eval (cdr-subform form) env)))
-	((lambda-form? form)
-	 (make-closure form env))
-	((application? form)
-	 (slad-apply (slad-eval (operator-subform form) env)
-		     (slad-eval (operand-subform form) env)))
-	(else
-	 (error "Invalid expression type" form env))))
+         (constant-value form))
+        ((variable? form)
+         (lookup form env))
+        ((pair-form? form)
+         (cons (slad-eval (car-subform form) env)
+               (slad-eval (cdr-subform form) env)))
+        ((lambda-form? form)
+         (make-closure form env))
+        ((application? form)
+         (slad-apply (slad-eval (operator-subform form) env)
+                     (slad-eval (operand-subform form) env)))
+        (else
+         (error "Invalid expression type" form env))))
 
 (define (slad-apply proc arg)
   (cond ((closure? proc)
-	 (slad-eval (closure-body proc)
-		    (extend-env (closure-formal proc)
-				arg
-				(closure-env proc))))
-	((primitive? proc)
-	 ((primitive-implementation proc) arg))
-	(else
-	 (error "Invalid procedure type" proc arg))))
+         (slad-eval (closure-body proc)
+                    (extend-env (closure-formal proc)
+                                arg
+                                (closure-env proc))))
+        ((primitive? proc)
+         ((primitive-implementation proc) arg))
+        (else
+         (error "Invalid procedure type" proc arg))))
 
 ;;;; Entry points
 

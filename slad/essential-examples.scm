@@ -19,7 +19,7 @@
   (define (one x)
     ((derivative (lambda (y) (+ x y))) 3))
   ((derivative (lambda (x)
-		 (* x (one x))))
+                 (* x (one x))))
    7)) ===> 1
 
 ;;; Don't confuse the perturbations
@@ -29,7 +29,7 @@
   (define (one x)
     ((derivative (lambda (y) (+ x y))) 3))
   ((derivative (lambda (x)
-		 (* x (one (* 2 x)))))
+                 (* x (one (* 2 x)))))
    7)) ===> 1
 
 ;;; Another don't confuse the perturbations.
@@ -37,6 +37,6 @@
   (lambda (y)
     ((derivative
       (lambda (x)
-	(* x (* x y))))
+        (* x (* x y))))
      (* y 3))))
  5) ===> 60

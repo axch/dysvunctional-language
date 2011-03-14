@@ -23,18 +23,18 @@
   (let ((pathname (default-extension-to-vlad pathname)))
     (call-with-input-file pathname
       (lambda (input-port)
-	(let loop ((forms '()) (ignore? #f))
-	  (let ((form (read input-port)))
-	    (cond
-	     ((eof-object? form) (reverse forms))
-	     (ignore? (loop forms #f))
-	     ((eq? '===> form) (loop forms #t))
-	     ((include-directive? form)
-	      (loop
-	       (append (reverse (with-working-directory-pathname
-				 (directory-namestring pathname)
-				 (lambda ()
-				   (read-source (second form)))))
-		       forms)
-	       #f))
-	     (else (loop (cons form forms) #f)))))))))
+        (let loop ((forms '()) (ignore? #f))
+          (let ((form (read input-port)))
+            (cond
+             ((eof-object? form) (reverse forms))
+             (ignore? (loop forms #f))
+             ((eq? '===> form) (loop forms #t))
+             ((include-directive? form)
+              (loop
+               (append (reverse (with-working-directory-pathname
+                                 (directory-namestring pathname)
+                                 (lambda ()
+                                   (read-source (second form)))))
+                       forms)
+               #f))
+             (else (loop (cons form forms) #f)))))))))

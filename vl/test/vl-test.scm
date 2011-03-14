@@ -1,47 +1,3 @@
-(define (analyzed-answer program)
-  (let ((candidate
-	 (let ((full-prog (macroexpand program)))
-	   (let loop ((bindings (analysis-bindings (analyze program))))
-	     (cond ((null? bindings) #f)
-		   ((equal? full-prog (binding-exp (car bindings)))
-		    (car bindings))
-		   (else (loop (cdr bindings))))))))
-    (if (not candidate)
-	(error "Analysis makes no binding for the original program"
-	       program)
-	(binding-value candidate))))
-
-(define (determined-form-breakage value form)
-  (cond ((not (equal? (macroexpand form) (macroexpand (macroexpand form))))
-	 `(not (equal? ,(macroexpand form) ,(macroexpand (macroexpand form)))))
-	((not (equal? value (vl-eval form)))
-	 `(not (equal? ,value (interpreted ,(vl-eval form)))))
-	((not (equal? value (analyzed-answer form)))
-	 `(not (equal? ,value (analyzed ,(analyzed-answer form)))))
-	((not (equal? `(begin ,value) (analyze-and-generate form)))
-	 `(not (equal? ,value (compiled ,(analyze-and-generate form)))))
-	(else #f)))
-
-(define (%scheme-eval code)
-  (eval code (nearest-repl/environment)))
-
-(define (eval-through-scheme program)
-  (let* ((interpreted-answer (vl-eval program))
-	 (analysis (analyze program))
-	 (compiled-program (generate program analysis))
-	 (compiled-answer (%scheme-eval compiled-program))
-	 (pretty-compiled-answer (%scheme-eval (prettify-compiler-output compiled-program)))
-	 (direct-pretty-compiled-answer (%scheme-eval (compile-to-scheme program))))
-    (if (and (equal? interpreted-answer compiled-answer)
-	     (equal? interpreted-answer pretty-compiled-answer)
-	     (equal? interpreted-answer direct-pretty-compiled-answer))
-	compiled-answer
-	(error "VL compiler disagreed with VL interpreter"
-	       `((interpreted: ,interpreted-answer)
-		 (compiled: ,compiled-answer)
-		 (compiled-and-prettified ,pretty-compiled-answer)
-		 (pretty-compiled ,direct-pretty-compiled-answer))))))
-
 (in-test-group
  vl
 
@@ -61,56 +17,56 @@
 
    (equal? '((lambda ((cons x y)) x) (cons 1 2))
 	   (macroexpand '((lambda (x y) x) (cons 1 2))))
-   (not (determined-form-breakage 1 '((lambda (x y) x) (cons 1 2))))
-   (not (determined-form-breakage 2 '((lambda (x y) y) (cons 1 2))))
+   (equal? 1 (determined-answer '((lambda (x y) x) (cons 1 2))))
+   (equal? 2 (determined-answer '((lambda (x y) y) (cons 1 2))))
 
    (equal? '((lambda ((cons x y)) x) (cons 1 2))
 	   (macroexpand '((lambda (x y) x) 1 2)))
-   (not (determined-form-breakage 1 '((lambda (x y) x) 1 2)))
-   (not (determined-form-breakage 2 '((lambda (x y) y) 1 2)))
+   (equal? 1 (determined-answer '((lambda (x y) x) 1 2)))
+   (equal? 2 (determined-answer '((lambda (x y) y) 1 2)))
 
    (equal? '((lambda ((cons x (cons y z))) x) (cons 1 (cons 2 3)))
 	   (macroexpand '((lambda (x y z) x) 1 2 3)))
-   (not (determined-form-breakage 1 '((lambda (x y z) x) 1 2 3)))
-   (not (determined-form-breakage 2 '((lambda (x y z) y) 1 2 3)))
-   (not (determined-form-breakage 3 '((lambda (x y z) z) 1 2 3)))
+   (equal? 1 (determined-answer '((lambda (x y z) x) 1 2 3)))
+   (equal? 2 (determined-answer '((lambda (x y z) y) 1 2 3)))
+   (equal? 3 (determined-answer '((lambda (x y z) z) 1 2 3)))
 
    (equal? '((lambda ((cons (cons x y) z)) x) (cons (cons 1 2) 3))
 	   (macroexpand '((lambda ((cons x y) z) x) (cons 1 2) 3)))
-   (not (determined-form-breakage 1 '((lambda ((cons x y) z) x) (cons 1 2) 3)))
-   (not (determined-form-breakage 2 '((lambda ((cons x y) z) y) (cons 1 2) 3)))
-   (not (determined-form-breakage 3 '((lambda ((cons x y) z) z) (cons 1 2) 3)))
+   (equal? 1 (determined-answer '((lambda ((cons x y) z) x) (cons 1 2) 3)))
+   (equal? 2 (determined-answer '((lambda ((cons x y) z) y) (cons 1 2) 3)))
+   (equal? 3 (determined-answer '((lambda ((cons x y) z) z) (cons 1 2) 3)))
 
    (equal? '((lambda ((cons (cons x (cons y ())) z)) x)
 	     (cons (cons 1 (cons 2 ())) 3))
 	   (macroexpand '((lambda ((x y) z) x)
 			  (cons 1 (cons 2 ())) 3)))
-   (not (determined-form-breakage 1
-         '((lambda ((x y) z) x)
-	   (cons 1 (cons 2 ())) 3)))
-   (not (determined-form-breakage 2
-         '((lambda ((x y) z) y)
-	   (cons 1 (cons 2 ())) 3)))
-   (not (determined-form-breakage 3
-         '((lambda ((x y) z) z)
-	   (cons 1 (cons 2 ())) 3)))
+   (equal? 1 (determined-answer
+              '((lambda ((x y) z) x)
+                (cons 1 (cons 2 ())) 3)))
+   (equal? 2 (determined-answer
+              '((lambda ((x y) z) y)
+                (cons 1 (cons 2 ())) 3)))
+   (equal? 3 (determined-answer
+              '((lambda ((x y) z) z)
+                (cons 1 (cons 2 ())) 3)))
 
    (equal? '((lambda (()) 1) ())
 	   (macroexpand '((lambda () 1))))
-   (not (determined-form-breakage 1 '((lambda () 1))))
+   (equal? 1 (determined-answer '((lambda () 1))))
 
-   (equal? 3 (vl-eval 3))
-   (equal? 1 (vl-eval '((lambda (x) 1) 3)))
-   (equal? 3 (vl-eval '((lambda (x y) 3) 1 2)))
-   (equal? 3 (vl-eval '((lambda ((cons x y)) 3) (cons 1 2))))
-   (equal? 2 (vl-eval '((lambda ((cons x y)) y) (cons 1 2))))
-   (equal? '(1 . 3) (vl-eval '((lambda (x (y . z) w)
+   (equal? 3 (interpret 3))
+   (equal? 1 (interpret '((lambda (x) 1) 3)))
+   (equal? 3 (interpret '((lambda (x y) 3) 1 2)))
+   (equal? 3 (interpret '((lambda ((cons x y)) 3) (cons 1 2))))
+   (equal? 2 (interpret '((lambda ((cons x y)) y) (cons 1 2))))
+   (equal? '(1 . 3) (interpret '((lambda (x (y . z) w)
 				 (cons x z))
 			       1 (cons 2 3) 4)))
-   (equal? 4 (vl-eval '(+ 1 3)))
-   (equal? 3 (vl-eval '(let ((x 3)) x)))
+   (equal? 4 (interpret '(+ 1 3)))
+   (equal? 3 (interpret '(let ((x 3)) x)))
    (equal? '(8 . 16)
-	   (vl-eval '(let ((double (lambda (x)
+	   (interpret '(let ((double (lambda (x)
 				     (+ x x)))
 			   (square (lambda (x)
 				     (* x x)))
@@ -144,8 +100,8 @@
 		       (lambda (x) (f (g x))))))
 	(cons ((compose double square) (real 2))
 	      ((compose square double) (real 2))))))
-   (equal? '(8 . 16) 
-    (eval-through-scheme
+   (equal? '(8 . 16)
+    (union-free-answer
      '(let ((double (lambda (x)
 		      (+ x x)))
 	    (square (lambda (x)
@@ -155,22 +111,22 @@
 	(cons ((compose double square) (real 2))
 	      ((compose square double) (real 2))))))
    (equal? 8
-    (eval-through-scheme
+    (union-free-answer
      '(let ((addn (lambda (n) (lambda (x) (+ n x)))))
 	(let ((add5 (addn (real 5))))
 	  (add5 (real 3))))))
    (equal? 8
-    (eval-through-scheme
+    (union-free-answer
      '(let ((addn (lambda (n) (lambda (x) (+ n x)))))
 	(let ((add5 (addn (real 5))))
 	  (add5 3)))))
    (equal? 8
-    (eval-through-scheme
+    (union-free-answer
      '(let ((addn (lambda (n) (lambda (x) (+ n x)))))
 	(let ((add5 (addn 5)))
 	  (add5 (real 3))))))
    (equal? 27
-    (eval-through-scheme
+    (union-free-answer
      '(let ((cube (lambda (x)
 		    (* x (* x x)))))
 	(let ((enlarge-upto (lambda (bound)
@@ -180,47 +136,32 @@
 				    x)))))
 	  ((enlarge-upto (real 20)) (real 3))))))
    (equal? 1
-    (eval-through-scheme
+    (union-free-answer
      '(letrec ((fact (lambda (n)
 		       (if (= n 1)
 			   1
 			   (* n (fact (- n 1)))))))
 	(fact 1))))
    (equal? 120
-    (eval-through-scheme
+    (union-free-answer
      '(letrec ((fact (lambda (n)
 		       (if (= n 1)
 			   1
 			   (* n (fact (- n 1)))))))
 	(fact (real 5)))))
    (equal? 10
-    (eval-through-scheme
+    (union-free-answer
      '(let loop ((count (real 0)))
 	(if (< count 10)
 	    (loop (+ count 1))
 	    count))))
-   (equal? #f (eval-through-scheme '(pair? (real 3))))
-   (equal? #t (eval-through-scheme '(real? (real 3))))
-   (equal? #f (eval-through-scheme '(zero? (real 3))))
-   (equal? #t (eval-through-scheme '(positive? (real 3))))
-   (equal? #f (eval-through-scheme '(negative? (real 3))))
+   (equal? #f (union-free-answer '(pair? (real 3))))
+   (equal? #t (union-free-answer '(real? (real 3))))
+   (equal? #f (union-free-answer '(zero? (real 3))))
+   (equal? #t (union-free-answer '(positive? (real 3))))
+   (equal? #f (union-free-answer '(negative? (real 3))))
    )
 
- (with-input-from-file "../examples.scm"
-   (lambda ()
-     (let loop ((program (read)))
-       (if (not (eof-object? program))
-	   (begin (define-test
-		    ;; Check that vl-eval and compile-to-scheme agree
-		    (eval-through-scheme program))
-		  (loop (read)))))))
-
- (with-input-from-file "test-vl-programs.scm"
-   (lambda ()
-     (let loop ((program (read)))
-       (if (not (eof-object? program))
-	   (begin (define-test
-		    ;; Check that vl-eval and compile-to-scheme agree
-		    (eval-through-scheme program))
-		  (loop (read)))))))
+ (for-each-example "../examples.scm" define-union-free-example-test)
+ (for-each-example "test-vl-programs.scm" define-union-free-example-test)
  )

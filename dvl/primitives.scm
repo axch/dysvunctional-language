@@ -8,11 +8,11 @@
 ;;; and name and arity slots, respectively.
 
 (define-structure (primitive (safe-accessors #t))
-  name					; source language
-  implementation			; concrete eval
-  abstract-implementation		; abstract eval
-  expand-implementation	        	; abstract eval
-  generate)				; code generator
+  name                                  ; source language
+  implementation                        ; concrete eval
+  abstract-implementation               ; abstract eval
+  expand-implementation                 ; abstract eval
+  generate)                             ; code generator
 
 (define *primitives* '())
 
@@ -38,8 +38,8 @@
    base
    (lambda (arg)
      (if (abstract-real? arg)
-	 abstract-answer
-	 (base arg)))))
+         abstract-answer
+         (base arg)))))
 
 ;;; Binary numeric primitives also have to destructure their input,
 ;;; because the VL system will hand it in as a pair.
@@ -49,11 +49,11 @@
      (base (car arg) (cdr arg)))
    (lambda (arg)
      (let ((first (car arg))
-	   (second (cdr arg)))
+           (second (cdr arg)))
        (if (or (abstract-real? first)
-	       (abstract-real? second))
-	   abstract-answer
-	   (base first second))))))
+               (abstract-real? second))
+           abstract-answer
+           (base first second))))))
 
 ;;; Type predicates need to take care to respect the possible abstract
 ;;; types.
@@ -62,13 +62,13 @@
    base
    (lambda (arg)
      (cond ((abstract-real? arg)
-	    (eq? base real?))
-	   ((abstract-boolean? arg)
-	    (eq? base boolean?))
-	   ((abstract-gensym? arg)
-	    (eq? base gensym?))
-	   (else
-	    (base arg))))))
+            (eq? base real?))
+           ((abstract-boolean? arg)
+            (eq? base boolean?))
+           ((abstract-gensym? arg)
+            (eq? base gensym?))
+           (else
+            (base arg))))))
 
 (define-syntax define-R->R-primitive
   (syntax-rules ()
@@ -171,8 +171,8 @@
   real
   (lambda (x)
     (cond ((abstract-real? x) abstract-real)
-	  ((number? x) abstract-real)
-	  (else (error "A known non-real is declared real" x))))))
+          ((number? x) abstract-real)
+          (else (error "A known non-real is declared real" x))))))
 
 ;;; IF-PROCEDURE is special because it is the only primitive that
 ;;; accepts VL closures as arguments and invokes them internally.
@@ -193,38 +193,38 @@
   (make-primitive 'if-procedure
    (lambda (arg world win)
      (if (car arg)
-	 (concrete-apply (cadr arg) '() world win)
-	 (concrete-apply (cddr arg) '() world win)))
+         (concrete-apply (cadr arg) '() world win)
+         (concrete-apply (cddr arg) '() world win)))
    (lambda (shape world analysis win)
      (let ((predicate (car shape)))
        (if (not (abstract-boolean? predicate))
-	   (if predicate
-	       (abstract-result-in-world (cadr shape) world analysis win)
-	       (abstract-result-in-world (cddr shape) world analysis win))
-	   (abstract-result-in-world (cadr shape) world analysis
+           (if predicate
+               (abstract-result-in-world (cadr shape) world analysis win)
+               (abstract-result-in-world (cddr shape) world analysis win))
+           (abstract-result-in-world (cadr shape) world analysis
             (lambda (first-value first-world)
-	      (abstract-result-in-world (cddr shape) world analysis
+              (abstract-result-in-world (cddr shape) world analysis
                (lambda (second-value second-world)
-		 (win (abstract-union first-value second-value)
-		      (union-world first-world second-world)))))))))
+                 (win (abstract-union first-value second-value)
+                      (union-world first-world second-world)))))))))
    (lambda (arg world analysis)
      (let ((predicate (car arg))
-	   (consequent (cadr arg))
-	   (alternate (cddr arg)))
+           (consequent (cadr arg))
+           (alternate (cddr arg)))
        (define (expand-thunk-application thunk)
-	 (analysis-expand
-	  `(,(closure-exp thunk) ())
-	  (closure-env thunk)
-	  world
-	  analysis
-	  (lambda (value world) '())))
+         (analysis-expand
+          `(,(closure-exp thunk) ())
+          (closure-env thunk)
+          world
+          analysis
+          (lambda (value world) '())))
        (if (not (abstract-boolean? predicate))
-	   (if predicate
-	       (expand-thunk-application consequent)
-	       (expand-thunk-application alternate))
-	   (lset-union same-analysis-binding?
-		       (expand-thunk-application consequent)
-		       (expand-thunk-application alternate)))))
+           (if predicate
+               (expand-thunk-application consequent)
+               (expand-thunk-application alternate))
+           (lset-union same-analysis-binding?
+                       (expand-thunk-application consequent)
+                       (expand-thunk-application alternate)))))
    generate-if-statement))
 (add-primitive! primitive-if)
 
@@ -239,10 +239,10 @@
 
 (define (abstract-result-of thunk-shape analysis)
   (analysis-get (closure-body thunk-shape)
-		(extend-env (closure-formal thunk-shape)
-			    '()
-			    (closure-env thunk-shape))
-		analysis))
+                (extend-env (closure-formal thunk-shape)
+                            '()
+                            (closure-env thunk-shape))
+                analysis))
 
 ;;;; Gensym
 
@@ -257,8 +257,8 @@
     (win (current-gensym world) (do-gensym world)))
   (lambda (arg world analysis win)
     (win (trivial-abstract-gensym
-	  (current-gensym world))
-	 (do-gensym world)))
+          (current-gensym world))
+         (do-gensym world)))
   (lambda (arg world analysis) '())
   (simple-primitive-application 'gensym 0)))
 
@@ -271,24 +271,24 @@
     (gensym= (car arg) (cdr arg)))
   (lambda (arg)
     (let ((first (car arg))
-	  (second (cdr arg)))
+          (second (cdr arg)))
       (let ((first-low   (abstract-gensym-min first))
-	    (first-high  (abstract-gensym-max first))
-	    (second-low  (abstract-gensym-min second))
-	    (second-high (abstract-gensym-max second)))
-	(cond ((= first-low first-high second-low second-high)
-	       #t)
-	      ((< first-high second-low)
-	       #f)
-	      ((> first-low second-high)
-	       #f)
-	      (else
-	       abstract-boolean)))))))
+            (first-high  (abstract-gensym-max first))
+            (second-low  (abstract-gensym-min second))
+            (second-high (abstract-gensym-max second)))
+        (cond ((= first-low first-high second-low second-high)
+               #t)
+              ((< first-high second-low)
+               #f)
+              ((> first-low second-high)
+               #f)
+              (else
+               abstract-boolean)))))))
 
 (define-primitive-type-predicate gensym?)
 
 (define (initial-user-env)
   (make-env
    (map (lambda (primitive)
-	  (cons (primitive-name primitive) primitive))
-	*primitives*)))
+          (cons (primitive-name primitive) primitive))
+        *primitives*)))

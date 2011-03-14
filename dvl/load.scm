@@ -32,18 +32,23 @@
    "../vl/code-generator"
    "primitives"
    "../vl/output-syntax"
+   "../vl/feedback-vertex-set"
    "../vl/post-processing"
    "read"))
 
+(define stdlib-file
+  (string-append (->namestring (self-relatively working-directory-pathname))
+                 "stdlib.dvl"))
+
 (define (dvl-prepare form)
-  (let* ((stdlib (read-source "stdlib.dvl"))
-	 (program `(let () ,@stdlib ,form)))
+  (let* ((stdlib (read-source stdlib-file))
+         (program `(let () ,@stdlib ,form)))
     program))
 
 (define (dvl-run-file filename)
   (let* ((forms (read-source filename))
-	 (program (dvl-prepare `(let () ,@forms)))
-	 (compiled-program (compile-to-scheme program))
-	 (compiled-answer
-	  (eval compiled-program (nearest-repl/environment))))
+         (program (dvl-prepare `(let () ,@forms)))
+         (compiled-program (compile-to-scheme program))
+         (compiled-answer
+          (eval compiled-program (nearest-repl/environment))))
     (pp compiled-answer)))

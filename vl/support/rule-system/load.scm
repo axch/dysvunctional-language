@@ -16,8 +16,5 @@
 (load-relative-compiled "../eq-properties")
 (load-relative-compiled "../ghelper")
 (load-relative-compiled "matcher")
-
-(define (rule-memoize f) f)
-
 (load-relative-compiled "pattern-directed-invocation")
 (load-relative-compiled "simplification")

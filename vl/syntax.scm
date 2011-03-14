@@ -27,13 +27,13 @@
 
 (define (normalize-definition definition)
   (cond ((not (definition? definition))
-	 (error "Trying to normalize a non-definition" definition))
-	((pair? (cadr definition))
-	 (normalize-definition
-	  `(define ,(caadr definition)
-	     (lambda ,(cdadr definition)
-	       ,@(cddr definition)))))
-	(else definition)))
+         (error "Trying to normalize a non-definition" definition))
+        ((pair? (cadr definition))
+         (normalize-definition
+          `(define ,(caadr definition)
+             (lambda ,(cdadr definition)
+               ,@(cddr definition)))))
+        (else definition)))
 
 (define (definiendum definition)
   (cadr (normalize-definition definition)))

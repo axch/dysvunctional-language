@@ -32,52 +32,52 @@
 
 (define (simplify-letrec form)
   (let* ((bindings (cadr form))
-	 (variables (map car bindings))
-	 (expressions (map cadr bindings))
-	 (body (cddr form))
-	 (graph (transitive-closure (reference-graph variables expressions)))
-	 ;; The next two bindings sweep out variables that the body of
-	 ;; the letrec never (transitively) references.  This may be
-	 ;; dangerous if those variables' expressions are to be
-	 ;; executed for effect; but why would anyone do that in a
-	 ;; letrec?
-	 (entry-points
-	  (lset-intersection equal?
-	   variables (free-variables (macroexpand-body body))))
+         (variables (map car bindings))
+         (expressions (map cadr bindings))
+         (body (cddr form))
+         (graph (transitive-closure (reference-graph variables expressions)))
+         ;; The next two bindings sweep out variables that the body of
+         ;; the letrec never (transitively) references.  This may be
+         ;; dangerous if those variables' expressions are to be
+         ;; executed for effect; but why would anyone do that in a
+         ;; letrec?
+         (entry-points
+          (lset-intersection equal?
+           variables (free-variables (macroexpand-body body))))
          (graph
-	  (filter-vertices
-	   (lambda (var)
-	     (any (lambda (body-var)
-		    (or (eq? body-var var)
-			(points-to? body-var var graph)))
-		  entry-points))
-	   graph)))
+          (filter-vertices
+           (lambda (var)
+             (any (lambda (body-var)
+                    (or (eq? body-var var)
+                        (points-to? body-var var graph)))
+                  entry-points))
+           graph)))
     (define (referenced-by? component1 component2)
       (any (lambda (var2)
-	     (any (lambda (var1)
-		    (points-to? var2 var1 graph))
-		  component1))
-	   component2))
+             (any (lambda (var1)
+                    (points-to? var2 var1 graph))
+                  component1))
+           component2))
     (let loop ((clusters
-		(topological-sort
-		 referenced-by?
-		 (strongly-connected-components graph))))
+                (topological-sort
+                 referenced-by?
+                 (strongly-connected-components graph))))
       (cond ((null? clusters)
-	     `(let ()
-		,@body))
-	    (else
-	     (let ((cluster (car clusters)))
-	       (if (and (null? (cdr cluster))
-			(not (points-to? (car cluster) (car cluster) graph)))
-		   (let* ((var (car cluster))
-			  (binding (assq var bindings)))
-		     `(let (,binding)
-			,(loop (cdr clusters))))
-		   (let ((bindings (map (lambda (var)
-					  (assq var bindings))
-					cluster)))
-		     `(irreducible-letrec ,bindings
-				  ,(loop (cdr clusters)))))))))))
+             `(let ()
+                ,@body))
+            (else
+             (let ((cluster (car clusters)))
+               (if (and (null? (cdr cluster))
+                        (not (points-to? (car cluster) (car cluster) graph)))
+                   (let* ((var (car cluster))
+                          (binding (assq var bindings)))
+                     `(let (,binding)
+                        ,(loop (cdr clusters))))
+                   (let ((bindings (map (lambda (var)
+                                          (assq var bindings))
+                                        cluster)))
+                     `(irreducible-letrec ,bindings
+                                  ,(loop (cdr clusters)))))))))))
 
 (define-exp-macro! 'letrec simplify-letrec)
 (define-exp-macro! 'irreducible-letrec letrec-transformer)
@@ -89,11 +89,11 @@
 
 (define (reference-graph variables expressions)
   (map (lambda (variable expression)
-	 ;; lset-intersection is specified to preserve the identities
-	 ;; of the elements of the first input in the output, so the
-	 ;; resulting graph will obey the eq?-nodes desideratum.
-	 (cons variable (lset-intersection equal?
-			 variables (free-variables (macroexpand expression)))))
+         ;; lset-intersection is specified to preserve the identities
+         ;; of the elements of the first input in the output, so the
+         ;; resulting graph will obey the eq?-nodes desideratum.
+         (cons variable (lset-intersection equal?
+                         variables (free-variables (macroexpand expression)))))
        variables
        expressions))
 
@@ -105,8 +105,8 @@
 
 (define (filter-vertices pred graph)
   (filter (lambda (node.neighbors)
-	    (pred (car node.neighbors)))
-	  graph))
+            (pred (car node.neighbors)))
+          graph))
 
 (define (transitive-closure graph)
   (define (node-set-union nodes1 nodes2)
@@ -116,23 +116,23 @@
   (let loop ((graph graph))
     (define (node-set-neighbors nodes)
       (reduce node-set-union '()
-	      (map (lambda (node)
-		     (neighbors node graph))
-		   nodes)))
+              (map (lambda (node)
+                     (neighbors node graph))
+                   nodes)))
     (define (new-neighbors node.neighbors)
       (let ((node (car node.neighbors))
-	    (neighbors (cdr node.neighbors)))
-	(cons node (node-set-union neighbors (node-set-neighbors neighbors)))))
+            (neighbors (cdr node.neighbors)))
+        (cons node (node-set-union neighbors (node-set-neighbors neighbors)))))
     (let ((new-graph (map new-neighbors graph)))
       (if (every same-node-set? (map cdr graph) (map cdr new-graph))
-	  graph
-	  (loop new-graph)))))
+          graph
+          (loop new-graph)))))
 
 (define (strongly-connected-components transitive-graph)
   (equivalence-classes
    (lambda (node1 node2)
      (and (points-to? node1 node2 transitive-graph)
-	  (points-to? node2 node1 transitive-graph)))
+          (points-to? node2 node1 transitive-graph)))
    (map car transitive-graph)))
 
 ;;; Support (equivalence relations and partially ordered sets)
@@ -141,27 +141,27 @@
   (if (null? items)
       '()
       (let* ((item (first items))
-	     (classes (equivalence-classes equiv? (cdr items)))
-	     (class-of-item
-	      (find (lambda (class)
-		      ;; Assumes equiv? is transitive
-		      (equiv? item (car class)))
-		    classes)))
-	(if class-of-item
-	    (cons (cons item class-of-item)
-		  (delq class-of-item classes))
-	    (cons (list item) classes)))))
+             (classes (equivalence-classes equiv? (cdr items)))
+             (class-of-item
+              (find (lambda (class)
+                      ;; Assumes equiv? is transitive
+                      (equiv? item (car class)))
+                    classes)))
+        (if class-of-item
+            (cons (cons item class-of-item)
+                  (delq class-of-item classes))
+            (cons (list item) classes)))))
 
 (define (topological-sort < items)
   (if (null? items)
       '()
       (let ((min (find
-		  (lambda (x)
-		    (not (any (lambda (y)
-				(and (not (eq? x y))
-				     (< y x)))
-			      items)))
-		  items)))
-	(if (not min)
-	    (error "Purported order contains a cycle" < items)
-	    (cons min (topological-sort < (delq min items)))))))
+                  (lambda (x)
+                    (not (any (lambda (y)
+                                (and (not (eq? x y))
+                                     (< y x)))
+                              items)))
+                  items)))
+        (if (not min)
+            (error "Purported order contains a cycle" < items)
+            (cons min (topological-sort < (delq min items)))))))

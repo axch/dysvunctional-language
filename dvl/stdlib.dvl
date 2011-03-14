@@ -8,11 +8,11 @@
   (list bundle-tag epsilon primal tangent))
 (define (bundle? thing win lose)
   (if (and (pair? thing)
-	   (gensym? (car thing))
-	   (gensym= (car thing) bundle-tag))
+           (gensym? (car thing))
+           (gensym= (car thing) bundle-tag))
       (win (bundle-epsilon thing)
-	   (bundle-primal thing)
-	   (bundle-tangent thing))
+           (bundle-primal thing)
+           (bundle-tangent thing))
       (lose)))
 (define (bundle-epsilon thing)
   (car (cdr thing)))
@@ -28,28 +28,40 @@
    thing
    (lambda (thing-eps thing-prim thing-tang)
      (if (gensym= thing-eps epsilon)
-	 thing-prim
-	 (make-bundle thing-eps
-		      (primal epsilon thing-prim)
-		      (primal epsilon thing-tang))))
+         thing-prim
+         (make-bundle thing-eps
+                      (primal epsilon thing-prim)
+                      (primal epsilon thing-tang))))
    (lambda ()
-     (if (real? thing)
-	 thing
-	 (/ (real 1) (real 0))))))
+     (cond ((real? thing)
+            thing)
+           ((procedure? thing)
+            (lambda (x)
+              (primal epsilon (thing x))))
+           ((pair? thing)
+            (cons (primal epsilon (car thing))
+                  (primal epsilon (cdr thing))))
+           (else thing)))))
 
 (define (tangent epsilon thing)
   (bundle?
    thing
    (lambda (thing-eps thing-prim thing-tang)
      (if (gensym= thing-eps epsilon)
-	 thing-tang
-	 (make-bundle thing-eps
-		      (tangent epsilon thing-prim)
-		      (tangent epsilon thing-tang))))
+         thing-tang
+         (make-bundle thing-eps
+                      (tangent epsilon thing-prim)
+                      (tangent epsilon thing-tang))))
    (lambda ()
-     (if (real? thing)
-	 0
-	 (/ (real 1) (real 0))))))
+     (cond ((real? thing)
+            0)
+           ((procedure? thing)
+            (lambda (x)
+              (tangent epsilon (thing x))))
+           ((pair? thing)
+            (cons (tangent epsilon (car thing))
+                  (tangent epsilon (cdr thing))))
+           (else thing)))))
 
 (define (derivative f)
   (let ((epsilon (gensym)))
@@ -68,12 +80,12 @@
      (bundle?
       thing2
       (lambda (eps prim tang)
-	(make-bundle
-	 eps
-	 (g:+ (primal eps thing1) prim)
-	 (g:+ (tangent eps thing1) tang)))
+        (make-bundle
+         eps
+         (g:+ (primal eps thing1) prim)
+         (g:+ (tangent eps thing1) tang)))
       (lambda ()
-	(+ thing1 thing2))))))
+        (+ thing1 thing2))))))
 
 (define (g:* thing1 thing2)
   (bundle?
@@ -81,17 +93,17 @@
    (lambda (eps prim tang)
      (let ((prim2 (primal eps thing2)))
        (make-bundle
-	eps
-	(g:* prim prim2)
-	(g:+ (g:* tang prim2) (g:* prim (tangent eps thing2))))))
+        eps
+        (g:* prim prim2)
+        (g:+ (g:* tang prim2) (g:* prim (tangent eps thing2))))))
    (lambda ()
      (bundle?
       thing2
       (lambda (eps prim tang)
-	(let ((prim1 (primal eps thing1)))
-	  (make-bundle
-	   eps
-	   (g:* prim1 prim)
-	   (g:+ (g:* (tangent eps thing1) prim) (g:* prim1 tang)))))
+        (let ((prim1 (primal eps thing1)))
+          (make-bundle
+           eps
+           (g:* prim1 prim)
+           (g:+ (g:* (tangent eps thing1) prim) (g:* prim1 tang)))))
       (lambda ()
-	(* thing1 thing2))))))
+        (* thing1 thing2))))))

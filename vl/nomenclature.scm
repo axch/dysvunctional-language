@@ -15,7 +15,7 @@
 
 (define (vl-variable->scheme-record-access var closure)
   `(,(symbol (abstract-closure->scheme-structure-name closure)
-	     '- (vl-variable->scheme-field-name var))
+             '- (vl-variable->scheme-field-name var))
     the-closure))
 
 (define (fresh-temporary)
@@ -53,9 +53,9 @@
 (define (symbol-with-prefix? thing prefix)
   (and (symbol? thing)
        (let ((name (symbol->string thing)))
-	 (and (> (string-length name) (string-length prefix))
-	      (equal? (string-head name (string-length prefix))
-		      prefix)))))
+         (and (> (string-length name) (string-length prefix))
+              (equal? (string-head name (string-length prefix))
+                      prefix)))))
 
 (define (generated-temporary? thing)
   (symbol-with-prefix? thing "temp-"))

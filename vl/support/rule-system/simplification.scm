@@ -1,37 +1,46 @@
 (declare (usual-integrations))
 
-(define (try-rules data rules succeed fail)
+(define ((rule-list rules) data)
   (let per-rule ((rules rules))
     (if (null? rules)
-	(fail)
+	data
 	(let ((answer ((car rules) data)))
 	  (if (eq? data answer)
 	      (per-rule (cdr rules))
-	      (succeed answer (lambda () (per-rule (cdr rules)))))))))
+	      answer)))))
+
+(define (iterated the-rule)
+  (lambda (data)
+    (let loop ((data data)
+	       (answer (the-rule data)))
+      (if (eq? answer data)
+	  answer
+	  (loop answer (the-rule answer))))))
+
+(define (on-subexpressions the-rule)
+  (define (on-expression expression)
+    (let ((subexpressions-done
+	   (if (list? expression)
+	       (map on-expression expression)
+	       expression)))
+      (the-rule subexpressions-done)))
+  on-expression)
+
+(define (iterated-on-subexpressions the-rule)
+  ;; Unfortunately, this is not just a composition of the prior two.
+  (define (on-expression expression)
+    (let ((subexpressions-done
+	   (if (list? expression)
+	       (map on-expression expression)
+	       expression)))
+      (let ((answer (the-rule subexpressions-done)))
+	(if (eq? answer subexpressions-done)
+	    answer
+	    (on-expression answer)))))
+  on-expression)
 
 (define (rule-simplifier the-rules)
-  (define (simplify-expression expression)
-    (let ((subexpressions-simplified
-	   (if (list? expression)
-	       (map simplify-expression expression)
-	       expression)))
-      (try-rules subexpressions-simplified the-rules
-       (lambda (result fail)
-	 (simplify-expression result))
-       (lambda ()
-	 subexpressions-simplified))))
-  (rule-memoize simplify-expression))
-
-(define (recursively-try-once the-rule)
-  (define (simplify-expression expression)
-    (let ((subexpressions-simplified
-	   (if (list? expression)
-	       (map simplify-expression expression)
-	       expression)))
-      (try-rules subexpressions-simplified (list the-rule)
-       (lambda (result fail) result)
-       (lambda () subexpressions-simplified))))
-  (rule-memoize simplify-expression))
+  (iterated-on-subexpressions (rule-list the-rules)))
 
 (define (list<? x y)
   (let ((nx (length x)) (ny (length y)))

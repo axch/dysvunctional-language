@@ -1,14 +1,8 @@
-(define (tidy-non-soundness program)
-  (cond ((not (equal? (%scheme-eval program)
-		      (%scheme-eval (tidy (full-alpha-rename program)))))
-	 `(not (equal? ,(%scheme-eval program)
-		       (after-tidy ,(%scheme-eval (tidy (full-alpha-rename program)))))))
-	(else #f)))
-
 (in-test-group
  post-processing
 
  (define-each-check
+   (lset= eq? '(a d) (feedback-vertex-set '((a b c d) (b a) (c d) (d c) (e a))))
    (not (tidy-non-soundness
 	 ;; Carelessly inlining y will change the scope of x
 	 '(let ((x (vector 1 2)))
