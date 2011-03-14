@@ -7,7 +7,13 @@
 
 (define (make-name prefix)
   (set! *symbol-count* (+ *symbol-count* 1))
-  (symbol prefix *symbol-count*))
+  (symbol (strip-trailing-counts prefix) '- *symbol-count*))
+
+(define (strip-trailing-counts symbol)
+  (let* ((the-string (symbol->string symbol))
+         (prefix-end (re-match-start-index 0 (re-string-search-forward "[-0-9]*$" the-string)))
+         (prefix (substring the-string 0 prefix-end)))
+    prefix))
 
 (define (vl-variable->scheme-variable var) var)
 
