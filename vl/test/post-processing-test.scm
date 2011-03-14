@@ -13,12 +13,12 @@
    ;; TODO How can I get the inlining not to clone the termination condition like that?
    (alpha-rename?
     '(begin
-       (define (operation-4 the-closure-12)
-         (* the-closure-12
-            (let ((the-formals-26 (- the-closure-12 1)))
-              (if (= the-formals-26 1)
+       (define (operation-4 n)
+         (* n
+            (let ((n (- n 1)))
+              (if (= n 1)
                   1
-                  (operation-4 the-formals-26)))))
+                  (operation-4 n)))))
        (if (= (real 5) 1)
            1
            (operation-4 (real 5))))
