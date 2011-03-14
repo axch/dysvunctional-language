@@ -1,0 +1,10 @@
+Rewrite examples using internal definitions?
+
+Eliminate tests VL cannot pass (e.g. by searching for *j in the test
+program in tool/test-driver-scm.scm)
+
+Make VL a "complete" VLAD implementation
+
+Write about VL in the VLAD language manual
+
+Make VL releasable
