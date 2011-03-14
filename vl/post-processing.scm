@@ -321,6 +321,37 @@
 
 ;;;; Term-rewriting tidier
 
+(define cheap-rules
+  (list
+   (rule `(let () (? body)) body)
+   (rule `(begin (? body)) body)
+   (rule `(car (cons (? a) (? d))) a)
+   (rule `(cdr (cons (? a) (? d))) d)
+   (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
+         (list-ref stuff index))
+
+   (rule `(car (let (? bindings) (? body)))
+         `(let ,bindings (car ,body)))
+   (rule `(cdr (let (? bindings) (? body)))
+         `(let ,bindings (cdr ,body)))
+   (rule `(vector-ref (let (? bindings) (? body)) (? index ,integer?))
+         `(let ,bindings (vector-ref ,body ,index)))
+
+   (rule `(car (if (? predicate) (? consequent) (? alternate)))
+         `(if ,predicate (car ,consequent) (car ,alternate)))
+   (rule `(cdr (if (? predicate) (? consequent) (? alternate)))
+         `(if ,predicate (cdr ,consequent) (cdr ,alternate)))
+   (rule `(vector-ref (if (? predicate) (? consequent) (? alternate)) (? index ,integer?))
+         `(if ,predicate (vector-ref ,consequent ,index)
+              (vector-ref ,alternate ,index)))
+
+   (rule `(* 0 (? thing)) 0)
+   (rule `(* (? thing) 0) 0)
+   (rule `(+ 0 (? thing)) thing)
+   (rule `(+ (? thing) 0) thing)
+   (rule `(* 1 (? thing)) thing)
+   (rule `(* (? thing) 1) thing)))
+
 (define intraprocedural-sra-rule
   (rule `(let ((?? bindings1)
                ((? name ,symbol?) ((? constructor ,cons-or-vector?) (?? args)))
@@ -347,75 +378,30 @@
                       ,@bindings2)
                   ,@(replace-free-occurrences name exp body))))))
 
+(define let-lifting-rule
+  (rule `(let ((?? bindings1)
+               ((? name ,symbol?) (let (? in-bindings) (? exp)))
+               (?? bindings2))
+           (?? body))
+        `(let ,in-bindings
+           (let (,@bindings1
+                 (,name ,exp)
+                 ,@bindings2)
+             ,@body))))
+
 (define tidy
   (rule-simplifier
-   (list
-    (rule `(let () (? body)) body)
-    (rule `(begin (? body)) body)
-    (rule `(car (cons (? a) (? d))) a)
-    (rule `(cdr (cons (? a) (? d))) d)
-    (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
-          (list-ref stuff index))
+   (append
+    cheap-rules
+    (list
+     intraprocedural-variable-elimination-rule
+     intraprocedural-sra-rule
+     let-lifting-rule))))
 
-    (rule `(car (let (? bindings) (? body)))
-          `(let ,bindings (car ,body)))
-    (rule `(cdr (let (? bindings) (? body)))
-          `(let ,bindings (cdr ,body)))
-    (rule `(vector-ref (let (? bindings) (? body)) (? index ,integer?))
-          `(let ,bindings (vector-ref ,body ,index)))
-
-    (rule `(car (if (? predicate) (? consequent) (? alternate)))
-          `(if ,predicate (car ,consequent) (car ,alternate)))
-    (rule `(cdr (if (? predicate) (? consequent) (? alternate)))
-          `(if ,predicate (cdr ,consequent) (cdr ,alternate)))
-    (rule `(vector-ref (if (? predicate) (? consequent) (? alternate)) (? index ,integer?))
-          `(if ,predicate (vector-ref ,consequent ,index)
-               (vector-ref ,alternate ,index)))
-
-    (rule `(* 0 (? thing)) 0)
-    (rule `(* (? thing) 0) 0)
-    (rule `(+ 0 (? thing)) thing)
-    (rule `(+ (? thing) 0) thing)
-    (rule `(* 1 (? thing)) thing)
-    (rule `(* (? thing) 1) thing)
-
-    intraprocedural-variable-elimination-rule
-    intraprocedural-sra-rule
-    (rule `(let ((?? bindings1)
-                 ((? name ,symbol?) (let (? in-bindings) (? exp)))
-                 (?? bindings2))
-             (?? body))
-          `(let ,in-bindings
-             (let (,@bindings1
-                   (,name ,exp)
-                   ,@bindings2)
-               ,@body))))))
-#;
 (define tidy
   (iterated
    (in-order
-    (top-down
-     (rule-list
-      (list
-       (rule `(let () (? body)) body)
-       (rule `(begin (? body)) body)
-       (rule `(car (cons (? a) (? d))) a)
-       (rule `(cdr (cons (? a) (? d))) d)
-       (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
-             (list-ref stuff index))
-
-       (rule `(car (let (? bindings) (? body)))
-             `(let ,bindings (car ,body)))
-       (rule `(cdr (let (? bindings) (? body)))
-             `(let ,bindings (cdr ,body)))
-       (rule `(vector-ref (let (? bindings) (? body)) (? index ,integer?))
-             `(let ,bindings (vector-ref ,body ,index)))
-
-       (rule `(* 0 (? thing)) 0)
-       (rule `(* (? thing) 0) 0)
-       (rule `(+ 0 (? thing)) thing)
-       (rule `(+ (? thing) 0) thing)
-       (rule `(* 1 (? thing)) thing)
-       (rule `(* (? thing) 1) thing))))
+    (top-down (rule-list cheap-rules))
     (on-subexpressions intraprocedural-variable-elimination-rule)
-    (on-subexpressions intraprocedural-sra-rule))))
+    (on-subexpressions intraprocedural-sra-rule)
+    (on-subexpressions let-lifting-rule))))
