@@ -364,6 +364,14 @@
     (rule `(vector-ref (let (? bindings) (? body)) (? index ,integer?))
           `(let ,bindings (vector-ref ,body ,index)))
 
+    (rule `(car (if (? predicate) (? consequent) (? alternate)))
+          `(if ,predicate (car ,consequent) (car ,alternate)))
+    (rule `(cdr (if (? predicate) (? consequent) (? alternate)))
+          `(if ,predicate (cdr ,consequent) (cdr ,alternate)))
+    (rule `(vector-ref (if (? predicate) (? consequent) (? alternate)) (? index ,integer?))
+          `(if ,predicate (vector-ref ,consequent ,index)
+               (vector-ref ,alternate ,index)))
+
     (rule `(* 0 (? thing)) 0)
     (rule `(* (? thing) 0) 0)
     (rule `(+ 0 (? thing)) thing)
@@ -373,7 +381,7 @@
 
     intraprocedural-variable-elimination-rule
     intraprocedural-sra-rule)))
-
+#;
 (define tidy
   (iterated
    (in-order
