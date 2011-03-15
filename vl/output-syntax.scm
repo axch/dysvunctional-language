@@ -93,6 +93,7 @@
 ;;;; Syntax and manipulations of the output language
 
 (define let-form? (tagged-list? 'let))
+(define if-form? (tagged-list? 'if))
 
 (define ->lambda
   (rule `(let (? bindings) (?? body))

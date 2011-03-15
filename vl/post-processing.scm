@@ -321,9 +321,11 @@
 
 ;;;; Term-rewriting tidier
 
+(define empty-let-rule (rule `(let () (? body)) body))
+
 (define cheap-rules
   (list
-   (rule `(let () (? body)) body)
+   empty-let-rule
    (rule `(begin (? body)) body)
    (rule `(car (cons (? a) (? d))) a)
    (rule `(cdr (cons (? a) (? d))) d)

@@ -71,3 +71,7 @@
         (if (< (real 1) (real 2))
             (car x)
             (car (cdr x))))))))
+
+;; Here is a case where serious SRA is necessary
+;; (let ((x (if ... (cons) (cons))))
+;;   (.... (car x) .. (cdr x)))
