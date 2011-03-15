@@ -350,7 +350,10 @@
    (rule `(+ 0 (? thing)) thing)
    (rule `(+ (? thing) 0) thing)
    (rule `(* 1 (? thing)) thing)
-   (rule `(* (? thing) 1) thing)))
+   (rule `(* (? thing) 1) thing)
+
+   (rule `(if (? predicate) (? exp) (? exp))
+         exp)))
 
 (define intraprocedural-sra-rule
   (rule `(let ((?? bindings1)
