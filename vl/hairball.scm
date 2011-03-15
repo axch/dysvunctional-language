@@ -149,3 +149,29 @@
            (reconstruct context (map (lambda (arg)
                                        (loop arg (empty-context)))
                                      expr))))))
+
+;;; To do SRA, I have to recur down the expressions, and for each
+;;; variable, keep track of its shape and the set of names assigned to
+;;; hold its meaningful values.  The shape is useful for transforming
+;;; accesses to variables, because the access can become returning the
+;;; pile of names associated with that portion of the value.  This
+;;; process is simplest to carry out in A-normal form or something,
+;;; where every subexpression has a definite name.  Of course, the
+;;; language which is the target of this must have multiple value
+;;; binding and multiple value returns.
+
+;;; In this scenario, a construction becomes a values of the appended
+;;; names for the things being constructed (which I have, because of
+;;; the ANF); an access becomes a values of an appropriate slice of
+;;; the names being accessed (which I again have because of the ANF);
+;;; A call becomes applied to the append of the names for each former
+;;; element in the call (ANF strikes again); a name becomes a values
+;;; of those names; a constant remains a constant; and a let becomes a
+;;; multi-value let (I can invent the names for that name at this
+;;; point); a definition becomes a definition taking the appropriately
+;;; larger number of arguments, whose internal names I can invent at
+;;; this point.  The toplevel is transformed without any initial name
+;;; bindings.  The way unions interact with this is that they may
+;;; cause the creation of types that are "primitive" as far as the SRA
+;;; process in concerned, while being "compound" in the actual
+;;; underlying code.
