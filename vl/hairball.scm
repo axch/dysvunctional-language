@@ -1,30 +1,18 @@
 (declare (usual-integrations))
 
-;;; lifting lets needs alpha
-;;;   informs inlining direct constructions
-;;; inlining singletons needs alpha
-;;;   informs pushing accessors
-;;;     (let ((x (if ... (cons) (cons))))
-;;;       (car x))
-;;;   informs inlining direct constructions by let-lifting
-;;;   may need to be undone by inlining direct constructions
-;;; inlining direct constructions
-;;;   informs pushing accessors
-;;;   informs itself by let-lifting
-;;; pushing accessors makes the code smaller
-;;;   informs deletion of variables
-;;;   informs inlining singletons
-;;; deletion of variables and empty lets makes the code smaller
-;;;   informs inlining direct constructions by let-lifting
-;;;   informs itself
-;;;   informs inlining singletons
-
-;;; delete dead code -> alpha rename -> lift lets ->
-;;; inline direct -> push -> delete -> loop? inline singletons? ->
+;;; I need to update intraprocedural dead variable elimination to
+;;; handle LET-VALUES and multivalue returns from procedures.  The
+;;; interesting difference is that only some of the names being bound
+;;; may be needed, so this recursion should carry down the set of
+;;; values being requested.  Unneeded values can be eliminated from
+;;; VALUES directly; if it happens that a procedure call produces more
+;;; values than are needed, then the extras can be bound with an extra
+;;; LET-VALUES and then dropped on the ground.  I should also refactor
+;;; it to use the same LOOP* pattern that the others do.
 
 ;; Empirically, this seems to give a reduction of about 20% of pairs
 ;; when given (inline (structure-definitions->vectors raw-fol)).
-(define (intraprocedural-dead-elimination expr)
+(define (intraprocedural-dead-variable-elimination expr)
   (define (no-used-vars) '())
   (define (single-used-var var) (list var))
   (define (union vars1 vars2)
