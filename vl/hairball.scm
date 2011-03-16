@@ -426,17 +426,24 @@
   ;; not bind a variable at all; that means that variable in not in
   ;; scope here.  For purposes of this process, (constant) numbers are
   ;; legitimate things that variables may be aliases of.
-  (define (augment-env env old-names aliases)
-    (append
-     (map (lambda (old-name alias)
-            (if (non-alias? alias)
-                (cons old-name old-name)
-                (cons old-name alias)))
-          old-names
-          (if (non-alias? aliases)
-              (make-list (length old-names) the-non-alias)
-              aliases))
-     env))
+  (define (augment-env env old-names aliases win)
+    (define (acceptable-alias? alias)
+      (and (not (non-alias? alias))
+           (or (number? alias)
+               (lookup alias env))))
+    (let ((aliases (if (non-alias? aliases)
+                       (make-list (length old-names) the-non-alias)
+                       aliases)))
+      (win
+       (append
+        (map (lambda (old-name alias)
+               (if (acceptable-alias? alias)
+                   (cons old-name alias)
+                   (cons old-name old-name)))
+             old-names
+             aliases)
+        env)
+       (map acceptable-alias? aliases))))
   (define lookup assq)
   (define the-non-alias (list 'not-an-alias))
   (define (non-alias? thing)
@@ -487,21 +494,20 @@
                                       the-non-alias
                                       (car bind-name-list)))
                                 bind-name-lists)))
-                      (loop body (augment-env
-                                  env
-                                  (map car bindings)
-                                  bind-names)
-                       (lambda (new-body body-name-list)
-                         (win (empty-let-rule
-                               `(let ,(filter-map
-                                       (lambda (name alias expr)
-                                         (and (non-alias? alias)
-                                              (list name expr)))
-                                       (map car bindings)
-                                       bind-names
-                                       new-bind-expressions)
-                                  ,new-body))
-                              body-name-list))))))
+                      (augment-env env (map car bindings) bind-names
+                       (lambda (env acceptable-aliases)
+                         (loop body env
+                          (lambda (new-body body-name-list)
+                            (win (empty-let-rule
+                                  `(let ,(filter-map
+                                          (lambda (name alias? expr)
+                                            (and (not alias?)
+                                                 (list name expr)))
+                                          (map car bindings)
+                                          acceptable-aliases
+                                          new-bind-expressions)
+                                     ,new-body))
+                                 body-name-list))))))))
                  (error "Malformed LET" expr))))
           ((let-values-form? expr)
            (let* ((binding (caadr expr))
@@ -511,23 +517,25 @@
              (if (null? (cdddr expr))
                  (loop subexpr env
                   (lambda (new-subexpr subexpr-names)
-                    (loop body (augment-env env names subexpr-names)
-                     (lambda (new-body body-name-list)
-                       ;; The interior of augment-env knows which of
-                       ;; these bindings are guaranteed to be dead
-                       ;; because the variables being bound are
-                       ;; aliases and have already been replaced in
-                       ;; the new body.  I could eliminate them, but
-                       ;; that would require traversing subexpr again
-                       ;; to look for the VALUES that supplies the
-                       ;; corresponding values.  For now, I will just
-                       ;; kill the whole let-values if it is useless.
-                       (win (if (or (non-alias? subexpr-names)
-                                    (any non-alias? subexpr-names))
-                                `(let-values ((,names ,new-subexpr))
-                                   ,new-body)
-                                new-body)
-                            body-name-list)))))
+                    (augment-env env names subexpr-names
+                     (lambda (env acceptable-aliases)
+                       (loop body env
+                        (lambda (new-body body-name-list)
+                          ;; ACCEPTABLE-ALIASES tells me which of
+                          ;; these bindings are guaranteed to be dead
+                          ;; because the variables being bound are
+                          ;; aliases and have already been replaced in
+                          ;; the new body.  I could eliminate them,
+                          ;; but that would require traversing subexpr
+                          ;; again to look for the VALUES that
+                          ;; supplies the corresponding values.  For
+                          ;; now, I will just kill the whole
+                          ;; let-values if it is useless.
+                          (win (if (any not acceptable-aliases)
+                                   `(let-values ((,names ,new-subexpr))
+                                      ,new-body)
+                                   new-body)
+                               body-name-list)))))))
                  (error "Malformed LET-VALUES" expr))))
           (else ;; general application
            (loop* (cdr expr) env
