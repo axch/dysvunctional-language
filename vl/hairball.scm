@@ -19,7 +19,7 @@
 ;;;   informs itself
 ;;;   informs inlining singletons
 
-;;; delete dead code -> alpha rename -> lift lets -> 
+;;; delete dead code -> alpha rename -> lift lets ->
 ;;; inline direct -> push -> delete -> loop? inline singletons? ->
 
 ;; Empirically, this seems to give a reduction of about 20% of pairs
@@ -83,23 +83,27 @@
                  (error "Malformed LET" expr))))
           (else (loop* expr win)))))
 
+(define (accessor? expr)
+  (or (cons-ref? expr)
+      (vector-ref? expr)))
+(define (cons-ref? expr)
+  (and (pair? expr) (pair? (cdr expr)) (null? (cddr expr))
+       (memq (car expr) '(car cdr))))
+(define (vector-ref? expr)
+  (and (pair? expr) (pair? (cdr expr)) (pair? (cddr expr)) (null? (cdddr expr))
+       (eq? (car expr) 'vector-ref) (number? (caddr expr))))
+(define (construction? expr)
+  (and (pair? expr)
+       (memq (car expr) '(cons vector))))
+(define (push-access expr1 expr2)
+  `(,(car expr1) ,expr2 ,@(cddr expr1)))
+
 ;; Empirically, this has no effect without some form of construction
 ;; inlining.
 (define (push-down-accessors expr)
   (define (empty-context) '())
   (define empty-context? null?)
   (define pop cadr)
-  (define (accessor? expr)
-    (or (cons-ref? expr)
-        (vector-ref? expr)))
-  (define (cons-ref? expr)
-    (and (pair? expr) (pair? (cdr expr)) (null? (cddr expr))
-         (memq (car expr) '(car cdr))))
-  (define (vector-ref? expr)
-    (and (pair? expr) (pair? (cdr expr)) (pair? (cddr expr)) (null? (cdddr expr))
-         (eq? (car expr) 'vector-ref) (number? (caddr expr))))
-  (define (push-access expr1 expr2)
-    `(,(car expr1) ,expr2 ,@(cddr expr1)))
   (define (access context expr)
     (cond ((eq? 'car (car context))
            (cadr expr))
@@ -107,9 +111,6 @@
            (caddr expr))
           ((eq? 'vector-ref (car context))
            (list-ref (cdr expr) (caddr context)))))
-  (define (construction? expr)
-    (and (pair? expr)
-         (memq (car expr) '(cons vector))))
   (define (compatible? context expr)
     (or (and (memq (car context) '(car cdr)) (eq? (car expr) 'cons))
         (and (eq? (car context) 'vector-ref) (eq? (car expr) 'vector))))
@@ -133,10 +134,10 @@
            (let ((bindings (cadr expr))
                  (body (caddr expr)))
              (if (null? (cdddr expr))
-                 `(let ,(map cons (map car bindings)
+                 `(let ,(map list (map car bindings)
                              (map (lambda (expr)
                                     (loop expr (empty-context)))
-                                  (map cdr bindings)))
+                                  (map cadr bindings)))
                     ,(loop body context))
                  (error "Malformed LET" expr))))
           ((and (not (empty-context? context)) (construction? expr))
@@ -149,6 +150,56 @@
            (reconstruct context (map (lambda (arg)
                                        (loop arg (empty-context)))
                                      expr))))))
+
+
+(define (sra-anf expr)
+  (define (rename-nontrivial-expression expr win)
+    (cond ((symbol? expr) (win expr '()))
+          ((number? expr) (win expr '()))
+;;           ((accessor? expr)
+;;            (rename-nontrivial-subexpressions
+;;             (cadr expr)
+;;             (lambda (result names)
+;;               (win (push-access expr result) names))))
+;;           ((construction? expr)
+;;            (rename-nontrivial-expressions
+;;             (cdr expr)
+;;             (lambda (results names)
+;;               (win (cons (car expr) results) names))))
+          (else
+           (let ((name (make-name 'x)))
+             (win name `((,name ,expr)))))))
+  (define (rename-nontrivial-expressions exprs win)
+    (if (null? exprs)
+        (win '() '())
+        (rename-nontrivial-expression
+         (car exprs)
+         (lambda (result names)
+           (rename-nontrivial-expressions (cdr exprs)
+            (lambda (results more-names)
+              (win (cons result results)
+                   (append names more-names))))))))
+  (let loop ((expr expr))
+    (cond ((symbol? expr) expr)
+          ((number? expr) expr)
+          ((if-form? expr)
+           `(if ,(loop (cadr expr))
+                ,(loop (caddr expr))
+                ,(loop (cadddr expr))))
+          ((let-form? expr)
+           (if (null? (cdddr expr))
+               `(let ,(map (lambda (binding)
+                             `(,(car binding) ,(loop (cadr binding))))
+                           (cadr expr))
+                  ,(loop (caddr expr)))
+               (error "Malformed LET" expr)))
+          (else
+           (rename-nontrivial-expressions
+            expr
+            (lambda (results names)
+              (if (not (null? names))
+                  (loop `(let ,names ,results))
+                  expr)))))))
 
 ;;; To do SRA, I have to recur down the expressions, and for each
 ;;; variable, keep track of its shape and the set of names assigned to
@@ -175,3 +226,157 @@
 ;;; cause the creation of types that are "primitive" as far as the SRA
 ;;; process in concerned, while being "compound" in the actual
 ;;; underlying code.
+
+;;; The grammar of FOL after ANF is
+;;;
+;;; simple-expression = <data-var>
+;;;                   | <number>
+;;;
+;;; expression = <simple-expression>
+;;;            | (<proc-var> <simple-expression> ...)
+;;;            | (if <expression> <expression> <expression>)
+;;;            | (let ((<data-var> <expression>) ...) <expression>)
+
+(define (sra-expression expr env)
+  ;; An SRA environment is not like a normal environment.  This
+  ;; environment maps every bound name to two things: the shape it had
+  ;; before SRA and the list of names that have been assigned by SRA
+  ;; to hold its primitive parts.  The list is parallel to the fringe
+  ;; of the shape.  Note that the compound structure (vector) has an
+  ;; empty list of primitive parts.
+  (define (augment-env env old-names name-sets shapes)
+    (append (map list old-names name-sets shapes)
+            env))
+  (define (get-shape name env)
+    (let ((binding (assq name env)))
+      (caddr binding)))
+  (define (get-names name env)
+    (let ((binding (assq name env)))
+      (cadr binding)))
+  (define (count-meaningful-parts shape)
+    (if (primitive? shape)
+        1
+        (reduce + 0 (map count-meaningful-parts (sra-parts shape)))))
+  (define (primitive? shape)
+    (memq shape '(real gensym)))
+  (define (sra-parts shape)
+    ;; shape better be (cons a b) or (vector a ...)
+    (cdr shape))
+  (define (invent-names-for-parts shape)
+    (map (lambda (i) (make-name 'sra-temp))
+         (iota (count-meaningful-parts shape))))
+  (define (append-values values-forms)
+    `(values ,@(append-map cdr values-forms)))
+  (define (construct-shape subshapes template)
+    `(,(car template) ,@subshapes))
+  (define (slice-values-by-access values-form old-shape access-form)
+    (cond ((eq? (car access-form) 'car)
+           `(values ,@(take (cdr values-form)
+                            (count-meaningful-parts (cadr old-shape)))))
+          ((eq? (car access-form) 'cdr)
+           `(values ,@(drop (cdr values-form)
+                            (count-meaningful-parts (cadr old-shape)))))
+          ((eq? (car access-form) 'vector-ref)
+           (let loop ((index-left (caddr access-form))
+                      (names-left (cdr values-form))
+                      (shape-left (cdr old-shape)))
+             (if (= 0 index-left)
+                 `(values ,@(take names-left
+                                  (count-meaningful-parts (car shape-left))))
+                 (loop (- index-left 1)
+                       ,@(drop names-left
+                               (count-meaningful-parts (car shape-left)))
+                       (cdr shape-left)))))))
+  (define (select-from-shape-by-access old-shape access-form)
+    (cond ((eq? (car access-form) 'car)
+           (cadr old-shape))
+          ((eq? (car access-form) 'cdr)
+           (caddr old-shape))
+          ((eq? (car access-form) 'vector-ref)
+           (list-ref (cdr old-shape) (caddr access-form)))))
+  ;; The win continuation accepts the new, SRA'd expression, and the
+  ;; shape of the value it used to return before SRA.
+  (define (loop expr env win)
+    (cond ((symbol? expr)
+           (win `(values ,@(get-names expr env))
+                (get-shape expr env)))
+          ((number? expr)
+           (win `(values ,expr) 'real))
+          ((if-form? expr)
+           (loop (cadr expr) env
+            (lambda (new-pred pred-shape)
+              ;; TODO Pred-shape better be a boolean
+              (loop (caddr expr) env
+               (lambda (new-cons cons-shape)
+                 (loop (cadddr expr) env
+                  (lambda (new-alt alt-shape)
+                    ;; TODO cons-shape and alt-shape better be the same
+                    ;; (or at least compatible)
+                    (win `(if ,new-pred ,new-cons ,new-alt)
+                         cons-shape))))))))
+          ((let-form? expr)
+           (let ((bindings (cadr expr))
+                 (body (caddr expr)))
+             (if (null? (cdddr expr))
+                 (loop* (map cadr bindings) env
+                  (lambda (new-bind-expressions bind-shapes)
+                    (let ((new-name-sets
+                           (map invent-names-for-parts bind-shapes)))
+                      (loop body (augment-env
+                                  env (map car bindings)
+                                  new-name-sets bind-shapes)
+                       (lambda (new-body body-shape)
+                         (win `(mv-let ,(map list new-name-sets
+                                             new-bind-expressions)
+                                       ,new-body)
+                              body-shape))))))
+                 (error "Malformed LET" expr))))
+          ((accessor? expr)
+           (loop (cadr expr) env
+            (lambda (new-cadr cadr-shape)
+              ;; new-cadr must be a values expression
+              (win (slice-values-by-access new-cadr cadr-shape expr)
+                   (select-from-shape-by-access cadr-shape expr)))))
+          ((construction? expr)
+           (loop* (cdr expr) env
+            (lambda (new-terms terms-shapes)
+              ;; new-terms must all be values expressions
+              (win (append-values new-terms)
+                   (construct-shape terms-shapes expr)))))
+          (else ;; general application
+           (loop* (cdr expr) env
+            (lambda (new-args args-shapes)
+              ;; new-args must all be values expressions
+              ;; can check type correctness of this call here
+              (win `(,(car expr) ,@(cdr (append-values new-args)))
+                   (lookup-return-type (car expr))))))))
+  (define (loop* exprs env win)
+    (if (null? exprs)
+        (win '() '())
+        (loop (car exprs) env
+         (lambda (new-expr expr-shape)
+           (loop* (cdr exprs) env
+            (lambda (new-exprs expr-shapes)
+              (win (cons new-expr new-exprs)
+                   (cons expr-shape expr-shapes))))))))
+  (loop expr env (lambda (new-expr shape)
+                    ;; Could match the shape to the externally known
+                    ;; type, if desired.
+                    new-expr)))
+
+(define (lookup-return-type foo)
+  'real) ;; Stub
+
+;;; The grammar of FOL after SRA is
+;;;
+;;; simple-expression = <data-var>
+;;;                   | <number>
+;;;
+;;; expression = (values <simple-expression> ...)
+;;;            | (<proc-var> <simple-expression> ...)
+;;;            | (if <expression> <expression> <expression>)
+;;;            | (mv-let (((<data-var> ...) <expression>) ...) <expression>)
+;;;
+;;; A VALUES expression is always in tail position with repect to a
+;;; matching MV-LET expression (except if it's emitting a boolean into
+;;; the predicate position of an IF).
