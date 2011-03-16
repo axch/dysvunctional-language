@@ -327,9 +327,9 @@
                                   env (map car bindings)
                                   new-name-sets bind-shapes)
                        (lambda (new-body body-shape)
-                         (win `(let-mv ,(map list new-name-sets
-                                             new-bind-expressions)
-                                       ,new-body)
+                         (win `(let-values ,(map list new-name-sets
+                                                 new-bind-expressions)
+                                 ,new-body)
                               body-shape))))))
                  (error "Malformed LET" expr))))
           ((accessor? expr)
@@ -361,9 +361,9 @@
               (win (cons new-expr new-exprs)
                    (cons expr-shape expr-shapes))))))))
   (loop expr env (lambda (new-expr shape)
-                    ;; Could match the shape to the externally known
-                    ;; type, if desired.
-                    new-expr)))
+                   ;; Could match the shape to the externally known
+                   ;; type, if desired.
+                   new-expr)))
 
 (define (lookup-return-type foo)
   'real) ;; Stub
@@ -376,33 +376,37 @@
 ;;; expression = (values <simple-expression> ...)
 ;;;            | (<proc-var> <simple-expression> ...)
 ;;;            | (if <expression> <expression> <expression>)
-;;;            | (let-mv (((<data-var> ...) <expression>) ...) <expression>)
+;;;            | (let-values (((<data-var> ...) <expression>) ...) <expression>)
 ;;;
 ;;; A VALUES expression is always in tail position with repect to a
-;;; matching LET-MV expression (except if it's emitting a boolean into
-;;; the predicate position of an IF).
+;;; matching LET-VALUES expression (except if it's emitting a boolean
+;;; into the predicate position of an IF).
 
 (define post-sra-tidy
   (rule-simplifier
    (list
-    (rule `(let-mv () (? body))
+    (rule `(let-values () (? body))
           body)
-    (rule `(let-mv ((?? bindings1)
-                    (() (? exp))
-                    (?? bindings2))
+    (rule `(let-values ((?? bindings1)
+                        (() (? exp))
+                        (?? bindings2))
              (?? body))
-          `(let-mv (,@bindings1
-                    ,@bindings2)
-             ,@body))
-    (rule `(let-mv ((?? bindings1)
-                    (((? name ,symbol?)) (? exp))
-                    (?? bindings2))
-             (?? body))
-          `(let-mv (,@bindings1
-                    (,name ,exp)
-                    ,@bindings2)
+          `(let-values (,@bindings1
+                        ,@bindings2)
              ,@body))
     (rule `(values (? exp))
-          exp))))
+          exp)
+    (rule `(let-values ((? binding1)
+                        (? binding2)
+                        (?? bindings))
+             (?? body))
+          `(let-values (,binding1)
+             (let-values (,binding2
+                          ,@bindings)
+               ,@body)))
+    (rule `(let-values ((((? name ,symbol?)) (? exp)))
+             (?? body))
+          `(let ((,name ,exp))
+             ,@body)))))
 
-;;; Eval in your emacs:  (put 'let-mv 'scheme-indent-function 1)
+;;; Eval in your emacs:  (put 'let-values 'scheme-indent-function 1)
