@@ -326,7 +326,7 @@
                                   env (map car bindings)
                                   new-name-sets bind-shapes)
                        (lambda (new-body body-shape)
-                         (win `(mv-let ,(map list new-name-sets
+                         (win `(let-mv ,(map list new-name-sets
                                              new-bind-expressions)
                                        ,new-body)
                               body-shape))))))
@@ -375,8 +375,33 @@
 ;;; expression = (values <simple-expression> ...)
 ;;;            | (<proc-var> <simple-expression> ...)
 ;;;            | (if <expression> <expression> <expression>)
-;;;            | (mv-let (((<data-var> ...) <expression>) ...) <expression>)
+;;;            | (let-mv (((<data-var> ...) <expression>) ...) <expression>)
 ;;;
 ;;; A VALUES expression is always in tail position with repect to a
-;;; matching MV-LET expression (except if it's emitting a boolean into
+;;; matching LET-MV expression (except if it's emitting a boolean into
 ;;; the predicate position of an IF).
+
+(define post-sra-tidy
+  (rule-simplifier
+   (list
+    (rule `(let-mv () (? body))
+          body)
+    (rule `(let-mv ((?? bindings1)
+                    (() (? exp))
+                    (?? bindings2))
+             (?? body))
+          `(let-mv (,@bindings1
+                    ,@bindings2)
+             ,@body))
+    (rule `(let-mv ((?? bindings1)
+                    (((? name ,symbol?)) (? exp))
+                    (?? bindings2))
+             (?? body))
+          `(let-mv (,@bindings1
+                    (,name ,exp)
+                    ,@bindings2)
+             ,@body))
+    (rule `(values (? exp))
+          exp))))
+
+;;; Eval in your emacs:  (put 'let-mv 'scheme-indent-function 1)
