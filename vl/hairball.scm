@@ -480,25 +480,33 @@
              (if (null? (cdddr expr))
                  (loop* (map cadr bindings) env
                   (lambda (new-bind-expressions bind-name-lists)
-                    (loop body (augment-env
-                                env
-                                (map car bindings)
-                                (map (lambda (bind-name-list)
-                                       ;; These better all be singletons
-                                       (if (non-alias? bind-name-list)
-                                           the-non-alias
-                                           (car bind-name-list)))
-                                     bind-name-lists))
-                     (lambda (new-body body-name-list)
-                       ;; The interior of augment-env knows which of
-                       ;; these bindings are guaranteed to be dead
-                       ;; because the variables being bound are
-                       ;; aliases and have already been replaced in
-                       ;; the new body.  I could eliminate them.
-                       (win `(let ,(map list (map car bindings)
-                                        new-bind-expressions)
-                               ,new-body)
-                            body-name-list)))))
+                    (let ((bind-names
+                           (map (lambda (bind-name-list)
+                                  ;; These better all be singletons
+                                  (if (non-alias? bind-name-list)
+                                      the-non-alias
+                                      (car bind-name-list)))
+                                bind-name-lists)))
+                      (loop body (augment-env
+                                  env
+                                  (map car bindings)
+                                  bind-names)
+                       (lambda (new-body body-name-list)
+                         ;; The interior of augment-env knows which of
+                         ;; these bindings are guaranteed to be dead
+                         ;; because the variables being bound are
+                         ;; aliases and have already been replaced in
+                         ;; the new body.  I could eliminate them.
+                         (win (empty-let-rule
+                               `(let ,(filter-map
+                                       (lambda (name alias expr)
+                                         (and (non-alias? alias)
+                                              (list name expr)))
+                                       (map car bindings)
+                                       bind-names
+                                       new-bind-expressions)
+                                  ,new-body))
+                              body-name-list))))))
                  (error "Malformed LET" expr))))
           ((let-values-form? expr)
            (let* ((binding (caadr expr))
