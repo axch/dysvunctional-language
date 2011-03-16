@@ -167,7 +167,7 @@
 ;;             (lambda (results names)
 ;;               (win (cons (car expr) results) names))))
           (else
-           (let ((name (make-name 'x)))
+           (let ((name (make-name 'anf)))
              (win name `((,name ,expr)))))))
   (define (rename-nontrivial-expressions exprs win)
     (if (null? exprs)
@@ -262,8 +262,8 @@
   (define (sra-parts shape)
     ;; shape better be (cons a b) or (vector a ...)
     (cdr shape))
-  (define (invent-names-for-parts shape)
-    (map (lambda (i) (make-name 'sra-temp))
+  (define (invent-names-for-parts basename shape)
+    (map (lambda (i) (make-name basename))
          (iota (count-meaningful-parts shape))))
   (define (append-values values-forms)
     `(values ,@(append-map cdr values-forms)))
@@ -321,7 +321,8 @@
                  (loop* (map cadr bindings) env
                   (lambda (new-bind-expressions bind-shapes)
                     (let ((new-name-sets
-                           (map invent-names-for-parts bind-shapes)))
+                           (map invent-names-for-parts
+                                (map car bindings) bind-shapes)))
                       (loop body (augment-env
                                   env (map car bindings)
                                   new-name-sets bind-shapes)
