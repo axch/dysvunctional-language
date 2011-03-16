@@ -413,7 +413,26 @@
 ;;; Scheme semantics for VALUES and primitives (namely that primitives
 ;;; return objects, and an object is not auto-coerced to (VALUES
 ;;; <object>)).  However, it requires that the forms it operates on be
-;;; alpha renamed.
+;;; alpha renamed.  It splits LET-VALUES to all be in series rather
+;;; than in parallel.
+
+;;; The grammar of FOL after tidying and compatibility with MIT Scheme is
+;;;
+;;; simple-expression = <data-var>
+;;;                   | <number>
+;;;
+;;; expression = <simple-expression>
+;;;            | (values <simple-expression> ...)
+;;;            | (<proc-var> <simple-expression> ...)
+;;;            | (if <expression> <expression> <expression>)
+;;;            | (let ((<data-var> <expression>) ...) <expression>)
+;;;            | (let-values (((<data-var> ...) <expression>)) <expression>)
+;;;
+;;; A VALUES expression is always in tail position with repect to a
+;;; matching LET-VALUES expression.  A non-VALUES simple expression is
+;;; always in tail position with respect to a matching LET expression.
+;;; Not that now each LET-VALUES may only bind one binding (which may
+;;; have multiple bound names, but only one expression).
 
 (define values-form? (tagged-list? 'values))
 (define let-values-form? (tagged-list? 'let-values))
@@ -555,3 +574,65 @@
                    ;; The name list might be useful to an
                    ;; interprocedural must-alias crunch.
                    new-expr)))
+
+;;; To do interprocedural dead variable elimination I have to proceed
+;;; as follows:
+;;; -1) Run a round of intraprocedural dead variable elimination to
+;;;     diminish the amount of work in the following
+;;; 0) Treat the final expression as a nullary procedure definition
+;;; 1) Initialize a map for each procedure, mapping from output that
+;;;    might be desired (by index) to input that is known to be needed
+;;;    to compute that output.
+;;;    - I know the answer for primitives
+;;;    - All compound procedures start mapping every output to the empty
+;;;      set of inputs known to be needed.
+;;; 2) I can improve the map by walking the body of a procedure, carrying
+;;;    down the set of desired outputs and bringing up the map saying
+;;;    which outputs require which inputs
+;;;    - Start with all outputs desired.
+;;;    - A number requires no inputs for one output
+;;;    - A variable requires itself for one output
+;;;    - A VALUES maps its subexpressions to the desired outputs
+;;;    - A LET is transparent on the way down, but if the variable it
+;;;      is binding is desired as an input to its body, it recurs on
+;;;      its expression desiring the one output.  Whatever input come
+;;;      up need to be spliced in to the answers in the map coming from
+;;;      the body.
+;;;    - A LET-VALUES is analagous, but may choose to desire a subset
+;;;      of its bound names.
+;;;    - An IF recurs on the predicate desiring its output, and then
+;;;      on the consequent and alternate passing the requests.  When
+;;;      the answers come back, it needs to union the consequent and
+;;;      alternate maps, and then add the predicate requirements as
+;;;      inputs to all desired outputs of the IF.
+;;;    - A procedure call refers to the currently known map for that
+;;;      procedure.
+;;;    - Whatever comes out of the top becomes the new map for this
+;;;      procedure.
+;;; 3) Repeat step 2 until no more improvements are possible.
+;;; 4) Initialize a table of which inputs and outputs to each compound
+;;;    procedure are actually needed.
+;;;    - All procedures start not needed
+;;;    - The entry point starts fully needed
+;;; 5) I can improve this table by walking the body of a procedure
+;;;    some of whose outputs are needed, carrying down the set of outputs
+;;;    that are needed and bringing back up the set of inputs that are needed.
+;;;    - At a procedure call, mark outputs of that procedure as needed in
+;;;      the table if I found that I needed them on the walk; then take back
+;;;      up the set of things that that procedure says it needs.
+;;;    - Otherwise walk as in step 2 (check this!)
+;;; 6) Repeat step 5 until no more improvements are possible.
+;;; 7) Replace all definitions to
+;;;    - Accept only those arguments they need (internally LET-bind all
+;;;      others to tombstones)
+;;;    - Return only those outputs that are needed (internally
+;;;      LET-VALUES everything the body will generate, and VALUES out
+;;;      that which is wanted)
+;;; 8) Replace all call sites to
+;;;    - Supply only those arguments that are needed (just drop
+;;;      the rest)
+;;;    - Solicit only those outputs that are needed (LET-VALUES them,
+;;;      and VALUES what the body expects, filling in with tombstones).
+;;; 9) Run a round of intraprocedural dead variable elimination to
+;;;    clean up
+;;;    - Verify that all the tombstones vanish.
