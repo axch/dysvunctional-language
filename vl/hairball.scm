@@ -492,11 +492,6 @@
                                   (map car bindings)
                                   bind-names)
                        (lambda (new-body body-name-list)
-                         ;; The interior of augment-env knows which of
-                         ;; these bindings are guaranteed to be dead
-                         ;; because the variables being bound are
-                         ;; aliases and have already been replaced in
-                         ;; the new body.  I could eliminate them.
                          (win (empty-let-rule
                                `(let ,(filter-map
                                        (lambda (name alias expr)
@@ -525,9 +520,13 @@
                        ;; the new body.  I could eliminate them, but
                        ;; that would require traversing subexpr again
                        ;; to look for the VALUES that supplies the
-                       ;; corresponding values.
-                       (win `(let-values ((,names ,new-subexpr))
-                               ,new-body)
+                       ;; corresponding values.  For now, I will just
+                       ;; kill the whole let-values if it is useless.
+                       (win (if (or (non-alias? subexpr-names)
+                                    (any non-alias? subexpr-names))
+                                `(let-values ((,names ,new-subexpr))
+                                   ,new-body)
+                                new-body)
                             body-name-list)))))
                  (error "Malformed LET-VALUES" expr))))
           (else ;; general application
