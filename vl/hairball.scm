@@ -578,7 +578,8 @@
 ;;; To do interprocedural dead variable elimination I have to proceed
 ;;; as follows:
 ;;; -1) Run a round of intraprocedural dead variable elimination to
-;;;     diminish the amount of work in the following
+;;;     diminish the amount of work in the following (assume all
+;;;     procedure calls need all their inputs)
 ;;; 0) Treat the final expression as a nullary procedure definition
 ;;; 1) Initialize a map for each procedure, mapping from output that
 ;;;    might be desired (by index) to input that is known to be needed
@@ -634,5 +635,5 @@
 ;;;    - Solicit only those outputs that are needed (LET-VALUES them,
 ;;;      and VALUES what the body expects, filling in with tombstones).
 ;;; 9) Run a round of intraprocedural dead variable elimination to
-;;;    clean up
+;;;    clean up (all procedure calls now do need all their inputs)
 ;;;    - Verify that all the tombstones vanish.
