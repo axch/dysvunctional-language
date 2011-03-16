@@ -408,5 +408,3 @@
              (?? body))
           `(let ((,name ,exp))
              ,@body)))))
-
-;;; Eval in your emacs:  (put 'let-values 'scheme-indent-function 1)
