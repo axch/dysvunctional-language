@@ -1,76 +1,5 @@
 (declare (usual-integrations))
 
-;;; I need to update intraprocedural dead variable elimination to
-;;; handle LET-VALUES and multivalue returns from procedures.  The
-;;; interesting difference is that only some of the names being bound
-;;; may be needed, so this recursion should carry down the set of
-;;; values being requested.  Unneeded values can be eliminated from
-;;; VALUES directly; if it happens that a procedure call produces more
-;;; values than are needed, then the extras can be bound with an extra
-;;; LET-VALUES and then dropped on the ground.  I should also refactor
-;;; it to use the same LOOP* pattern that the others do.
-
-;; Empirically, this seems to give a reduction of about 20% of pairs
-;; when given (inline (structure-definitions->vectors raw-fol)).
-(define (intraprocedural-dead-variable-elimination expr)
-  (define (no-used-vars) '())
-  (define (single-used-var var) (list var))
-  (define (union vars1 vars2)
-    (lset-union eq? vars1 vars2))
-  (define (difference vars1 vars2)
-    (lset-difference eq? vars1 vars2))
-  (define used? memq)
-  (let loop ((expr expr)
-             (win (lambda (new-expr used-vars) new-expr)))
-    (define (loop* exprs win)
-      (let loop* ((exprs exprs)
-                  (finished '())
-                  (used (no-used-vars)))
-        (if (null? exprs)
-            (win (reverse finished) used)
-            (loop (car exprs)
-             (lambda (new-expr expr-used)
-               (loop* (cdr exprs) (cons new-expr finished)
-                      (union used expr-used)))))))
-    (cond ((symbol? expr)
-           (win expr (single-used-var expr)))
-          ((number? expr)
-           (win expr (no-used-vars)))
-          ((if-form? expr)
-           (let ((predicate (cadr expr))
-                 (consequent (caddr expr))
-                 (alternate (cadddr expr)))
-             (loop predicate
-              (lambda (new-predicate pred-used)
-                (loop consequent
-                 (lambda (new-consequent cons-used)
-                   (loop alternate
-                    (lambda (new-alternate alt-used)
-                      (win `(if ,new-predicate
-                                ,new-consequent
-                                ,new-alternate)
-                           (union pred-used (union cons-used alt-used)))))))))))
-          ((let-form? expr)
-           (let ((bindings (cadr expr))
-                 (body (caddr expr)))
-             (if (null? (cdddr expr))
-                 (loop body
-                       (lambda (new-body body-used)
-                         (let ((new-bindings
-                                (filter (lambda (binding)
-                                          (used? (car binding) body-used))
-                                        bindings)))
-                           (loop* (map cadr new-bindings)
-                                  (lambda (new-exprs used)
-                                    (win (empty-let-rule
-                                          `(let ,(map list (map car new-bindings)
-                                                      new-exprs)
-                                             ,new-body))
-                                         (union used (difference
-                                                      body-used (map car bindings)))))))))
-                 (error "Malformed LET" expr))))
-          (else (loop* expr win)))))
-
 (define (accessor? expr)
   (or (cons-ref? expr)
       (vector-ref? expr)))
@@ -562,6 +491,77 @@
                    ;; The name list might be useful to an
                    ;; interprocedural must-alias crunch.
                    new-expr)))
+
+;;; I need to update intraprocedural dead variable elimination to
+;;; handle LET-VALUES and multivalue returns from procedures.  The
+;;; interesting difference is that only some of the names being bound
+;;; may be needed, so this recursion should carry down the set of
+;;; values being requested.  Unneeded values can be eliminated from
+;;; VALUES directly; if it happens that a procedure call produces more
+;;; values than are needed, then the extras can be bound with an extra
+;;; LET-VALUES and then dropped on the ground.  I should also refactor
+;;; it to use the same LOOP* pattern that the others do.
+
+;; Empirically, this seems to give a reduction of about 20% of pairs
+;; when given (inline (structure-definitions->vectors raw-fol)).
+(define (intraprocedural-dead-variable-elimination expr)
+  (define (no-used-vars) '())
+  (define (single-used-var var) (list var))
+  (define (union vars1 vars2)
+    (lset-union eq? vars1 vars2))
+  (define (difference vars1 vars2)
+    (lset-difference eq? vars1 vars2))
+  (define used? memq)
+  (let loop ((expr expr)
+             (win (lambda (new-expr used-vars) new-expr)))
+    (define (loop* exprs win)
+      (let loop* ((exprs exprs)
+                  (finished '())
+                  (used (no-used-vars)))
+        (if (null? exprs)
+            (win (reverse finished) used)
+            (loop (car exprs)
+             (lambda (new-expr expr-used)
+               (loop* (cdr exprs) (cons new-expr finished)
+                      (union used expr-used)))))))
+    (cond ((symbol? expr)
+           (win expr (single-used-var expr)))
+          ((number? expr)
+           (win expr (no-used-vars)))
+          ((if-form? expr)
+           (let ((predicate (cadr expr))
+                 (consequent (caddr expr))
+                 (alternate (cadddr expr)))
+             (loop predicate
+              (lambda (new-predicate pred-used)
+                (loop consequent
+                 (lambda (new-consequent cons-used)
+                   (loop alternate
+                    (lambda (new-alternate alt-used)
+                      (win `(if ,new-predicate
+                                ,new-consequent
+                                ,new-alternate)
+                           (union pred-used (union cons-used alt-used)))))))))))
+          ((let-form? expr)
+           (let ((bindings (cadr expr))
+                 (body (caddr expr)))
+             (if (null? (cdddr expr))
+                 (loop body
+                  (lambda (new-body body-used)
+                    (let ((new-bindings
+                           (filter (lambda (binding)
+                                     (used? (car binding) body-used))
+                                   bindings)))
+                      (loop* (map cadr new-bindings)
+                       (lambda (new-exprs used)
+                         (win (empty-let-rule
+                               `(let ,(map list (map car new-bindings)
+                                           new-exprs)
+                                  ,new-body))
+                              (union used (difference
+                                           body-used (map car bindings)))))))))
+                 (error "Malformed LET" expr))))
+          (else (loop* expr win)))))
 
 ;;; To do interprocedural dead variable elimination I have to proceed
 ;;; as follows:
