@@ -182,6 +182,8 @@
   ;; shape of the value it used to return before SRA.
   (define (lookup-return-type thing)
     (return-type (lookup-type thing)))
+  (define (lookup-arg-types thing)
+    (arg-types (lookup-type thing)))
   (define (loop expr env win)
     (cond ((symbol? expr)
            (win `(values ,@(get-names expr env))
@@ -237,7 +239,7 @@
            (loop* (cdr expr) env
             (lambda (new-args args-shapes)
               (assert (every values-form? new-args))
-              ;; can check type correctness of this call here
+              (check (every equal? args-shapes (lookup-arg-types (car expr))))
               (win `(,(car expr) ,@(cdr (append-values new-args)))
                    (lookup-return-type (car expr))))))))
   (define (loop* exprs env win)
@@ -260,6 +262,7 @@
   return)
 
 (define return-type function-type-return)
+(define arg-types function-type-args)
 
 (define (sra-program program)
   (define (make-initial-type-map)
