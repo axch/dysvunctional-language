@@ -110,7 +110,7 @@
         eps
         (self prim)
         (g:* (df/dx prim) tang)))
-     (f thing)))
+     (lambda () (f thing))))
   self)
 
 (define (lift-real*real->real f df/dx1 df/dx2)
