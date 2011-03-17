@@ -58,3 +58,20 @@
 			 (* n (fact (- n 1)))))))))
     (fact (real 5)))) ===> 120
 
+(let ()
+  (define (car (cons x y)) x)
+  (define (cdr (cons x y)) y)
+  (define (map f l)
+    (if (null? l)
+        '()
+        (cons (f (car l)) (map f (cdr l)))))
+  (map sqrt (list 1 4 9 16))) ===> (1 2 3 4)
+
+(let ()
+  (define (car (cons x y)) x)
+  (define (cdr (cons x y)) y)
+  (define (map f l)
+    (if (null? l)
+        '()
+        (cons (f (car l)) (map f (cdr l)))))
+  (map sqrt (list (real 1) (real 4) (real 9) (real 16)))) ===> (1 2 3 4)
