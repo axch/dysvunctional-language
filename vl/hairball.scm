@@ -63,10 +63,10 @@
           ((begin-form? expr)
            (map loop expr))
           ((definition? expr)
-           ((rule `(definition (? formals)
+           ((rule `(define (? formals)
                      (argument-types (?? stuff))
                      (? body))
-                  `(definition ,formals
+                  `(define ,formals
                      (argument-types ,@stuff)
                      ,(loop body)))
             expr))
