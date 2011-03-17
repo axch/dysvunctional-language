@@ -103,7 +103,7 @@
 ;;; If so, what's the Scheme code to make that value?
 (define (solved-abstract-value->constant thing)
   (cond ((or (null? thing) (boolean? thing) (real? thing)) thing)
-        ((primitive? thing) (primitive-name thing))
+        ((primitive? thing) '(vector)) ; Primitives have empty closure records
         ((pair? thing)
          (list 'cons (solved-abstract-value->constant (car thing))
                (solved-abstract-value->constant (cdr thing))))
