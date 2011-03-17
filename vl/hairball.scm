@@ -187,7 +187,7 @@
           ((number? expr)
            (win `(values ,expr) 'real))
           ((null? expr)
-           (win '() '()))
+           (win `(values) '()))
           ((if-form? expr)
            (loop (cadr expr) env
             (lambda (new-pred pred-shape)
@@ -691,8 +691,8 @@
   (if (list? output)
       (intraprocedural-de-alias
        (sra-program
-        (full-alpha-rename
-         (sra-anf
+        (sra-anf
+         (full-alpha-rename
           (inline
            (structure-definitions->vectors
             output))))))
