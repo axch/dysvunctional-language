@@ -655,7 +655,8 @@
        (post-sra-tidy
         (full-alpha-rename
          (sra-program
-          (inline
-           (structure-definitions->vectors
-            output))))))
+          (sra-anf
+           (inline
+            (structure-definitions->vectors
+             output)))))))
       output))
