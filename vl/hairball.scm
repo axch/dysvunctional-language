@@ -171,7 +171,7 @@
         ((eq? (car access-form) 'vector-ref)
          (list-ref (cdr old-shape) (caddr access-form)))))
 
-(define (sra-expression expr env lookup-return-type)
+(define (sra-expression expr env lookup-type)
   ;; An SRA environment is not like a normal environment.  This
   ;; environment maps every bound name to two things: the shape it had
   ;; before SRA and the list of names that have been assigned by SRA
@@ -180,6 +180,8 @@
   ;; empty list of primitive parts.
   ;; The win continuation accepts the new, SRA'd expression, and the
   ;; shape of the value it used to return before SRA.
+  (define (lookup-return-type thing)
+    (return-type (lookup-type thing)))
   (define (loop expr env win)
     (cond ((symbol? expr)
            (win `(values ,@(get-names expr env))
@@ -253,27 +255,39 @@
                     ;; type, if desired.
                     new-expr))))
 
+(define-structure (function-type (constructor function-type))
+  args
+  return)
+
+(define return-type function-type-return)
+
 (define (sra-program program)
   (define (make-initial-type-map)
-    (define (returns-real thing)
-      `(,thing . real))
-    (define (returns-bool thing)
-      `(,thing . bool))
+    (define (real->real thing)
+      (cons thing (function-type '(real) 'real)))
+    (define (real*real->real thing)
+      (cons thing (function-type '(real real) 'real)))
+    (define (real->bool thing)
+      (cons thing (function-type '(real) 'bool)))
+    (define (real*real->bool thing)
+      (cons thing (function-type '(real real) 'bool)))
+    ;; Type testers real? gensym? null? pair? have other types
     (alist->eq-hash-table
-     `(,@(map returns-real
-              '(abs exp log sin cos tan asin acos sqrt
-                + - * / atan expt read-real write-real real))
-       ,@(map returns-bool
-              '(pair? null? real? < <= > >= =
-                zero? positive? negative? gensym? gensym=))
-       (gensym . gensym))))
+     `((read-real . ,(function-type '() 'real))
+       ,@(map real->real
+              '(abs exp log sin cos tan asin acos sqrt write-real real))
+       ,@(map real*real->real '(+ - * / atan expt))
+       ,@(map real->bool '(zero? positive? negative?))
+       ,@(map real*real->bool '(< <= > >= =))
+       (gensym . ,(function-type '() 'gensym))
+       (gensym= . ,(function-type '(gensym gensym) 'bool)))))
   (let ((type-map (make-initial-type-map)))
     (for-each (rule `(define ((? name ,symbol?) (?? formals))
                        (argument-types (?? args) (? return))
                        (? body))
-                    (hash-table/put! type-map name return))
+                    (hash-table/put! type-map name (function-type (map cadr args) return)))
               program)
-    (define (lookup-return-type name)
+    (define (lookup-type name)
       (let ((answer (hash-table/get type-map name #f)))
         (or answer
             (error "Looking up unknown name" name))))
@@ -291,12 +305,12 @@
                  (argument-types ,@(map list new-names
                                         (append-map primitive-fringe arg-shapes))
                                  (values ,@(primitive-fringe return)))
-                 ,(sra-expression body env lookup-return-type))))
+                 ,(sra-expression body env lookup-type))))
       (except-last-pair program))
      ;; TODO Reconstruct the shape that the entry point was supposed to
      ;; return?
      (list (sra-expression
-            (car (last-pair program)) (empty-env) lookup-return-type)))))
+            (car (last-pair program)) (empty-env) lookup-type)))))
 
 ;;; The grammar of FOL after SRA is
 ;;;
