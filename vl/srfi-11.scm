@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;; This code is in the public domain.
 
 (define-syntax let-values

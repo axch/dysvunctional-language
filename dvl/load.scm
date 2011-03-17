@@ -35,6 +35,8 @@
    "../vl/output-syntax"
    "../vl/feedback-vertex-set"
    "../vl/post-processing"
+   "../vl/srfi-11"
+   "../vl/hairball"
    "read"))
 
 (define stdlib-file

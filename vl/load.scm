@@ -34,6 +34,8 @@
    "output-syntax"
    "feedback-vertex-set"
    "post-processing"
+   "srfi-11"
+   "hairball"
    "read"))
 
 (define (vl-run-file filename)
