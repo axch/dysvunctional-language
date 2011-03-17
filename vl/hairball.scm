@@ -160,8 +160,8 @@
                `(values ,@(take names-left
                                 (count-meaningful-parts (car shape-left))))
                (loop (- index-left 1)
-                     ,@(drop names-left
-                             (count-meaningful-parts (car shape-left)))
+                     (drop names-left
+                           (count-meaningful-parts (car shape-left)))
                      (cdr shape-left)))))))
 (define (select-from-shape-by-access old-shape access-form)
   (cond ((eq? (car access-form) 'car)
