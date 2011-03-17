@@ -17,3 +17,7 @@
       (+ 1 (count-pairs (car thing))
          (count-pairs (cdr thing)))
       0))
+
+(define (assert pred)
+  (if (not pred)
+      (error "Assertion failed")))

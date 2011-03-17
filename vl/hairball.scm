@@ -222,19 +222,19 @@
           ((accessor? expr)
            (loop (cadr expr) env
             (lambda (new-cadr cadr-shape)
-              ;; new-cadr must be a values expression
+              (assert (values-form? new-cadr))
               (win (slice-values-by-access new-cadr cadr-shape expr)
                    (select-from-shape-by-access cadr-shape expr)))))
           ((construction? expr)
            (loop* (cdr expr) env
             (lambda (new-terms terms-shapes)
-              ;; new-terms must all be values expressions
+              (assert (every values-form? new-terms))
               (win (append-values new-terms)
                    (construct-shape terms-shapes expr)))))
           (else ;; general application
            (loop* (cdr expr) env
             (lambda (new-args args-shapes)
-              ;; new-args must all be values expressions
+              (assert (every values-form? new-args))
               ;; can check type correctness of this call here
               (win `(,(car expr) ,@(cdr (append-values new-args)))
                    (lookup-return-type (car expr))))))))
