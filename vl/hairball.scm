@@ -1,5 +1,8 @@
 (declare (usual-integrations))
 
+(define begin-form? (tagged-list? 'begin))
+(define syntax-definition? (tagged-list? 'define-syntax))
+
 (define (accessor? expr)
   (or (cons-ref? expr)
       (vector-ref? expr)))
@@ -45,6 +48,7 @@
   (let loop ((expr expr))
     (cond ((symbol? expr) expr)
           ((number? expr) expr)
+          ((null? expr) expr)
           ((if-form? expr)
            `(if ,(loop (cadr expr))
                 ,(loop (caddr expr))
@@ -56,7 +60,18 @@
                            (cadr expr))
                   ,(loop (caddr expr)))
                (error "Malformed LET" expr)))
-          (else
+          ((begin-form? expr)
+           (map loop expr))
+          ((definition? expr)
+           ((rule `(definition (? formals)
+                     (argument-types (?? stuff))
+                     (? body))
+                  `(definition ,formals
+                     (argument-types ,@stuff)
+                     ,(loop body)))
+            expr))
+          ((syntax-definition? expr) expr)
+          (else ; application
            (rename-nontrivial-expressions
             expr
             (lambda (results names)
