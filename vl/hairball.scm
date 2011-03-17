@@ -264,7 +264,7 @@
        ,@(map returns-bool
               '(pair? null? real? < <= > >= =
                 zero? positive? negative? gensym? gensym=))
-       ((gensym . gensym)))))
+       (gensym . gensym))))
   (let ((type-map (make-initial-type-map)))
     (for-each (rule `(define ((? name ,symbol?) (?? formals))
                        (argument-types (?? args) (? return))
@@ -272,7 +272,9 @@
                     (hash-table/put! type-map name return))
               program)
     (define (lookup-return-type name)
-      (hash-table/get type-map name #f))
+      (let ((answer (hash-table/get type-map name #f)))
+        (or answer
+            (error "Looking up unknown name" name))))
     (append
      (map
       (rule `(define ((? name ,symbol?) (?? formals))
