@@ -213,9 +213,10 @@
                                   env (map car bindings)
                                   new-name-sets bind-shapes)
                        (lambda (new-body body-shape)
-                         (win `(let-values ,(map list new-name-sets
-                                                 new-bind-expressions)
-                                 ,new-body)
+                         (win (tidy-letrec
+                               `(let-values ,(map list new-name-sets
+                                                  new-bind-expressions)
+                                  ,new-body))
                               body-shape))))))
                  (error "Malformed LET" expr))))
           ((accessor? expr)
@@ -246,10 +247,11 @@
             (lambda (new-exprs expr-shapes)
               (win (cons new-expr new-exprs)
                    (cons expr-shape expr-shapes))))))))
-  (loop expr env (lambda (new-expr shape)
-                   ;; Could match the shape to the externally known
-                   ;; type, if desired.
-                   new-expr)))
+  (tidy-values
+   (loop expr env (lambda (new-expr shape)
+                    ;; Could match the shape to the externally known
+                    ;; type, if desired.
+                    new-expr))))
 
 (define (sra-program program)
   (define (make-initial-type-map)
@@ -339,6 +341,40 @@
           `(let ((,name ,exp))
              ,@body)))))
 
+(define tidy-values
+  (rule-simplifier
+   (list
+    (rule `(values (? exp))
+          exp))))
+
+(define tidy-letrec
+  (iterated
+   (rule-list
+    (list
+     (rule `(let-values () (? body))
+           body)
+     (rule `(let-values ((?? bindings1)
+                         (() (? exp))
+                         (?? bindings2))
+              (?? body))
+           `(let-values (,@bindings1
+                         ,@bindings2)
+              ,@body))
+     (rule `(let-values ((?? bindings)
+                         (((? name ,symbol?)) (? exp)))
+              (?? body))
+           `(let-values ,bindings
+              (let ((,name ,exp))
+               ,@body)))
+     (rule `(let-values ((?? bindings)
+                         (? binding1)
+                         (? binding2))
+              (?? body))
+           `(let-values (,@bindings
+                         ,binding1)
+              (let-values (,binding2)
+                ,@body)))))))
+
 ;;; The post-processor above is necessary for compatibility with MIT
 ;;; Scheme semantics for VALUES and primitives (namely that primitives
 ;;; return objects, and an object is not auto-coerced to (VALUES
@@ -361,7 +397,7 @@
 ;;; A VALUES expression is always in tail position with repect to a
 ;;; matching LET-VALUES expression.  A non-VALUES simple expression is
 ;;; always in tail position with respect to a matching LET expression.
-;;; Not that now each LET-VALUES may only bind one binding (which may
+;;; Note that now each LET-VALUES may only bind one binding (which may
 ;;; have multiple bound names, but only one expression).
 
 (define values-form? (tagged-list? 'values))
@@ -654,11 +690,10 @@
 (define (hairy-optimize output)
   (if (list? output)
       (intraprocedural-de-alias
-       (post-sra-tidy
+       (sra-program
         (full-alpha-rename
-         (sra-program
-          (sra-anf
-           (inline
-            (structure-definitions->vectors
-             output)))))))
+         (sra-anf
+          (inline
+           (structure-definitions->vectors
+            output))))))
       output))
