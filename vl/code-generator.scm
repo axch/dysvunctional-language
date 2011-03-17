@@ -224,7 +224,7 @@
          (let ((operator (analysis-get (operator-subform exp) env analysis))
                (operands (analysis-get (operand-subform exp) env analysis)))
            (and (closure? operator)
-                (cons operator operands))))))
+                (list operator operands value))))))
 
 ;;; Every generated Scheme procedure receives two arguments (either or
 ;;; both of which will be eliminated by the post processing if they
@@ -238,7 +238,7 @@
 ;;; include a declaration of the types of its arguments, to enable
 ;;; scalar replacement of aggregates in the post processing.
 (define ((procedure-definition analysis emit-type-declarations?)
-         operator.operands)
+         call-site)
   (define (destructuring-let-bindings formal-tree arg-tree)
     (define (xxx part1 part2)
       (append (replace-free-occurrences
@@ -257,12 +257,14 @@
            (if (eq? (car formal-tree) 'cons)
                (xxx (cadr formal-tree) (caddr formal-tree))
                (xxx (car formal-tree) (cdr formal-tree))))))
-  (let ((operator (car operator.operands))
-        (operands (cdr operator.operands)))
+  (let ((operator (car call-site))
+        (operands (cadr call-site))
+        (value (caddr call-site)))
     (define (type-declaration)
       `(argument-types
         (the-closure ,(shape->type-declaration operator))
-        (the-formals ,(shape->type-declaration operands))))
+        (the-formals ,(shape->type-declaration operands))
+        ,(shape->type-declaration value)))
     (let ((name (call-site->scheme-function-name operator operands)))
       `(define (,name the-closure the-formals)
          ,@(if emit-type-declarations? (list (type-declaration)) '())
