@@ -100,63 +100,69 @@
 ;;;            | (if <expression> <expression> <expression>)
 ;;;            | (let ((<data-var> <expression>) ...) <expression>)
 
-(define (sra-expression expr env)
+(define (empty-env) '())
+(define (augment-env env old-names name-sets shapes)
+  (append (map list old-names name-sets shapes)
+          env))
+(define (get-shape name env)
+  (let ((binding (assq name env)))
+    (caddr binding)))
+(define (get-names name env)
+  (let ((binding (assq name env)))
+    (cadr binding)))
+(define (count-meaningful-parts shape)
+  (cond ((null? shape) 0)
+        ((primitive-shape? shape) 1)
+        (else (reduce + 0 (map count-meaningful-parts (sra-parts shape))))))
+(define (primitive-shape? shape)
+  (memq shape '(real bool gensym)))
+(define (primitive-fringe shape)
+  (cond ((null? shape) '())
+        ((primitive-shape? shape) (list shape))
+        (else (append-map primitive-fringe (sra-parts shape)))))
+(define (sra-parts shape)
+  ;; shape better be (cons a b) or (vector a ...)
+  (cdr shape))
+(define (invent-names-for-parts basename shape)
+  (map (lambda (i) (make-name basename))
+       (iota (count-meaningful-parts shape))))
+(define (append-values values-forms)
+  `(values ,@(append-map cdr values-forms)))
+(define (construct-shape subshapes template)
+  `(,(car template) ,@subshapes))
+(define (slice-values-by-access values-form old-shape access-form)
+  (cond ((eq? (car access-form) 'car)
+         `(values ,@(take (cdr values-form)
+                          (count-meaningful-parts (cadr old-shape)))))
+        ((eq? (car access-form) 'cdr)
+         `(values ,@(drop (cdr values-form)
+                          (count-meaningful-parts (cadr old-shape)))))
+        ((eq? (car access-form) 'vector-ref)
+         (let loop ((index-left (caddr access-form))
+                    (names-left (cdr values-form))
+                    (shape-left (cdr old-shape)))
+           (if (= 0 index-left)
+               `(values ,@(take names-left
+                                (count-meaningful-parts (car shape-left))))
+               (loop (- index-left 1)
+                     ,@(drop names-left
+                             (count-meaningful-parts (car shape-left)))
+                     (cdr shape-left)))))))
+(define (select-from-shape-by-access old-shape access-form)
+  (cond ((eq? (car access-form) 'car)
+         (cadr old-shape))
+        ((eq? (car access-form) 'cdr)
+         (caddr old-shape))
+        ((eq? (car access-form) 'vector-ref)
+         (list-ref (cdr old-shape) (caddr access-form)))))
+
+(define (sra-expression expr env lookup-return-type)
   ;; An SRA environment is not like a normal environment.  This
   ;; environment maps every bound name to two things: the shape it had
   ;; before SRA and the list of names that have been assigned by SRA
   ;; to hold its primitive parts.  The list is parallel to the fringe
   ;; of the shape.  Note that the compound structure (vector) has an
   ;; empty list of primitive parts.
-  (define (augment-env env old-names name-sets shapes)
-    (append (map list old-names name-sets shapes)
-            env))
-  (define (get-shape name env)
-    (let ((binding (assq name env)))
-      (caddr binding)))
-  (define (get-names name env)
-    (let ((binding (assq name env)))
-      (cadr binding)))
-  (define (count-meaningful-parts shape)
-    (if (primitive? shape)
-        1
-        (reduce + 0 (map count-meaningful-parts (sra-parts shape)))))
-  (define (primitive? shape)
-    (memq shape '(real gensym)))
-  (define (sra-parts shape)
-    ;; shape better be (cons a b) or (vector a ...)
-    (cdr shape))
-  (define (invent-names-for-parts basename shape)
-    (map (lambda (i) (make-name basename))
-         (iota (count-meaningful-parts shape))))
-  (define (append-values values-forms)
-    `(values ,@(append-map cdr values-forms)))
-  (define (construct-shape subshapes template)
-    `(,(car template) ,@subshapes))
-  (define (slice-values-by-access values-form old-shape access-form)
-    (cond ((eq? (car access-form) 'car)
-           `(values ,@(take (cdr values-form)
-                            (count-meaningful-parts (cadr old-shape)))))
-          ((eq? (car access-form) 'cdr)
-           `(values ,@(drop (cdr values-form)
-                            (count-meaningful-parts (cadr old-shape)))))
-          ((eq? (car access-form) 'vector-ref)
-           (let loop ((index-left (caddr access-form))
-                      (names-left (cdr values-form))
-                      (shape-left (cdr old-shape)))
-             (if (= 0 index-left)
-                 `(values ,@(take names-left
-                                  (count-meaningful-parts (car shape-left))))
-                 (loop (- index-left 1)
-                       ,@(drop names-left
-                               (count-meaningful-parts (car shape-left)))
-                       (cdr shape-left)))))))
-  (define (select-from-shape-by-access old-shape access-form)
-    (cond ((eq? (car access-form) 'car)
-           (cadr old-shape))
-          ((eq? (car access-form) 'cdr)
-           (caddr old-shape))
-          ((eq? (car access-form) 'vector-ref)
-           (list-ref (cdr old-shape) (caddr access-form)))))
   ;; The win continuation accepts the new, SRA'd expression, and the
   ;; shape of the value it used to return before SRA.
   (define (loop expr env win)
@@ -165,6 +171,8 @@
                 (get-shape expr env)))
           ((number? expr)
            (win `(values ,expr) 'real))
+          ((null? expr)
+           (win '() '()))
           ((if-form? expr)
            (loop (cadr expr) env
             (lambda (new-pred pred-shape)
@@ -228,8 +236,45 @@
                    ;; type, if desired.
                    new-expr)))
 
-(define (lookup-return-type foo)
-  'real) ;; Stub
+(define (sra-program program)
+  (define (make-initial-type-map)
+    (define (returns-real thing)
+      `(,thing . real))
+    (define (returns-bool thing)
+      `(,thing . bool))
+    (alist->eq-hash-table
+     `(,@(map returns-real
+              '(abs exp log sin cos tan asin acos sqrt
+                + - * / atan expt read-real write-real real))
+       ,@(map returns-bool
+              '(pair? null? real? < <= > >= =
+                zero? positive? negative? gensym? gensym=))
+       ((gensym . gensym)))))
+  (let ((type-map (make-initial-type-map)))
+    (for-each (rule `(define ((? name ,symbol?) (?? formals))
+                       (argument-types (?? args) (? return))
+                       (? body))
+                    (hash-table/put! type-map name return))
+              program)
+    (define (lookup-return-type name)
+      (hash-table/get type-map name #f))
+    (append
+     (map
+      (rule `(define ((? name ,symbol?) (?? formals))
+               (argument-types (?? args) (? return))
+               (? body))
+            (let* ((arg-shapes (map cadr args))
+                   (new-name-sets (map invent-names-for-parts formals arg-shapes))
+                   (env (augment-env
+                         (empty-env) formals new-name-sets arg-shapes))
+                   (new-names (apply append new-name-sets)))
+              `(define (,name ,@new-names)
+                 (argument-types ,@(map list new-names
+                                        (append-map primitive-fringe arg-shapes))
+                                 (values ,@(primitive-fringe return)))
+                 ,(sra-expression body env lookup-return-type))))
+      (except-last-pair program))
+     (list (sra-expression (car (last-pair program)) (empty-env) lookup-return-type)))))
 
 ;;; The grammar of FOL after SRA is
 ;;;
@@ -243,7 +288,8 @@
 ;;;
 ;;; A VALUES expression is always in tail position with repect to a
 ;;; matching LET-VALUES expression (except if it's emitting a boolean
-;;; into the predicate position of an IF).
+;;; into the predicate position of an IF).  A <data-var> may only
+;;; contain a primitive type of object.
 
 (define post-sra-tidy
   (rule-simplifier
