@@ -307,7 +307,8 @@
 ;;; A VALUES expression is always in tail position with repect to a
 ;;; matching LET-VALUES expression (except if it's emitting a boolean
 ;;; into the predicate position of an IF).  A <data-var> may only
-;;; contain a primitive type of object.
+;;; contain a primitive type of object.  CONS, CAR, CDR, VECTOR, and
+;;; VECTOR-REF do not occur.
 
 (define post-sra-tidy
   (rule-simplifier
