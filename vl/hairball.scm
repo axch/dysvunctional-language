@@ -289,7 +289,10 @@
                                  (values ,@(primitive-fringe return)))
                  ,(sra-expression body env lookup-return-type))))
       (except-last-pair program))
-     (list (sra-expression (car (last-pair program)) (empty-env) lookup-return-type)))))
+     ;; TODO Reconstruct the shape that the entry point was supposed to
+     ;; return?
+     (list (sra-expression
+            (car (last-pair program)) (empty-env) lookup-return-type)))))
 
 ;;; The grammar of FOL after SRA is
 ;;;
