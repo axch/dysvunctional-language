@@ -503,6 +503,18 @@
                    ;; interprocedural must-alias crunch.
                    new-expr)))
 
+(define (intraprocedural-de-alias program)
+  (append
+   (map
+    (rule `(define ((? name ,symbol?) (?? formals))
+             (argument-types (?? stuff))
+             (? body))
+          `(define (,name ,@formals)
+             (argument-types ,@stuff)
+             ,(de-alias-expression body (map cons formals formals))))
+    (except-last-pair program))
+   (list (de-alias-expression (car (last-pair program)) '()))))
+
 ;;; I need to update intraprocedural dead variable elimination to
 ;;; handle LET-VALUES and multivalue returns from procedures.  The
 ;;; interesting difference is that only some of the names being bound
@@ -636,3 +648,14 @@
 ;;; 9) Run a round of intraprocedural dead variable elimination to
 ;;;    clean up (all procedure calls now do need all their inputs)
 ;;;    - Verify that all the tombstones vanish.
+
+(define (hairy-optimize output)
+  (if (list? output)
+      (intraprocedural-de-alias
+       (post-sra-tidy
+        (full-alpha-rename
+         (sra-program
+          (inline
+           (structure-definitions->vectors
+            output))))))
+      output))
