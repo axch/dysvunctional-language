@@ -62,7 +62,8 @@
                                     (arg-types (lookup-type (car formals))))
                        lookup-type)))
                  (if (not (equal? (car (last-pair types)) body-type))
-                     (error "Return type declaration doesn't match" definition index body-type))
+                     (error "Return type declaration doesn't match"
+                            definition index (car (last-pair types)) body-type))
                  'done)
                'done))
            (except-last-pair (cdr program))
