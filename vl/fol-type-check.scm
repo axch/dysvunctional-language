@@ -58,7 +58,7 @@
                (let ((body-type
                       (check-expression-types
                        body
-                       (augment-env (empty-env) formals
+                       (augment-env (empty-env) (cdr formals)
                                     (arg-types (lookup-type (car formals))))
                        lookup-type)))
                  (if (not (equal? (car (last-pair types)) body-type))
@@ -100,9 +100,9 @@
           ((if-form? expr)
            (if (not (= 4 (length expr)))
                (error "Malformed IF" expr))
-           (let ((pred-type (loop (cadr exp) env))
-                 (cons-type (loop (caddr exp) env))
-                 (alt-type (loop (cadddr exp) env)))
+           (let ((pred-type (loop (cadr expr) env))
+                 (cons-type (loop (caddr expr) env))
+                 (alt-type (loop (cadddr expr) env)))
              (if (not (eq? 'bool pred-type))
                  (error "IF predicate not of boolean type" expr))
              (if (not (equal? cons-type alt-type))
