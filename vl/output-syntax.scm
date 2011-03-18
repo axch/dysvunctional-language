@@ -225,3 +225,8 @@
            (and (loop (car exp1) (car exp2) env)
                 (loop (cdr exp1) (cdr exp2) env)))
           (else (equal? exp1 exp2)))))
+
+;;;; "Runtime system"
+
+(define (fol-eval code)
+  (eval code (nearest-repl/environment)))

@@ -77,9 +77,6 @@
              (binding-value (car bindings)))
             (else (loop (cdr bindings)))))))
 
-(define (fol-eval code)
-  (eval code (nearest-repl/environment)))
-
 (define (tidy-non-soundness program)
   (cond ((not (equal? (fol-eval program)
 		      (fol-eval (tidy (full-alpha-rename program)))))
