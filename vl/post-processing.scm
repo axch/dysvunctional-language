@@ -225,13 +225,7 @@
            ,@body)))
 
 (define strip-argument-types
-  (rule-simplifier
-   (list
-    (rule `(begin (define-syntax argument-types (?? etc))
-                  (?? stuff))
-          `(begin
-             ,@stuff))
-    remove-defn-argument-types)))
+  (rule-simplifier (list remove-defn-argument-types)))
 ;;;; Inlining procedure definitions
 
 ;;; Every procedure that does not call itself can be inlined.  To do

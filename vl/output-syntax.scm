@@ -230,3 +230,8 @@
 
 (define (fol-eval code)
   (eval code (nearest-repl/environment)))
+
+(define-syntax argument-types
+  (syntax-rules ()
+    ((_ arg ...)
+     (begin))))

@@ -281,20 +281,11 @@
 
 ;;;; Code generation
 
-(define (type-declaration-macro emit-type-declarations?)
-  (if emit-type-declarations?
-      '((define-syntax argument-types
-          (syntax-rules ()
-            ((_ arg ...)
-             (begin)))))
-      '()))
-
 (define (generate program analysis #!optional emit-type-declarations?)
   (initialize-name-caches!)
   (if (default-object? emit-type-declarations?)
       (set! emit-type-declarations? #f))
-  `(begin ,@(type-declaration-macro emit-type-declarations?)
-          ,@(structure-definitions analysis)
+  `(begin ,@(structure-definitions analysis)
           ,@(procedure-definitions analysis emit-type-declarations?)
           ,(compile (macroexpand program)
                     (initial-user-env)

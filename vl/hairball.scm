@@ -1,7 +1,6 @@
 (declare (usual-integrations))
 
 (define begin-form? (tagged-list? 'begin))
-(define syntax-definition? (tagged-list? 'define-syntax))
 
 (define (accessor? expr)
   (or (cons-ref? expr)
@@ -70,7 +69,6 @@
                      (argument-types ,@stuff)
                      ,(loop body)))
             expr))
-          ((syntax-definition? expr) expr)
           (else ; application
            (rename-nontrivial-expressions
             expr
