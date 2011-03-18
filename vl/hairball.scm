@@ -670,7 +670,13 @@
               (win `(,(car expr) ,@new-args)
                    (reduce union (no-used-vars) args-used)))))
           ((values-form? expr)
-           (assert (list? live-out))
+           ;; TODO The invariant that the LIVE-OUT of a VALUES form is
+           ;; always a list holds good only if the FOL entry point
+           ;; never tries to return a VALUES frob.  For that claim to
+           ;; be true, I need to explicitly reconstruct the
+           ;; externally-desired shape from any VALUES frob that SRA
+           ;; might make.
+           ;(assert (list? live-out))
            (let ((wanted-elts (filter-map (lambda (wanted? elt)
                                             (and wanted? elt))
                                           live-out
