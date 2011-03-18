@@ -62,6 +62,7 @@
          (scalars ((fol-carefully scalar-replace-aggregates) inlined answer))
          (alpha ((fol-carefully full-alpha-rename) scalars answer))
          (tidied ((fol-carefully tidy) alpha answer)))
+    (check-program-types vectors-fol)
     (check-program-types inlined)
     (check-program-types scalars)
     (check-program-types alpha)
