@@ -581,18 +581,9 @@
        (list (de-alias-expression (car (last-pair program)) '())))
       (de-alias-expression program '())))
 
-;;; I need to update intraprocedural dead variable elimination to
-;;; handle LET-VALUES and multivalue returns from procedures.  The
-;;; interesting difference is that only some of the names being bound
-;;; may be needed, so this recursion should carry down the set of
-;;; values being requested.  Unneeded values can be eliminated from
-;;; VALUES directly; if it happens that a procedure call produces more
-;;; values than are needed, then the extras can be bound with an extra
-;;; LET-VALUES and then dropped on the ground.  I should also refactor
-;;; it to use the same LOOP* pattern that the others do.
+;;; I don't (yet) even want to think about what it would take to do a
+;;; good job of interprocedural de-aliasing.
 
-;; Empirically, this seems to give a reduction of about 20% of pairs
-;; when given (inline (structure-definitions->vectors raw-fol)).
 (define (expression-dead-variable-elimination expr live-out)
   (define (ignore? name)
     (eq? name '_))
@@ -797,14 +788,46 @@
 ;;;    clean up (all procedure calls now do need all their inputs)
 ;;;    - Verify that all the tombstones vanish.
 
+(define post-hair-tidy
+  (rule-simplifier
+   (list
+    (rule `(begin (? body)) body)
+    (rule `(* 0 (? thing)) 0)
+    (rule `(* (? thing) 0) 0)
+    (rule `(+ 0 (? thing)) thing)
+    (rule `(+ (? thing) 0) thing)
+    (rule `(* 1 (? thing)) thing)
+    (rule `(* (? thing) 1) thing)
+
+    (rule `(if (? predicate) (? exp) (? exp))
+          exp)
+
+    (rule `(let-values (((? names) (values (?? stuff))))
+             (?? body))
+          `(let ,(map list names stuff)
+             ,@body))
+
+    empty-let-rule
+
+    (rule `(let ((?? bindings1)
+                 ((? name ,symbol?) (? exp))
+                 (?? bindings2))
+             (?? body))
+          (let ((occurrence-count (count-free-occurrences name body)))
+            (and (= 1 occurrence-count)
+                 `(let (,@bindings1
+                        ,@bindings2)
+                    ,@(replace-free-occurrences name exp body))))))))
+
 (define (hairy-optimize output)
   (if (list? output)
-      ((lambda (x) x) ; This makes intraprocedural-de-alias show up in the stack sampler
-       (intraprocedural-de-alias
-        (sra-program
-         (sra-anf
-          (full-alpha-rename
-           (inline
-            (structure-definitions->vectors
-             output)))))))
+      ((lambda (x) x) ; This makes the last stage show up in the stack sampler
+       (intraprocedural-dead-variable-elimination
+        (intraprocedural-de-alias
+         (sra-program
+          (sra-anf
+           (full-alpha-rename
+            (inline
+             (structure-definitions->vectors
+              output))))))))
       output))
