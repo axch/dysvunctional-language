@@ -610,10 +610,10 @@
            (win expr (no-used-vars)))
           ((values-form? expr)
            (assert (list? live-out))
-           `(values ,@(filter (lambda (wanted? elt)
-                                (and wanted? elt))
-                              live-out
-                              (cdr expr))))
+           `(values ,@(filter-map (lambda (wanted? elt)
+                                    (and wanted? elt))
+                                  live-out
+                                  (cdr expr))))
           ((if-form? expr)
            (let ((predicate (cadr expr))
                  (consequent (caddr expr))
