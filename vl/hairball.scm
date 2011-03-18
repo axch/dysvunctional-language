@@ -567,16 +567,18 @@
                    new-expr)))
 
 (define (intraprocedural-de-alias program)
-  (append
-   (map
-    (rule `(define ((? name ,symbol?) (?? formals))
-             (argument-types (?? stuff))
-             (? body))
-          `(define (,name ,@formals)
-             (argument-types ,@stuff)
-             ,(de-alias-expression body (map cons formals formals))))
-    (except-last-pair program))
-   (list (de-alias-expression (car (last-pair program)) '()))))
+  (if (begin-form? program)
+      (append
+       (map
+        (rule `(define ((? name ,symbol?) (?? formals))
+                 (argument-types (?? stuff))
+                 (? body))
+              `(define (,name ,@formals)
+                 (argument-types ,@stuff)
+                 ,(de-alias-expression body (map cons formals formals))))
+        (except-last-pair program))
+       (list (de-alias-expression (car (last-pair program)) '())))
+      (de-alias-expression program '())))
 
 ;;; I need to update intraprocedural dead variable elimination to
 ;;; handle LET-VALUES and multivalue returns from procedures.  The
