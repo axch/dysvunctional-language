@@ -262,7 +262,7 @@
 (define return-type function-type-return)
 (define arg-types function-type-args)
 
-(define (sra-program program)
+(define (type-map program)
   (define (make-initial-type-map)
     (define (real->real thing)
       (cons thing (function-type '(real) 'real)))
@@ -292,6 +292,10 @@
       (let ((answer (hash-table/get type-map name #f)))
         (or answer
             (error "Looking up unknown name" name))))
+    lookup-type))
+
+(define (sra-program program)
+  (let ((lookup-type (type-map program)))
     (append
      (map
       (rule `(define ((? name ,symbol?) (?? formals))
