@@ -649,7 +649,8 @@
                 (lambda (new-body body-used)
                   (define (slot-used? name)
                     (or (ignore? name)
-                        (used? name body-used)))
+                        (and (used? name body-used)
+                             #t)))
                   (let ((sub-expr-live-out (map slot-used? names)))
                     (if (any (lambda (x) x) sub-expr-live-out)
                         (loop sub-expr sub-expr-live-out
