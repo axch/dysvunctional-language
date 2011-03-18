@@ -299,26 +299,29 @@
 
 (define (sra-program program)
   (let ((lookup-type (type-map program)))
-    (append
-     (map
-      (rule `(define ((? name ,symbol?) (?? formals))
-               (argument-types (?? args) (? return))
-               (? body))
-            (let* ((arg-shapes (map cadr args))
-                   (new-name-sets (map invent-names-for-parts formals arg-shapes))
-                   (env (augment-env
-                         (empty-env) formals new-name-sets arg-shapes))
-                   (new-names (apply append new-name-sets)))
-              `(define (,name ,@new-names)
-                 (argument-types ,@(map list new-names
-                                        (append-map primitive-fringe arg-shapes))
-                                 ,(tidy-values `(values ,@(primitive-fringe return))))
-                 ,(sra-expression body env lookup-type))))
-      (except-last-pair program))
-     ;; TODO Reconstruct the shape that the entry point was supposed to
-     ;; return?
-     (list (sra-expression
-            (car (last-pair program)) (empty-env) lookup-type)))))
+    (define (sra-entry-point expression)
+      (sra-expression expression (empty-env) lookup-type))
+    (if (begin-form? program)
+        (append
+         (map
+          (rule `(define ((? name ,symbol?) (?? formals))
+                   (argument-types (?? args) (? return))
+                   (? body))
+                (let* ((arg-shapes (map cadr args))
+                       (new-name-sets (map invent-names-for-parts formals arg-shapes))
+                       (env (augment-env
+                             (empty-env) formals new-name-sets arg-shapes))
+                       (new-names (apply append new-name-sets)))
+                  `(define (,name ,@new-names)
+                     (argument-types ,@(map list new-names
+                                            (append-map primitive-fringe arg-shapes))
+                                     ,(tidy-values `(values ,@(primitive-fringe return))))
+                     ,(sra-expression body env lookup-type))))
+          (except-last-pair program))
+         ;; TODO Reconstruct the shape that the entry point was supposed to
+         ;; return?
+         (list (sra-entry-point (car (last-pair program)))))
+        (sra-entry-point program))))
 
 ;;; The grammar of FOL after SRA is
 ;;;
