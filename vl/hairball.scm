@@ -676,6 +676,8 @@
            ;; be true, I need to explicitly reconstruct the
            ;; externally-desired shape from any VALUES frob that SRA
            ;; might make.
+           (if (not (list? live-out))
+               (set! live-out (make-list (length (cdr expr)) #t)))
            ;(assert (list? live-out))
            (let ((wanted-elts (filter-map (lambda (wanted? elt)
                                             (and wanted? elt))
