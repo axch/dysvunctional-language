@@ -788,6 +788,14 @@
 ;;;    clean up (all procedure calls now do need all their inputs)
 ;;;    - Verify that all the tombstones vanish.
 
+;; This is safe assuming the program has been alpha renamed
+(define values-let-lifting-rule
+  (rule `(let-values (((? names) (let (? in-bindings) (? exp))))
+           (?? body))
+        `(let ,in-bindings
+           (let-values ((,names ,exp))
+             ,@body))))
+
 (define post-hair-tidy
   (rule-simplifier
    (list
@@ -808,6 +816,8 @@
              ,@body))
 
     empty-let-rule
+
+    values-let-lifting-rule
 
     (rule `(let ((?? bindings1)
                  ((? name ,symbol?) (? exp))
