@@ -593,7 +593,9 @@
 
 ;; Empirically, this seems to give a reduction of about 20% of pairs
 ;; when given (inline (structure-definitions->vectors raw-fol)).
-(define (intraprocedural-dead-variable-elimination expr)
+(define (expression-dead-variable-elimination expr live-out)
+  (define (ignore? name)
+    (eq? name '_))
   (define (no-used-vars) '())
   (define (single-used-var var) (list var))
   (define (union vars1 vars2)
@@ -601,31 +603,26 @@
   (define (difference vars1 vars2)
     (lset-difference eq? vars1 vars2))
   (define used? memq)
-  (let loop ((expr expr)
-             (win (lambda (new-expr used-vars) new-expr)))
-    (define (loop* exprs win)
-      (let loop* ((exprs exprs)
-                  (finished '())
-                  (used (no-used-vars)))
-        (if (null? exprs)
-            (win (reverse finished) used)
-            (loop (car exprs)
-             (lambda (new-expr expr-used)
-               (loop* (cdr exprs) (cons new-expr finished)
-                      (union used expr-used)))))))
+  (define (loop expr live-out win)
     (cond ((symbol? expr)
            (win expr (single-used-var expr)))
           ((number? expr)
            (win expr (no-used-vars)))
+          ((values-form? expr)
+           (assert (list? live-out))
+           `(values ,@(filter (lambda (wanted? elt)
+                                (and wanted? elt))
+                              live-out
+                              (cdr expr))))
           ((if-form? expr)
            (let ((predicate (cadr expr))
                  (consequent (caddr expr))
                  (alternate (cadddr expr)))
-             (loop predicate
+             (loop predicate #t
               (lambda (new-predicate pred-used)
-                (loop consequent
+                (loop consequent live-out
                  (lambda (new-consequent cons-used)
-                   (loop alternate
+                   (loop alternate live-out
                     (lambda (new-alternate alt-used)
                       (win `(if ,new-predicate
                                 ,new-consequent
@@ -634,23 +631,93 @@
           ((let-form? expr)
            (let ((bindings (cadr expr))
                  (body (caddr expr)))
-             (if (null? (cdddr expr))
-                 (loop body
-                  (lambda (new-body body-used)
-                    (let ((new-bindings
-                           (filter (lambda (binding)
-                                     (used? (car binding) body-used))
-                                   bindings)))
-                      (loop* (map cadr new-bindings)
-                       (lambda (new-exprs used)
-                         (win (empty-let-rule
-                               `(let ,(map list (map car new-bindings)
-                                           new-exprs)
-                                  ,new-body))
-                              (union used (difference
-                                           body-used (map car bindings)))))))))
-                 (error "Malformed LET" expr))))
-          (else (loop* expr win)))))
+             (loop body live-out
+              (lambda (new-body body-used)
+                (let ((new-bindings
+                       (filter (lambda (binding)
+                                 (used? (car binding) body-used))
+                               bindings)))
+                  (loop* (map cadr new-bindings)
+                   (lambda (new-exprs exprs-used)
+                     (let ((used (reduce union (no-used-vars) exprs-used)))
+                       (win (empty-let-rule
+                             `(let ,(map list (map car new-bindings)
+                                         new-exprs)
+                                ,new-body))
+                            (union used (difference
+                                         body-used (map car bindings))))))))))))
+          ((let-values-form? expr)
+           (let ((binding (caadr expr))
+                 (body (caddr expr)))
+             (let ((names (car binding))
+                   (sub-expr (cadr binding)))
+               (loop body live-out
+                (lambda (new-body body-used)
+                  (define (slot-used? name)
+                    (or (ignore? name)
+                        (used? name body-used)))
+                  (let ((sub-expr-live-out (map slot-used? names)))
+                    (if (any (lambda (x) x) sub-expr-live-out)
+                        (loop sub-expr sub-expr-live-out
+                         (lambda (new-sub-expr sub-expr-used)
+                           (win (tidy-letrec
+                                 `(let-values ((,(filter slot-used? names)
+                                                ,new-sub-expr))
+                                    ,new-body))
+                                (union sub-expr-used (difference body-used names)))))
+                        (win new-body body-used))))))))
+          ;; If used post SRA, there may be constructions to build the
+          ;; answer for the outside world, but there should be no
+          ;; accesses.
+          ((construction? expr)
+           (loop* (cdr expr)
+            (lambda (new-args args-used)
+              (win `(,(car expr) ,@new-args)
+                   (reduce union (no-used-vars) args-used)))))
+          (else ;; general application
+           (define (all-wanted? live-out)
+             (or (equal? live-out #t)
+                 (every (lambda (x) x) live-out)))
+           (define (invent-name wanted?)
+             (if wanted?
+                 (make-name 'receipt)
+                 '_))
+           (loop* (cdr expr)
+            (lambda (new-args args-used)
+              (let ((simple-new-call `(,(car expr) ,@new-args)))
+                (let ((new-call
+                       (if (all-wanted? live-out)
+                           simple-new-call
+                           (let ((receipt-names (map invent-name live-out)))
+                             `(let-values ((,receipt-names ,simple-new-call))
+                                (values ,@(filter (lambda (x) (not (ignore? x))) receipt-names)))))))
+                  (win new-call (reduce union (no-used-vars) args-used)))))))))
+  (define (loop* exprs win)
+    (if (null? exprs)
+        (win '() '())
+        (loop (car exprs) #t
+         (lambda (new-expr expr-used)
+           (loop* (cdr exprs)
+            (lambda (new-exprs exprs-used)
+              (win (cons new-expr new-exprs)
+                   (cons expr-used exprs-used))))))))
+  (loop expr live-out (lambda (new-expr used-vars) new-expr)))
+
+(define (intraprocedural-dead-variable-elimination program)
+  (if (begin-form? program)
+      (append
+       (map
+        (rule `(define ((? name ,symbol?) (?? formals))
+                 (argument-types (?? stuff) (? return))
+                 (? body))
+              `(define (,name ,@formals)
+                 (argument-types ,@stuff)
+                 ,(expression-dead-variable-elimination
+                   body (or (not (values-form? return))
+                            (map (lambda (x) #t) (cdr return))))))
+        (except-last-pair program))
+       (list (expression-dead-variable-elimination (car (last-pair program)) #t)))
+      (expression-dead-variable-elimination program #t)))
 
 ;;; To do interprocedural dead variable elimination I have to proceed
 ;;; as follows:
