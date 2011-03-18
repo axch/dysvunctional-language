@@ -96,6 +96,7 @@
   (define (loop expr env)
     (cond ((symbol? expr) (lookup expr env))
           ((number? expr) 'real)
+          ((boolean? expr) 'bool)
           ((null? expr)   '())
           ((if-form? expr)
            (if (not (= 4 (length expr)))
