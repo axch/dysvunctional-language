@@ -124,7 +124,7 @@
       (map (lambda (var) (lookup var env))
            (interesting-variables vars env))))
   (cond ((some-real? thing) 'real)
-        ((some-boolean? thing) 'boolean)
+        ((some-boolean? thing) 'bool)
         ((null? thing) '())
         ((primitive? thing) '(vector)) ; Primitives have empty closure records
         ((pair? thing)
