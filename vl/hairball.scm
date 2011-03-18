@@ -237,7 +237,8 @@
            (loop* (cdr expr) env
             (lambda (new-args args-shapes)
               (assert (every values-form? new-args))
-              (check (every equal? args-shapes (lookup-arg-types (car expr))))
+              ;; The type checker should have ensured this
+              ;(assert (every equal? args-shapes (lookup-arg-types (car expr))))
               (win `(,(car expr) ,@(cdr (append-values new-args)))
                    (lookup-return-type (car expr))))))))
   (define (loop* exprs env win)
@@ -300,6 +301,8 @@
 (define (sra-program program)
   (let ((lookup-type (type-map program)))
     (define (sra-entry-point expression)
+      ;; TODO Reconstruct the shape that the entry point was supposed
+      ;; to return?
       (sra-expression expression (empty-env) lookup-type))
     (if (begin-form? program)
         (append
@@ -318,8 +321,6 @@
                                      ,(tidy-values `(values ,@(primitive-fringe return))))
                      ,(sra-expression body env lookup-type))))
           (except-last-pair program))
-         ;; TODO Reconstruct the shape that the entry point was supposed to
-         ;; return?
          (list (sra-entry-point (car (last-pair program)))))
         (sra-entry-point program))))
 
