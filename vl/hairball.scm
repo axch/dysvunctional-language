@@ -822,13 +822,14 @@
 (define (hairy-optimize output)
   (if (list? output)
       ((lambda (x) x) ; This makes the last stage show up in the stack sampler
-       (post-hair-tidy
-        (intraprocedural-dead-variable-elimination
-         (intraprocedural-de-alias
-          (sra-program
-           (sra-anf
-            (full-alpha-rename
-             (inline
-              (structure-definitions->vectors
-               output)))))))))
+       (strip-argument-types
+        (post-hair-tidy
+         (intraprocedural-dead-variable-elimination
+          (intraprocedural-de-alias
+           (sra-program
+            (sra-anf
+             (full-alpha-rename
+              (inline
+               (structure-definitions->vectors
+                output))))))))))
       output))
