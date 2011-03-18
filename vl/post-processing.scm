@@ -78,38 +78,48 @@
   (and (pair? form)
        (eq? (car form) 'define-structure)))
 
-(define (expand-if-structure-definition form)
-  (if (structure-definition? form)
-      (let ((name (cadr form))
-            (fields (cddr form)))
-        `((define ,(symbol 'make- name) vector)
-          ,@(map (lambda (field index)
-                   `(define (,(symbol name '- field) thing)
-                      (vector-ref thing ,index)))
-                 fields
-                 (iota (length fields)))))
-      (list form)))
-
 (define (structure-definitions->vectors forms)
-  (let* ((structure-names
-          (map cadr (filter structure-definition? forms)))
+  (let* ((structure-definitions (filter structure-definition? forms))
+         (structure-names (map cadr structure-definitions))
          (structure-name-map
           (alist->eq-hash-table
-           (map (lambda (name) (cons name #t)) structure-names))))
+           (map (lambda (name) (cons name #t)) structure-names)))
+         (constructor-map
+          (alist->eq-hash-table
+           (map (lambda (name) (cons (symbol 'make- name) #t)) structure-names)))
+         (accessor-map
+          (alist->eq-hash-table
+           (append-map
+            (lambda (defn)
+              (map (lambda (field index)
+                     (cons (symbol (cadr defn) '- field) index))
+                   (cddr defn)
+                   (iota (length (cddr defn)))))
+            structure-definitions))))
     (define (structure-name? name)
       (hash-table/get structure-name-map name #f))
     (define structure-names->vectors
       (on-subexpressions
        (rule `(? type ,structure-name?) 'vector)))
-    (define fix-argument-types
+    (define (constructor? name)
+      (hash-table/get constructor-map name #f))
+    (define constructors->vectors
+      (on-subexpressions
+       (rule `(? name ,constructor?) 'vector)))
+    (define (accessor? name)
+      (hash-table/get accessor-map name #f))
+    (define accessors->vectors
+      (on-subexpressions
+       (rule `((? operator ,accessor?) (? operand))
+             `(vector-ref ,operand ,(accessor? operator)))))
+    (define fix-definition
       (rule `(define (? formals)
                (argument-types (?? arg-types))
                (?? body))
             `(define ,formals
                (argument-types ,@(structure-names->vectors arg-types))
-               ,@body)))
-    (map fix-argument-types
-         (append-map expand-if-structure-definition forms))))
+               ,@(accessors->vectors (constructors->vectors body)))))
+    (map fix-definition (filter (lambda (x) (not (structure-definition? x))) forms))))
 
 ;;;; Scalar replacement of aggregates
 
