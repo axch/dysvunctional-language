@@ -33,6 +33,7 @@
    "../vl/code-generator"
    "primitives"
    "../vl/output-syntax"
+   "../vl/fol-type-check"
    "../vl/feedback-vertex-set"
    "../vl/post-processing"
    "../vl/srfi-11"

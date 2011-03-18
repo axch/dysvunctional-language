@@ -13,6 +13,9 @@
            (every fol-shape? (cdr thing)))))
 
 (define (check-program-types program)
+  (define (empty-env) '())
+  (define (augment-env env names shapes)
+    (append (map list names shapes) env))
   (if (begin-form? program)
       (for-each
        (lambda (definition index)
@@ -21,63 +24,51 @@
          (if (not (= 4 (length definition)))
              (error "Malformed definition" definition index))
          (let ((formals (cadr definition))
-               (types (caddr definition))
-               (body (cadddr definition)))
+               (types (caddr definition)))
            (if (not (list? formals))
                (error "Malformed formals list" definition index))
            (if (not (list? types))
                (error "Malformed type declaration" definition index))
            (if (not (= (length types) (+ 1 (length formals))))
                (error "Type declaration not parallel to formals list" definition index))
-           (for-each (lambda (formal type sub-index)
-                       (if (not (and (list? type) (= 2 (length type))))
-                           (error "Malformed type declaration" type definition index sub-index))
-                       (if (not (eq? formal (car type)))
-                           (error "Type declaration for wrong formal parameter"
-                                  definition sub-index index))
-                       (if (not (fol-shape? (cadr type)))
-                           (error "Type declaring a non-type" type definition index sub-index))))))
+           (for-each
+            (lambda (formal type sub-index)
+              (if (not (and (list? type) (= 2 (length type))))
+                  (error "Malformed type declaration" type definition index sub-index))
+              (if (not (eq? formal (car type)))
+                  (error "Type declaration for wrong formal parameter"
+                         definition sub-index index))
+              (if (not (fol-shape? (cadr type)))
+                  (error "Type declaring a non-type" type definition index sub-index)))
+            (cdr formals)
+            (except-last-pair (cdr types))
+            (iota (length (cdr formals))))))
        (except-last-pair (cdr program))
        (iota (- (length program) 2))))
   (let ((lookup-type (type-map program)))
     (define (check-entry-point expression)
-      (check-expression-types expression (empty-env lookup-type)))
+      (check-expression-types expression (empty-env) lookup-type))
     (if (begin-form? program)
         (begin
-         (for-each
-          (lambda (definition index)
-            (let ((formals (cadr definition))
-                  (types (caddr definition))
-                  (body (cadddr definition)))
-              (let ((body-type
-                     (check-expression-types
-                      body (augment-env (emtpy-env) formals
-                                        (argument-types (lookup-type (car formals)))))))
-                (if (not (equal? (car (last-pair types)) body-type))
-                    (error "Return type declaration doesn't match" definition index body-type)))))
-          (except-last-pair (cdr program))
-          (iota (- (length program) 2)))
-         (check-entry-point (car (last-pair program))))
-        (check-entry-point program))
-    (for-each
-     (rule `(define ((? name ,symbol?) (?? formals))
-              (argument-types (?? args) (? return))
-              (? body))
-           (let* ((arg-shapes (map cadr args))
-                  (new-name-sets (map invent-names-for-parts formals arg-shapes))
-                  (env (augment-env
-                        (empty-env) formals new-name-sets arg-shapes))
-                  (new-names (apply append new-name-sets)))
-             `(define (,name ,@new-names)
-                (argument-types ,@(map list new-names
-                                       (append-map primitive-fringe arg-shapes))
-                                ,(tidy-values `(values ,@(primitive-fringe return))))
-                ,(sra-expression body env lookup-type))))
-     (except-last-pair program))
-    ;; TODO Reconstruct the shape that the entry point was supposed to
-    ;; return?
-    (sra-expression
-     (car (last-pair program)) (empty-env) lookup-type)))
+          (for-each
+           (lambda (definition index)
+             (let ((formals (cadr definition))
+                   (types (caddr definition))
+                   (body (cadddr definition)))
+               (let ((body-type
+                      (check-expression-types
+                       body
+                       (augment-env (empty-env) formals
+                                    (arg-types (lookup-type (car formals))))
+                       lookup-type)))
+                 (if (not (equal? (car (last-pair types)) body-type))
+                     (error "Return type declaration doesn't match" definition index body-type))
+                 'done)
+               'done))
+           (except-last-pair (cdr program))
+           (iota (- (length program) 2)))
+          (check-entry-point (car (last-pair program))))
+        (check-entry-point program))))
 
 (define (check-expression-types expr env lookup-type)
   ;; A type environment maps every bound local name to its type.  The
@@ -94,6 +85,14 @@
   (define (construction? expr)
     (and (pair? expr)
          (memq (car expr) '(cons vector values))))
+  (define (empty-env) '())
+  (define (augment-env env names shapes)
+    (append (map list names shapes) env))
+  (define (lookup name env)
+    (let ((binding (assq name env)))
+      (if (not binding)
+          (error "Refencing an unbound variable" name)
+          (cadr binding))))
   (define (loop expr env)
     (cond ((symbol? expr) (lookup expr env))
           ((number? expr) 'real)
@@ -154,7 +153,7 @@
                        (error "Index out of bounds" (caddr expr) accessee-type))))
              (select-from-shape-by-access accessee-type expr)))
           ((construction? expr)
-           (let ((element-types (map (lambda (exp) (loop exp env))) (cdr expr)))
+           (let ((element-types (map (lambda (exp) (loop exp env)) (cdr expr))))
              (for-each
               (lambda (element-type index)
                 (if (values-form? element-type)
@@ -165,7 +164,7 @@
              (construct-shape element-types expr)))
           (else ;; general application
            (let ((expected-types (lookup-arg-types (car expr)))
-                 (argument-types (map (lambda (exp) (loop exp env))) (cdr expr)))
+                 (argument-types (map (lambda (exp) (loop exp env)) (cdr expr))))
              (if (not (= (length expected-types) (length argument-types)))
                  (error "Trying to call function with wrong number of arguments" expr))
              (for-each

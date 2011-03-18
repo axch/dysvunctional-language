@@ -32,6 +32,7 @@
    "code-generator"
    "primitives"
    "output-syntax"
+   "fol-type-check"
    "feedback-vertex-set"
    "post-processing"
    "srfi-11"
