@@ -51,7 +51,9 @@
          (raw-fol (careful-solved-generate kernel analysis answer)))
     answer))
 
-(define (union-free-answer program)
+(define (union-free-answer program #!optional wallpaper?)
+  (if (default-object? wallpaper?)
+      (set! wallpaper? #f))
   (let* ((kernel (careful-macroexpand program))
          (answer (interpret kernel))
          (analysis (analyze kernel))
@@ -70,6 +72,12 @@
     (check (= 0 (count-free-occurrences 'car tidied)))
     (check (= 0 (count-free-occurrences 'cdr tidied)))
     (check (= 0 (count-free-occurrences 'vector-ref tidied)))
+    (if wallpaper?
+        (begin
+          (display "***NEW PROGRAM ***")
+          (newline)
+          (pp program)
+          (pp tidied)))
     answer))
 
 (define (analyzed-answer program)
@@ -108,10 +116,12 @@
                  (proc first)
                  (loop second third (read)))))))))
 
+(define *compilation-results-wallp* #f)
+
 (define (define-union-free-example-test program #!optional value)
   (if (not (default-object? value))
       (define-test
-        (check (equal? value (union-free-answer program))))
+        (check (equal? value (union-free-answer program *compilation-results-wallp*))))
       (define-test
         ;; At least check that interpret and compile-to-scheme agree
-        (union-free-answer program))))
+        (union-free-answer program *compilation-results-wallp*))))
