@@ -711,11 +711,12 @@
 
 (define (hairy-optimize output)
   (if (list? output)
-      (intraprocedural-de-alias
-       (sra-program
-        (sra-anf
-         (full-alpha-rename
-          (inline
-           (structure-definitions->vectors
-            output))))))
+      ((lambda (x) x) ; This makes intraprocedural-de-alias show up in the stack sampler
+       (intraprocedural-de-alias
+        (sra-program
+         (sra-anf
+          (full-alpha-rename
+           (inline
+            (structure-definitions->vectors
+             output)))))))
       output))
