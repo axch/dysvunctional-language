@@ -608,12 +608,6 @@
            (win expr (single-used-var expr)))
           ((number? expr)
            (win expr (no-used-vars)))
-          ((values-form? expr)
-           (assert (list? live-out))
-           `(values ,@(filter-map (lambda (wanted? elt)
-                                    (and wanted? elt))
-                                  live-out
-                                  (cdr expr))))
           ((if-form? expr)
            (let ((predicate (cadr expr))
                  (consequent (caddr expr))
@@ -674,6 +668,18 @@
             (lambda (new-args args-used)
               (win `(,(car expr) ,@new-args)
                    (reduce union (no-used-vars) args-used)))))
+          ((values-form? expr)
+           (assert (list? live-out))
+           (let ((wanted-elts (filter-map (lambda (wanted? elt)
+                                            (and wanted? elt))
+                                          live-out
+                                          (cdr expr))))
+             (loop* wanted-elts
+              (lambda (new-elts elts-used)
+                (win (if (= 1 (length new-elts))
+                         (car new-elts)
+                         `(values ,@new-elts))
+                     (reduce union (no-used-vars) elts-used))))))
           (else ;; general application
            (loop* (cdr expr)
             (lambda (new-args args-used)
