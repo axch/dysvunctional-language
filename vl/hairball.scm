@@ -309,7 +309,7 @@
               `(define (,name ,@new-names)
                  (argument-types ,@(map list new-names
                                         (append-map primitive-fringe arg-shapes))
-                                 (values ,@(primitive-fringe return)))
+                                 ,(tidy-values `(values ,@(primitive-fringe return))))
                  ,(sra-expression body env lookup-type))))
       (except-last-pair program))
      ;; TODO Reconstruct the shape that the entry point was supposed to
