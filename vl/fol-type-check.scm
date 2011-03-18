@@ -4,7 +4,7 @@
   ;; This will need to be updated when union types appear
   (or (null? thing)
       (and (symbol? thing)
-           (memq thing '(real bool genysm)))
+           (memq thing '(real bool gensym)))
       (and (list? thing)
            (> (length thing) 0)
            (memq (car thing) '(cons vector values))
