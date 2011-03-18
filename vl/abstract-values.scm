@@ -123,14 +123,17 @@
           (env (closure-env closure)))
       (map (lambda (var) (lookup var env))
            (interesting-variables vars env))))
-  (cond ((abstract-real? thing) 'real)
-        ((abstract-boolean? thing) 'boolean)
+  (cond ((some-real? thing) 'real)
+        ((some-boolean? thing) 'boolean)
+        ((null? thing) '())
+        ((primitive? thing) '(vector)) ; Primitives have empty closure records
+        ((pair? thing)
+         `(cons ,(shape->type-declaration (car thing))
+                ,(shape->type-declaration (cdr thing))))
+        ;; Only replace abstractly-solved closures, not other things
         ((solved-abstractly? thing) '(vector))
         ((closure? thing)
          (cons (abstract-closure->scheme-structure-name thing)
                (map shape->type-declaration
                     (interesting-environment-values thing))))
-        ((pair? thing)
-         `(cons ,(shape->type-declaration (car thing))
-                ,(shape->type-declaration (cdr thing))))
         (else (error "shape->type-declaration loses!" thing))))
