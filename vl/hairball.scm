@@ -675,15 +675,15 @@
               (win `(,(car expr) ,@new-args)
                    (reduce union (no-used-vars) args-used)))))
           (else ;; general application
-           (define (all-wanted? live-out)
-             (or (equal? live-out #t)
-                 (every (lambda (x) x) live-out)))
-           (define (invent-name wanted?)
-             (if wanted?
-                 (make-name 'receipt)
-                 '_))
            (loop* (cdr expr)
             (lambda (new-args args-used)
+              (define (all-wanted? live-out)
+                (or (equal? live-out #t)
+                    (every (lambda (x) x) live-out)))
+              (define (invent-name wanted?)
+                (if wanted?
+                    (make-name 'receipt)
+                    '_))
               (let ((simple-new-call `(,(car expr) ,@new-args)))
                 (let ((new-call
                        (if (all-wanted? live-out)
