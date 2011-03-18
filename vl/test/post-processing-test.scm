@@ -46,11 +46,6 @@
                             the-closure-53
                             the-formals-56
                             the-formals-57)
-         (argument-types (the-closure-41 real)
-                         (the-closure-53 real)
-                         (the-formals-56 real)
-                         (the-formals-57 real)
-                         real)
          (if (< (abs (- the-formals-56 the-formals-57)) .00001)
              the-formals-57
              (operation-9
