@@ -27,10 +27,12 @@
 
    (alpha-rename?
     '(cons
-      (let ((x (* (real 2) (real 2))))
-        (+ x x))
-      (let ((x (+ (real 2) (real 2))))
-        (* x x)))
+      (let ((z (real 2)))
+        (let ((x (* z z)))
+          (+ x x)))
+      (let ((z (real 2)))
+        (let ((x (+ z z)))
+          (* x x))))
     (compile-to-scheme
      '(let ((double (lambda (x) (+ x x)))
             (square (lambda (x) (* x x)))
@@ -55,10 +57,13 @@
               (/ (+ the-formals-57 (/ the-closure-41 the-formals-57)) 2))))
        (cons
         1.4142135623730951
-        (operation-9 (real 2)
-                     (real 2)
-                     (real 1.)
-                     (/ (+ (real 1.) (/ (real 2) (real 1.))) 2))))
+        (let ((the-formals-125 (real 2)))
+          (let ((the-formals-133 (real 1.)))
+            (operation-9
+             the-formals-125
+             the-formals-125
+             the-formals-133
+             (/ (+ the-formals-133 (/ the-formals-125 the-formals-133)) 2))))))
     (compile-to-scheme
      '(let ()
         (define (heron-step x)

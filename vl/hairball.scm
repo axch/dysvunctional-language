@@ -844,3 +844,5 @@
                (structure-definitions->vectors
                 output))))))))))
       output))
+
+(define prettify-compiler-output hairy-optimize)
