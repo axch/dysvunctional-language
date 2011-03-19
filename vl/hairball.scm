@@ -170,7 +170,7 @@
         ((eq? (car access-form) 'vector-ref)
          (list-ref (cdr old-shape) (caddr access-form)))))
 (define (reconstruct-pre-sra-shape new-expr shape)
-  (if (primitive? shape)
+  (if (primitive-shape? shape)
       new-expr
       (let ((piece-names (invent-names-for-parts 'receipt shape)))
         (tidy-let-values
@@ -381,8 +381,12 @@
 (define tidy-values
   (rule-simplifier
    (list
-    (rule `(values (? exp))
-          exp))))
+    ;; Grr, sentinel values.
+    (lambda (exp)
+      (if (and (values-form? exp)
+               (= 2 (length exp)))
+          (cadr exp)
+          exp)))))
 
 (define tidy-let-values
   (iterated
