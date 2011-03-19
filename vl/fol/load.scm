@@ -14,6 +14,7 @@
 (for-each
  load-relative-compiled
  '("syntax"
+   "structs"
    "type-check"
    "feedback-vertex-set"
    "post-processing"
