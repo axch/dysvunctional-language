@@ -1,7 +1,5 @@
 (declare (usual-integrations))
-
-(define values-form? (tagged-list? 'values))
-(define let-values-form? (tagged-list? 'let-values))
+;;;; Alias elimination
 
 (define (de-alias-expression expr env)
   ;; An alias environment is not like a normal environment.  This

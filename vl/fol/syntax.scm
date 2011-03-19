@@ -32,6 +32,9 @@
 (define strip-argument-types
   (rule-simplifier (list remove-defn-argument-types)))
 
+(define values-form? (tagged-list? 'values))
+(define let-values-form? (tagged-list? 'let-values))
+
 (define (constructors-only? exp)
   (or (symbol? exp)
       (constant? exp)
