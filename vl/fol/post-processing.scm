@@ -33,7 +33,7 @@
       output))
 
 (define (compile-to-scheme program)
-  (prettify-compiler-output
+  (fol-optimize
    (analyze-and-generate program)))
 
 ;;; Don't worry about the rule-based term-rewriting system that powers

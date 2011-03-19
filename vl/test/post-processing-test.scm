@@ -92,7 +92,7 @@
     '(if (< (real 1) (real 2))
          (real 0)
          (+ (real 1) (real 2)))
-    (prettify-compiler-output
+    (fol-optimize
      '(car
        (let ((x (let ((y (+ (real 1) (real 2))))
                   (cons y (vector)))))
@@ -104,7 +104,7 @@
     '(if (< (real 1) (real 2))
          (real 0)
          (+ (real 1) (real 2)))
-    (prettify-compiler-output
+    (fol-optimize
      '(car
        (let ((x (let ((y (+ (real 1) (real 2))))
                   (cons y (cons y (vector))))))
@@ -114,7 +114,7 @@
 
    (alpha-rename?
     '(+ (real 1) (real 2))
-    (prettify-compiler-output
+    (fol-optimize
      '(car
        (cdr
         (let ((x (let ((y (+ (real 1) (real 2))))
@@ -128,7 +128,7 @@
        (if (< (real 1) (real 2))
            (+ y (real 0))
            y))
-    (prettify-compiler-output
+    (fol-optimize
      '(let ((x (let ((y (+ (real 1) (real 2))))
                  (cons (+ y (real 0)) (cons y (vector))))))
         (if (< (real 1) (real 2))
