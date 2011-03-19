@@ -44,6 +44,20 @@
 ;;; intraprocedural alias elimination, procedure applications are
 ;;; assume to always produce non-canonical objects.
 
+(define (intraprocedural-de-alias program)
+  (if (begin-form? program)
+      (append
+       (map
+        (rule `(define ((? name ,symbol?) (?? formals))
+                 (argument-types (?? stuff))
+                 (? body))
+              `(define (,name ,@formals)
+                 (argument-types ,@stuff)
+                 ,(de-alias-expression body (map cons formals formals))))
+        (except-last-pair program))
+       (list (de-alias-expression (car (last-pair program)) '())))
+      (de-alias-expression program '())))
+
 (define (de-alias-expression expr env)
   ;; An alias environment is not like a normal environment.  This
   ;; environment maps every bound name to whether it is an alias or
@@ -187,17 +201,3 @@
                    ;; The name list might be useful to an
                    ;; interprocedural must-alias crunch.
                    new-expr)))
-
-(define (intraprocedural-de-alias program)
-  (if (begin-form? program)
-      (append
-       (map
-        (rule `(define ((? name ,symbol?) (?? formals))
-                 (argument-types (?? stuff))
-                 (? body))
-              `(define (,name ,@formals)
-                 (argument-types ,@stuff)
-                 ,(de-alias-expression body (map cons formals formals))))
-        (except-last-pair program))
-       (list (de-alias-expression (car (last-pair program)) '())))
-      (de-alias-expression program '())))
