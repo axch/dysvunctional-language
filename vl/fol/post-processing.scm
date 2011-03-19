@@ -227,10 +227,10 @@
                     definitions)))
          (non-inlinees (feedback-vertex-set call-graph))
          (inlinees (lset-difference eq? definitions non-inlinees))
-         (inline-alist
-          (map cons (map definiendum inlinees)
-               (map definiens (map remove-defn-argument-types inlinees))))
-         (inline-map (alist->eq-hash-table inline-alist)))
+         (inline-map
+          (alist->eq-hash-table
+           (map cons (map definiendum inlinees)
+                (map definiens (map remove-defn-argument-types inlinees))))))
     (define (inline? name)
       (hash-table/get inline-map name #f))
     (define (not-inline? form)
