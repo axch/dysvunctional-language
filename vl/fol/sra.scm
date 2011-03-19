@@ -256,13 +256,19 @@
               (win (cons new-expr new-exprs)
                    (cons expr-shape expr-shapes))))))))
   (loop expr env (lambda (new-expr shape) (win (tidy-values new-expr) shape))))
-
+
 (define-structure (function-type (constructor function-type))
   args
   return)
 
 (define return-type function-type-return)
 (define arg-types function-type-args)
+
+;;; A type map maps the name of any FOL procedure to a function-type
+;;; object representing its argument types and return type.  I
+;;; implement this as a hash table backed procedure that returns that
+;;; information when given the name in question, or #f if the given
+;;; name is not the name of a global procedure.
 
 (define (type-map program)
   (define (make-initial-type-map)
@@ -274,7 +280,8 @@
       (cons thing (function-type '(real) 'bool)))
     (define (real*real->bool thing)
       (cons thing (function-type '(real real) 'bool)))
-    ;; Type testers real? gensym? null? pair? have other types
+    ;; Type testers real? gensym? null? pair? have other types, but
+    ;; should never be emitted by VL or DVL on union-free inputs.
     (alist->eq-hash-table
      `((read-real . ,(function-type '() 'real))
        ,@(map real->real
@@ -299,7 +306,7 @@
         (or answer
             (error "Looking up unknown name" name))))
     lookup-type))
-
+
 (define (sra-program program)
   (let ((lookup-type (type-map program)))
     (define (sra-entry-point expression)
@@ -342,15 +349,12 @@
 ;;; contain a primitive type of object.  CONS, CAR, CDR, VECTOR, and
 ;;; VECTOR-REF do not occur.
 
-(define tidy-values
-  (rule-simplifier
-   (list
-    ;; Grr, sentinel values.
-    (lambda (exp)
-      (if (and (values-form? exp)
-               (= 2 (length exp)))
-          (cadr exp)
-          exp)))))
+;;; The following post-processor is necessary for compatibility with
+;;; MIT Scheme semantics for multiple value returns (namely that a
+;;; unary multiple value return is distinguished in MIT Scheme from an
+;;; ordinary return).  This post-processor also ensures that
+;;; LET-VALUES forms only bind the results of one expression; this
+;;; requires that the forms it operates on be alpha renamed.
 
 (define tidy-let-values
   (iterated
@@ -380,12 +384,15 @@
               (let-values (,binding2)
                 ,@body)))))))
 
-;;; The post-processor above is necessary for compatibility with MIT
-;;; Scheme semantics for VALUES and primitives (namely that primitives
-;;; return objects, and an object is not auto-coerced to (VALUES
-;;; <object>)).  However, it requires that the forms it operates on be
-;;; alpha renamed.  It splits LET-VALUES to all be in series rather
-;;; than in parallel.
+(define tidy-values
+  (rule-simplifier
+   (list
+    ;; Grr, sentinel values.
+    (lambda (exp)
+      (if (and (values-form? exp)
+               (= 2 (length exp)))
+          (cadr exp)
+          exp)))))
 
 ;;; The grammar of FOL after tidying and compatibility with MIT Scheme is
 ;;;
