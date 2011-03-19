@@ -25,7 +25,7 @@
 ;;; input data structures as separete arguments.  Procedure bodies are
 ;;; transformed by recursive descent to match.  This implementation of
 ;;; SRA also depends on the input being in A-normal form as produced
-;;; by SRA-ANF (see sra-anf.scm).
+;;; by SRA-ANF (see sra-anf.scm).  The output remains in A-normal form.
 
 ;;; The structure of the recursive descent is as follows: walk down
 ;;; the expression (traversing LET bindings before LET bodies)
@@ -75,9 +75,218 @@
 ;;; CONS, CAR, CDR, VECTOR, and VECTOR-REF are no longer considered
 ;;; acceptable <proc-var>s.  This grammar is consistent with the
 ;;; output of SRA-ANF, without VALUES or LET-VALUES.  The fact that
-;;; SRA does not handle multiple value returns is fixable, but also ok
-;;; because the VL and DVL code generators do not emit them, and SRA
-;;; is the stage that introduces them.
+;;; (TODO) SRA does not handle multiple value returns is fixable, but
+;;; also ok because the VL and DVL code generators do not emit them,
+;;; and SRA is the stage that introduces them.
+
+(define (sra-program program)
+  (let ((lookup-type (type-map program)))
+    (define (sra-entry-point expression)
+      (sra-expression
+       expression (empty-env) lookup-type reconstruct-pre-sra-shape))
+    (if (begin-form? program)
+        (append
+         (map
+          (rule `(define ((? name ,symbol?) (?? formals))
+                   (argument-types (?? arg-shapes) (? return))
+                   (? body))
+                (let* ((new-name-sets
+                        (map invent-names-for-parts formals arg-shapes))
+                       (env (augment-env
+                             (empty-env) formals new-name-sets arg-shapes))
+                       (new-names (apply append new-name-sets)))
+                  `(define (,name ,@new-names)
+                     (argument-types
+                      ,@(append-map primitive-fringe arg-shapes)
+                      ,(tidy-values `(values ,@(primitive-fringe return))))
+                     ,(sra-expression body env lookup-type
+                                      (lambda (new-body shape) new-body)))))
+          (except-last-pair program))
+         (list (sra-entry-point (car (last-pair program)))))
+        (sra-entry-point program))))
+
+(define (sra-expression expr env lookup-type win)
+  ;; An SRA environment maps every bound name to two things: the shape
+  ;; it had before SRA and the list of names that have been assigned
+  ;; by SRA to hold its primitive parts.  The list is parallel to the
+  ;; fringe of the shape.  Note that the compound structure (vector)
+  ;; has an empty list of primitive parts.
+  ;; This is written in continuation passing style because I need two
+  ;; pieces of information from the recursive call.  The win
+  ;; continuation accepts the new, SRA'd expression, and the shape of
+  ;; the value it used to return before SRA.
+  (define (lookup-return-type thing)
+    (return-type (lookup-type thing)))
+  (define (lookup-arg-types thing)
+    (arg-types (lookup-type thing)))
+  (define (loop expr env win)
+    (cond ((symbol? expr)
+           (win `(values ,@(get-names expr env))
+                (get-shape expr env)))
+          ((number? expr)
+           (win `(values ,expr) 'real))
+          ((boolean? expr)
+           (win `(values ,expr) 'bool))
+          ((null? expr)
+           (win `(values) '()))
+          ((if-form? expr)
+           (loop (cadr expr) env
+            (lambda (new-pred pred-shape)
+              (assert (eq? 'bool pred-shape))
+              (loop (caddr expr) env
+               (lambda (new-cons cons-shape)
+                 (loop (cadddr expr) env
+                  (lambda (new-alt alt-shape)
+                    ;; TODO cons-shape and alt-shape better be the same
+                    ;; (or at least compatible)
+                    (win `(if ,new-pred ,new-cons ,new-alt)
+                         cons-shape))))))))
+          ((let-form? expr)
+           (let ((bindings (cadr expr))
+                 (body (caddr expr)))
+             (if (null? (cdddr expr))
+                 (loop* (map cadr bindings) env
+                  (lambda (new-bind-expressions bind-shapes)
+                    (let ((new-name-sets
+                           (map invent-names-for-parts
+                                (map car bindings) bind-shapes)))
+                      (loop body (augment-env
+                                  env (map car bindings)
+                                  new-name-sets bind-shapes)
+                       (lambda (new-body body-shape)
+                         (win (tidy-let-values
+                               `(let-values ,(map list new-name-sets
+                                                  new-bind-expressions)
+                                  ,new-body))
+                              body-shape))))))
+                 (error "Malformed LET" expr))))
+          ((accessor? expr)
+           (loop (cadr expr) env
+            (lambda (new-cadr cadr-shape)
+              (assert (values-form? new-cadr))
+              (win (slice-values-by-access new-cadr cadr-shape expr)
+                   (select-from-shape-by-access cadr-shape expr)))))
+          ((construction? expr)
+           (loop* (cdr expr) env
+            (lambda (new-terms terms-shapes)
+              (assert (every values-form? new-terms))
+              (win (append-values new-terms)
+                   (construct-shape terms-shapes expr)))))
+          (else ;; general application
+           (loop* (cdr expr) env
+            (lambda (new-args args-shapes)
+              (assert (every values-form? new-args))
+              ;; The type checker should have ensured this
+              ;(assert (every equal? args-shapes (lookup-arg-types (car expr))))
+              (win `(,(car expr) ,@(cdr (append-values new-args)))
+                   (lookup-return-type (car expr))))))))
+  (define (loop* exprs env win)
+    (if (null? exprs)
+        (win '() '())
+        (loop (car exprs) env
+         (lambda (new-expr expr-shape)
+           (loop* (cdr exprs) env
+            (lambda (new-exprs expr-shapes)
+              (win (cons new-expr new-exprs)
+                   (cons expr-shape expr-shapes))))))))
+  (loop expr env (lambda (new-expr shape) (win (tidy-values new-expr) shape))))
+
+;;; A type map maps the name of any FOL procedure to a function-type
+;;; object representing its argument types and return type.  I
+;;; implement this as a hash table backed procedure that returns that
+;;; information when given the name in question, or #f if the given
+;;; name is not the name of a global procedure.
+
+(define (type-map program)
+  (define (make-initial-type-map)
+    (define (real->real thing)
+      (cons thing (function-type '(real) 'real)))
+    (define (real*real->real thing)
+      (cons thing (function-type '(real real) 'real)))
+    (define (real->bool thing)
+      (cons thing (function-type '(real) 'bool)))
+    (define (real*real->bool thing)
+      (cons thing (function-type '(real real) 'bool)))
+    ;; Type testers real? gensym? null? pair? have other types, but
+    ;; should never be emitted by VL or DVL on union-free inputs.
+    (alist->eq-hash-table
+     `((read-real . ,(function-type '() 'real))
+       ,@(map real->real
+              '(abs exp log sin cos tan asin acos sqrt write-real real))
+       ,@(map real*real->real '(+ - * / atan expt))
+       ,@(map real->bool '(zero? positive? negative?))
+       ,@(map real*real->bool '(< <= > >= =))
+       (gensym . ,(function-type '() 'gensym))
+       (gensym= . ,(function-type '(gensym gensym) 'bool)))))
+  (let ((type-map (make-initial-type-map)))
+    (if (begin-form? program)
+        (for-each
+         (rule `(define ((? name ,symbol?) (?? formals))
+                  (argument-types (?? args) (? return))
+                  (? body))
+               (hash-table/put!
+                type-map name (function-type args return)))
+         (cdr program))
+        'ok)
+    (define (lookup-type name)
+      (let ((answer (hash-table/get type-map name #f)))
+        (or answer
+            (error "Looking up unknown name" name))))
+    lookup-type))
+
+(define-structure (function-type (constructor function-type))
+  args
+  return)
+
+(define return-type function-type-return)
+(define arg-types function-type-args)
+
+;;; The following post-processor is necessary for compatibility with
+;;; MIT Scheme semantics for multiple value returns (namely that a
+;;; unary multiple value return is distinguished in MIT Scheme from an
+;;; ordinary return).  This post-processor also ensures that
+;;; LET-VALUES forms only bind the results of one expression; this
+;;; requires that the forms it operates on be alpha renamed.
+
+(define tidy-let-values
+  (iterated
+   (rule-list
+    (list
+     (rule `(let-values () (? body))
+           body)
+     (rule `(let-values ((?? bindings1)
+                         (() (? exp))
+                         (?? bindings2))
+              (?? body))
+           `(let-values (,@bindings1
+                         ,@bindings2)
+              ,@body))
+     (rule `(let-values ((?? bindings)
+                         (((? name ,symbol?)) (? exp)))
+              (?? body))
+           `(let-values ,bindings
+              (let ((,name ,exp))
+               ,@body)))
+     (rule `(let-values ((?? bindings)
+                         (? binding1)
+                         (? binding2))
+              (?? body))
+           `(let-values (,@bindings
+                         ,binding1)
+              (let-values (,binding2)
+                ,@body)))))))
+
+(define tidy-values
+  (rule-simplifier
+   (list
+    ;; Grr, sentinel values.
+    (lambda (exp)
+      (if (and (values-form? exp)
+               (= 2 (length exp)))
+          (cadr exp)
+          exp)))))
+
+;;; SRA supporting procedures
 
 (define (empty-env) '())
 (define (augment-env env old-names name-sets shapes)
@@ -170,244 +379,3 @@
                                   (win (cons new-arg new-args) names-left))))))))
                      (else
                       (error "Weird shape" shape)))))))))
-
-(define (sra-expression expr env lookup-type win)
-  ;; An SRA environment maps every bound name to two things: the shape
-  ;; it had before SRA and the list of names that have been assigned
-  ;; by SRA to hold its primitive parts.  The list is parallel to the
-  ;; fringe of the shape.  Note that the compound structure (vector)
-  ;; has an empty list of primitive parts.
-  ;; This is written in continuation passing style because I need two
-  ;; pieces of information from the recursive call.  The win
-  ;; continuation accepts the new, SRA'd expression, and the shape of
-  ;; the value it used to return before SRA.
-  (define (lookup-return-type thing)
-    (return-type (lookup-type thing)))
-  (define (lookup-arg-types thing)
-    (arg-types (lookup-type thing)))
-  (define (loop expr env win)
-    (cond ((symbol? expr)
-           (win `(values ,@(get-names expr env))
-                (get-shape expr env)))
-          ((number? expr)
-           (win `(values ,expr) 'real))
-          ((boolean? expr)
-           (win `(values ,expr) 'bool))
-          ((null? expr)
-           (win `(values) '()))
-          ((if-form? expr)
-           (loop (cadr expr) env
-            (lambda (new-pred pred-shape)
-              (assert (eq? 'bool pred-shape))
-              (loop (caddr expr) env
-               (lambda (new-cons cons-shape)
-                 (loop (cadddr expr) env
-                  (lambda (new-alt alt-shape)
-                    ;; TODO cons-shape and alt-shape better be the same
-                    ;; (or at least compatible)
-                    (win `(if ,new-pred ,new-cons ,new-alt)
-                         cons-shape))))))))
-          ((let-form? expr)
-           (let ((bindings (cadr expr))
-                 (body (caddr expr)))
-             (if (null? (cdddr expr))
-                 (loop* (map cadr bindings) env
-                  (lambda (new-bind-expressions bind-shapes)
-                    (let ((new-name-sets
-                           (map invent-names-for-parts
-                                (map car bindings) bind-shapes)))
-                      (loop body (augment-env
-                                  env (map car bindings)
-                                  new-name-sets bind-shapes)
-                       (lambda (new-body body-shape)
-                         (win (tidy-let-values
-                               `(let-values ,(map list new-name-sets
-                                                  new-bind-expressions)
-                                  ,new-body))
-                              body-shape))))))
-                 (error "Malformed LET" expr))))
-          ((accessor? expr)
-           (loop (cadr expr) env
-            (lambda (new-cadr cadr-shape)
-              (assert (values-form? new-cadr))
-              (win (slice-values-by-access new-cadr cadr-shape expr)
-                   (select-from-shape-by-access cadr-shape expr)))))
-          ((construction? expr)
-           (loop* (cdr expr) env
-            (lambda (new-terms terms-shapes)
-              (assert (every values-form? new-terms))
-              (win (append-values new-terms)
-                   (construct-shape terms-shapes expr)))))
-          (else ;; general application
-           (loop* (cdr expr) env
-            (lambda (new-args args-shapes)
-              (assert (every values-form? new-args))
-              ;; The type checker should have ensured this
-              ;(assert (every equal? args-shapes (lookup-arg-types (car expr))))
-              (win `(,(car expr) ,@(cdr (append-values new-args)))
-                   (lookup-return-type (car expr))))))))
-  (define (loop* exprs env win)
-    (if (null? exprs)
-        (win '() '())
-        (loop (car exprs) env
-         (lambda (new-expr expr-shape)
-           (loop* (cdr exprs) env
-            (lambda (new-exprs expr-shapes)
-              (win (cons new-expr new-exprs)
-                   (cons expr-shape expr-shapes))))))))
-  (loop expr env (lambda (new-expr shape) (win (tidy-values new-expr) shape))))
-
-(define-structure (function-type (constructor function-type))
-  args
-  return)
-
-(define return-type function-type-return)
-(define arg-types function-type-args)
-
-;;; A type map maps the name of any FOL procedure to a function-type
-;;; object representing its argument types and return type.  I
-;;; implement this as a hash table backed procedure that returns that
-;;; information when given the name in question, or #f if the given
-;;; name is not the name of a global procedure.
-
-(define (type-map program)
-  (define (make-initial-type-map)
-    (define (real->real thing)
-      (cons thing (function-type '(real) 'real)))
-    (define (real*real->real thing)
-      (cons thing (function-type '(real real) 'real)))
-    (define (real->bool thing)
-      (cons thing (function-type '(real) 'bool)))
-    (define (real*real->bool thing)
-      (cons thing (function-type '(real real) 'bool)))
-    ;; Type testers real? gensym? null? pair? have other types, but
-    ;; should never be emitted by VL or DVL on union-free inputs.
-    (alist->eq-hash-table
-     `((read-real . ,(function-type '() 'real))
-       ,@(map real->real
-              '(abs exp log sin cos tan asin acos sqrt write-real real))
-       ,@(map real*real->real '(+ - * / atan expt))
-       ,@(map real->bool '(zero? positive? negative?))
-       ,@(map real*real->bool '(< <= > >= =))
-       (gensym . ,(function-type '() 'gensym))
-       (gensym= . ,(function-type '(gensym gensym) 'bool)))))
-  (let ((type-map (make-initial-type-map)))
-    (if (begin-form? program)
-        (for-each
-         (rule `(define ((? name ,symbol?) (?? formals))
-                  (argument-types (?? args) (? return))
-                  (? body))
-               (hash-table/put!
-                type-map name (function-type args return)))
-         (cdr program))
-        'ok)
-    (define (lookup-type name)
-      (let ((answer (hash-table/get type-map name #f)))
-        (or answer
-            (error "Looking up unknown name" name))))
-    lookup-type))
-
-(define (sra-program program)
-  (let ((lookup-type (type-map program)))
-    (define (sra-entry-point expression)
-      (sra-expression
-       expression (empty-env) lookup-type reconstruct-pre-sra-shape))
-    (if (begin-form? program)
-        (append
-         (map
-          (rule `(define ((? name ,symbol?) (?? formals))
-                   (argument-types (?? arg-shapes) (? return))
-                   (? body))
-                (let* ((new-name-sets
-                        (map invent-names-for-parts formals arg-shapes))
-                       (env (augment-env
-                             (empty-env) formals new-name-sets arg-shapes))
-                       (new-names (apply append new-name-sets)))
-                  `(define (,name ,@new-names)
-                     (argument-types
-                      ,@(append-map primitive-fringe arg-shapes)
-                      ,(tidy-values `(values ,@(primitive-fringe return))))
-                     ,(sra-expression body env lookup-type
-                                      (lambda (new-body shape) new-body)))))
-          (except-last-pair program))
-         (list (sra-entry-point (car (last-pair program)))))
-        (sra-entry-point program))))
-
-;;; The grammar of FOL after SRA is
-;;;
-;;; simple-expression = <data-var>
-;;;                   | <number>
-;;;
-;;; expression = (values <simple-expression> ...)
-;;;            | (<proc-var> <simple-expression> ...)
-;;;            | (if <expression> <expression> <expression>)
-;;;            | (let-values (((<data-var> ...) <expression>) ...) <expression>)
-;;;
-;;; A VALUES expression is always in tail position with repect to a
-;;; matching LET-VALUES expression (except if it's emitting a boolean
-;;; into the predicate position of an IF).  A <data-var> may only
-;;; contain a primitive type of object.  CONS, CAR, CDR, VECTOR, and
-;;; VECTOR-REF do not occur.
-
-;;; The following post-processor is necessary for compatibility with
-;;; MIT Scheme semantics for multiple value returns (namely that a
-;;; unary multiple value return is distinguished in MIT Scheme from an
-;;; ordinary return).  This post-processor also ensures that
-;;; LET-VALUES forms only bind the results of one expression; this
-;;; requires that the forms it operates on be alpha renamed.
-
-(define tidy-let-values
-  (iterated
-   (rule-list
-    (list
-     (rule `(let-values () (? body))
-           body)
-     (rule `(let-values ((?? bindings1)
-                         (() (? exp))
-                         (?? bindings2))
-              (?? body))
-           `(let-values (,@bindings1
-                         ,@bindings2)
-              ,@body))
-     (rule `(let-values ((?? bindings)
-                         (((? name ,symbol?)) (? exp)))
-              (?? body))
-           `(let-values ,bindings
-              (let ((,name ,exp))
-               ,@body)))
-     (rule `(let-values ((?? bindings)
-                         (? binding1)
-                         (? binding2))
-              (?? body))
-           `(let-values (,@bindings
-                         ,binding1)
-              (let-values (,binding2)
-                ,@body)))))))
-
-(define tidy-values
-  (rule-simplifier
-   (list
-    ;; Grr, sentinel values.
-    (lambda (exp)
-      (if (and (values-form? exp)
-               (= 2 (length exp)))
-          (cadr exp)
-          exp)))))
-
-;;; The grammar of FOL after tidying and compatibility with MIT Scheme is
-;;;
-;;; simple-expression = <data-var>
-;;;                   | <number>
-;;;
-;;; expression = <simple-expression>
-;;;            | (values <simple-expression> ...)
-;;;            | (<proc-var> <simple-expression> ...)
-;;;            | (if <expression> <expression> <expression>)
-;;;            | (let ((<data-var> <expression>) ...) <expression>)
-;;;            | (let-values (((<data-var> ...) <expression>)) <expression>)
-;;;
-;;; A VALUES expression is always in tail position with repect to a
-;;; matching LET-VALUES expression.  A non-VALUES simple expression is
-;;; always in tail position with respect to a matching LET expression.
-;;; Note that now each LET-VALUES may only bind one binding (which may
-;;; have multiple bound names, but only one expression).
