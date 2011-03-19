@@ -28,7 +28,7 @@
             (else (loop (cdr bindings)))))))
 
 (define (careful-generate program analysis answer)
-  (let ((raw-fol (generate program analysis #t)))
+  (let ((raw-fol (generate program analysis)))
     (check (equal? answer (fol-eval raw-fol)))
     raw-fol))
 

@@ -205,8 +205,8 @@
 
 ;;;; Procedure definitions
 
-(define (procedure-definitions analysis emit-type-declarations?)
-  (map (procedure-definition analysis emit-type-declarations?)
+(define (procedure-definitions analysis)
+  (map (procedure-definition analysis)
        (delete-duplicates
         (filter-map (binding->maybe-call-shape analysis)
                     (analysis-bindings analysis))
@@ -233,11 +233,10 @@
 ;;; arguments.  The procedure must destructure the argument structure
 ;;; the same way the corresponding VL procedure did, and execute its
 ;;; compiled body.  The destructuring elides solved slots of the
-;;; incoming argument structure.  If specified with the
-;;; EMIT-TYPE-DECLARATIONS? flag, the procedure definition will also
+;;; incoming argument structure.  The procedure definition will also
 ;;; include a declaration of the types of its arguments, to enable
 ;;; scalar replacement of aggregates in the post processing.
-(define ((procedure-definition analysis emit-type-declarations?)
+(define ((procedure-definition analysis)
          call-site)
   (define (destructuring-let-bindings formal-tree arg-tree)
     (define (xxx part1 part2)
@@ -267,7 +266,7 @@
         ,(shape->type-declaration value)))
     (let ((name (call-site->scheme-function-name operator operands)))
       `(define (,name the-closure the-formals)
-         ,@(if emit-type-declarations? (list (type-declaration)) '())
+         ,(type-declaration)
          (let ,(destructuring-let-bindings
                 (car (closure-formal operator))
                 operands)
@@ -281,12 +280,10 @@
 
 ;;;; Code generation
 
-(define (generate program analysis #!optional emit-type-declarations?)
+(define (generate program analysis)
   (initialize-name-caches!)
-  (if (default-object? emit-type-declarations?)
-      (set! emit-type-declarations? #f))
   `(begin ,@(structure-definitions analysis)
-          ,@(procedure-definitions analysis emit-type-declarations?)
+          ,@(procedure-definitions analysis)
           ,(compile (macroexpand program)
                     (initial-user-env)
                     #f
@@ -296,4 +293,4 @@
   (generate program (analyze program)))
 
 (define (analyze-and-generate-with-type-declarations program)
-  (generate program (analyze program) #t))
+  (generate program (analyze program)))
