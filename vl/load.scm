@@ -31,6 +31,7 @@
    "nomenclature"
    "code-generator"
    "primitives"
+   "fol/load"
    "output-syntax"
    "fol-type-check"
    "feedback-vertex-set"
