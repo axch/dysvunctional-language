@@ -169,7 +169,7 @@
         ((eq? (car access-form) 'vector-ref)
          (list-ref (cdr old-shape) (caddr access-form)))))
 
-(define (sra-expression expr env lookup-type)
+(define (sra-expression expr env lookup-type win)
   ;; An SRA environment is not like a normal environment.  This
   ;; environment maps every bound name to two things: the shape it had
   ;; before SRA and the list of names that have been assigned by SRA
@@ -250,11 +250,7 @@
             (lambda (new-exprs expr-shapes)
               (win (cons new-expr new-exprs)
                    (cons expr-shape expr-shapes))))))))
-  (tidy-values
-   (loop expr env (lambda (new-expr shape)
-                    ;; Could match the shape to the externally known
-                    ;; type, if desired.
-                    new-expr))))
+  (loop expr env (lambda (new-expr shape) (win (tidy-values new-expr) shape))))
 
 (define-structure (function-type (constructor function-type))
   args
@@ -304,7 +300,9 @@
     (define (sra-entry-point expression)
       ;; TODO Reconstruct the shape that the entry point was supposed
       ;; to return?
-      (sra-expression expression (empty-env) lookup-type))
+      (sra-expression expression (empty-env) lookup-type
+       (lambda (new-entry-point orig-shape)
+         new-entry-point)))
     (if (begin-form? program)
         (append
          (map
@@ -322,7 +320,8 @@
                       ,@(map list new-names
                              (append-map primitive-fringe arg-shapes))
                       ,(tidy-values `(values ,@(primitive-fringe return))))
-                     ,(sra-expression body env lookup-type))))
+                     ,(sra-expression body env lookup-type
+                                      (lambda (new-body shape) new-body)))))
           (except-last-pair program))
          (list (sra-entry-point (car (last-pair program)))))
         (sra-entry-point program))))
