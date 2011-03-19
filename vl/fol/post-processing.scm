@@ -400,3 +400,62 @@
     (on-subexpressions intraprocedural-variable-elimination-rule)
     (on-subexpressions intraprocedural-sra-rule)
     (on-subexpressions let-lifting-rule))))
+
+
+;; This is safe assuming the program has been alpha renamed
+(define values-let-lifting-rule
+  (rule `(let-values (((? names) (let (? in-bindings) (? exp))))
+           (?? body))
+        `(let ,in-bindings
+           (let-values ((,names ,exp))
+             ,@body))))
+
+(define post-hair-tidy
+  (rule-simplifier
+   (list
+    (rule `(begin (? body)) body)
+    (rule `(* 0 (? thing)) 0)
+    (rule `(* (? thing) 0) 0)
+    (rule `(+ 0 (? thing)) thing)
+    (rule `(+ (? thing) 0) thing)
+    (rule `(* 1 (? thing)) thing)
+    (rule `(* (? thing) 1) thing)
+
+    (rule `(if (? predicate) (? exp) (? exp))
+          exp)
+
+    (rule `(let-values (((? names) (values (?? stuff))))
+             (?? body))
+          `(let ,(map list names stuff)
+             ,@body))
+
+    empty-let-rule
+
+    values-let-lifting-rule
+
+    (rule `(let ((?? bindings1)
+                 ((? name ,symbol?) (? exp))
+                 (?? bindings2))
+             (?? body))
+          (let ((occurrence-count (count-free-occurrences name body)))
+            (and (= 1 occurrence-count)
+                 `(let (,@bindings1
+                        ,@bindings2)
+                    ,@(replace-free-occurrences name exp body))))))))
+
+(define (hairy-optimize output)
+  (if (list? output)
+      ((lambda (x) x) ; This makes the last stage show up in the stack sampler
+       (strip-argument-types
+        (post-hair-tidy
+         (intraprocedural-dead-variable-elimination
+          (intraprocedural-de-alias
+           (sra-program
+            (sra-anf
+             (full-alpha-rename
+              (inline
+               (structure-definitions->vectors
+                output))))))))))
+      output))
+
+(define prettify-compiler-output hairy-optimize)

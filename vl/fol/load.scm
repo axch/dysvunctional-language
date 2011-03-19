@@ -17,5 +17,8 @@
    "type-check"
    "feedback-vertex-set"
    "post-processing"
+   "sra-anf"
    "srfi-11"
-   "hairball"))
+   "de-alias"
+   "dead-code"
+   "sra"))
