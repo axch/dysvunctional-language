@@ -1,19 +1,20 @@
                       FOL (First-Order Language)
                              Alexey Radul
 
-FOL is a simple-minded first-order language, which serves as the
-compilation target for VL and DVL.  FOL has several design
+FOL is a simple-minded, typed, first-order language, which serves as
+the compilation target for VL and DVL.  FOL has several design
 objectives:
   FOL must be a convenient target for code generation after flow analysis
   FOL must be compilable to efficient machine code
   FOL should not be unduly illegible
-In pursuit of these design objectives, FOL is a first-oder subset
-of MIT Scheme, supporting a limited range of constructs.
+In pursuit of these design objectives, FOL is a first-oder subset of
+MIT Scheme, augmented with type declarations, supporting a limited
+range of constructs.
 
-The present code collection includes an in-memory optimizing compiler
-from FOL to itself and a runtime library for executing FOL as MIT
-Scheme.  I have not yet experimented with compiling FOL to any other
-target language.
+The present code collection includes a FOL type checker, an in-memory
+optimizing compiler from FOL to itself, and a runtime library for
+executing FOL as MIT Scheme.  I have not yet experimented with
+compiling FOL to any other target language.
 
 There are two reasons why you might wish to read this document.  One
 is that you are trying to understand VL or DVL, and want to know what
@@ -24,6 +25,8 @@ in detail, and perhaps study an example of the standard first-order
 compilation techniques that the FOL optimizer uses.  In that case, you
 should read this README first, and then peruse the remainder of the
 source, which contains extensive internal explanation.
+
+Description of FOL
 
 A FOL program is a Scheme data structure.  This may have been parsed
 from a file or constructed directly in memory, as appropriate for the
@@ -49,6 +52,12 @@ expression = <data-var>
            | (let-values (((<data-var> <data-var> <data-var> ...) <expression>))
                <expression>)
            | (values <expression> <expression> <expression> ...)
+
+FOL procedure definitions must be annotated with the types of the
+arguments expected and the type of the result.  The annotation is
+achieved via the ARGUMENT-TYPES form in the grammar.  The shapes given
+in the form are taken to be parallel to the formal parameters, except
+that the last one refers to the type returned by the procedure.
 
 FOL distinguishes two types of variables, one for holding procedures
 and one for holding data; both are represented as Scheme symbols.  The
@@ -103,7 +112,7 @@ subexpressions, even across procedure boundaries.  TODO is the dead
 variable elimination good enough to make the same termination
 guarantees that laziness does?
 
-TODO Discuss FOL type declarations.
+
 
 TODO Discuss define-structure forms
 
