@@ -72,7 +72,7 @@
 (define empty-let-rule (rule `(let () (? body)) body))
 
 ;; This is safe assuming the program has been alpha renamed
-(define let-lifting-rule
+(define let-let-lifting-rule
   (rule `(let ((?? bindings1)
                ((? name ,symbol?) (let (? in-bindings) (? exp)))
                (?? bindings2))
@@ -90,6 +90,17 @@
         `(let ,in-bindings
            (let-values ((,names ,exp))
              ,@body))))
+
+(define singleton-inlining-rule
+  (rule `(let ((?? bindings1)
+               ((? name ,symbol?) (? exp))
+               (?? bindings2))
+           (?? body))
+        (let ((occurrence-count (count-free-occurrences name body)))
+          (and (= 1 occurrence-count)
+               `(let (,@bindings1
+                      ,@bindings2)
+                  ,@(replace-free-occurrences name exp body))))))
 
 (define post-hair-tidy
   (rule-simplifier
@@ -113,16 +124,7 @@
     empty-let-rule
 
     values-let-lifting-rule
-
-    (rule `(let ((?? bindings1)
-                 ((? name ,symbol?) (? exp))
-                 (?? bindings2))
-             (?? body))
-          (let ((occurrence-count (count-free-occurrences name body)))
-            (and (= 1 occurrence-count)
-                 `(let (,@bindings1
-                        ,@bindings2)
-                    ,@(replace-free-occurrences name exp body))))))))
+    singleton-inlining-rule)))
 
 (define (hairy-optimize output)
   (if (list? output)
