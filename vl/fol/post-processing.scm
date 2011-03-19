@@ -239,7 +239,7 @@
     (let walk ((program (filter not-inline? forms)))
       ((on-subexpressions
         (rule `((? name ,inline?) (?? args))
-              (walk (->let `(,(hash-table/get inline-map name #f) ,@args)))))
+              (->let `(,(walk (hash-table/get inline-map name #f)) ,@args))))
        program))))
 
 (define (full-alpha-rename program)
