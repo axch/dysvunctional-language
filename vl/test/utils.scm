@@ -61,7 +61,7 @@
          (vectors-fol ((fol-carefully structure-definitions->vectors)
                        raw-fol answer))
          (inlined ((fol-carefully inline) vectors-fol answer))
-         (alpha ((fol-carefully full-alpha-rename) inlined answer))
+         (alpha ((fol-carefully alpha-rename) inlined answer))
          (anf ((fol-carefully sra-anf) alpha answer))
          (scalars (sra-program anf)) ; SRA is not idempotent
          (aliases ((fol-carefully intraprocedural-de-alias) scalars answer))
@@ -100,9 +100,9 @@
 
 (define (tidy-non-soundness program)
   (cond ((not (equal? (fol-eval program)
-		      (fol-eval (tidy (full-alpha-rename program)))))
+		      (fol-eval (tidy (alpha-rename program)))))
 	 `(not (equal? ,(fol-eval program)
-		       (after-tidy ,(fol-eval (tidy (full-alpha-rename program)))))))
+		       (after-tidy ,(fol-eval (tidy (alpha-rename program)))))))
 	(else #f)))
 
 (define (for-each-example filename proc)

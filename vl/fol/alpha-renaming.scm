@@ -12,7 +12,7 @@
              names))
    env))
 
-(define (alpha-rename exp env)
+(define (alpha-rename-exp exp env)
   (cond ((assq exp env) => cdr)
         ((lambda-form? exp)
          (let* ((names (cadr exp))
@@ -22,23 +22,24 @@
                                   (cdr (assq name new-env)))
                                 names)))
            `(lambda ,new-names
-              ,@(alpha-rename body new-env))))
+              ,@(alpha-rename-exp body new-env))))
         ((let-form? exp)
-         (->let (alpha-rename (->lambda exp) env)))
+         (->let (alpha-rename-exp (->lambda exp) env)))
         ((definition? exp)
          ;; Assume the definiendum is already unique
          (reconstitute-definition
           `(define ,(definiendum exp)
-             ,(alpha-rename (definiens exp) env))))
+             ,(alpha-rename-exp (definiens exp) env))))
         ((pair? exp)
-         (cons (alpha-rename (car exp) env) (alpha-rename (cdr exp) env)))
+         (cons (alpha-rename-exp (car exp) env)
+               (alpha-rename-exp (cdr exp) env)))
         (else exp)))
 
-(define (full-alpha-rename program)
+(define (alpha-rename program)
   ;; TODO Fix the bookkeeping of what names the primitives rely on
   (define (needed-names primitive)
     (list (primitive-name primitive)))
-  (alpha-rename program
+  (alpha-rename-exp program
    (map (lambda (name)
           (cons name name))
         (delete-duplicates

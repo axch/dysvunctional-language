@@ -24,7 +24,7 @@
   (if (list? output)
       ((lambda (x) x) ; This makes tidying show up in the stack sampler
        (tidy
-        (full-alpha-rename
+        (alpha-rename
          (strip-argument-types
           (scalar-replace-aggregates
            (inline
@@ -315,7 +315,7 @@
           (intraprocedural-de-alias
            (sra-program
             (sra-anf
-             (full-alpha-rename
+             (alpha-rename
               (inline
                (structure-definitions->vectors
                 output))))))))))
