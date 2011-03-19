@@ -47,11 +47,11 @@
          (structure-map (make-eq-hash-table)))
     (hash-table/put-alist!
      structure-map
-     (map (lambda (name) (cons name 'type-constructor))
+     (map (lambda (name) (cons (symbol 'make- name) 'constructor))
           structure-names))
     (hash-table/put-alist!
      structure-map
-     (map (lambda (name) (cons (symbol 'make- name) 'constructor))
+     (map (lambda (name) (cons name 'type-constructor))
           structure-names))
     (hash-table/put-alist!
      structure-map
