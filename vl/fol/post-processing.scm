@@ -112,30 +112,33 @@
     (values structure-name? constructor? access-index accessor?)))
 
 (define (structure-definitions->vectors forms)
-  (receive (structure-name? constructor? access-index accessor?)
-           (structures-map forms)
-    (define fix-types
-      (on-subexpressions
-       (rule `(? type ,structure-name?) 'vector)))
-    (define (fix-body expr)
-      ((on-subexpressions
-        (rule `((? operator ,accessor?) (? operand))
-              `(vector-ref ,operand ,(access-index operator))))
-       ((on-subexpressions
-         (rule `(? name ,constructor?) 'vector))
-        expr)))
-    (define fix-definition
-      (rule `(define (? formals)
-               (argument-types (?? arg-types))
-               (?? body))
-            `(define ,formals
-               (argument-types ,@(fix-types arg-types))
-               ,@(fix-body body))))
-    (append
-     (map fix-definition
-          (filter (lambda (x) (not (structure-definition? x)))
-                  (except-last-pair forms)))
-     (list (fix-body (car (last-pair forms)))))))
+  (if (begin-form? forms)
+      (receive
+       (structure-name? constructor? access-index accessor?)
+       (structures-map forms)
+       (define fix-types
+         (on-subexpressions
+          (rule `(? type ,structure-name?) 'vector)))
+       (define (fix-body expr)
+         ((on-subexpressions
+           (rule `((? operator ,accessor?) (? operand))
+                 `(vector-ref ,operand ,(access-index operator))))
+          ((on-subexpressions
+            (rule `(? name ,constructor?) 'vector))
+           expr)))
+       (define fix-definition
+         (rule `(define (? formals)
+                  (argument-types (?? arg-types))
+                  (?? body))
+               `(define ,formals
+                  (argument-types ,@(fix-types arg-types))
+                  ,@(fix-body body))))
+       (append
+        (map fix-definition
+             (filter (lambda (x) (not (structure-definition? x)))
+                     (except-last-pair forms)))
+        (list (fix-body (car (last-pair forms))))))
+      forms))
 
 ;;;; Scalar replacement of aggregates
 
