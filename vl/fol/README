@@ -34,7 +34,12 @@ FOL follows the following grammar:
 program    = <expression>
            | (begin <definition> ... <expression>)
 
-definition = (define (<proc-var> <data-var> ...) <expression>)
+definition = (define (<proc-var> <data-var> ...)
+               (argument-types <shape> ...)
+               <expression>)
+
+shape      = real | bool | gensym | ()
+           | (cons <shape> <shape>) | (vector <shape> ...) | (values <shape> ...)
 
 expression = <data-var>
            | <number> | <boolean> | ()
