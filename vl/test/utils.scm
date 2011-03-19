@@ -67,7 +67,7 @@
          (aliases ((fol-carefully intraprocedural-de-alias) scalars answer))
          (variables ((fol-carefully intraprocedural-dead-variable-elimination)
                      aliases answer))
-         (tidied ((fol-carefully post-hair-tidy) variables answer)))
+         (tidied ((fol-carefully tidy) variables answer)))
     (check (equal? answer (fol-eval scalars)))
     (check-program-types vectors-fol)
     (check-program-types inlined)

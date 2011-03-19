@@ -102,7 +102,7 @@
                       ,@bindings2)
                   ,@(replace-free-occurrences name exp body))))))
 
-(define post-hair-tidy
+(define tidy
   (rule-simplifier
    (list
     (rule `(begin (? body)) body)
@@ -130,7 +130,7 @@
   (if (list? output)
       ((lambda (x) x) ; This makes the last stage show up in the stack sampler
        (strip-argument-types
-        (post-hair-tidy
+        (tidy
          (intraprocedural-dead-variable-elimination
           (intraprocedural-de-alias
            (sra-program
@@ -144,5 +144,3 @@
 (define prettify-compiler-output hairy-optimize)
 
 (define fol-optimize prettify-compiler-output)
-
-(define tidy post-hair-tidy)
