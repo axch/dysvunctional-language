@@ -50,6 +50,23 @@
 ;;; procedure formal parameters are not removed even if they may be
 ;;; dead in the body.
 
+(define (intraprocedural-dead-variable-elimination program)
+  (if (begin-form? program)
+      (append
+       (map
+        (rule `(define ((? name ,symbol?) (?? formals))
+                 (argument-types (?? stuff) (? return))
+                 (? body))
+              `(define (,name ,@formals)
+                 (argument-types ,@stuff ,return)
+                 ,(expression-dead-variable-elimination
+                   body (or (not (values-form? return))
+                            (map (lambda (x) #t) (cdr return))))))
+        (except-last-pair program))
+       (list (expression-dead-variable-elimination
+              (car (last-pair program)) #t)))
+      (expression-dead-variable-elimination program #t)))
+
 (define (expression-dead-variable-elimination expr live-out)
   (define (ignore? name)
     (eq? name '_))
@@ -60,6 +77,15 @@
   (define (difference vars1 vars2)
     (lset-difference eq? vars1 vars2))
   (define used? memq)
+  ;; The live-out parameter indicates which of the return values of
+  ;; this expression are needed by the context in whose tail position
+  ;; this expression is evaluated.  It will be #t unless the context
+  ;; is a LET-VALUES, in which case it will indicate which of those
+  ;; multiple values are needed.
+  ;; This is written in continuation passing style because the
+  ;; recursive call needs to return two things.  The win continuation
+  ;; accepts the transformed expression and the set of variables that
+  ;; it needs to compute its live results.
   (define (loop expr live-out win)
     (cond ((symbol? expr)
            (win expr (single-used-var expr)))
@@ -172,23 +198,6 @@
               (win (cons new-expr new-exprs)
                    (cons expr-used exprs-used))))))))
   (loop expr live-out (lambda (new-expr used-vars) new-expr)))
-
-(define (intraprocedural-dead-variable-elimination program)
-  (if (begin-form? program)
-      (append
-       (map
-        (rule `(define ((? name ,symbol?) (?? formals))
-                 (argument-types (?? stuff) (? return))
-                 (? body))
-              `(define (,name ,@formals)
-                 (argument-types ,@stuff ,return)
-                 ,(expression-dead-variable-elimination
-                   body (or (not (values-form? return))
-                            (map (lambda (x) #t) (cdr return))))))
-        (except-last-pair program))
-       (list (expression-dead-variable-elimination
-              (car (last-pair program)) #t)))
-      (expression-dead-variable-elimination program #t)))
 
 ;;; To do interprocedural dead variable elimination I have to proceed
 ;;; as follows:
