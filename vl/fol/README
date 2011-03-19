@@ -121,14 +121,101 @@ TODO Discuss define-structure forms
 
 Using FOL
 
+The standard use case of the VL and DVL compilers already invokes the
+FOL optimizer as a post-filter, and therefore emits fully optimized
+FOL.  There is at that point nothing more to do but read it or run it.
 
+(fol-eval <program>)
+  Evaluates a FOL program in the ambient MIT Scheme.  This has the
+  same effect as typing that data structure into the REPL (provided
+  the FOL runtime support is loaded).
 
-I also provide a FOL->FOL optimizing compiler called
-PRETTIFY-COMPILER-OUTPUT.  This has three main pieces, each of
-which can also be applied separately from the others: aggressive
-procedure inlining, aggressive replacement of aggregates with
-scalars, and elimination of unused or once-used variables.
-Details elsewhere.
+You can also watch the process happen, and otherwise manipulate
+the intermediate stages.
+
+(analyze-and-generate <vl-or-dvl>)
+  Performs flow analysis on the given VL or DVL program (both VL and
+  DVL define analyze-and-generate routines) and generates unoptimized
+  FOL that does the same job.
+
+(check-program-types <program>)
+  Verifies that the given FOL program is well typed.  If so, returns
+  the type returned by the entry point; if not, signals an appropriate
+  error.
+
+(fol-optimize <program>)
+  Completely optimizes the given FOL program and returns the result.
+  Optimization proceeds as a cascade of stages, each of which
+  is also available separately:
+
+(structure-definitions->vectors <program>)
+  Inlines and removes all DEFINE-STRUCTURE forms from the given FOL
+  program and returns the resulting FOL program.
+
+(inline <program>)
+  Inlines as many procedures in the given FOL program as possible and
+  returns the result.
+
+(full-alpha-rename <program>)
+  Alpha-renames the given program, so that no local variable binding
+  shadows any other and returns the result.
+
+  TODO FULL-ALPHA-RENAME errs if its input has any LET-VALUES or VALUES.
+
+(sra-anf <program>)
+  Converts the given program into (approximately) A-normal form, where
+  all procedure calls operate on variables or constants and returns
+  the result.  This is necessary for scalar replacement of aggregates,
+  below.
+
+  TODO SRA-ANF barfs if its input has any LET-VALUES or VALUES.
+
+(sra-program <program>)
+  Performs scalar replacement of aggregates and returns the resulting
+  program.  All possible data structure allocations (namely, instances
+  of CONS and VECTOR) are replaced by appropriate use of VALUES and
+  LET-VALUES.  This is the stage that first introduces them.  If the
+  input program is union-free, this will eliminate all consing except
+  for the construction of the final answer that is returned from the
+  entry point, should that be a structure.
+
+  SRA-PROGRAM expects its input to be in (approximate) A-normal form,
+  and preserves this feature.
+
+  TODO SRA-PROGRAM barfs if its input has any LET-VALUES or VALUES.
+
+(intraprocedural-de-alias <program>)
+  Eliminates aliases inside procedure bodies and returns the result.
+  An alias is a variable binding of the form (let ((x y)) ...); x
+  becomes replaced by y in the body of this binding.  This step is
+  very important because between them SRA-ANF and SRA-PROGRAM end up
+  generating lots of aliases.  As suggested by its name, this does not
+  do full interprocedural must-alias analysis, and does not detect
+  circumstances where some formal parameters to some procedure are
+  reliably always given the same value.  Preserves A-normal form.
+
+(intraprocedural-dead-variable-elimination <program>)
+  Eliminates dead code inside procedure bodies and returns the result.
+  Preserves A-normal form.
+
+(tidy <program>)
+  Performs other optimizations that do not have dedicated stages and
+  returns the result.  The most important for legibility thing this
+  step does is inline the definitions of variables that are used only
+  once.  This undoes some of the work of the A-normal form conversion,
+  but leads to much more legible output.
+
+In addition to the optimizer and its individual stages, FOL also
+provides a utility to remove the argument type declarations if
+desired.  The result will no longer type check (obviously), and will
+cease to be acceptable as input to several of the optimization stages,
+but will still execute, and may be easier to read.
+
+(strip-argument-types <program>)
+  Removes the argument type declarations from a FOL program and
+  returns the result (which can no longer be properly called a FOL
+  program).
+
 
 
 Obvious candidate target languages for further FOL compilation include

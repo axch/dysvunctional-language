@@ -459,3 +459,7 @@
       output))
 
 (define prettify-compiler-output hairy-optimize)
+
+(define fol-optimize prettify-compiler-output)
+
+(define tidy post-hair-tidy)
