@@ -103,28 +103,28 @@
             structure-definitions))))
     (define (structure-name? name)
       (hash-table/get structure-name-map name #f))
-    (define structure-names->vectors
-      (on-subexpressions
-       (rule `(? type ,structure-name?) 'vector)))
     (define (constructor? name)
       (hash-table/get constructor-map name #f))
-    (define constructors->vectors
-      (on-subexpressions
-       (rule `(? name ,constructor?) 'vector)))
-    (define (accessor? name)
+    (define (access-index name)
       (hash-table/get accessor-map name #f))
-    (define accessors->vectors
+    (define (accessor? name)
+      (not (not (access-index name))))
+    (define fix-types
       (on-subexpressions
-       (rule `((? operator ,accessor?) (? operand))
-             `(vector-ref ,operand ,(accessor? operator)))))
+       (rule `(? type ,structure-name?) 'vector)))
     (define (fix-body expr)
-      (accessors->vectors (constructors->vectors expr)))
+      ((on-subexpressions
+        (rule `((? operator ,accessor?) (? operand))
+              `(vector-ref ,operand ,(access-index operator))))
+       ((on-subexpressions
+         (rule `(? name ,constructor?) 'vector))
+        expr)))
     (define fix-definition
       (rule `(define (? formals)
                (argument-types (?? arg-types))
                (?? body))
             `(define ,formals
-               (argument-types ,@(structure-names->vectors arg-types))
+               (argument-types ,@(fix-types arg-types))
                ,@(fix-body body))))
     (append
      (map fix-definition
