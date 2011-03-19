@@ -13,7 +13,7 @@
 
 (for-each
  load-relative-compiled
- '("output-syntax"
+ '("syntax"
    "type-check"
    "feedback-vertex-set"
    "post-processing"
