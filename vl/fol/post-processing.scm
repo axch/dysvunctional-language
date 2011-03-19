@@ -83,7 +83,7 @@
   (and (pair? form)
        (eq? (car form) 'define-structure)))
 
-(define (structure-definitions->vectors forms)
+(define (structures-map forms)
   (let* ((structure-definitions (filter structure-definition? forms))
          (structure-names (map cadr structure-definitions))
          (structure-name-map
@@ -109,6 +109,11 @@
       (hash-table/get accessor-map name #f))
     (define (accessor? name)
       (not (not (access-index name))))
+    (values structure-name? constructor? access-index accessor?)))
+
+(define (structure-definitions->vectors forms)
+  (receive (structure-name? constructor? access-index accessor?)
+           (structures-map forms)
     (define fix-types
       (on-subexpressions
        (rule `(? type ,structure-name?) 'vector)))
