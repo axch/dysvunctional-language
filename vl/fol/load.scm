@@ -10,3 +10,12 @@
 
 (load-relative "../support/auto-compilation")
 (load-relative "../support/rule-system/load")
+
+(for-each
+ load-relative-compiled
+ '("../output-syntax"
+   "../fol-type-check"
+   "../feedback-vertex-set"
+   "../post-processing"
+   "../srfi-11"
+   "../hairball"))

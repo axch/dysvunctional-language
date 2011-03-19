@@ -32,12 +32,6 @@
    "code-generator"
    "primitives"
    "fol/load"
-   "output-syntax"
-   "fol-type-check"
-   "feedback-vertex-set"
-   "post-processing"
-   "srfi-11"
-   "hairball"
    "read"))
 
 (define (vl-run-file filename)
