@@ -42,7 +42,8 @@
 ;;; the body of the LET can be transformed.  LET-VALUES are analagous,
 ;;; but take parallel lists of canonical objects.  Because this is an
 ;;; intraprocedural alias elimination, procedure applications are
-;;; assume to always produce non-canonical objects.
+;;; assume to always produce non-canonical objects, and procedure
+;;; formal parameters are always assumed not to be aliases.
 
 (define (intraprocedural-de-alias program)
   (if (begin-form? program)
@@ -66,7 +67,7 @@
   ;; not bind a variable at all; that means that variable in not in
   ;; scope here.  For purposes of this process, (constant) numbers,
   ;; booleans, and empty-lists are legitimate things that variables
-  ;; may be aliases of.
+  ;; may be aliases of (and are always in scope).
   (define (augment-env env old-names aliases win)
     (define (acceptable-alias? alias)
       (and (not (non-alias? alias))
