@@ -1,30 +1,59 @@
 (declare (usual-integrations))
+;;;; Scalar Replacement of Aggregates (SRA)
 
-;;; To do SRA, I have to recur down the expressions, and for each
-;;; variable, keep track of its shape and the set of names assigned to
-;;; hold its meaningful values.  The shape is useful for transforming
-;;; accesses to variables, because the access can become returning the
-;;; pile of names associated with that portion of the value.  This
-;;; process is simplest to carry out in A-normal form or something,
-;;; where every subexpression has a definite name.  Of course, the
-;;; language which is the target of this must have multiple value
-;;; binding and multiple value returns.
+;;; Imagine a program like this:
+;;; (let ((pair (cons foo bar)))
+;;;   ... (car pair) ... (cdr pair)) ; pair does not escape
+;;; If something like this gets interpreted or compiled naively, it
+;;; will heap-allocate a cons cell, and then eventually spend time
+;;; garbage collecting it.  We could, however, have just put FOO and
+;;; BAR into local variables instead.  This is the objective of SRA.
 
-;;; In this scenario, a construction becomes a values of the appended
-;;; names for the things being constructed (which I have, because of
-;;; the ANF); an access becomes a values of an appropriate slice of
-;;; the names being accessed (which I again have because of the ANF);
-;;; A call becomes applied to the append of the names for each former
-;;; element in the call (ANF strikes again); a name becomes a values
-;;; of those names; a constant remains a constant; and a let becomes a
-;;; multi-value let (I can invent the names for that name at this
-;;; point); a definition becomes a definition taking the appropriately
-;;; larger number of arguments, whose internal names I can invent at
-;;; this point.  The toplevel is transformed without any initial name
-;;; bindings.  The way unions interact with this is that they may
-;;; cause the creation of types that are "primitive" as far as the SRA
-;;; process in concerned, while being "compound" in the actual
-;;; underlying code.
+;;; SRA replaces, whenever possible, the construction of data
+;;; structures with just returning their pieces with VALUES, and the
+;;; receipt of said data structures with catching said VALUES with
+;;; LET-VALUES.  If the program being SRA'd is union-free, this will
+;;; always be possible, until no data structures are left (except any
+;;; that are built just to be given to the outside world).
+
+;;; This implementation of SRA uses type information about the
+;;; procedures in FOL to transform both their definitions and their
+;;; call sites in synchrony.  The definition of a procedure is changed
+;;; to accept the pieces of input data structures as separate
+;;; arguments and to return the pieces the return as a multivalue
+;;; return.  Calls to a procedure are changed to supply the pieces of
+;;; input data structures as separete arguments.  Procedure bodies are
+;;; transformed by recursive descent to match.  This implementation of
+;;; SRA also depends on the input being in A-normal form as produced
+;;; by SRA-ANF (see sra-anf.scm).
+
+;;; The structure of the recursive descent is as follows: walk down
+;;; the expression (traversing LET bindings before LET bodies)
+;;; carrying a map from all bound variables to a) the shape that
+;;; variable used to have before SRA, and b) the set of names that
+;;; have been assigned to hold its useful pieces.  Return, from each
+;;; subexpression, the SRA'd subexpression together with the shape of
+;;; the value that subexpression used to return before SRA.
+
+;;; In this scenario, a construction (CONS or VECTOR form) becomes a
+;;; multivalue return of the appended names for the things being
+;;; constructed (which I have, because of the ANF); an access becomes
+;;; a multivalue return of an appropriate slice of the names being
+;;; accessed (which I again have because of the ANF); a call becomes
+;;; applied to the append of the names for each former element in the
+;;; call (ANF strikes again); a name becomes a multivalue return of
+;;; those assigned names; a constant remains a constant; and a let
+;;; becomes a multi-value let (whereupon I invent the names to hold
+;;; the pieces of the that used to be bound here); a definition
+;;; becomes a definition taking the appropriately larger number of
+;;; arguments, whose internal names I can invent at this point.  The
+;;; entry point is transformed without any initial name bindings.
+
+;;; When union types are added to FOL, the effect will be the addition
+;;; of types that are "primitive" as far as the SRA process in
+;;; concerned, while being "compound" in the actual underlying code.
+;;; Which are which will be decided by finding feedback vertex set in
+;;; the type reference graph.
 
 ;;; The grammar of FOL after ANF is
 ;;;
