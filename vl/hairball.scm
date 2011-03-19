@@ -215,7 +215,7 @@
                                   env (map car bindings)
                                   new-name-sets bind-shapes)
                        (lambda (new-body body-shape)
-                         (win (tidy-letrec
+                         (win (tidy-let-values
                                `(let-values ,(map list new-name-sets
                                                   new-bind-expressions)
                                   ,new-body))
@@ -349,7 +349,7 @@
     (rule `(values (? exp))
           exp))))
 
-(define tidy-letrec
+(define tidy-let-values
   (iterated
    (rule-list
     (list
@@ -622,7 +622,7 @@
                     (if (any (lambda (x) x) sub-expr-live-out)
                         (loop sub-expr sub-expr-live-out
                          (lambda (new-sub-expr sub-expr-used)
-                           (win (tidy-letrec
+                           (win (tidy-let-values
                                  `(let-values ((,(filter slot-used? names)
                                                 ,new-sub-expr))
                                     ,new-body))
