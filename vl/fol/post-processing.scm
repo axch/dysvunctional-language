@@ -34,7 +34,7 @@
 
 (define (compile-to-scheme program)
   (prettify-compiler-output
-   (analyze-and-generate-with-type-declarations program)))
+   (analyze-and-generate program)))
 
 ;;; Don't worry about the rule-based term-rewriting system that powers
 ;;; this.  That is its own pile of stuff, good for a few lectures of

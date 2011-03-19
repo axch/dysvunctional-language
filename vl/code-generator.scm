@@ -291,6 +291,3 @@
 
 (define (analyze-and-generate program)
   (generate program (analyze program)))
-
-(define (analyze-and-generate-with-type-declarations program)
-  (generate program (analyze program)))
