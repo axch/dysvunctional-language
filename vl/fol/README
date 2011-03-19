@@ -26,6 +26,7 @@ compilation techniques that the FOL optimizer uses.  In that case, you
 should read this README first, and then peruse the remainder of the
 source, which contains extensive internal explanation.
 
+
 Description of FOL
 
 A FOL program is a Scheme data structure.  This may have been parsed
@@ -118,6 +119,7 @@ variable elimination good enough to make the same termination
 guarantees that laziness does?
 
 TODO Discuss define-structure forms
+
 
 Using FOL
 
@@ -217,11 +219,39 @@ but will still execute, and may be easier to read.
   program).
 
 
+Studying FOL
 
-Obvious candidate target languages for further FOL compilation include
-machine code or C with the MIT Scheme compiler, or direct custom
-translation to C (or C--) for further processing with, e.g., gcc.  The
-latter activity may not be a trivial variation on the former, because
-in so doing the semantics of FOL may perhaps be fruitfully made
-somewhat different from Scheme semantics, particularly with respect to
-the numeric tower.
+Each of the stages listed above is in its own, like named source file,
+with extensive descriptions of what and how it does.  The full
+structure is assembled in post-processing.scm, which also contains a
+couple of stages that were not large and complicated enough to warrant
+files of their own.  The whole is supported by basic manipulations
+defined in syntax.scm.  The FOL compiler makes extensive use of a
+pattern matching and replacement system.  TODO Explain enough of it.
+
+
+Future of FOL
+
+There are two glaring gaps in the extant FOL system.  One is that it
+does not accept non-union-free programs.  At this moment this is OK
+because neither VL nor DVL compile non-union-free programs either, but
+in time this defect will need to be corrected.  Doing so will involve
+a reworking of the FOL type system and an updating of the SRA
+algorithm, but should not require any other major changes.
+
+The other glaring defect is the absence of a really fast execution
+engine for FOL.  Obvious candidates include compiling FOL to machine
+code or C with the MIT Scheme compiler, or direct custom translation
+to C (or C--) for further processing with, e.g., gcc.  The latter
+activity may not be a trivial variation on the former, because in so
+doing the semantics of FOL may perhaps be fruitfully made somewhat
+different from Scheme semantics, particularly with respect to the
+numeric tower.  This process will be undertaken as VL, DVL, and FOL
+scale to examples that are too slow to interpret.
+
+Finally, the current state of FOL is also open to some improvements
+that don't affect its interface, namely implementing interprocedural
+must alias analysis and dead code elimination, and better
+understanding the nature of what the rule-based tidier does to
+implement it directly in algorithms (as that will improve its
+asymptotic complexity).
