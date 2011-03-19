@@ -158,14 +158,15 @@
                       (error "Weird shape" shape)))))))))
 
 (define (sra-expression expr env lookup-type win)
-  ;; An SRA environment is not like a normal environment.  This
-  ;; environment maps every bound name to two things: the shape it had
-  ;; before SRA and the list of names that have been assigned by SRA
-  ;; to hold its primitive parts.  The list is parallel to the fringe
-  ;; of the shape.  Note that the compound structure (vector) has an
-  ;; empty list of primitive parts.
-  ;; The win continuation accepts the new, SRA'd expression, and the
-  ;; shape of the value it used to return before SRA.
+  ;; An SRA environment maps every bound name to two things: the shape
+  ;; it had before SRA and the list of names that have been assigned
+  ;; by SRA to hold its primitive parts.  The list is parallel to the
+  ;; fringe of the shape.  Note that the compound structure (vector)
+  ;; has an empty list of primitive parts.
+  ;; This is written in continuation passing style because I need two
+  ;; pieces of information from the recursive call.  The win
+  ;; continuation accepts the new, SRA'd expression, and the shape of
+  ;; the value it used to return before SRA.
   (define (lookup-return-type thing)
     (return-type (lookup-type thing)))
   (define (lookup-arg-types thing)
@@ -183,7 +184,7 @@
           ((if-form? expr)
            (loop (cadr expr) env
             (lambda (new-pred pred-shape)
-              ;; TODO Pred-shape better be a boolean
+              (assert (eq? 'bool pred-shape))
               (loop (caddr expr) env
                (lambda (new-cons cons-shape)
                  (loop (cadddr expr) env
