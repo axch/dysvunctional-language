@@ -1,6 +1,49 @@
 (declare (usual-integrations))
 ;;;; Alias elimination
 
+;;; Alias elimination is the process of removing variables that can be
+;;; statically determined to always contain the same values as other
+;;; variables, or as constants.  This can also be called constant
+;;; propagation and copy propagation.  Alias elimination is very
+;;; important in compiling FOL, because between them the A-normal form
+;;; conversion and the subsequent scalar replacement of aggregates
+;;; introduce a huge number of variables, many of which end up being
+;;; aliases.
+
+;;; I only do intraprocedural alias elimination.  Interprocedural
+;;; alias elimination is substantially hairier.  I will probably need
+;;; it eventually, but I can do without for now.
+
+;;; Intraprocedural alias elimination is a structural recursion over
+;;; the code, walking LET bindings before LET bodies.  The recursion
+;;; carries down an environment mapping every bound name to the
+;;; canonical object of which it is an alias (itself, in the case of
+;;; non-aliases).  This environment is also used to detect when some
+;;; name is not in scope somewhere.  The recursive call returns the
+;;; de-aliased subexpression and also the canonical object of which
+;;; the return value of the subexpression is an alias, or a sentinel
+;;; if the subexpression does not return such an object (for example,
+;;; procedure calls or IF statements with sufficiently different
+;;; branches).  The canonical object may be a list to handle multiple
+;;; value returns and corresponding parallel bindings.
+
+;;; In this setup, a constant becomes itself and is its own canonical
+;;; object.  A variable reference becomes and forwards its canonical
+;;; object (which may be itself if the variable is not an alias).
+;;; Multiple value returns aggregate lists of canonical objects.  IF
+;;; forms intersect the canonical object lists of their branches: if
+;;; different branches may return different things in the same slot,
+;;; that slot is marked as not canonical (meaning whatever value it
+;;; will be bound to is not an alias).  LET forms process their
+;;; binding form first.  If the binding form is a canonical object
+;;; that is in scope in the whole LET expression, then the bound
+;;; variable is an alias to that object and can be so marked;
+;;; otherwise the variable is not an alias.  This being determined,
+;;; the body of the LET can be transformed.  LET-VALUES are analagous,
+;;; but take parallel lists of canonical objects.  Because this is an
+;;; intraprocedural alias elimination, procedure applications are
+;;; assume to always produce non-canonical objects.
+
 (define (de-alias-expression expr env)
   ;; An alias environment is not like a normal environment.  This
   ;; environment maps every bound name to whether it is an alias or
@@ -64,7 +107,6 @@
           ((if-form? expr)
            (loop (cadr expr) env
             (lambda (new-pred pred-names)
-              ;; TODO Pred-shape better be a boolean
               (loop (caddr expr) env
                (lambda (new-cons cons-names)
                  (loop (cadddr expr) env
@@ -159,6 +201,3 @@
         (except-last-pair program))
        (list (de-alias-expression (car (last-pair program)) '())))
       (de-alias-expression program '())))
-
-;;; I don't (yet) even want to think about what it would take to do a
-;;; good job of interprocedural de-aliasing.
