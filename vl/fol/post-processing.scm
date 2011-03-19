@@ -117,16 +117,20 @@
       (on-subexpressions
        (rule `((? operator ,accessor?) (? operand))
              `(vector-ref ,operand ,(accessor? operator)))))
+    (define (fix-body expr)
+      (accessors->vectors (constructors->vectors expr)))
     (define fix-definition
       (rule `(define (? formals)
                (argument-types (?? arg-types))
                (?? body))
             `(define ,formals
                (argument-types ,@(structure-names->vectors arg-types))
-               ,@(accessors->vectors (constructors->vectors body)))))
-    (map fix-definition
-         (filter (lambda (x) (not (structure-definition? x)))
-                 forms))))
+               ,@(fix-body body))))
+    (append
+     (map fix-definition
+          (filter (lambda (x) (not (structure-definition? x)))
+                  (except-last-pair forms)))
+     (list (fix-body (car (last-pair forms)))))))
 
 ;;;; Scalar replacement of aggregates
 
