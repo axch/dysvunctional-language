@@ -59,6 +59,11 @@ achieved via the ARGUMENT-TYPES form in the grammar.  The shapes given
 in the form are taken to be parallel to the formal parameters, except
 that the last one refers to the type returned by the procedure.
 
+The FOL type system does not at present admit user-specified types,
+union types, or recursive types.  This will be changed when FOL is
+extended to accept the results of compiliing non-union-free VL or DVL
+programs.
+
 FOL distinguishes two types of variables, one for holding procedures
 and one for holding data; both are represented as Scheme symbols.  The
 procedure variables have global scope, must be globally unique, and
@@ -112,9 +117,11 @@ subexpressions, even across procedure boundaries.  TODO is the dead
 variable elimination good enough to make the same termination
 guarantees that laziness does?
 
-
-
 TODO Discuss define-structure forms
+
+Using FOL
+
+
 
 I also provide a FOL->FOL optimizing compiler called
 PRETTIFY-COMPILER-OUTPUT.  This has three main pieces, each of
