@@ -83,8 +83,8 @@
   (and (pair? form)
        (eq? (car form) 'define-structure)))
 
-(define (structures-map forms)
-  (let* ((structure-definitions (filter structure-definition? forms))
+(define (structures-map program)
+  (let* ((structure-definitions (filter structure-definition? program))
          (structure-names (map cadr structure-definitions))
          (structure-name-map
           (alist->eq-hash-table
@@ -111,11 +111,11 @@
       (not (not (access-index name))))
     (values structure-name? constructor? access-index accessor?)))
 
-(define (structure-definitions->vectors forms)
-  (if (begin-form? forms)
+(define (structure-definitions->vectors program)
+  (if (begin-form? program)
       (receive
        (structure-name? constructor? access-index accessor?)
-       (structures-map forms)
+       (structures-map program)
        (define fix-types
          (on-subexpressions
           (rule `(? type ,structure-name?) 'vector)))
@@ -136,9 +136,9 @@
        (append
         (map fix-definition
              (filter (lambda (x) (not (structure-definition? x)))
-                     (except-last-pair forms)))
-        (list (fix-body (car (last-pair forms))))))
-      forms))
+                     (except-last-pair program)))
+        (list (fix-body (car (last-pair program))))))
+      program))
 
 ;;;; Scalar replacement of aggregates
 
