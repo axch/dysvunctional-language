@@ -220,7 +220,7 @@
 ;;;    - A VALUES maps its subexpressions to the desired outputs
 ;;;    - A LET is transparent on the way down, but if the variable it
 ;;;      is binding is desired as an input to its body, it recurs on
-;;;      its expression desiring the one output.  Whatever input come
+;;;      its expression desiring the one output.  Whatever inputs come
 ;;;      up need to be spliced in to the answers in the map coming from
 ;;;      the body.
 ;;;    - A LET-VALUES is analagous, but may choose to desire a subset
