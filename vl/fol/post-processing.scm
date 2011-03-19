@@ -182,66 +182,7 @@
 
 (define strip-argument-types
   (rule-simplifier (list remove-defn-argument-types)))
-;;;; Inlining procedure definitions
-
-;;; Every procedure that does not call itself can be inlined.  To do
-;;; that, just replace calls to that procedure with the corresponding
-;;; LET form.
-
-(define (inline forms)
-  (define (non-self-calling? defn)
-    (not (occurs-in-tree? (definiendum defn) (definiens defn))))
-  (define (inline-defn defn forms)
-    (let ((defn (remove-defn-argument-types defn)))
-      (let ((name (definiendum defn))
-            (replacement (definiens defn)))
-        ((on-subexpressions
-          (rule `(,name (?? args))
-                (->let `(,replacement ,@args))))
-         forms))))
-  (let loop ((forms forms))
-    (let scan ((done '()) (forms forms))
-      (cond ((null? forms) (reverse done))
-            ((and (definition? (car forms))
-                  (non-self-calling? (car forms)))
-             (let ((defn (car forms))
-                   (others (append (reverse done) (cdr forms))))
-               ;; Can insert other inlining restrictions here
-               (loop (inline-defn defn others))))
-            (else (scan (cons (car forms) done) (cdr forms)))))))
-
-(define (inline forms)
-  (let* ((definitions (filter definition? forms))
-         (defn-map (alist->eq-hash-table
-                    (map (lambda (defn)
-                           (cons (definiendum defn) defn))
-                         definitions)))
-         (call-graph
-          (map cons definitions
-               (map (lambda (defn)
-                      (delete-duplicates
-                       (filter-map-tree (lambda (leaf)
-                                          (hash-table/get defn-map leaf #f))
-                                        (definiens defn))
-                       eq?))
-                    definitions)))
-         (non-inlinees (feedback-vertex-set call-graph))
-         (inlinees (lset-difference eq? definitions non-inlinees))
-         (inline-map
-          (alist->eq-hash-table
-           (map cons (map definiendum inlinees)
-                (map definiens (map remove-defn-argument-types inlinees))))))
-    (define (inline? name)
-      (hash-table/get inline-map name #f))
-    (define (not-inline? form)
-      (or (not (definition? form))
-          (not (inline? (definiendum form)))))
-    (let walk ((program (filter not-inline? forms)))
-      ((on-subexpressions
-        (rule `((? name ,inline?) (?? args))
-              (->let `(,(walk (hash-table/get inline-map name #f)) ,@args))))
-       program))))
-
+
 (define (full-alpha-rename program)
   ;; TODO Fix the bookkeeping of what names the primitives rely on
   (define (needed-names primitive)

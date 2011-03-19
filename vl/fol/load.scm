@@ -17,6 +17,7 @@
    "structs"
    "type-check"
    "feedback-vertex-set"
+   "inline"
    "post-processing"
    "sra-anf"
    "srfi-11"
