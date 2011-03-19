@@ -198,14 +198,15 @@ the intermediate stages.
 
 (intraprocedural-dead-variable-elimination <program>)
   Eliminates dead code inside procedure bodies and returns the result.
-  Preserves A-normal form.
+  As suggested by the name, this does not detect circumstances where
+  some variable is passed around from one user-defined procedure to
+  another but then never used.  Preserves A-normal form.
 
 (tidy <program>)
   Performs other optimizations that do not have dedicated stages and
-  returns the result.  The most important for legibility thing this
-  step does is inline the definitions of variables that are used only
-  once.  This undoes some of the work of the A-normal form conversion,
-  but leads to much more legible output.
+  returns the result.  The most important of them for legibility is to
+  inline the definitions of variables that are used only once.  This
+  breaks A-normal form, but leads to much more legible output.
 
 In addition to the optimizer and its individual stages, FOL also
 provides a utility to remove the argument type declarations if
