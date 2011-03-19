@@ -67,109 +67,6 @@
 ;;; subexpression of the input expression repeatedly until the result
 ;;; settles down.
 
-;;;; Scalar replacement of aggregates
-
-;;; If some procedure accepts a structured argument, it can be
-;;; converted into accepting the fields of that argument instead, as
-;;; long as all the call sites are changed to pass the fields instead
-;;; of the structure at the same time.  This piece of code does this
-;;; in a way that is local to the definitions and call sites --- the
-;;; new procedure definition just reconstructs the structure from the
-;;; passed arguments, and the new call sites just extract the fields
-;;; from the structure they would have passed.  However, once this
-;;; tranformation is done, further local simplifications done by TIDY
-;;; will have the effect of eliminating those structures completely.
-
-;;; This process relies on the code generator having emitted argument
-;;; type declarations.  If there are no argument type declarations,
-;;; nothing will happen.
-
-;;; The key trick in how this is done is SRA-DEFINITION-RULE, which
-;;; pattern matches on a definition with an argument type declaration,
-;;; and, if the definition accepted a structured argument, returns a
-;;; rewritten definition and a rule for transforming the call sites.
-
-(define (cons-or-vector? thing)
-  (or (eq? thing 'cons)
-      (eq? thing 'vector)))
-
-(define sra-definition-rule
-  (rule
-   `(define ((? name) (?? formals1) (? formal) (?? formals2))
-      (argument-types (?? arg-types))
-      (?? body))
-   (let ((formal-shape (list-ref arg-types (length formals1))))
-     (and (pair? formal-shape)
-          (cons-or-vector? (car formal-shape))
-          (let ((constructor (car formal-shape))
-                (slot-shapes (cdr formal-shape))
-                (stuff1 (take arg-types (length formals1)))
-                (stuff2 (drop arg-types (+ 1 (length formals1)))))
-            (let ((slot-names (map (lambda (shape)
-                                     (make-name (symbol formal '-)))
-                                   slot-shapes))
-                  (arg-index (length formals1))
-                  (num-slots (length slot-shapes))
-                  (arg-count (+ (length formals1) 1 (length formals2))))
-              (cons (sra-call-site-rule
-                     name constructor arg-index num-slots arg-count)
-                    `(define (,name ,@formals1 ,@slot-names ,@formals2)
-                       (argument-types ,@stuff1 ,@slot-shapes ,@stuff2)
-                       (let ((,formal (,constructor ,@slot-names)))
-                         ,@body)))))))))
-
-(define (sra-call-site-rule
-         operation-name constructor arg-index num-slots arg-count)
-  (rule
-   `(,operation-name (?? args))
-   (and (= (length args) arg-count)
-        (let ((args1 (take args arg-index))
-              (arg (list-ref args arg-index))
-              (args2 (drop args (+ arg-index 1)))
-              (temp-name (make-name 'temp-)))
-          `(let ((,temp-name ,arg))
-             (,operation-name
-              ,@args1
-              ,@(call-site-replacement temp-name constructor num-slots)
-              ,@args2))))))
-
-(define (call-site-replacement temp-name constructor-type count)
-  (if (eq? 'cons constructor-type)
-      `((car ,temp-name) (cdr ,temp-name))
-      (map (lambda (index)
-             `(vector-ref ,temp-name ,index))
-           (iota count))))
-
-;;; The actual SCALAR-REPLACE-AGGREGATES procedure just tries
-;;; SRA-DEFINITION-RULE on all the possible definitions as many times
-;;; as it does something.  Whenever SRA-DEFINITION-RULE rewrites a
-;;; definition, SCALAR-REPLACE-AGGREGATES applies the resulting
-;;; sra-call-site-rule to rewrite all the call sites.  The only tricky
-;;; bit is to make sure not to apply the sra-call-site-rule to the
-;;; formal parameter list of the definition just rewritten, because it
-;;; will match it and screw it up.
-
-(define (scalar-replace-aggregates forms)
-  (define (do-sra-definition sra-result done rest)
-    (let ((sra-call-site-rule (car sra-result))
-          (replacement-form (cdr sra-result)))
-      (let ((sra-call-sites (on-subexpressions sra-call-site-rule)))
-        (let ((fixed-replacement-form
-               `(,(car replacement-form) ,(cadr replacement-form)
-                 ,(caddr replacement-form)
-                 ,(sra-call-sites (cadddr replacement-form))))
-              (fixed-done (sra-call-sites (reverse done)))
-              (fixed-rest (sra-call-sites rest)))
-          (append fixed-done (list fixed-replacement-form) fixed-rest)))))
-  (let loop ((forms forms))
-    (let scan ((done '()) (forms forms))
-      (if (null? forms)
-          (reverse done)
-          (let ((sra-attempt (sra-definition-rule (car forms))))
-            (if (not (eq? (car forms) sra-attempt))
-                (loop (do-sra-definition sra-attempt done (cdr forms)))
-                (scan (cons (car forms) done) (cdr forms))))))))
-
 ;;;; Term-rewriting tidier
 
 (define empty-let-rule (rule `(let () (? body)) body))
@@ -208,19 +105,6 @@
    (rule `(if (? predicate) (? exp) (? exp))
          exp)))
 
-(define intraprocedural-sra-rule
-  (rule `(let ((?? bindings1)
-               ((? name ,symbol?) ((? constructor ,cons-or-vector?) (?? args)))
-               (?? bindings2))
-           (?? body))
-        (let ((slot-names (map (lambda (arg)
-                                 (make-name (symbol name '-)))
-                               args)))
-          `(let (,@bindings1
-                 ,@(map list slot-names args)
-                 ,@bindings2)
-             ,@(replace-free-occurrences name `(,constructor ,@slot-names) body)))))
-
 ;; This is safe assuming the program has been alpha renamed
 (define intraprocedural-variable-elimination-rule
   (rule `(let ((?? bindings1)
@@ -253,7 +137,6 @@
     cheap-rules
     (list
      intraprocedural-variable-elimination-rule
-     intraprocedural-sra-rule
      let-lifting-rule))))
 
 (define tidy
@@ -261,7 +144,6 @@
    (in-order
     (top-down (rule-list cheap-rules))
     (on-subexpressions intraprocedural-variable-elimination-rule)
-    (on-subexpressions intraprocedural-sra-rule)
     (on-subexpressions let-lifting-rule))))
 
 
