@@ -55,15 +55,29 @@
 ;;; Which are which will be decided by finding feedback vertex set in
 ;;; the type reference graph.
 
-;;; The grammar of FOL after ANF is
+;;; The FOL grammar accepted by the SRA algorithm replaces the
+;;; standard FOL <expression> with
 ;;;
-;;; simple-expression = <data-var>
-;;;                   | <number>
+;;; simple-expression = <data-var> | <number> | <boolean> | ()
 ;;;
-;;; expression = <simple-expression>
+;;; construction = (cons <simple-expression> <simple-expression>)
+;;;              | (vector <simple-expression> ...)
+;;;
+;;; access = (car <simple-expression>)
+;;;        | (cdr <simple-expression>)
+;;;        | (vector-ref <simple-expression> <integer>)
+;;;
+;;; expression = <simple-expression> | <construction> | <access>
 ;;;            | (<proc-var> <simple-expression> ...)
 ;;;            | (if <expression> <expression> <expression>)
 ;;;            | (let ((<data-var> <expression>) ...) <expression>)
+;;;
+;;; CONS, CAR, CDR, VECTOR, and VECTOR-REF are no longer considered
+;;; acceptable <proc-var>s.  This grammar is consistent with the
+;;; output of SRA-ANF, without VALUES or LET-VALUES.  The fact that
+;;; SRA does not handle multiple value returns is fixable, but also ok
+;;; because the VL and DVL code generators do not emit them, and SRA
+;;; is the stage that introduces them.
 
 (define (empty-env) '())
 (define (augment-env env old-names name-sets shapes)
