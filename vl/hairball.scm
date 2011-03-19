@@ -343,33 +343,6 @@
 ;;; contain a primitive type of object.  CONS, CAR, CDR, VECTOR, and
 ;;; VECTOR-REF do not occur.
 
-(define post-sra-tidy
-  (rule-simplifier
-   (list
-    (rule `(let-values () (? body))
-          body)
-    (rule `(let-values ((?? bindings1)
-                        (() (? exp))
-                        (?? bindings2))
-             (?? body))
-          `(let-values (,@bindings1
-                        ,@bindings2)
-             ,@body))
-    (rule `(values (? exp))
-          exp)
-    (rule `(let-values ((? binding1)
-                        (? binding2)
-                        (?? bindings))
-             (?? body))
-          `(let-values (,binding1)
-             (let-values (,binding2
-                          ,@bindings)
-               ,@body)))
-    (rule `(let-values ((((? name ,symbol?)) (? exp)))
-             (?? body))
-          `(let ((,name ,exp))
-             ,@body)))))
-
 (define tidy-values
   (rule-simplifier
    (list
