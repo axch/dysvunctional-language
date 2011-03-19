@@ -71,54 +71,6 @@
 
 (define empty-let-rule (rule `(let () (? body)) body))
 
-(define cheap-rules
-  (list
-   empty-let-rule
-   (rule `(begin (? body)) body)
-   (rule `(car (cons (? a) (? d))) a)
-   (rule `(cdr (cons (? a) (? d))) d)
-   (rule `(vector-ref (vector (?? stuff)) (? index ,integer?))
-         (list-ref stuff index))
-
-   (rule `(car (let (? bindings) (? body)))
-         `(let ,bindings (car ,body)))
-   (rule `(cdr (let (? bindings) (? body)))
-         `(let ,bindings (cdr ,body)))
-   (rule `(vector-ref (let (? bindings) (? body)) (? index ,integer?))
-         `(let ,bindings (vector-ref ,body ,index)))
-
-   (rule `(car (if (? predicate) (? consequent) (? alternate)))
-         `(if ,predicate (car ,consequent) (car ,alternate)))
-   (rule `(cdr (if (? predicate) (? consequent) (? alternate)))
-         `(if ,predicate (cdr ,consequent) (cdr ,alternate)))
-   (rule `(vector-ref (if (? predicate) (? consequent) (? alternate)) (? index ,integer?))
-         `(if ,predicate (vector-ref ,consequent ,index)
-              (vector-ref ,alternate ,index)))
-
-   (rule `(* 0 (? thing)) 0)
-   (rule `(* (? thing) 0) 0)
-   (rule `(+ 0 (? thing)) thing)
-   (rule `(+ (? thing) 0) thing)
-   (rule `(* 1 (? thing)) thing)
-   (rule `(* (? thing) 1) thing)
-
-   (rule `(if (? predicate) (? exp) (? exp))
-         exp)))
-
-;; This is safe assuming the program has been alpha renamed
-(define intraprocedural-variable-elimination-rule
-  (rule `(let ((?? bindings1)
-               ((? name ,symbol?) (? exp))
-               (?? bindings2))
-           (?? body))
-        (let ((occurrence-count (count-free-occurrences name body)))
-          (and (or (= 0 occurrence-count)
-                   (= 1 occurrence-count)
-                   (constructors-only? exp))
-               `(let (,@bindings1
-                      ,@bindings2)
-                  ,@(replace-free-occurrences name exp body))))))
-
 ;; This is safe assuming the program has been alpha renamed
 (define let-lifting-rule
   (rule `(let ((?? bindings1)
@@ -130,22 +82,6 @@
                  (,name ,exp)
                  ,@bindings2)
              ,@body))))
-
-(define tidy
-  (rule-simplifier
-   (append
-    cheap-rules
-    (list
-     intraprocedural-variable-elimination-rule
-     let-lifting-rule))))
-
-(define tidy
-  (iterated
-   (in-order
-    (top-down (rule-list cheap-rules))
-    (on-subexpressions intraprocedural-variable-elimination-rule)
-    (on-subexpressions let-lifting-rule))))
-
 
 ;; This is safe assuming the program has been alpha renamed
 (define values-let-lifting-rule
