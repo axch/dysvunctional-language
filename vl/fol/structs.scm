@@ -34,19 +34,27 @@
 
 ;;; A structures map needs to say, for every name, whether it is a
 ;;; constructor, an accessor, a type constructor, or not; and if an
-;;; accessor, needs to give the index of the field accessed.
+;;; accessor, needs to give the index of the field accessed.  I
+;;; implement this as a procedure that, when given a name, returns the
+;;; symbol CONSTRUCTOR if it is a constructor, the symbol
+;;; TYPE-CONSTRUCTOR if is a type constructor, the integer field index
+;;; accessed if it is an accessor, and #f otherwise.  The procedure
+;;; in question is backed by a hash table.
 
 (define (structures-map program)
   (let* ((structure-definitions (filter structure-definition? program))
          (structure-names (map cadr structure-definitions))
-         (structure-name-map
-          (alist->eq-hash-table
-           (map (lambda (name) (cons name #t)) structure-names))))
+         (structure-map (make-eq-hash-table)))
     (hash-table/put-alist!
-     structure-name-map
-     (map (lambda (name) (cons (symbol 'make- name) #t)) structure-names))
+     structure-map
+     (map (lambda (name) (cons name 'type-constructor))
+          structure-names))
     (hash-table/put-alist!
-     structure-name-map
+     structure-map
+     (map (lambda (name) (cons (symbol 'make- name) 'constructor))
+          structure-names))
+    (hash-table/put-alist!
+     structure-map
      (append-map
       (lambda (defn)
         (map (lambda (field index)
@@ -55,5 +63,5 @@
              (iota (length (cddr defn)))))
       structure-definitions))
     (define (classify name)
-      (hash-table/get structure-name-map name #f))
+      (hash-table/get structure-map name #f))
     classify))
