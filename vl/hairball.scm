@@ -168,6 +168,40 @@
          (caddr old-shape))
         ((eq? (car access-form) 'vector-ref)
          (list-ref (cdr old-shape) (caddr access-form)))))
+(define (reconstruct-pre-sra-shape new-expr shape)
+  (if (primitive? shape)
+      new-expr
+      (let ((piece-names (invent-names-for-parts 'receipt shape)))
+        (tidy-let-values
+         `(let-values ((,piece-names ,new-expr))
+            ,(let walk ((shape shape)
+                        (names piece-names)
+                        (win (lambda (shape new-names)
+                               (assert (null? new-names))
+                               shape)))
+               (cond ((primitive-shape? shape)
+                      (win (car names) (cdr names)))
+                     ((eq? 'cons (car shape))
+                      (walk (cadr shape) names
+                       (lambda (car-expr names-left)
+                         (walk (caddr shape) names-left
+                          (lambda (cdr-expr names-left)
+                            (win `(cons ,car-expr ,cdr-expr)
+                                 names-left))))))
+                     ((eq? 'vector (car shape))
+                      (let walk* ((args-left (cdr shape))
+                                  (names-left names)
+                                  (win (lambda (new-args names-left)
+                                         (win `(vector ,@new-args) names-left))))
+                        (if (null? args-left)
+                            (win '() names-left)
+                            (walk (car args-left) names-left
+                             (lambda (new-arg names-left)
+                               (walk* (cdr args-left) names-left
+                                (lambda (new-args names-left)
+                                  (win (cons new-arg new-args) names-left))))))))
+                     (else
+                      (error "Weird shape" shape)))))))))
 
 (define (sra-expression expr env lookup-type win)
   ;; An SRA environment is not like a normal environment.  This
@@ -298,11 +332,8 @@
 (define (sra-program program)
   (let ((lookup-type (type-map program)))
     (define (sra-entry-point expression)
-      ;; TODO Reconstruct the shape that the entry point was supposed
-      ;; to return?
-      (sra-expression expression (empty-env) lookup-type
-       (lambda (new-entry-point orig-shape)
-         new-entry-point)))
+      (sra-expression
+       expression (empty-env) lookup-type reconstruct-pre-sra-shape))
     (if (begin-form? program)
         (append
          (map
