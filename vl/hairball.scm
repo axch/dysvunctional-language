@@ -182,6 +182,8 @@
                                shape)))
                (cond ((primitive-shape? shape)
                       (win (car names) (cdr names)))
+                     ((null? shape)
+                      (win '() names))
                      ((eq? 'cons (car shape))
                       (walk (cadr shape) names
                        (lambda (car-expr names-left)
@@ -223,6 +225,8 @@
                 (get-shape expr env)))
           ((number? expr)
            (win `(values ,expr) 'real))
+          ((boolean? expr)
+           (win `(values ,expr) 'bool))
           ((null? expr)
            (win `(values) '()))
           ((if-form? expr)
@@ -442,12 +446,15 @@
   ;; not; the latter case is represented by binding the variable to
   ;; itself.  It is important to know when such an environment does
   ;; not bind a variable at all; that means that variable in not in
-  ;; scope here.  For purposes of this process, (constant) numbers are
-  ;; legitimate things that variables may be aliases of.
+  ;; scope here.  For purposes of this process, (constant) numbers,
+  ;; booleans, and empty-lists are legitimate things that variables
+  ;; may be aliases of.
   (define (augment-env env old-names aliases win)
     (define (acceptable-alias? alias)
       (and (not (non-alias? alias))
            (or (number? alias)
+               (boolean? alias)
+               (null? alias)
                (lookup alias env))))
     (let ((aliases (if (non-alias? aliases)
                        (make-list (length old-names) the-non-alias)
@@ -484,6 +491,10 @@
                  (win (cdr alias-binding) (list (cdr alias-binding)))
                  (error "Trying to de-alias an unbound variable" expr env))))
           ((number? expr)
+           (win expr (list expr)))
+          ((boolean? expr)
+           (win expr (list expr)))
+          ((null? expr)
            (win expr (list expr)))
           ((values-form? expr)
            (loop* (cdr expr) env
@@ -605,6 +616,10 @@
     (cond ((symbol? expr)
            (win expr (single-used-var expr)))
           ((number? expr)
+           (win expr (no-used-vars)))
+          ((boolean? expr)
+           (win expr (no-used-vars)))
+          ((null? expr)
            (win expr (no-used-vars)))
           ((if-form? expr)
            (let ((predicate (cadr expr))
