@@ -173,15 +173,6 @@
 ;;; Getting rid the argument-types declarations once we're done with
 ;;; them is easy.
 
-(define remove-defn-argument-types
-  (rule `(define (? formals)
-           (argument-types (?? etc))
-           (?? body))
-        `(define ,formals
-           ,@body)))
-
-(define strip-argument-types
-  (rule-simplifier (list remove-defn-argument-types)))
 
 (define (full-alpha-rename program)
   ;; TODO Fix the bookkeeping of what names the primitives rely on

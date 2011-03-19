@@ -22,6 +22,16 @@
          `(define (,name ,@names)
             ,@body))))
 
+(define remove-defn-argument-types
+  (rule `(define (? formals)
+           (argument-types (?? etc))
+           (?? body))
+        `(define ,formals
+           ,@body)))
+
+(define strip-argument-types
+  (rule-simplifier (list remove-defn-argument-types)))
+
 (define (constructors-only? exp)
   (or (symbol? exp)
       (constant? exp)
