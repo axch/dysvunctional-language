@@ -247,7 +247,7 @@
                   (argument-types (?? args) (? return))
                   (? body))
                (hash-table/put!
-                type-map name (function-type (map cadr args) return)))
+                type-map name (function-type args return)))
          (cdr program))
         'ok)
     (define (lookup-type name)
@@ -265,18 +265,16 @@
         (append
          (map
           (rule `(define ((? name ,symbol?) (?? formals))
-                   (argument-types (?? args) (? return))
+                   (argument-types (?? arg-shapes) (? return))
                    (? body))
-                (let* ((arg-shapes (map cadr args))
-                       (new-name-sets
+                (let* ((new-name-sets
                         (map invent-names-for-parts formals arg-shapes))
                        (env (augment-env
                              (empty-env) formals new-name-sets arg-shapes))
                        (new-names (apply append new-name-sets)))
                   `(define (,name ,@new-names)
                      (argument-types
-                      ,@(map list new-names
-                             (append-map primitive-fringe arg-shapes))
+                      ,@(append-map primitive-fringe arg-shapes)
                       ,(tidy-values `(values ,@(primitive-fringe return))))
                      ,(sra-expression body env lookup-type
                                       (lambda (new-body shape) new-body)))))

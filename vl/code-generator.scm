@@ -262,8 +262,8 @@
         (value (caddr call-site)))
     (define (type-declaration)
       `(argument-types
-        (the-closure ,(shape->type-declaration operator))
-        (the-formals ,(shape->type-declaration operands))
+        ,(shape->type-declaration operator)
+        ,(shape->type-declaration operands)
         ,(shape->type-declaration value)))
     (let ((name (call-site->scheme-function-name operator operands)))
       `(define (,name the-closure the-formals)

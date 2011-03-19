@@ -33,12 +33,7 @@
                (error "Type declaration not parallel to formals list" definition index))
            (for-each
             (lambda (formal type sub-index)
-              (if (not (and (list? type) (= 2 (length type))))
-                  (error "Malformed type declaration" type definition index sub-index))
-              (if (not (eq? formal (car type)))
-                  (error "Type declaration for wrong formal parameter"
-                         definition sub-index index))
-              (if (not (fol-shape? (cadr type)))
+              (if (not (fol-shape? type))
                   (error "Type declaring a non-type" type definition index sub-index)))
             (cdr formals)
             (except-last-pair (cdr types))

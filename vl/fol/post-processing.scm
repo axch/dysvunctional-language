@@ -150,27 +150,27 @@
 (define sra-definition-rule
   (rule
    `(define ((? name) (?? formals1) (? formal) (?? formals2))
-      (argument-types
-       (?? stuff1)
-       ((? formal) ((? constructor ,cons-or-vector?)
-                    (?? slot-shapes)))
-       (?? stuff2))
+      (argument-types (?? arg-types))
       (?? body))
-   (let ((slot-names (map (lambda (shape)
-                            (make-name (symbol formal '-)))
-                          slot-shapes))
-         (arg-index (length formals1))
-         (num-slots (length slot-shapes))
-         (arg-count (+ (length formals1) 1 (length formals2))))
-     (cons (sra-call-site-rule
-            name constructor arg-index num-slots arg-count)
-           `(define (,name ,@formals1 ,@slot-names ,@formals2)
-              (argument-types
-               ,@stuff1
-               ,@(map list slot-names slot-shapes)
-               ,@stuff2)
-              (let ((,formal (,constructor ,@slot-names)))
-                ,@body))))))
+   (let ((formal-shape (list-ref arg-types (length formals1))))
+     (and (pair? formal-shape)
+          (cons-or-vector? (car formal-shape))
+          (let ((constructor (car formal-shape))
+                (slot-shapes (cdr formal-shape))
+                (stuff1 (take arg-types (length formals1)))
+                (stuff2 (drop arg-types (+ 1 (length formals1)))))
+            (let ((slot-names (map (lambda (shape)
+                                     (make-name (symbol formal '-)))
+                                   slot-shapes))
+                  (arg-index (length formals1))
+                  (num-slots (length slot-shapes))
+                  (arg-count (+ (length formals1) 1 (length formals2))))
+              (cons (sra-call-site-rule
+                     name constructor arg-index num-slots arg-count)
+                    `(define (,name ,@formals1 ,@slot-names ,@formals2)
+                       (argument-types ,@stuff1 ,@slot-shapes ,@stuff2)
+                       (let ((,formal (,constructor ,@slot-names)))
+                         ,@body)))))))))
 
 (define (sra-call-site-rule
          operation-name constructor arg-index num-slots arg-count)
