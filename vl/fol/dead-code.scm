@@ -1,4 +1,54 @@
 (declare (usual-integrations))
+;;;; Dead code elimination
+
+;;; Variables that hold values that are never used can be eliminated.
+;;; The code that computes those values can also be eliminated.
+
+;;; I only intraprocedural dead variable elimination.  See the end of
+;;; the file for an outline of interprocedural dead variable
+;;; elimination; that will be the reason why I don't do it (yet).
+
+;;; Intraprocedural dead variable elimination can be done by recursive
+;;; traversal of the code, traversing LET bodies before LET bindings.
+;;; In the absence of multiple value returns, the recursion need not
+;;; carry any information down, because the mere fact of being
+;;; considered would mean that any given expression were live.  In the
+;;; presence of multiple value returns, however, some of the returned
+;;; values might be live while others are dead.  Therefore, the
+;;; recursion carries down a list indicating which of the values that
+;;; are expected to come out of the subexpression are live and which
+;;; are not.  The recursive call must return both the subexpression
+;;; with dead code removed, and the set of variables it uses to
+;;; compute its live outputs.  Variables not in that set at their
+;;; binding site are dead and may be removed.
+
+;;; In this scheme, variables use themselves and constants use
+;;; nothing.  If any of the outputs of an IF form are live, then its
+;;; predicate is live, and the IF form uses everything its predicate
+;;; and its branches use.  A LET body is processed first; any
+;;; variables the LET binds that its body doesn't use are dead and can
+;;; be skipped.  A LET-VALUES is analagous, except that some of the
+;;; values may be live and others not.  In that case, the LET-VALUES
+;;; drops the dead variables, and recurs on the subexpression giving
+;;; it that mask for what to keep and what to leave off.  A VALUES
+;;; form must conversely interpret the incoming mask and only keep
+;;; those of its subexpressions that are actually needed.
+
+;;; Procedure applications introduce a wrinkle.  Since the analysis is
+;;; intraprocedural, is assumes that all the arguments of a live
+;;; procedure call are live.  Furthermore, said procedure call may
+;;; return multiple values, not all of which may be wanted by the
+;;; caller.  The transformation cannot change the set of values the
+;;; procedure will return, but the caller will already have been
+;;; tranformed expecting to only be given live values.  At this point,
+;;; the transformation pulls a trick: it binds all the values that the
+;;; procedure will emit in a LET-VALUES, and immediately returns the
+;;; live ones with a VALUES.  The others are bound to a special name
+;;; that any future dead variable transform will recognize as "Yes, I
+;;; know this variable is dead, but I have to bind it anyway because
+;;; it's coming here whether I want it or not."  Analagously,
+;;; procedure formal parameters are not removed even if they may be
+;;; dead in the body.
 
 (define (expression-dead-variable-elimination expr live-out)
   (define (ignore? name)

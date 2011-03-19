@@ -100,9 +100,10 @@
                    name1
                    the-non-alias))
              names1 names2)))
-  ;; The win continuation accepts the new, de-aliased expression, and
-  ;; a list of the names of the variables that hold the return values
-  ;; from this expression.
+  ;; This is written in continuation passing style because recursive
+  ;; calls must return two things.  The win continuation accepts the
+  ;; new, de-aliased expression, and a list of the names of the
+  ;; variables that hold the return values from this expression.
   (define (loop expr env win)
     (cond ((symbol? expr)
            (let ((alias-binding (lookup expr env)))
