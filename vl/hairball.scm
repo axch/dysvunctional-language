@@ -47,6 +47,7 @@
   (let loop ((expr expr))
     (cond ((symbol? expr) expr)
           ((number? expr) expr)
+          ((boolean? expr) expr)
           ((null? expr) expr)
           ((if-form? expr)
            `(if ,(loop (cadr expr))
