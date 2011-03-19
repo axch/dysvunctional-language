@@ -169,22 +169,7 @@
             (if (not (eq? (car forms) sra-attempt))
                 (loop (do-sra-definition sra-attempt done (cdr forms)))
                 (scan (cons (car forms) done) (cdr forms))))))))
-
-;;; Getting rid the argument-types declarations once we're done with
-;;; them is easy.
-
 
-(define (full-alpha-rename program)
-  ;; TODO Fix the bookkeeping of what names the primitives rely on
-  (define (needed-names primitive)
-    (list (primitive-name primitive)))
-  (alpha-rename program
-   (map (lambda (name)
-          (cons name name))
-        (delete-duplicates
-         `(cons car cdr if define let vector vector-ref
-                ,@(append-map needed-names *primitives*))))))
-
 ;;;; Term-rewriting tidier
 
 (define empty-let-rule (rule `(let () (? body)) body))

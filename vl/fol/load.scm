@@ -14,6 +14,7 @@
 (for-each
  load-relative-compiled
  '("syntax"
+   "alpha-renaming"
    "structs"
    "type-check"
    "feedback-vertex-set"
