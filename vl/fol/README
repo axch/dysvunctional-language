@@ -158,7 +158,7 @@ the intermediate stages.
   Inlines as many procedures in the given FOL program as possible and
   returns the result.
 
-(full-alpha-rename <program>)
+(alpha-rename <program>)
   Alpha-renames the given program, so that no local variable binding
   shadows any other and returns the result.
 
