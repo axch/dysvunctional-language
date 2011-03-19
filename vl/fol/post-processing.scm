@@ -69,10 +69,15 @@
 
 ;;;; Turning record structures into vectors
 
-;;; Just replace every occurrence of DEFINE-STRUCTURE with the
-;;; corresponding pile of vector operations.  Also need to make sure
-;;; that the argument types declarations, if any, all say VECTOR
-;;; rather than whatever the name of the structure used to be.
+;;; Every structure definition of the form
+;;; (define-structure foo bar baz)
+;;; entails the constructor MAKE-FOO, accessors FOO-BAR and FOO-BAZ,
+;;; and the type constructor FOO.  Fortunately, all are used only in
+;;; call position, so they are easy to search for and replace.  The
+;;; constructor needs to be replaced with VECTOR, the accessors with
+;;; VECTOR-REF and the appropriate index, and the type constructor
+;;; also with VECTOR.  Thereafter, the structure definitions can be
+;;; dropped.
 
 (define (structure-definition? form)
   (and (pair? form)
@@ -119,7 +124,9 @@
             `(define ,formals
                (argument-types ,@(structure-names->vectors arg-types))
                ,@(accessors->vectors (constructors->vectors body)))))
-    (map fix-definition (filter (lambda (x) (not (structure-definition? x))) forms))))
+    (map fix-definition
+         (filter (lambda (x) (not (structure-definition? x)))
+                 forms))))
 
 ;;;; Scalar replacement of aggregates
 
