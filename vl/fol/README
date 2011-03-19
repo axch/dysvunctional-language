@@ -100,6 +100,8 @@ guarantees that laziness does?
 
 TODO Discuss FOL type declarations.
 
+TODO Discuss define-structure forms
+
 I also provide a FOL->FOL optimizing compiler called
 PRETTIFY-COMPILER-OUTPUT.  This has three main pieces, each of
 which can also be applied separately from the others: aggressive
