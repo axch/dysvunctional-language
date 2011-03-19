@@ -4,11 +4,12 @@
 ;;; vertices of G whose removal causes G to become acyclic.  It is
 ;;; usually desirable for such feedback sets to be smaller rather than
 ;;; larger; however, the problem of finding a minimum feedback vertex
-;;; set for a directed graph is known to be NP-complete.  In the
-;;; present application, minimality is not strictly necessary, whereas
-;;; finding a plausible acceptable solution quickly is also important.
-;;; To that end, this code heuristically spits out some feedback
-;;; vertex set of the given graph.
+;;; set for a directed graph is known to be NP-complete.  Furthermore,
+;;; no good approximation algorithms are known.  In the present
+;;; application, minimality is not strictly necessary, whereas finding
+;;; a plausible acceptable solution quickly is important.  To that
+;;; end, this code heuristically spits out some feedback vertex set of
+;;; the given graph.
 
 ;;; The incoming graph is accepted as an alist of vertex with
 ;;; out-neighbors.  It is assumed normalized so that sameness of
