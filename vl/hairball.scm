@@ -717,7 +717,7 @@
                  (argument-types (?? stuff) (? return))
                  (? body))
               `(define (,name ,@formals)
-                 (argument-types ,@stuff)
+                 (argument-types ,@stuff ,return)
                  ,(expression-dead-variable-elimination
                    body (or (not (values-form? return))
                             (map (lambda (x) #t) (cdr return))))))
