@@ -19,19 +19,6 @@
 ;;;   only thing that needs them).
 ;;; - TIDY
 ;;;   Clean up and optimize locally by term-rewriting.
-
-(define (prettify-compiler-output output)
-  (if (list? output)
-      ((lambda (x) x) ; This makes tidying show up in the stack sampler
-       (tidy
-        (alpha-rename
-         (strip-argument-types
-          (scalar-replace-aggregates
-           (inline
-            (structure-definitions->vectors
-             output)))))))
-      output))
-
 (define (compile-to-scheme program)
   (fol-optimize
    (analyze-and-generate program)))
@@ -126,7 +113,7 @@
     values-let-lifting-rule
     singleton-inlining-rule)))
 
-(define (hairy-optimize output)
+(define (fol-optimize output)
   (if (list? output)
       ((lambda (x) x) ; This makes the last stage show up in the stack sampler
        (strip-argument-types
@@ -141,6 +128,3 @@
                 output))))))))))
       output))
 
-(define prettify-compiler-output hairy-optimize)
-
-(define fol-optimize prettify-compiler-output)
