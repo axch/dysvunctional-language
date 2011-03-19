@@ -289,7 +289,8 @@
          (rule `(define ((? name ,symbol?) (?? formals))
                   (argument-types (?? args) (? return))
                   (? body))
-               (hash-table/put! type-map name (function-type (map cadr args) return)))
+               (hash-table/put!
+                type-map name (function-type (map cadr args) return)))
          (cdr program))
         'ok)
     (define (lookup-type name)
@@ -311,14 +312,16 @@
                    (argument-types (?? args) (? return))
                    (? body))
                 (let* ((arg-shapes (map cadr args))
-                       (new-name-sets (map invent-names-for-parts formals arg-shapes))
+                       (new-name-sets
+                        (map invent-names-for-parts formals arg-shapes))
                        (env (augment-env
                              (empty-env) formals new-name-sets arg-shapes))
                        (new-names (apply append new-name-sets)))
                   `(define (,name ,@new-names)
-                     (argument-types ,@(map list new-names
-                                            (append-map primitive-fringe arg-shapes))
-                                     ,(tidy-values `(values ,@(primitive-fringe return))))
+                     (argument-types
+                      ,@(map list new-names
+                             (append-map primitive-fringe arg-shapes))
+                      ,(tidy-values `(values ,@(primitive-fringe return))))
                      ,(sra-expression body env lookup-type))))
           (except-last-pair program))
          (list (sra-entry-point (car (last-pair program)))))
@@ -650,7 +653,8 @@
                                  `(let-values ((,(filter slot-used? names)
                                                 ,new-sub-expr))
                                     ,new-body))
-                                (union sub-expr-used (difference body-used names)))))
+                                (union sub-expr-used
+                                       (difference body-used names)))))
                         (win new-body body-used))))))))
           ;; If used post SRA, there may be constructions to build the
           ;; answer for the outside world, but there should be no
@@ -696,7 +700,8 @@
                            simple-new-call
                            (let ((receipt-names (map invent-name live-out)))
                              `(let-values ((,receipt-names ,simple-new-call))
-                                (values ,@(filter (lambda (x) (not (ignore? x))) receipt-names)))))))
+                                (values ,@(filter (lambda (x) (not (ignore? x)))
+                                                  receipt-names)))))))
                   (win new-call (reduce union (no-used-vars) args-used)))))))))
   (define (loop* exprs win)
     (if (null? exprs)
@@ -722,7 +727,8 @@
                    body (or (not (values-form? return))
                             (map (lambda (x) #t) (cdr return))))))
         (except-last-pair program))
-       (list (expression-dead-variable-elimination (car (last-pair program)) #t)))
+       (list (expression-dead-variable-elimination
+              (car (last-pair program)) #t)))
       (expression-dead-variable-elimination program #t)))
 
 ;;; To do interprocedural dead variable elimination I have to proceed
