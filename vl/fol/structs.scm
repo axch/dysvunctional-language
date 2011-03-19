@@ -17,57 +17,43 @@
 
 (define (structure-definitions->vectors program)
   (if (begin-form? program)
-      (receive
-       (structure-name? constructor? access-index accessor?)
-       (structures-map program)
-       (define fix-types
-         (on-subexpressions
-          (rule `(? type ,structure-name?) 'vector)))
-       (define (fix-body expr)
+      (let ((classify (structures-map program)))
+        (define (accessor? name)
+          (integer? (classify name)))
+        (define (constructor? name)
+          (and (classify name)
+               (not (integer? (classify name)))))
+        ((on-subexpressions
+          (rule `((? operator ,accessor?) (? operand))
+                `(vector-ref ,operand ,(classify operator))))
          ((on-subexpressions
-           (rule `((? operator ,accessor?) (? operand))
-                 `(vector-ref ,operand ,(access-index operator))))
-          ((on-subexpressions
-            (rule `(? name ,constructor?) 'vector))
-           expr)))
-       (define fix-definition
-         (rule `(define (? formals)
-                  (argument-types (?? arg-types))
-                  (?? body))
-               `(define ,formals
-                  (argument-types ,@(fix-types arg-types))
-                  ,@(fix-body body))))
-       (append
-        (map fix-definition
-             (filter (lambda (x) (not (structure-definition? x)))
-                     (except-last-pair program)))
-        (list (fix-body (car (last-pair program))))))
+           (rule `(? name ,constructor?) 'vector))
+          (filter (lambda (x) (not (structure-definition? x)))
+                  program))))
       program))
 
+;;; A structures map needs to say, for every name, whether it is a
+;;; constructor, an accessor, a type constructor, or not; and if an
+;;; accessor, needs to give the index of the field accessed.
+
 (define (structures-map program)
   (let* ((structure-definitions (filter structure-definition? program))
          (structure-names (map cadr structure-definitions))
          (structure-name-map
           (alist->eq-hash-table
-           (map (lambda (name) (cons name #t)) structure-names)))
-         (constructor-map
-          (alist->eq-hash-table
-           (map (lambda (name) (cons (symbol 'make- name) #t)) structure-names)))
-         (accessor-map
-          (alist->eq-hash-table
-           (append-map
-            (lambda (defn)
-              (map (lambda (field index)
-                     (cons (symbol (cadr defn) '- field) index))
-                   (cddr defn)
-                   (iota (length (cddr defn)))))
-            structure-definitions))))
-    (define (structure-name? name)
+           (map (lambda (name) (cons name #t)) structure-names))))
+    (hash-table/put-alist!
+     structure-name-map
+     (map (lambda (name) (cons (symbol 'make- name) #t)) structure-names))
+    (hash-table/put-alist!
+     structure-name-map
+     (append-map
+      (lambda (defn)
+        (map (lambda (field index)
+               (cons (symbol (cadr defn) '- field) index))
+             (cddr defn)
+             (iota (length (cddr defn)))))
+      structure-definitions))
+    (define (classify name)
       (hash-table/get structure-name-map name #f))
-    (define (constructor? name)
-      (hash-table/get constructor-map name #f))
-    (define (access-index name)
-      (hash-table/get accessor-map name #f))
-    (define (accessor? name)
-      (not (not (access-index name))))
-    (values structure-name? constructor? access-index accessor?)))
+    classify))
