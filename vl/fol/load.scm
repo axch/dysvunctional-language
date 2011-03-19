@@ -13,9 +13,9 @@
 
 (for-each
  load-relative-compiled
- '("../output-syntax"
-   "../fol-type-check"
-   "../feedback-vertex-set"
-   "../post-processing"
-   "../srfi-11"
-   "../hairball"))
+ '("output-syntax"
+   "type-check"
+   "feedback-vertex-set"
+   "post-processing"
+   "srfi-11"
+   "hairball"))
