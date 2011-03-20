@@ -19,6 +19,19 @@
 ;;;   only thing that needs them).
 ;;; - TIDY
 ;;;   Clean up and optimize locally by term-rewriting.
+(define (fol-optimize output)
+  ((lambda (x) x) ; This makes the last stage show up in the stack sampler
+   (strip-argument-types
+    (tidy
+     (intraprocedural-dead-variable-elimination
+      (intraprocedural-de-alias
+       (sra-program
+        (sra-anf
+         (alpha-rename
+          (inline
+           (structure-definitions->vectors
+            output)))))))))))
+
 (define (compile-to-scheme program)
   (fol-optimize
    (analyze-and-generate program)))
@@ -114,16 +127,4 @@
     values-let-lifting-rule
     singleton-inlining-rule)))
 
-(define (fol-optimize output)
-  ((lambda (x) x) ; This makes the last stage show up in the stack sampler
-   (strip-argument-types
-    (tidy
-     (intraprocedural-dead-variable-elimination
-      (intraprocedural-de-alias
-       (sra-program
-        (sra-anf
-         (alpha-rename
-          (inline
-           (structure-definitions->vectors
-            output)))))))))))
 
