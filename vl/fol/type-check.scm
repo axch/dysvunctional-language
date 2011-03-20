@@ -82,9 +82,9 @@
 (define (check-expression-types expr env lookup-type)
   ;; A type environment maps every bound local name to its type.  The
   ;; lookup-type procedure returns the (function) type of any global
-  ;; name passed to it.  CHECK-TYPE-CORRECT either returns the type of
-  ;; the expression or signals an error if the expression is either
-  ;; malformed or not type correct.
+  ;; name passed to it.  CHECK-EXPRESSION-TYPES either returns the
+  ;; type of the expression or signals an error if the expression is
+  ;; either malformed or not type correct.
   (define (lookup-return-type thing)
     (return-type (lookup-type thing)))
   (define (lookup-arg-types thing)
