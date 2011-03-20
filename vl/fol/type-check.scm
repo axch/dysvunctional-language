@@ -22,18 +22,6 @@
 ;;; grammar, but instead of learning (or writing) a tool for doing
 ;;; that I put some basic syntax checks into this program.
 
-(define (fol-shape? thing)
-  ;; This will need to be updated when union types appear
-  (or (null? thing)
-      (and (symbol? thing)
-           (memq thing '(real bool gensym)))
-      (and (list? thing)
-           (> (length thing) 0)
-           (memq (car thing) '(cons vector values))
-           (or (not (eq? 'cons (car thing)))
-               (= 2 (length (cdr thing))))
-           (every fol-shape? (cdr thing)))))
-
 (define (check-program-types program)
   (define (empty-env) '())
   (define (augment-env env names shapes)
@@ -208,3 +196,15 @@
               (iota (length argument-types)))
              (lookup-return-type (car expr))))))
   (loop expr env))
+
+(define (fol-shape? thing)
+  ;; This will need to be updated when union types appear
+  (or (null? thing)
+      (and (symbol? thing)
+           (memq thing '(real bool gensym)))
+      (and (list? thing)
+           (> (length thing) 0)
+           (memq (car thing) '(cons vector values))
+           (or (not (eq? 'cons (car thing)))
+               (= 2 (length (cdr thing))))
+           (every fol-shape? (cdr thing)))))
