@@ -1,4 +1,26 @@
 (declare (usual-integrations))
+;;;; Type checking
+
+;;; FOL procedure definitions are annotated with their type
+;;; signatures, but local variable bindings in FOL are not explicitly
+;;; marked.  Type checking FOL is therefore not a completely local
+;;; operation, but can be done via a recursive traversal of the code
+;;; bodies.  The traversal carries down an environment indicating the
+;;; type of every bound variable, and, if the subexpression is
+;;; internally well typed, returns the type of the object said
+;;; subexpression returns.
+
+;;; In principle, much can be done to make a type checker emit good
+;;; type error messages.  I did not do it.  This type checker does the
+;;; worst possible thing, which is to signal an error in the enclosing
+;;; MIT Scheme as soon as it finds anything wrong.  The context of
+;;; such an error can be inspected by entering the MIT Scheme
+;;; debugger.
+
+;;; This type checker also doubles as a syntax checker.  In principle,
+;;; I should derive the syntax checker mechanically from the FOL
+;;; grammar, but instead of learning (or writing) a tool for doing
+;;; that I put some basic syntax checks into this program.
 
 (define (fol-shape? thing)
   ;; This will need to be updated when union types appear
