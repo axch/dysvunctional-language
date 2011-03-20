@@ -25,8 +25,6 @@
 ;;;   Clean up and optimize locally by term-rewriting.  This includes
 ;;;   a simple-minded reverse-anf which inlines bindings of variables
 ;;;   that are only used once, to make the output easier to read.
-;;; - STRIP-ARGUMENT-TYPES
-;;;   Remove argument-type annotations.
 
 (define (fol-optimize output)
   ((lambda (x) x) ; This makes the last stage show up in the stack sampler
