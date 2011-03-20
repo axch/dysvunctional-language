@@ -20,7 +20,8 @@
       (for-each
        (lambda (definition index)
          (if (not (definition? definition))
-             (error "Non-definition a non-terminal program position" definition index))
+             (error "Non-definition a non-terminal program position"
+                    definition index))
          (if (not (= 4 (length definition)))
              (error "Malformed definition" definition index))
          (let ((formals (cadr definition))
@@ -30,11 +31,13 @@
            (if (not (list? types))
                (error "Malformed type declaration" definition index))
            (if (not (= (length types) (+ 1 (length formals))))
-               (error "Type declaration not parallel to formals list" definition index))
+               (error "Type declaration not parallel to formals list"
+                      definition index))
            (for-each
             (lambda (formal type sub-index)
               (if (not (fol-shape? type))
-                  (error "Type declaring a non-type" type definition index sub-index)))
+                  (error "Type declaring a non-type"
+                         type definition index sub-index)))
             (cdr formals)
             (except-last-pair (cdr types))
             (iota (length (cdr formals))))))
@@ -151,9 +154,11 @@
              (if (vector-ref? expr)
                  (begin
                    (if (not (eq? 'vector (car accessee-type)))
-                       (error "Trying to VECTOR-REF a non-VECTOR" accessee-type))
+                       (error "Trying to VECTOR-REF a non-VECTOR"
+                              accessee-type))
                    (if (not (< (caddr expr) (length (cdr accessee-type))))
-                       (error "Index out of bounds" (caddr expr) accessee-type))))
+                       (error "Index out of bounds"
+                              (caddr expr) accessee-type))))
              (select-from-shape-by-access accessee-type expr)))
           ((construction? expr)
            (let ((element-types (map (lambda (exp) (loop exp env)) (cdr expr))))
@@ -169,7 +174,8 @@
            (let ((expected-types (lookup-arg-types (car expr)))
                  (argument-types (map (lambda (exp) (loop exp env)) (cdr expr))))
              (if (not (= (length expected-types) (length argument-types)))
-                 (error "Trying to call function with wrong number of arguments" expr))
+                 (error "Trying to call function with wrong number of arguments"
+                        expr))
              (for-each
               (lambda (expected given index)
                 (if (not (equal? expected given))
