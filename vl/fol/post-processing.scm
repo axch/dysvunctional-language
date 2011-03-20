@@ -78,6 +78,7 @@
            (let-values ((,names ,exp))
              ,@body))))
 
+;; This is safe assuming the program has been alpha renamed
 (define singleton-inlining-rule
   (rule `(let ((?? bindings1)
                ((? name ,symbol?) (? exp))
@@ -114,17 +115,15 @@
     singleton-inlining-rule)))
 
 (define (fol-optimize output)
-  (if (list? output)
-      ((lambda (x) x) ; This makes the last stage show up in the stack sampler
-       (strip-argument-types
-        (tidy
-         (intraprocedural-dead-variable-elimination
-          (intraprocedural-de-alias
-           (sra-program
-            (sra-anf
-             (alpha-rename
-              (inline
-               (structure-definitions->vectors
-                output))))))))))
-      output))
+  ((lambda (x) x) ; This makes the last stage show up in the stack sampler
+   (strip-argument-types
+    (tidy
+     (intraprocedural-dead-variable-elimination
+      (intraprocedural-de-alias
+       (sra-program
+        (sra-anf
+         (alpha-rename
+          (inline
+           (structure-definitions->vectors
+            output)))))))))))
 
