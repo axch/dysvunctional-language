@@ -1,0 +1,65 @@
+Expository explanations
+- Separate exposition into "Reading FOL", "Writing FOL", and
+  "Implementing FOL" for people who want to understand generated
+  output, understand the flexibility and limitations open to the code
+  generator, and understand the FOL optimizer, respectively.
+  The latter segment can perhaps be migrated to optimize.scm.  Where
+  do I talk in general about the services that the FOL optimizer
+  provides to the code generator, and how to see them in action?
+- Rename all the stages to something reasonable (and update readme)
+- Shatter all the horrible let loops into programs that look like
+  interpreters, with a big dispatch to a bunch of named pieces
+- Make the assertions in the README true
+- Actually explain SRA
+- Update explanation of VL (and DVL?) to reflect FOL's separate
+  identity
+- Make FOL executable standalone, releasable, workbookable
+
+
+TODO: SRA is not idempotent; in fact, it doesn't deal with LET-VALUES
+in its input.
+
+TODO full-alpha-rename doesn't work on LET-VALUES
+
+TODO sra-anf doesn't work on LET-VALUES 
+
+NB: the index argument to vector-ref should always be a constant
+NB: literal booleans should only appear when a shape is being shipped
+to the outside world
+NB: various stages expect/emit alpha-renamed and/or anf'd code
+
+Check for warning-free compilation of FOL?
+
+Define and test asserted invariants such as being in ANF or being
+alpha renamed?  "Prove" that various stages (e.g. SRA) always preserve
+them?
+- Use the grammars to construct programs that generate random
+  structures obeying those grammars?
+
+There is a diagram: Each box is a set of properties that a FOL program
+might satisfy, and each arrow defines the applicability of a
+transformation.  I want this diagram to have as few boxes as possible;
+I want all loops in this diagram to be idempotent (up to equality?
+alpha renaming?).  Current states are:
+- FOL + define-structure without multivalue returns
+- FOL without multivalue returns
+- FOL without shadowing or multivalue returns
+- FOL in ANF without shadowing or multivalue returns
+- FOL in ANF without shadowing
+- FOL without shadowing
+- FOL without shadowing or type declarations
+with obvious inclusions by identity.
+Can I also talk about which stages enable which others, or generate
+work for them, or don't, in the sense of de-aliasing and dead code
+elimination being (I think) orthogonal?
+
+Good output on dvl-sqrt-5
+- MIT Scheme doesn't like multiple underscores in the same binding clause
+
+Fast enough to put dvl-sqrt-5 into the test suite?
+
+autogenerating symbol names leaks memory
+
+
+Write inlining of used-once bindings (post-SRA); undoes ANF
+- This is the intraprocedural analog of inlining procedures (I think)
