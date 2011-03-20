@@ -131,11 +131,17 @@
              (if (not (list? bindings))
                  (error "Malformed LET-VALUES (non-list bindings)" expr))
              (if (not (= 1 (length bindings)))
-                 (error "Malformed LET-VALUES (multiple binding expressions)" expr))
+                 (error "Malformed LET-VALUES (multiple binding expressions)"
+                        expr))
              (let ((binding-type (loop (cadar bindings) env)))
                (if (not (values-form? binding-type))
-                   (error "LET-VALUES binds a non-VALUES shape" expr binding-type))
-               (loop body (augment-env env (caar bindings) (cdr binding-type))))))
+                   (error "LET-VALUES binds a non-VALUES shape"
+                          expr binding-type))
+               (if (not (= (length (caar bindings)) (length (cdr binding-type))))
+                   (error "LET-VALUES binds the wrong number of VALUES"
+                          expr binding-type))
+               (loop body (augment-env
+                           env (caar bindings) (cdr binding-type))))))
           ((accessor? expr)
            (let ((accessee-type (loop (cadr expr) env)))
              (if (and (cons-ref? expr) (not (eq? 'cons (car accessee-type))))
