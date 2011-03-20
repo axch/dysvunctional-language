@@ -8,3 +8,8 @@ Make VL a "complete" VLAD implementation
 Write about VL in the VLAD language manual
 
 Make VL releasable
+
+Better mappings between the source program, esp. names, and the
+generated code (presumably via the analysis)
+
+Tracing concrete evaluator that checks that the analysis was right
