@@ -133,7 +133,10 @@
                  (cons (+ y (real 0)) (cons y (vector))))))
         (if (< (real 1) (real 2))
             (car x)
-            (car (cdr x))))))))
+            (car (cdr x))))))
+
+   (equal? #t (fol-optimize '#t))
+   (equal? #f (fol-optimize '#f))))
 
 ;; Here is a case where serious SRA is necessary
 ;; (let ((x (if ... (cons) (cons))))
