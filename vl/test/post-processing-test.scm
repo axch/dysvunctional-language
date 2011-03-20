@@ -21,6 +21,7 @@
    (alpha-rename?
     '(begin
        (define (operation-2 n)
+         (argument-types real real)
          (if (= n 1)
              1
              (* n (operation-2 (- n 1)))))
@@ -56,6 +57,7 @@
                             the-closure-53
                             the-formals-56
                             the-formals-57)
+         (argument-types real real real real real)
          (if (< (abs (- the-formals-56 the-formals-57)) .00001)
              the-formals-57
              (operation-9

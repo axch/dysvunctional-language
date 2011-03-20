@@ -30,16 +30,15 @@
 
 (define (fol-optimize output)
   ((lambda (x) x) ; This makes the last stage show up in the stack sampler
-   (strip-argument-types
-    (tidy
-     (intraprocedural-dead-variable-elimination
-      (intraprocedural-de-alias
-       (sra-program
-        (sra-anf
-         (alpha-rename
-          (inline
-           (structure-definitions->vectors
-            output)))))))))))
+   (tidy
+    (intraprocedural-dead-variable-elimination
+     (intraprocedural-de-alias
+      (sra-program
+       (sra-anf
+        (alpha-rename
+         (inline
+          (structure-definitions->vectors
+           output))))))))))
 
 (define (compile-to-scheme program)
   (fol-optimize
