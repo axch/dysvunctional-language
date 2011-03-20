@@ -1,24 +1,33 @@
 (declare (usual-integrations))
-;;;; Post processing
+;;;; Optimization toplevel
 
-;;; The post-processing stage consists of several sub-stages.  They
-;;; need to be done in order, but you can invoke any subsequence to
-;;; see the effect of doing only that level of post-processing.
+;;; The FOL optimizer consists of several stages.  They need to be
+;;; done in order (TODO describe exact limits), but you can invoke any
+;;; subsequence to see the effect of doing only those optimizations.
 ;;; We have:
 ;;; - STRUCTURE-DEFINITIONS->VECTORS
 ;;;   Replace DEFINE-STRUCTURE with explicit vectors.
 ;;; - INLINE
 ;;;   Inline non-recursive function definitions.
-;;; - SCALAR-REPLACE-AGGREGATES
-;;;   Replace aggregates with scalars at procedure boundaries.
-;;;   This relies on argument-type annotations being emitted by the
-;;;   code generator.
-;;; - STRIP-ARGUMENT-TYPES
-;;;   Remove argument-type annotations, if they have been emitted by
-;;;   the code generator (because SCALAR-REPLACE-AGGREGATES is the
-;;;   only thing that needs them).
+;;; - ALPHA-RENAME
+;;;   Change local variable names to avoid shadowing anything.
+;;; - SRA-ANF
+;;;   Convert the program to A-normal form to prepare for SRA,
+;;; - SRA-PROGRAM
+;;;   Replace aggregates with scalars.  This relies on argument-type
+;;;   annotations.
+;;; - INTRAPROCEDURAL-DE-ALIAS
+;;;   Eliminate redundant variables that are just aliases of other
+;;;   variables or constants.
+;;; - INTRAPROCEDURAL-DEAD-VARIABLE-ELIMINATION
+;;;   Eliminate dead code.
 ;;; - TIDY
-;;;   Clean up and optimize locally by term-rewriting.
+;;;   Clean up and optimize locally by term-rewriting.  This includes
+;;;   a simple-minded reverse-anf which inlines bindings of variables
+;;;   that are only used once, to make the output easier to read.
+;;; - STRIP-ARGUMENT-TYPES
+;;;   Remove argument-type annotations.
+
 (define (fol-optimize output)
   ((lambda (x) x) ; This makes the last stage show up in the stack sampler
    (strip-argument-types
