@@ -50,28 +50,27 @@
        (except-last-pair (cdr program))
        (iota (- (length program) 2))))
   (let ((lookup-type (type-map program)))
+    (define (check-definition definition)
+      (let ((formals (cadr definition))
+            (types (caddr definition))
+            (body (cadddr definition)))
+        (let ((body-type
+               (check-expression-types
+                body
+                (augment-type-env (empty-type-env) (cdr formals)
+                                  (arg-types (lookup-type (car formals))))
+                lookup-type)))
+          (if (not (equal? (car (last-pair types)) body-type))
+              (error "Return type declaration doesn't match"
+                     definition (car (last-pair types)) body-type))
+          'done)
+        'done))
     (define (check-entry-point expression)
       (check-expression-types expression (empty-type-env) lookup-type))
     (if (begin-form? program)
         (begin
-          (for-each
-           (lambda (definition index)
-             (let ((formals (cadr definition))
-                   (types (caddr definition))
-                   (body (cadddr definition)))
-               (let ((body-type
-                      (check-expression-types
-                       body
-                       (augment-type-env (empty-type-env) (cdr formals)
-                                         (arg-types (lookup-type (car formals))))
-                       lookup-type)))
-                 (if (not (equal? (car (last-pair types)) body-type))
-                     (error "Return type declaration doesn't match"
-                            definition index (car (last-pair types)) body-type))
-                 'done)
-               'done))
-           (except-last-pair (cdr program))
-           (iota (- (length program) 2)))
+          (for-each check-definition
+           (except-last-pair (cdr program)))
           (check-entry-point (car (last-pair program))))
         (check-entry-point program))))
 

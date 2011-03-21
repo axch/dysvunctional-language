@@ -3,6 +3,9 @@ Expository explanations
 - Rename all the stages to something reasonable (and update readme)
 - Shatter all the horrible let loops into programs that look like
   interpreters, with a big dispatch to a bunch of named pieces
+  - Continue with/beyond type-check.scm
+  - Present the pieces in the same order across the board, and in the
+    FOL grammar.
 - Make the assertions in the README true
 - Actually explain SRA
 - Update explanation of VL (and DVL?) to reflect FOL's separate
