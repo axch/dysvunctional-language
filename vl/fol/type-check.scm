@@ -23,9 +23,6 @@
 ;;; that I put some basic syntax checks into this program.
 
 (define (check-program-types program)
-  (define (empty-type-env) '())
-  (define (augment-type-env env names shapes)
-    (append (map list names shapes) env))
   (if (begin-form? program)
       (for-each
        (lambda (definition index)
@@ -94,14 +91,6 @@
   (define (construction? expr)
     (and (pair? expr)
          (memq (car expr) '(cons vector values))))
-  (define (empty-type-env) '())
-  (define (augment-type-env env names shapes)
-    (append (map list names shapes) env))
-  (define (lookup-type name env)
-    (let ((binding (assq name env)))
-      (if (not binding)
-          (error "Refencing an unbound variable" name)
-          (cadr binding))))
   (define (loop expr env)
     (cond ((symbol? expr) (lookup-type expr env))
           ((number? expr) 'real)
@@ -209,3 +198,12 @@
            (or (not (eq? 'cons (car thing)))
                (= 2 (length (cdr thing))))
            (every fol-shape? (cdr thing)))))
+
+(define (empty-type-env) '())
+(define (augment-type-env env names shapes)
+  (append (map list names shapes) env))
+(define (lookup-type name env)
+  (let ((binding (assq name env)))
+    (if (not binding)
+        (error "Refencing an unbound variable" name)
+        (cadr binding))))
