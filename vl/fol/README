@@ -16,85 +16,40 @@ optimizing compiler from FOL to itself, and a runtime library for
 executing FOL as MIT Scheme.  I have not yet experimented with
 compiling FOL to any other target language.
 
-There are two reasons why you might wish to read this document.  One
-is that you are trying to understand VL or DVL, and want to know what
-they generate and what post-processing is done to their output in
-broad terms.  For this purpose, the remainder of this README should
-suffice.  The other is that you may want to understand FOL compilation
-in detail, and perhaps study an example of the standard first-order
-compilation techniques that the FOL optimizer uses.  In that case, you
-should read this README first, and then peruse the remainder of the
-source, which contains extensive internal explanation.
+The remainder of this document consists of three sections,
+corresponding to the reasons why you might wish to peruse it:
+
+Reading FOL If you just want to understand what the VL and DVL
+compilers generate and what transformations are done to it.
+
+Writing FOL If you want to know the constraints under which the VL and
+DVL compilers operate and how they enable the services FOL provides.
+
+Implementing FOL If you want to know how the FOL optimizer itself
+works, and how to write analagous programs.
 
 
-Description of FOL
+Reading FOL
 
-A FOL program is a Scheme data structure.  This may have been parsed
-from a file or constructed directly in memory, as appropriate for the
-application.
+FOL is a subset of Scheme, requiring minimal additional runtime
+support.  You can run any FOL program right at your Scheme REPL:
 
-FOL follows the following grammar:
+(fol-eval <program>)
+  Evaluates a FOL program in the ambient MIT Scheme.  This has the
+  same effect as typing that data structure into the REPL (provided
+  the FOL runtime support is loaded).
 
-program    = <expression>
-           | (begin <definition> ... <expression>)
+You can also read FOL as though it were Scheme.  The only things you
+might not recognize are multiple value returns, type declarations, and
+some of the primitives.
 
-definition = (define (<proc-var> <data-var> ...)
-               (argument-types <shape> ...)
-               <expression>)
-
-shape      = real | bool | gensym | ()
-           | (cons <shape> <shape>) | (vector <shape> ...) | (values <shape> ...)
-
-expression = <data-var>
-           | <number> | <boolean> | ()
-           | (<proc-var> <expression> ...)
-           | (if <expression> <expression> <expression>)
-           | (let ((<data-var> <expression>) ...) <expression>)
-           | (let-values (((<data-var> <data-var> <data-var> ...) <expression>))
-               <expression>)
-           | (values <expression> <expression> <expression> ...)
-
-FOL procedure definitions must be annotated with the types of the
-arguments expected and the type of the result.  The annotation is
-achieved via the ARGUMENT-TYPES form in the grammar.  The shapes given
-in the form are taken to be parallel to the formal parameters, except
-that the last one refers to the type returned by the procedure.
-
-The FOL type system does not at present admit user-specified types,
-union types, or recursive types.  This will be changed when FOL is
-extended to accept the results of compiliing non-union-free VL or DVL
-programs.
-
-FOL distinguishes two types of variables, one for holding procedures
-and one for holding data; both are represented as Scheme symbols.  The
-procedure variables have global scope, must be globally unique, and
-may only be bound by DEFINE forms.  The data variables are lexically
-scoped with shadowing, and may be bound by LET forms and the formal
-parameter positions of DEFINE forms.
-
-You may note in the above grammar several restrictions, as compared to
-Scheme.  Procedures may only be defined at the top level.  Procedure
-names must be unique.  Applications may only apply procedures directly
-by name --- procedures are second-class in FOL.  These restrictions
-are consistent with being the target language for post-flow-analysis
-code generation, and make FOL considerably easier to compile to
-efficient code.
-
-FOL supports multiple value returns from procedures and expressions
-via the standard Scheme VALUES construct, and multiple value binding
-via the SRFI-11 LET-VALUES construct.  The latter is restricted to
-binding from a single expression; no parallel form is provided.  All
-VALUES expressions must be at least binary and must be in tail
-position with respect to a matching LET-VALUES expression.  You will
-note that because multiple value returns via the VALUES construct
-cannot be stored in data structures or bound as variables without
-destructuring them, they do not need to be represented in the runtime
-as heap-allocated objects, but can instead be implemented by just
-placing the values to be returned on the stack.  The VL and DVL code
-generator does not emit VALUES or LET-VALUES expressions; FOL supports
-them as targets for the scalar replacement of aggregates optimization.
-
-FOL comes with the following procedures predefined:
+The multiple value returns are actually standard Scheme, augmented
+with the LET-VALUES macro from SRFI 11.  What they do should be
+obvious.  The type declarations serve to aid the FOL optimizer, and
+while they can be used to type-check a FOL program, you can also just
+ignore them.  In fact, the FOL runtime defines ARGUMENT-TYPES as a
+macro that expands into nothing.  As to the primmitives, FOL comes
+with the following procedures predefined:
 
   CONS, CAR, CDR, VECTOR, VECTOR-REF, ABS, EXP, LOG, SIN, COS, TAN,
   ASIN, ACOS, SQRT, +, -, *, /, ATAN, EXPT, PAIR?, NULL?, REAL?, <,
@@ -118,22 +73,18 @@ subexpressions, even across procedure boundaries.  TODO is the dead
 variable elimination good enough to make the same termination
 guarantees that laziness does?
 
-TODO Discuss define-structure forms
 
+TODO Section Name
 
-Using FOL
-
-The standard use case of the VL and DVL compilers already invokes the
-FOL optimizer as a post-filter, and therefore emits fully optimized
-FOL.  There is at that point nothing more to do but read it or run it.
-
-(fol-eval <program>)
-  Evaluates a FOL program in the ambient MIT Scheme.  This has the
-  same effect as typing that data structure into the REPL (provided
-  the FOL runtime support is loaded).
-
-You can also watch the process happen, and otherwise manipulate
-the intermediate stages.
+The FOL optimizer provides a number of services to the VL and DVL
+compilers, in the form of post-optimizing their output so they don't
+have to worry as much.  Specifically, the FOL optimizer aggressively
+inlines procedures, aggressively replaces aggregates with
+corresponding collections of scalars, and aggressively eliminates dead
+and useless code.  The standard use case of COMPILE-TO-SCHEME emit FOL
+with all these optimizations already performed, but you can also get
+the raw output from the code generator, examine it, and optimize it
+separately.
 
 (analyze-and-generate <vl-or-dvl>)
   Performs flow analysis on the given VL or DVL program (both VL and
@@ -147,8 +98,11 @@ the intermediate stages.
 
 (fol-optimize <program>)
   Completely optimizes the given FOL program and returns the result.
-  Optimization proceeds as a cascade of stages, each of which
-  is also available separately:
+
+FOL Optimization proceeds as a cascade of stages, which you can also
+run one by one to see their effect: TODO Nail down and describe
+exactly which stages expect, produce, and preserve which properties of
+a FOL program.
 
 (structure-definitions->vectors <program>)
   Inlines and removes all DEFINE-STRUCTURE forms from the given FOL
@@ -220,7 +174,115 @@ but will still execute, and may be easier to read.
   program).
 
 
-Studying FOL
+Writing FOL
+
+A FOL program is a Scheme data structure.  This may have been parsed
+from a file or constructed directly in memory, as appropriate for the
+application.
+
+FOL follows the following grammar:
+
+program    = <expression>
+           | (begin <definition> ... <expression>)
+
+definition = (define (<proc-var> <data-var> ...)
+               (argument-types <shape> ...)
+               <expression>)
+
+shape      = real | bool | gensym | ()
+           | (cons <shape> <shape>) | (vector <shape> ...) | (values <shape> ...)
+
+expression = <data-var>
+           | <number> | <boolean> | ()
+           | (<proc-var> <expression> ...)
+           | (if <expression> <expression> <expression>)
+           | (let ((<data-var> <expression>) ...) <expression>)
+           | (let-values (((<data-var> <data-var> <data-var> ...) <expression>))
+               <expression>)
+           | (values <expression> <expression> <expression> ...)
+
+FOL distinguishes two types of variables, one for holding procedures
+and one for holding data; both are represented as Scheme symbols.  The
+procedure variables have global scope, must be globally unique, and
+may only be bound by DEFINE forms.  The data variables are lexically
+scoped with shadowing, and may be bound by LET forms and the formal
+parameter positions of DEFINE forms.  Procedures may only be defined
+at the top level.  Applications may only apply procedures directly by
+name.  This serves to make FOL a first-order language.
+
+FOL being first-order was the point.  The purpose of hairy flow
+analysis is to transform a computation concisely expressed in a
+higher-order language, in this case with AD operators, into an
+equivalent computation in a first-order language.  The job of the FOL
+optimizer is to give the flow analysis freedom to generate an
+arbitrarily ugly FOL program; on the other hand the FOL optimizer can
+use the restrictions on FOL, notably its first-order nature, to
+optimize it using standard, well-understood techniques.
+
+FOL procedure definitions must be annotated with the types of the
+arguments expected and the type of the result.  The annotation is
+achieved via the ARGUMENT-TYPES form in the grammar.  The shapes given
+in the form are taken to be parallel to the formal parameters, except
+that the last one refers to the type returned by the procedure.  The
+type declarations are used to perform scalar replacement of
+aggregates, and also serve as a useful sanity check when debugging the
+FOL optimizer or the code generator that gives it input.
+
+The FOL type system does not at present admit user-specified types,
+union types, or recursive types.  This will be changed when FOL is
+extended to accept the results of compiliing non-union-free VL or DVL
+programs.
+
+FOL supports multiple value returns from procedures and expressions
+via the standard Scheme VALUES construct, and multiple value binding
+via the SRFI-11 LET-VALUES construct.  All
+VALUES expressions must be in tail
+position with respect to a matching LET-VALUES expression.  You will
+note that because multiple value returns via the VALUES construct
+cannot be stored in data structures or bound as variables without
+destructuring them, they do not need to be represented in the runtime
+as heap-allocated objects, but can instead be implemented by just
+placing the values to be returned on the stack.  The VL and DVL code
+generator does not emit VALUES or LET-VALUES expressions; FOL supports
+them as targets for the scalar replacement of aggregates optimization.
+
+For implementation convenience, LET-VALUES is restricted to binding
+from a single expression; no parallel form is provided.  Also, nullary
+and unary multiple value returns are not permitted in FOL because they
+are easy to get rid of and would not interact as well as one would
+like with MIT Scheme's expression return semantics.
+
+TODO Do I really need to duplicate these two paragraphs here?
+FOL comes with the following procedures predefined:
+
+  CONS, CAR, CDR, VECTOR, VECTOR-REF, ABS, EXP, LOG, SIN, COS, TAN,
+  ASIN, ACOS, SQRT, +, -, *, /, ATAN, EXPT, PAIR?, NULL?, REAL?, <,
+  <=, >, >=, =, ZERO?, POSITIVE?, NEGATIVE?, READ-REAL, WRITE-REAL,
+  REAL, GENSYM, GENSYM?, and GENSYM=.
+
+Those with Scheme equivalents have the same semantics.  REAL is the
+identity function, but instructs the compiler to treat its argument as
+an unknown real number.  READ-REAL and WRITE-REAL do i/o; WRITE-REAL
+returns the number written.  GENSYM synthesizes a fresh object that is
+guaranteed to be distinct from all other objects.  GENSYM? tests
+whether an object was created by GENSYM.  GENSYM= tests whether two
+objects were created by the same dynamic call to GENSYM.
+
+FOL is specified to be tail-recursive and memory-managed.  Order of
+evaluation of procedure arguments is unspecified.  As of the present
+writing, the compilation may fail to preserve the order (or even
+presence!) of side-effects.  FOL is notionally strict, but the
+compilation may rearrange the order of evaluation of various
+subexpressions, even across procedure boundaries.  TODO is the dead
+variable elimination good enough to make the same termination
+guarantees that laziness does?
+
+TODO Discuss define-structure forms
+
+
+Implementing FOL
+
+
 
 Each of the stages listed above is in its own, like named source file,
 with extensive descriptions of what and how it does.  The full
