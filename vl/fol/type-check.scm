@@ -63,14 +63,12 @@
           (if (not (equal? (car (last-pair types)) body-type))
               (error "Return type declaration doesn't match"
                      definition (car (last-pair types)) body-type))
-          'done)
-        'done))
+          body-type)))
     (define (check-entry-point expression)
       (check-expression-types expression (empty-type-env) lookup-type))
     (if (begin-form? program)
         (begin
-          (for-each check-definition
-           (except-last-pair (cdr program)))
+          (for-each check-definition (except-last-pair (cdr program)))
           (check-entry-point (car (last-pair program))))
         (check-entry-point program))))
 
