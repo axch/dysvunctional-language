@@ -23,8 +23,8 @@
 ;;; that I put some basic syntax checks into this program.
 
 (define (check-program-types program)
-  (define (empty-env) '())
-  (define (augment-env env names shapes)
+  (define (empty-type-env) '())
+  (define (augment-type-env env names shapes)
     (append (map list names shapes) env))
   (if (begin-form? program)
       (for-each
@@ -55,7 +55,7 @@
        (iota (- (length program) 2))))
   (let ((lookup-type (type-map program)))
     (define (check-entry-point expression)
-      (check-expression-types expression (empty-env) lookup-type))
+      (check-expression-types expression (empty-type-env) lookup-type))
     (if (begin-form? program)
         (begin
           (for-each
@@ -66,8 +66,8 @@
                (let ((body-type
                       (check-expression-types
                        body
-                       (augment-env (empty-env) (cdr formals)
-                                    (arg-types (lookup-type (car formals))))
+                       (augment-type-env (empty-type-env) (cdr formals)
+                                         (arg-types (lookup-type (car formals))))
                        lookup-type)))
                  (if (not (equal? (car (last-pair types)) body-type))
                      (error "Return type declaration doesn't match"
@@ -94,8 +94,8 @@
   (define (construction? expr)
     (and (pair? expr)
          (memq (car expr) '(cons vector values))))
-  (define (empty-env) '())
-  (define (augment-env env names shapes)
+  (define (empty-type-env) '())
+  (define (augment-type-env env names shapes)
     (append (map list names shapes) env))
   (define (lookup name env)
     (let ((binding (assq name env)))
@@ -135,7 +135,8 @@
                              expr binding-type index)))
                 binding-types
                 (iota (length binding-types)))
-               (loop body (augment-env env (map car bindings) binding-types)))))
+               (loop body (augment-type-env
+                           env (map car bindings) binding-types)))))
           ((let-values-form? expr)
            (if (not (= 3 (length expr)))
                (error "Malformed LET-VALUES (excess body forms?)" expr))
@@ -153,7 +154,7 @@
                (if (not (= (length (caar bindings)) (length (cdr binding-type))))
                    (error "LET-VALUES binds the wrong number of VALUES"
                           expr binding-type))
-               (loop body (augment-env
+               (loop body (augment-type-env
                            env (caar bindings) (cdr binding-type))))))
           ((accessor? expr)
            (let ((accessee-type (loop (cadr expr) env)))
