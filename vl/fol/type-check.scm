@@ -50,7 +50,7 @@
        (except-last-pair (cdr program))
        (iota (- (length program) 2))))
   (let ((lookup-type (type-map program)))
-    (define (check-definition definition)
+    (define (check-definition-types definition)
       (let ((formals (cadr definition))
             (types (caddr definition))
             (body (cadddr definition)))
@@ -64,13 +64,13 @@
               (error "Return type declaration doesn't match"
                      definition (car (last-pair types)) body-type))
           body-type)))
-    (define (check-entry-point expression)
+    (define (check-entry-point-types expression)
       (check-expression-types expression (empty-type-env) lookup-type))
     (if (begin-form? program)
         (begin
-          (for-each check-definition (except-last-pair (cdr program)))
-          (check-entry-point (car (last-pair program))))
-        (check-entry-point program))))
+          (for-each check-definition-types (except-last-pair (cdr program)))
+          (check-entry-point-types (car (last-pair program))))
+        (check-entry-point-types program))))
 
 (define (check-expression-types expr env global-type)
   ;; A type environment maps every bound local name to its type.  The
