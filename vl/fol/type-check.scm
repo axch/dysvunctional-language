@@ -41,11 +41,10 @@
                (error "Type declaration not parallel to formals list"
                       definition index))
            (for-each
-            (lambda (formal type sub-index)
+            (lambda (type sub-index)
               (if (not (fol-shape? type))
                   (error "Type declaring a non-type"
                          type definition index sub-index)))
-            (cdr formals)
             (except-last-pair (cdr types))
             (iota (length (cdr formals))))))
        (except-last-pair (cdr program))
