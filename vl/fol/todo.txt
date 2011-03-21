@@ -1,11 +1,5 @@
 Expository explanations
-- Separate exposition into "Reading FOL", "Writing FOL", and
-  "Implementing FOL" for people who want to understand generated
-  output, understand the flexibility and limitations open to the code
-  generator, and understand the FOL optimizer, respectively.
-  The latter segment can perhaps be migrated to optimize.scm.  Where
-  do I talk in general about the services that the FOL optimizer
-  provides to the code generator, and how to see them in action?
+- Push TIDY into its own file?
 - Rename all the stages to something reasonable (and update readme)
 - Shatter all the horrible let loops into programs that look like
   interpreters, with a big dispatch to a bunch of named pieces
