@@ -282,15 +282,24 @@ TODO Discuss define-structure forms
 
 Implementing FOL
 
+The implementation of FOL is, of course, the matter at hand in the
+rest of this program.  Here is the table of contents:
 
+optimize.scm        Toplevel; architecture overview
+type-check.scm      Type checker
+structs.scm         structure-definitions->vectors
+inline.scm          Inliner
+  feedback-vertex-set.scm  Graph algorithm supporting inlining
+alpha-remaing.scm   Shadowing remover
+sra-anf.scm         A-normal form converter
+sra.scm             Scalar replacement of aggregates
+de-alias.scm        Alias elimination
+dead-code.scm       Dead variable elimination
+syntax.scm          Low-level support; FOL syntax
+srfi-11.scm         Reference implementation of SRFI 11
 
-Each of the stages listed above is in its own, like named source file,
-with extensive descriptions of what and how it does.  The full
-structure is assembled in post-processing.scm, which also contains a
-couple of stages that were not large and complicated enough to warrant
-files of their own.  The whole is supported by basic manipulations
-defined in syntax.scm.  The FOL compiler makes extensive use of a
-pattern matching and replacement system.  TODO Explain enough of it.
+The FOL compiler makes extensive use of a pattern matching and
+replacement system.  TODO Explain enough of it.
 
 
 Future of FOL
@@ -316,5 +325,5 @@ Finally, the current state of FOL is also open to some improvements
 that don't affect its interface, namely implementing interprocedural
 must alias analysis and dead code elimination, and better
 understanding the nature of what the rule-based tidier does to
-implement it directly in algorithms (as that will improve its
+implement it directly in algorithms (as that stands to improve its
 asymptotic complexity).
