@@ -81,10 +81,6 @@
   ;; name passed to it.  CHECK-EXPRESSION-TYPES either returns the
   ;; type of the expression or signals an error if the expression is
   ;; either malformed or not type correct.
-  (define (lookup-return-type thing)
-    (return-type (global-type thing)))
-  (define (lookup-arg-types thing)
-    (arg-types (global-type thing)))
   ;; For this purpose, a VALUES is the same as any other construction,
   ;; but in other contexts they may need to be distinguished.
   (define (construction? expr)
@@ -176,7 +172,7 @@
        (iota (length element-types)))
       (construct-shape element-types expr)))
   (define (check-application-types expr env)
-    (let ((expected-types (lookup-arg-types (car expr)))
+    (let ((expected-types (arg-types (global-type (car expr))))
           (argument-types (map (lambda (exp) (loop exp env)) (cdr expr))))
       (if (not (= (length expected-types) (length argument-types)))
           (error "Trying to call function with wrong number of arguments"
@@ -189,7 +185,7 @@
        expected-types
        argument-types
        (iota (length argument-types)))
-      (lookup-return-type (car expr))))
+      (return-type (global-type (car expr)))))
   (loop expr env))
 
 (define (fol-shape? thing)
