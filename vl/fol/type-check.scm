@@ -204,3 +204,55 @@
     (if (not binding)
         (error "Refencing an unbound variable" name)
         (cadr binding))))
+
+;;; A type map maps the name of any FOL procedure to a function-type
+;;; object representing its argument types and return type.  I
+;;; implement this as a hash table backed procedure that returns that
+;;; information when given the name in question, or #f if the given
+;;; name is not the name of a global procedure.  This is useful here
+;;; to type-check FOL, and will also be used to do scalar replacement
+;;; of aggregates.
+
+(define (type-map program)
+  (define (make-initial-type-map)
+    (define (real->real thing)
+      (cons thing (function-type '(real) 'real)))
+    (define (real*real->real thing)
+      (cons thing (function-type '(real real) 'real)))
+    (define (real->bool thing)
+      (cons thing (function-type '(real) 'bool)))
+    (define (real*real->bool thing)
+      (cons thing (function-type '(real real) 'bool)))
+    ;; Type testers real? gensym? null? pair? have other types, but
+    ;; should never be emitted by VL or DVL on union-free inputs.
+    (alist->eq-hash-table
+     `((read-real . ,(function-type '() 'real))
+       ,@(map real->real
+              '(abs exp log sin cos tan asin acos sqrt write-real real))
+       ,@(map real*real->real '(+ - * / atan expt))
+       ,@(map real->bool '(zero? positive? negative?))
+       ,@(map real*real->bool '(< <= > >= =))
+       (gensym . ,(function-type '() 'gensym))
+       (gensym= . ,(function-type '(gensym gensym) 'bool)))))
+  (let ((type-map (make-initial-type-map)))
+    (if (begin-form? program)
+        (for-each
+         (rule `(define ((? name ,symbol?) (?? formals))
+                  (argument-types (?? args) (? return))
+                  (? body))
+               (hash-table/put!
+                type-map name (function-type args return)))
+         (cdr program))
+        'ok)
+    (define (lookup-type name)
+      (let ((answer (hash-table/get type-map name #f)))
+        (or answer
+            (error "Looking up unknown name" name))))
+    lookup-type))
+
+(define-structure (function-type (constructor function-type))
+  args
+  return)
+
+(define return-type function-type-return)
+(define arg-types function-type-args)
