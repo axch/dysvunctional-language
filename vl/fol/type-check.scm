@@ -30,7 +30,7 @@
       (for-each
        (lambda (definition index)
          (if (not (definition? definition))
-             (error "Non-definition a non-terminal program position"
+             (error "Non-definition in a non-terminal program position"
                     definition index))
          (if (not (= 4 (length definition)))
              (error "Malformed definition" definition index))
