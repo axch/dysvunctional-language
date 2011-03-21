@@ -18,6 +18,8 @@ Expository explanations
 
 TODO: SRA is not idempotent; in fact, it doesn't deal with LET-VALUES
 in its input.
+- Also does not actually preserve ANF because of the reconstruction
+  code
 
 TODO full-alpha-rename doesn't work on LET-VALUES
 
@@ -35,6 +37,8 @@ alpha renamed?  "Prove" that various stages (e.g. SRA) always preserve
 them?
 - Use the grammars to construct programs that generate random
   structures obeying those grammars?
+- Being in ANF might be defined as "the ANF transform does nothing"
+- Ditto being alpha renamed
 
 There is a diagram: Each box is a set of properties that a FOL program
 might satisfy, and each arrow defines the applicability of a
