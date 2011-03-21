@@ -23,31 +23,31 @@
 ;;; that I put some basic syntax checks into this program.
 
 (define (check-program-types program)
-  (if (begin-form? program)
+  (define (check-definition-syntax definition)
+    (if (not (definition? definition))
+        (error "Non-definition in a non-terminal program position"
+               definition))
+    (if (not (= 4 (length definition)))
+        (error "Malformed definition" definition))
+    (let ((formals (cadr definition))
+          (types (caddr definition)))
+      (if (not (list? formals))
+          (error "Malformed formals list" definition))
+      (if (not (list? types))
+          (error "Malformed type declaration" definition))
+      (if (not (= (length types) (+ 1 (length formals))))
+          (error "Type declaration not parallel to formals list"
+                 definition))
       (for-each
-       (lambda (definition)
-         (if (not (definition? definition))
-             (error "Non-definition in a non-terminal program position"
-                    definition))
-         (if (not (= 4 (length definition)))
-             (error "Malformed definition" definition))
-         (let ((formals (cadr definition))
-               (types (caddr definition)))
-           (if (not (list? formals))
-               (error "Malformed formals list" definition))
-           (if (not (list? types))
-               (error "Malformed type declaration" definition))
-           (if (not (= (length types) (+ 1 (length formals))))
-               (error "Type declaration not parallel to formals list"
-                      definition))
-           (for-each
-            (lambda (type sub-index)
-              (if (not (fol-shape? type))
-                  (error "Type declaring a non-type"
-                         type definition sub-index)))
-            (except-last-pair (cdr types))
-            (iota (length (cdr formals))))))
-       (except-last-pair (cdr program))))
+       (lambda (type sub-index)
+         (if (not (fol-shape? type))
+             (error "Type declaring a non-type"
+                    type definition sub-index)))
+       (except-last-pair (cdr types))
+       (iota (length (cdr formals))))))
+  (if (begin-form? program)
+      (for-each check-definition-syntax
+                (except-last-pair (cdr program))))
   (let ((lookup-type (type-map program)))
     (define (check-definition-types definition)
       (let ((formals (cadr definition))
