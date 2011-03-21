@@ -94,96 +94,102 @@
     (cond ((symbol? expr) (lookup-type expr env))
           ((number? expr) 'real)
           ((boolean? expr) 'bool)
-          ((null? expr)   '())
-          ((if-form? expr)
-           (if (not (= 4 (length expr)))
-               (error "Malformed IF" expr))
-           (let ((pred-type (loop (cadr expr) env))
-                 (cons-type (loop (caddr expr) env))
-                 (alt-type (loop (cadddr expr) env)))
-             (if (not (eq? 'bool pred-type))
-                 (error "IF predicate not of boolean type" expr))
-             (if (not (equal? cons-type alt-type))
-                 ;; Note: this place will need to change to support union types
-                 (error "Different IF branches return different types" expr))
-             cons-type))
-          ((let-form? expr)
-           (if (not (= 3 (length expr)))
-               (error "Malformed LET (excess body forms?)" expr))
-           (let ((bindings (cadr expr))
-                 (body (caddr expr)))
-             (if (not (list? bindings))
-                 (error "Malformed LET (non-list bindings)" expr))
-             (let ((binding-types
-                    (map (lambda (exp) (loop exp env)) (map cadr bindings))))
-               (for-each
-                (lambda (binding-type index)
-                  (if (values-form? binding-type)
-                      (error "LET binds a VALUES shape"
-                             expr binding-type index)))
-                binding-types
-                (iota (length binding-types)))
-               (loop body (augment-type-env
-                           env (map car bindings) binding-types)))))
-          ((let-values-form? expr)
-           (if (not (= 3 (length expr)))
-               (error "Malformed LET-VALUES (excess body forms?)" expr))
-           (let ((bindings (cadr expr))
-                 (body (caddr expr)))
-             (if (not (list? bindings))
-                 (error "Malformed LET-VALUES (non-list bindings)" expr))
-             (if (not (= 1 (length bindings)))
-                 (error "Malformed LET-VALUES (multiple binding expressions)"
-                        expr))
-             (let ((binding-type (loop (cadar bindings) env)))
-               (if (not (values-form? binding-type))
-                   (error "LET-VALUES binds a non-VALUES shape"
-                          expr binding-type))
-               (if (not (= (length (caar bindings)) (length (cdr binding-type))))
-                   (error "LET-VALUES binds the wrong number of VALUES"
-                          expr binding-type))
-               (loop body (augment-type-env
-                           env (caar bindings) (cdr binding-type))))))
-          ((accessor? expr)
-           (let ((accessee-type (loop (cadr expr) env)))
-             (if (and (cons-ref? expr) (not (eq? 'cons (car accessee-type))))
-                 (if (eq? 'car (car expr))
-                     (error "Taking the CAR of a non-CONS" accessee-type)
-                     (error "Taking the CDR of a non-CONS" accessee-type)))
-             (if (vector-ref? expr)
-                 (begin
-                   (if (not (eq? 'vector (car accessee-type)))
-                       (error "Trying to VECTOR-REF a non-VECTOR"
-                              accessee-type))
-                   (if (not (< (caddr expr) (length (cdr accessee-type))))
-                       (error "Index out of bounds"
-                              (caddr expr) accessee-type))))
-             (select-from-shape-by-access accessee-type expr)))
-          ((construction? expr)
-           (let ((element-types (map (lambda (exp) (loop exp env)) (cdr expr))))
-             (for-each
-              (lambda (element-type index)
-                (if (values-form? element-type)
-                    (error "Trying to put a VALUES shape into a data structure"
-                           expr element-type index)))
-              element-types
-              (iota (length element-types)))
-             (construct-shape element-types expr)))
-          (else ;; general application
-           (let ((expected-types (lookup-arg-types (car expr)))
-                 (argument-types (map (lambda (exp) (loop exp env)) (cdr expr))))
-             (if (not (= (length expected-types) (length argument-types)))
-                 (error "Trying to call function with wrong number of arguments"
-                        expr))
-             (for-each
-              (lambda (expected given index)
-                (if (not (equal? expected given))
-                    (error "Mismatched argument at function call"
-                           expr index expected given)))
-              expected-types
-              argument-types
-              (iota (length argument-types)))
-             (lookup-return-type (car expr))))))
+          ((null? expr) '())
+          ((if-form? expr) (check-if-types expr env))
+          ((let-form? expr) (check-let-types expr env))
+          ((let-values-form? expr) (check-let-values-types expr env))
+          ((accessor? expr) (check-accessor-types expr env))
+          ((construction? expr) (check-construction-types expr env))
+          (else (check-application-types expr env))))
+  (define (check-if-types expr env)
+    (if (not (= 4 (length expr)))
+        (error "Malformed IF" expr))
+    (let ((pred-type (loop (cadr expr) env))
+          (cons-type (loop (caddr expr) env))
+          (alt-type (loop (cadddr expr) env)))
+      (if (not (eq? 'bool pred-type))
+          (error "IF predicate not of boolean type" expr))
+      (if (not (equal? cons-type alt-type))
+          ;; Note: this place will need to change to support union types
+          (error "Different IF branches return different types" expr))
+      cons-type))
+  (define (check-let-types expr env)
+    (if (not (= 3 (length expr)))
+        (error "Malformed LET (excess body forms?)" expr))
+    (let ((bindings (cadr expr))
+          (body (caddr expr)))
+      (if (not (list? bindings))
+          (error "Malformed LET (non-list bindings)" expr))
+      (let ((binding-types
+             (map (lambda (exp) (loop exp env)) (map cadr bindings))))
+        (for-each
+         (lambda (binding-type index)
+           (if (values-form? binding-type)
+               (error "LET binds a VALUES shape"
+                      expr binding-type index)))
+         binding-types
+         (iota (length binding-types)))
+        (loop body (augment-type-env
+                    env (map car bindings) binding-types)))))
+  (define (check-let-values-types expr env)
+    (if (not (= 3 (length expr)))
+        (error "Malformed LET-VALUES (excess body forms?)" expr))
+    (let ((bindings (cadr expr))
+          (body (caddr expr)))
+      (if (not (list? bindings))
+          (error "Malformed LET-VALUES (non-list bindings)" expr))
+      (if (not (= 1 (length bindings)))
+          (error "Malformed LET-VALUES (multiple binding expressions)"
+                 expr))
+      (let ((binding-type (loop (cadar bindings) env)))
+        (if (not (values-form? binding-type))
+            (error "LET-VALUES binds a non-VALUES shape"
+                   expr binding-type))
+        (if (not (= (length (caar bindings)) (length (cdr binding-type))))
+            (error "LET-VALUES binds the wrong number of VALUES"
+                   expr binding-type))
+        (loop body (augment-type-env
+                    env (caar bindings) (cdr binding-type))))))
+  (define (check-accessor-types expr env)
+    (let ((accessee-type (loop (cadr expr) env)))
+      (if (and (cons-ref? expr) (not (eq? 'cons (car accessee-type))))
+          (if (eq? 'car (car expr))
+              (error "Taking the CAR of a non-CONS" accessee-type)
+              (error "Taking the CDR of a non-CONS" accessee-type)))
+      (if (vector-ref? expr)
+          (begin
+            (if (not (eq? 'vector (car accessee-type)))
+                (error "Trying to VECTOR-REF a non-VECTOR"
+                       accessee-type))
+            (if (not (< (caddr expr) (length (cdr accessee-type))))
+                (error "Index out of bounds"
+                       (caddr expr) accessee-type))))
+      (select-from-shape-by-access accessee-type expr)))
+  (define (check-construction-types expr env)
+    (let ((element-types (map (lambda (exp) (loop exp env)) (cdr expr))))
+      (for-each
+       (lambda (element-type index)
+         (if (values-form? element-type)
+             (error "Trying to put a VALUES shape into a data structure"
+                    expr element-type index)))
+       element-types
+       (iota (length element-types)))
+      (construct-shape element-types expr)))
+  (define (check-application-types expr env)
+    (let ((expected-types (lookup-arg-types (car expr)))
+          (argument-types (map (lambda (exp) (loop exp env)) (cdr expr))))
+      (if (not (= (length expected-types) (length argument-types)))
+          (error "Trying to call function with wrong number of arguments"
+                 expr))
+      (for-each
+       (lambda (expected given index)
+         (if (not (equal? expected given))
+             (error "Mismatched argument at function call"
+                    expr index expected given)))
+       expected-types
+       argument-types
+       (iota (length argument-types)))
+      (lookup-return-type (car expr))))
   (loop expr env))
 
 (define (fol-shape? thing)
