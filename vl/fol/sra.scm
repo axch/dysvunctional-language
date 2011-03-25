@@ -102,7 +102,7 @@
     (if (begin-form? program)
         (append
          (map sra-definition (except-last-pair program))
-         (list (sra-entry-point (car (last-pair program)))))
+         (list (sra-entry-point (last program))))
         (sra-entry-point program))))
 
 (define (sra-expression expr env lookup-type win)

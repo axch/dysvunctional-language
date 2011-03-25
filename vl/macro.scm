@@ -75,7 +75,7 @@
 ;;; latter case is converted into LETREC.
 (define (macroexpand-body forms)
   (let ((definitions (except-last-pair forms))
-        (expression (car (last-pair forms))))
+        (expression (last forms)))
     (if (null? definitions)
         expression
         `(letrec ,(map list (map definiendum definitions)

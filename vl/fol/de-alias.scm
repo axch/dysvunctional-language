@@ -56,7 +56,7 @@
                  (argument-types ,@stuff)
                  ,(de-alias-expression body (map cons formals formals))))
         (except-last-pair program))
-       (list (de-alias-expression (car (last-pair program)) '())))
+       (list (de-alias-expression (last program) '())))
       (de-alias-expression program '())))
 
 (define (de-alias-expression expr env)

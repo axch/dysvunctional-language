@@ -64,16 +64,16 @@
                 (augment-type-env (empty-type-env) (cdr formals)
                                   (arg-types (lookup-type (car formals))))
                 lookup-type)))
-          (if (not (equal? (car (last-pair types)) body-type))
+          (if (not (equal? (last types) body-type))
               (error "Return type declaration doesn't match"
-                     definition (car (last-pair types)) body-type))
+                     definition (last types) body-type))
           body-type)))
     (define (check-entry-point-types expression)
       (check-expression-types expression (empty-type-env) lookup-type))
     (if (begin-form? program)
         (begin
           (for-each check-definition-types (except-last-pair (cdr program)))
-          (check-entry-point-types (car (last-pair program))))
+          (check-entry-point-types (last program)))
         (check-entry-point-types program))))
 
 (define (check-expression-types expr env global-type)

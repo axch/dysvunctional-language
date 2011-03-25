@@ -64,7 +64,7 @@
                             (map (lambda (x) #t) (cdr return))))))
         (except-last-pair program))
        (list (expression-dead-variable-elimination
-              (car (last-pair program)) #t)))
+              (last program) #t)))
       (expression-dead-variable-elimination program #t)))
 
 (define (expression-dead-variable-elimination expr live-out)
