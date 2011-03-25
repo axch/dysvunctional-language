@@ -113,14 +113,14 @@
            (win expr (list expr)))
           ((null? expr)
            (win expr (list expr)))
-          ((values-form? expr)
-           (de-alias-values expr env win))
           ((if-form? expr)
            (de-alias-if expr env win))
           ((let-form? expr)
            (de-alias-let expr env win))
           ((let-values-form? expr)
            (de-alias-let-values expr env win))
+          ((values-form? expr)
+           (de-alias-values expr env win))
           (else ; general application
            (de-alias-application expr env win))))
   (define (de-alias-symbol expr env win)
@@ -128,10 +128,6 @@
       (if alias-binding
           (win (cdr alias-binding) (list (cdr alias-binding)))
           (error "Trying to de-alias an unbound variable" expr env))))
-  (define (de-alias-values expr env win)
-    (loop* (cdr expr) env
-     (lambda (exprs names-lists)
-       (win `(values ,@exprs) (apply append names-lists)))))
   (define (de-alias-if expr env win)
     (loop (cadr expr) env
      (lambda (new-pred pred-names)
@@ -191,6 +187,10 @@
                            ,new-body)
                         new-body)
                     body-name-list)))))))))
+  (define (de-alias-values expr env win)
+    (loop* (cdr expr) env
+     (lambda (exprs names-lists)
+       (win `(values ,@exprs) (apply append names-lists)))))
   (define (de-alias-application expr env win)
     (loop* (cdr expr) env
      (lambda (new-args args-names-lists)
