@@ -1,4 +1,5 @@
 (declare (usual-integrations))
+;;;; (Approximate) A-normal form conversion
 
 (define (push-access expr1 expr2)
   `(,(car expr1) ,expr2 ,@(cddr expr1)))
@@ -40,12 +41,10 @@
                 ,(loop (caddr expr))
                 ,(loop (cadddr expr))))
           ((let-form? expr)
-           (if (null? (cdddr expr))
-               `(let ,(map (lambda (binding)
-                             `(,(car binding) ,(loop (cadr binding))))
-                           (cadr expr))
-                  ,(loop (caddr expr)))
-               (error "Malformed LET" expr)))
+           `(let ,(map (lambda (binding)
+                         `(,(car binding) ,(loop (cadr binding))))
+                       (cadr expr))
+              ,(loop (caddr expr))))
           ((begin-form? expr)
            (map loop expr))
           ((definition? expr)
