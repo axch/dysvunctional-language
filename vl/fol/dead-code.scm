@@ -34,6 +34,12 @@
 ;;; form must conversely interpret the incoming mask and only keep
 ;;; those of its subexpressions that are actually needed.
 
+;;; In principle, similar masking could be used to do elimination on
+;;; the slots of structures, but for simplicity I have chosen instead
+;;; to rely on SRA to separate said structures into individually named
+;;; variables and just do elimination on those variables.  I may
+;;; revisit this decision when I add union types.
+
 ;;; Procedure applications introduce a wrinkle.  Since the analysis is
 ;;; intraprocedural, is assumes that all the arguments of a live
 ;;; procedure call are live.  Furthermore, said procedure call may
@@ -81,7 +87,8 @@
   ;; this expression are needed by the context in whose tail position
   ;; this expression is evaluated.  It will be #t unless the context
   ;; is a LET-VALUES, in which case it will indicate which of those
-  ;; multiple values are needed.
+  ;; multiple values are needed.  If I were eliminating dead structure
+  ;; slots as well, this would be hairier.
   ;; This is written in continuation passing style because the
   ;; recursive call needs to return two things.  The win continuation
   ;; accepts the transformed expression and the set of variables that
@@ -106,6 +113,8 @@
           ;; accesses.
           ((construction? expr)
            (eliminate-in-construction expr live-out win))
+          ((access? expr)
+           (eliminate-in-access expr live-out win))
           ((values-form? expr)
            (eliminate-in-values expr live-out win))
           (else ; general application
@@ -164,11 +173,20 @@
                          (union sub-expr-used
                                 (difference body-used names)))))
                  (win new-body body-used))))))))
+  ;; Given that I decided not to do proper elimination of dead
+  ;; structure slots, I will say that if a structure is needed then
+  ;; all of its slots are needed, and any access to any slot of a
+  ;; structure causes the entire structure to be needed.
   (define (eliminate-in-construction expr live-out win)
     (loop* (cdr expr)
      (lambda (new-args args-used)
        (win `(,(car expr) ,@new-args)
             (reduce union (no-used-vars) args-used)))))
+  (define (eliminate-in-access expr live-out win)
+    (loop (cadr expr) #t
+     (lambda (new-accessee accessee-uses)
+       (win `(,(car expr) ,new-accessee ,@(cddr expr))
+            accessee-uses))))
   (define (eliminate-in-values expr live-out win)
     (assert (list? live-out))
     (let ((wanted-elts (filter-map (lambda (wanted? elt)
