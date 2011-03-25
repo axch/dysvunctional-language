@@ -79,7 +79,7 @@
     (if (not (pair? answer))
         (begin
           (check (in-anf? scalars))
-          (check (alpha-rename? scalars (sra-program scalars)))))
+          (check (equal? scalars (sra-program scalars)))))
     (check-program-types aliases)
     (check (alpha-renamed? aliases))
     (if (not (pair? answer))
