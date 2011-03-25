@@ -41,9 +41,6 @@
 ;;; return, because the places where <simple-expression>s are needed
 ;;; only accept single values by the rules of FOL anyway.
 
-(define (push-access expr1 expr2)
-  `(,(car expr1) ,expr2 ,@(cddr expr1)))
-
 (define (sra-anf expr)
   (define (loop expr)
     (cond ((simple-form? expr) expr)
