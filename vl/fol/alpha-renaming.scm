@@ -1,7 +1,7 @@
 (declare (usual-integrations))
 ;;;; Alpha renaming
 
-(define (alpha-extend env names)
+(define (extend-alpha-env env names)
   (append
    (map cons
         names
@@ -17,7 +17,7 @@
         ((lambda-form? exp)
          (let* ((names (cadr exp))
                 (body (cddr exp))
-                (new-env (alpha-extend env names))
+                (new-env (extend-alpha-env env names))
                 (new-names (map (lambda (name)
                                   (cdr (assq name new-env)))
                                 names)))
