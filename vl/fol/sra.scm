@@ -181,11 +181,11 @@
            (exp (cadr binding)))
       (loop exp env
        (lambda (new-exp exp-shape)
-         (let ((new-name-sets (map invent-names-for-parts (shape-parts exp-shape))))
+         (let ((new-name-sets (map invent-names-for-parts names (sra-parts exp-shape))))
            ;; The previous line is not idempotent because it renames
            ;; all the bindings, even those that used to hold
            ;; non-structured values.
-           (loop body (augment-env env names new-name-sets (shape-parts exp-shape))
+           (loop body (augment-env env names new-name-sets (sra-parts exp-shape))
             (lambda (new-body body-shape)
               (win (tidy-let-values
                     `(let-values ((,(apply append new-name-sets) ,new-exp))
