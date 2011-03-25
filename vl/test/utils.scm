@@ -92,6 +92,7 @@
         (begin
           (check (in-anf? variables))
           (check (equal? variables (sra-program variables)))))
+    (check (equal? variables (intraprocedural-de-alias variables)))
     (check-program-types tidied)
     (check (alpha-renamed? tidied))
     (check (= 0 (count-free-occurrences 'car tidied)))
