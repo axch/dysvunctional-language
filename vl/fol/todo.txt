@@ -1,19 +1,11 @@
 Expository explanations
 - Push TIDY into its own file?
 - Rename all the stages to something reasonable (and update readme)
-- Shatter all the horrible let loops into programs that look like
-  interpreters, with a big dispatch to a bunch of named pieces
-  - Continue with/beyond sra.scm
-  - Present the pieces in the same order across the board, and in the
-    FOL grammar.
 - Make the assertions in the README true
 - Actually explain SRA
 - Update explanation of VL (and DVL?) to reflect FOL's separate
   identity
 - Make FOL executable standalone, releasable, workbookable
-
-TODO: dead code elimination may not work on programs that contain
-accesses.
 
 TODO: SRA is not idempotent (and does not preserve ANF) because of the
 reconstruction code
