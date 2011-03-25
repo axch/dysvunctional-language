@@ -7,7 +7,7 @@
         names
         (map (lambda (name)
                (if (assq name env)
-                   (make-name (symbol name '-))
+                   (make-name name)
                    name))
              names))
    env))
