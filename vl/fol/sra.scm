@@ -52,8 +52,8 @@
 ;;; When union types are added to FOL, the effect will be the addition
 ;;; of types that are "primitive" as far as the SRA process in
 ;;; concerned, while being "compound" in the actual underlying code.
-;;; Which are which will be decided by finding feedback vertex set in
-;;; the type reference graph.
+;;; Which are which will be decided by finding a feedback vertex set
+;;; in the type reference graph.
 
 ;;; The FOL grammar accepted by the SRA algorithm replaces the
 ;;; standard FOL <expression> with
@@ -84,24 +84,24 @@
     (define (sra-entry-point expression)
       (sra-expression
        expression (empty-env) lookup-type reconstruct-pre-sra-shape))
+    (define sra-definition
+      (rule `(define ((? name ,symbol?) (?? formals))
+               (argument-types (?? arg-shapes) (? return))
+               (? body))
+            (let* ((new-name-sets
+                    (map invent-names-for-parts formals arg-shapes))
+                   (env (augment-env
+                         (empty-env) formals new-name-sets arg-shapes))
+                   (new-names (apply append new-name-sets)))
+              `(define (,name ,@new-names)
+                 (argument-types
+                  ,@(append-map primitive-fringe arg-shapes)
+                  ,(tidy-values `(values ,@(primitive-fringe return))))
+                 ,(sra-expression body env lookup-type
+                                  (lambda (new-body shape) new-body))))))
     (if (begin-form? program)
         (append
-         (map
-          (rule `(define ((? name ,symbol?) (?? formals))
-                   (argument-types (?? arg-shapes) (? return))
-                   (? body))
-                (let* ((new-name-sets
-                        (map invent-names-for-parts formals arg-shapes))
-                       (env (augment-env
-                             (empty-env) formals new-name-sets arg-shapes))
-                       (new-names (apply append new-name-sets)))
-                  `(define (,name ,@new-names)
-                     (argument-types
-                      ,@(append-map primitive-fringe arg-shapes)
-                      ,(tidy-values `(values ,@(primitive-fringe return))))
-                     ,(sra-expression body env lookup-type
-                                      (lambda (new-body shape) new-body)))))
-          (except-last-pair program))
+         (map sra-definition (except-last-pair program))
          (list (sra-entry-point (car (last-pair program)))))
         (sra-entry-point program))))
 
