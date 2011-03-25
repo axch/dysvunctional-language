@@ -116,13 +116,22 @@ a FOL program.
   Alpha-renames the given program, so that no local variable binding
   shadows any other and returns the result.
 
+(alpha-renamed? <program>)
+  Returns #t if the program contains no shadowing, #f otherwise.
+
+(alpha-rename? <program> <program>)
+  Checks whether the two given programs are alpha renamings of each
+  other.
+
 (sra-anf <program>)
   Converts the given program into (approximately) A-normal form, where
   all procedure calls operate on variables or constants and returns
   the result.  This is necessary for scalar replacement of aggregates,
   below.
 
-  TODO SRA-ANF barfs if its input has any LET-VALUES or VALUES.
+(in-anf? <program>)
+  Returns #t if the given program is already in approximate A-normal
+  form, and #f otherwise.
 
 (sra-program <program>)
   Performs scalar replacement of aggregates and returns the resulting
