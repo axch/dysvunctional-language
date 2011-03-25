@@ -83,11 +83,15 @@
     (check-program-types aliases)
     (check (alpha-renamed? aliases))
     (if (not (pair? answer))
-        (check (in-anf? aliases)))
+        (begin
+          (check (in-anf? aliases))
+          (check (equal? aliases (sra-program aliases)))))
     (check-program-types variables)
     (check (alpha-renamed? variables))
     (if (not (pair? answer))
-        (check (in-anf? variables)))
+        (begin
+          (check (in-anf? variables))
+          (check (equal? variables (sra-program variables)))))
     (check-program-types tidied)
     (check (alpha-renamed? tidied))
     (check (= 0 (count-free-occurrences 'car tidied)))
