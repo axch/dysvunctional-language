@@ -46,8 +46,15 @@
        (except-last-pair (cdr types))
        (iota (length (cdr formals))))))
   (if (begin-form? program)
-      (for-each check-definition-syntax
-                (except-last-pair (cdr program))))
+      (begin
+        (for-each check-definition-syntax
+                  (except-last-pair (cdr program)))
+        (let ((names (map definiendum (except-last-pair (cdr program)))))
+          (pair-for-each
+           (lambda (names)
+             (if (memq (car names) (cdr names))
+                 (error "Repeated definition" (car names))))
+           names))))
   (let ((lookup-type (type-map program)))
     (define (check-definition-types definition)
       (let ((formals (cadr definition))
