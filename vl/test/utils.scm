@@ -77,7 +77,9 @@
     (check-program-types scalars)
     (check (alpha-renamed? scalars))
     (if (not (pair? answer))
-        (check (in-anf? scalars)))
+        (begin
+          (check (in-anf? scalars))
+          (check (alpha-rename? scalars (sra-program scalars)))))
     (check-program-types aliases)
     (check (alpha-renamed? aliases))
     (if (not (pair? answer))
