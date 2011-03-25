@@ -144,59 +144,53 @@
   (define (de-alias-let expr env win)
     (let ((bindings (cadr expr))
           (body (caddr expr)))
-      (if (null? (cdddr expr))
-          (loop* (map cadr bindings) env
-           (lambda (new-bind-expressions bind-name-lists)
-             (let ((bind-names
-                    (map (lambda (bind-name-list)
-                           ;; These better all be singletons
-                           (if (non-alias? bind-name-list)
-                               the-non-alias
-                               (car bind-name-list)))
-                         bind-name-lists)))
-               (augment-env env (map car bindings) bind-names
-                (lambda (env acceptable-aliases)
-                  (loop body env
-                   (lambda (new-body body-name-list)
-                     (win (empty-let-rule
-                           `(let ,(filter-map
-                                   (lambda (name alias? expr)
-                                     (and (not alias?)
-                                          (list name expr)))
-                                   (map car bindings)
-                                   acceptable-aliases
-                                   new-bind-expressions)
-                              ,new-body))
-                          body-name-list))))))))
-          (error "Malformed LET" expr))))
+      (loop* (map cadr bindings) env
+       (lambda (new-bind-expressions bind-name-lists)
+         (let ((bind-names
+                (map (lambda (bind-name-list)
+                       ;; These better all be singletons
+                       (if (non-alias? bind-name-list)
+                           the-non-alias
+                           (car bind-name-list)))
+                     bind-name-lists)))
+           (augment-env env (map car bindings) bind-names
+            (lambda (env acceptable-aliases)
+              (loop body env
+               (lambda (new-body body-name-list)
+                 (win (empty-let-rule
+                       `(let ,(filter-map
+                               (lambda (name alias? expr)
+                                 (and (not alias?)
+                                      (list name expr)))
+                               (map car bindings)
+                               acceptable-aliases
+                               new-bind-expressions)
+                          ,new-body))
+                      body-name-list))))))))))
   (define (de-alias-let-values expr env win)
     (let* ((binding (caadr expr))
            (names (car binding))
            (subexpr (cadr binding))
            (body (caddr expr)))
-      (if (null? (cdddr expr))
-          (loop subexpr env
-           (lambda (new-subexpr subexpr-names)
-             (augment-env env names subexpr-names
-              (lambda (env acceptable-aliases)
-                (loop body env
-                 (lambda (new-body body-name-list)
-                   ;; ACCEPTABLE-ALIASES tells me which of
-                   ;; these bindings are guaranteed to be dead
-                   ;; because the variables being bound are
-                   ;; aliases and have already been replaced in
-                   ;; the new body.  I could eliminate them,
-                   ;; but that would require traversing subexpr
-                   ;; again to look for the VALUES that
-                   ;; supplies the corresponding values.  For
-                   ;; now, I will just kill the whole
-                   ;; let-values if it is useless.
-                   (win (if (any not acceptable-aliases)
-                            `(let-values ((,names ,new-subexpr))
-                               ,new-body)
-                            new-body)
-                        body-name-list)))))))
-          (error "Malformed LET-VALUES" expr))))
+      (loop subexpr env
+       (lambda (new-subexpr subexpr-names)
+         (augment-env env names subexpr-names
+          (lambda (env acceptable-aliases)
+            (loop body env
+             (lambda (new-body body-name-list)
+               ;; ACCEPTABLE-ALIASES tells me which of these bindings
+               ;; are guaranteed to be dead because the variables
+               ;; being bound are aliases and have already been
+               ;; replaced in the new body.  I could eliminate them,
+               ;; but that would require traversing subexpr again to
+               ;; look for the VALUES that supplies the corresponding
+               ;; values.  For now, I will just kill the whole
+               ;; let-values if it is useless.
+               (win (if (any not acceptable-aliases)
+                        `(let-values ((,names ,new-subexpr))
+                           ,new-body)
+                        new-body)
+                    body-name-list)))))))))
   (define (de-alias-application expr env win)
     (loop* (cdr expr) env
      (lambda (new-args args-names-lists)
