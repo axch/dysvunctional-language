@@ -5,14 +5,26 @@
 (define if-form? (tagged-list? 'if))
 
 (define ->lambda
-  (rule `(let (? bindings) (?? body))
-        `((lambda ,(map car bindings)
-            ,@body)
-          ,@(map cadr bindings))))
+  (rule-list
+   (list
+    (rule `(let (? bindings) (?? body))
+          `((lambda ,(map car bindings)
+              ,@body)
+            ,@(map cadr bindings)))
+    ;; This does not produce a syntactically valid object, but it does
+    ;; accurately capture what the names are doing.
+    (rule `(let-values (((? names) (? exp))) (?? body))
+          `((lambda ,names ,@body)
+            ,exp)))))
 
 (define ->let
   (rule `((lambda (? names) (?? body)) (?? args))
         `(let ,(map list names args) ,@body)))
+
+(define ->let-values
+  (rule `((lambda (? names) (?? body)) (? exp))
+        `(let-values ((,names ,exp))
+           ,@body)))
 
 (define reconstitute-definition
   (iterated

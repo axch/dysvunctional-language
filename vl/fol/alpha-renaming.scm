@@ -25,6 +25,8 @@
               ,@(alpha-rename-exp body new-env))))
         ((let-form? exp)
          (->let (alpha-rename-exp (->lambda exp) env)))
+        ((let-values-form? exp)
+         (->let-values (alpha-rename-exp (->lambda exp) env)))
         ((definition? exp)
          ;; Assume the definiendum is already unique
          (reconstitute-definition
