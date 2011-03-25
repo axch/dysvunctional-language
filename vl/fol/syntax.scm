@@ -1,6 +1,9 @@
 (declare (usual-integrations))
 ;;;; Syntax and manipulations of the output language
 
+(define (simple-form? thing)
+  (or (symbol? thing) (number? thing) (boolean? thing) (null? thing)))
+
 (define begin-form? (tagged-list? 'begin))
 
 (define let-form? (tagged-list? 'let))

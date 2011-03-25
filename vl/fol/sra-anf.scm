@@ -48,16 +48,6 @@
   (define (rename-nontrivial-expression expr win)
     (cond ((symbol? expr) (win expr '()))
           ((number? expr) (win expr '()))
-;;           ((accessor? expr)
-;;            (rename-nontrivial-subexpressions
-;;             (cadr expr)
-;;             (lambda (result names)
-;;               (win (push-access expr result) names))))
-;;           ((construction? expr)
-;;            (rename-nontrivial-expressions
-;;             (cdr expr)
-;;             (lambda (results names)
-;;               (win (cons (car expr) results) names))))
           (else
            (let ((name (make-name 'anf)))
              (win name `((,name ,expr)))))))
@@ -72,10 +62,7 @@
               (win (cons result results)
                    (append names more-names))))))))
   (let loop ((expr expr))
-    (cond ((symbol? expr) expr)
-          ((number? expr) expr)
-          ((boolean? expr) expr)
-          ((null? expr) expr)
+    (cond ((simple-form? expr) expr)
           ((if-form? expr)
            `(if ,(loop (cadr expr))
                 ,(loop (caddr expr))
