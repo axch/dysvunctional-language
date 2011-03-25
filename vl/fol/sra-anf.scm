@@ -60,7 +60,7 @@
             (lambda (results more-names)
               (win (cons result results)
                    (append names more-names))))))))
-  (let loop ((expr expr))
+  (define (loop expr)
     (cond ((simple-form? expr) expr)
           ((if-form? expr)
            `(if ,(loop (cadr expr))
@@ -93,7 +93,8 @@
             (lambda (results names)
               (if (not (null? names))
                   (loop `(let ,names ,results))
-                  expr)))))))
+                  expr))))))
+  (loop expr))
 
 ;;; An access chain like
 ;;; (car (cdr (car ...)))
