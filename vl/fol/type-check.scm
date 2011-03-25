@@ -49,12 +49,9 @@
       (begin
         (for-each check-definition-syntax
                   (except-last-pair (cdr program)))
-        (let ((names (map definiendum (except-last-pair (cdr program)))))
-          (pair-for-each
-           (lambda (names)
-             (if (memq (car names) (cdr names))
-                 (error "Repeated definition" (car names))))
-           names))))
+        (check-unique-names
+         (map definiendum (except-last-pair (cdr program)))
+         "Repeated definition")))
   (let ((lookup-type (type-map program)))
     (define (check-definition-types definition)
       (let ((formals (cadr definition))
@@ -211,6 +208,13 @@
     (if (not binding)
         (error "Refencing an unbound variable" name)
         (cadr binding))))
+
+(define (check-unique-names names message)
+  (pair-for-each
+   (lambda (names)
+     (if (memq (car names) (cdr names))
+         (error message (car names))))
+   names))
 
 ;;; A type map maps the name of any FOL procedure to a function-type
 ;;; object representing its argument types and return type.  I
