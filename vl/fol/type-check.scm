@@ -44,7 +44,8 @@
              (error "Type declaring a non-type"
                     type definition sub-index)))
        (except-last-pair (cdr types))
-       (iota (length (cdr formals))))))
+       (iota (length (cdr formals))))
+      (check-unique-names (cdr formals) "Repeated formal parameter")))
   (if (begin-form? program)
       (begin
         (for-each check-definition-syntax
@@ -116,6 +117,7 @@
           (body (caddr expr)))
       (if (not (list? bindings))
           (error "Malformed LET (non-list bindings)" expr))
+      (check-unique-names (map car bindings) "Repeated LET binding")
       (let ((binding-types
              (map (lambda (exp) (loop exp env)) (map cadr bindings))))
         (for-each
@@ -137,6 +139,7 @@
       (if (not (= 1 (length bindings)))
           (error "Malformed LET-VALUES (multiple binding expressions)"
                  expr))
+      (check-unique-names (caar bindings) "Repeated LET-VALUES binding")
       (let ((binding-type (loop (cadar bindings) env)))
         (if (not (values-form? binding-type))
             (error "LET-VALUES binds a non-VALUES shape"
