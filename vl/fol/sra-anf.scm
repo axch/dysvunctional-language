@@ -46,8 +46,7 @@
 
 (define (sra-anf expr)
   (define (rename-nontrivial-expression expr win)
-    (cond ((symbol? expr) (win expr '()))
-          ((number? expr) (win expr '()))
+    (cond ((simple-form? expr) (win expr '()))
           (else
            (let ((name (make-name 'anf)))
              (win name `((,name ,expr)))))))
