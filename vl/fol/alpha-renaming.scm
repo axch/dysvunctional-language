@@ -72,3 +72,6 @@
            (and (loop (car exp1) (car exp2) env)
                 (loop (cdr exp1) (cdr exp2) env)))
           (else (equal? exp1 exp2)))))
+
+(define (alpha-renamed? program)
+  (equal? program (alpha-rename program)))
