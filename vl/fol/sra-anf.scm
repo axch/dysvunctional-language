@@ -45,6 +45,12 @@
                          `(,(car binding) ,(loop (cadr binding))))
                        (cadr expr))
               ,(loop (caddr expr))))
+          ((let-values-form? expr)
+           ((rule `(let-values (((? names) (? exp)))
+                     (? body))
+                  `(let-values ((,names ,(loop exp)))
+                     ,(loop body)))
+            expr))
           ((begin-form? expr)
            (map loop expr))
           ((definition? expr)
@@ -55,7 +61,7 @@
                      (argument-types ,@stuff)
                      ,(loop body)))
             expr))
-          (else ; application
+          (else ; application or multiple value return
            (rename-nontrivial-expressions
             expr
             (lambda (results names)
