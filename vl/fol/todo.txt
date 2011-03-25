@@ -12,6 +12,8 @@ Expository explanations
   identity
 - Make FOL executable standalone, releasable, workbookable
 
+TODO: dead code elimination may not work on programs that contain
+accesses.
 
 TODO: SRA is not idempotent (and does not preserve ANF) because of the
 reconstruction code
