@@ -46,10 +46,10 @@
 
 (define (sra-anf expr)
   (define (rename-nontrivial-expression expr win)
-    (cond ((simple-form? expr) (win expr '()))
-          (else
-           (let ((name (make-name 'anf)))
-             (win name `((,name ,expr)))))))
+    (if (simple-form? expr)
+        (win expr '())
+        (let ((name (make-name 'anf)))
+          (win name `((,name ,expr))))))
   (define (rename-nontrivial-expressions exprs win)
     (if (null? exprs)
         (win '() '())
