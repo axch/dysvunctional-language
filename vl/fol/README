@@ -145,8 +145,6 @@ a FOL program.
   SRA-PROGRAM expects its input to be in (approximate) A-normal form,
   and preserves this feature.
 
-  TODO SRA-PROGRAM barfs if its input has any LET-VALUES or VALUES.
-
 (intraprocedural-de-alias <program>)
   Eliminates aliases inside procedure bodies and returns the result.
   An alias is a variable binding of the form (let ((x y)) ...); x

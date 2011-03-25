@@ -13,10 +13,8 @@ Expository explanations
 - Make FOL executable standalone, releasable, workbookable
 
 
-TODO: SRA is not idempotent; in fact, it doesn't deal with LET-VALUES
-in its input.
-- Also does not actually preserve ANF because of the reconstruction
-  code
+TODO: SRA is not idempotent (and does not preserve ANF) because of the
+reconstruction code
 
 NB: the index argument to vector-ref should always be a constant
 NB: literal booleans should only appear when a shape is being shipped
