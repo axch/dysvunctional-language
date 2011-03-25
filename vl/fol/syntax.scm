@@ -1,6 +1,8 @@
 (declare (usual-integrations))
 ;;;; Syntax and manipulations of the output language
 
+(define begin-form? (tagged-list? 'begin))
+
 (define let-form? (tagged-list? 'let))
 (define if-form? (tagged-list? 'if))
 
@@ -47,6 +49,22 @@
 (define values-form? (tagged-list? 'values))
 (define let-values-form? (tagged-list? 'let-values))
 
+(define (accessor? expr)
+  (or (cons-ref? expr)
+      (vector-ref? expr)))
+
+(define (cons-ref? expr)
+  (and (pair? expr) (pair? (cdr expr)) (null? (cddr expr))
+       (memq (car expr) '(car cdr))))
+
+(define (vector-ref? expr)
+  (and (pair? expr) (pair? (cdr expr)) (pair? (cddr expr)) (null? (cdddr expr))
+       (eq? (car expr) 'vector-ref) (number? (caddr expr))))
+
+(define (construction? expr)
+  (and (pair? expr)
+       (memq (car expr) '(cons vector))))
+
 (define (constructors-only? exp)
   (or (symbol? exp)
       (constant? exp)

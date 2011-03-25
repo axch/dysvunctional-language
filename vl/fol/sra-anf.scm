@@ -1,19 +1,5 @@
 (declare (usual-integrations))
 
-(define begin-form? (tagged-list? 'begin))
-
-(define (accessor? expr)
-  (or (cons-ref? expr)
-      (vector-ref? expr)))
-(define (cons-ref? expr)
-  (and (pair? expr) (pair? (cdr expr)) (null? (cddr expr))
-       (memq (car expr) '(car cdr))))
-(define (vector-ref? expr)
-  (and (pair? expr) (pair? (cdr expr)) (pair? (cddr expr)) (null? (cdddr expr))
-       (eq? (car expr) 'vector-ref) (number? (caddr expr))))
-(define (construction? expr)
-  (and (pair? expr)
-       (memq (car expr) '(cons vector))))
 (define (push-access expr1 expr2)
   `(,(car expr1) ,expr2 ,@(cddr expr1)))
 
