@@ -62,6 +62,8 @@
              (loop body1 body2 new-env)))
           ((and (let-form? exp1) (let-form? exp2))
            (loop (->lambda exp1) (->lambda exp2) env))
+          ((and (let-values-form? exp1) (let-values-form? exp2))
+           (loop (->lambda exp1) (->lambda exp2) env))
           ((and (definition? exp1) (definition? exp2))
            (let ((name1 (definiendum exp1))
                  (name2 (definiendum exp2)))
