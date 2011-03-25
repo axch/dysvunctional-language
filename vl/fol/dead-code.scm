@@ -51,18 +51,18 @@
 ;;; dead in the body.
 
 (define (intraprocedural-dead-variable-elimination program)
+  (define eliminate-in-definition
+    (rule `(define ((? name ,symbol?) (?? formals))
+             (argument-types (?? stuff) (? return))
+             (? body))
+          `(define (,name ,@formals)
+             (argument-types ,@stuff ,return)
+             ,(expression-dead-variable-elimination
+               body (or (not (values-form? return))
+                        (map (lambda (x) #t) (cdr return)))))))
   (if (begin-form? program)
       (append
-       (map
-        (rule `(define ((? name ,symbol?) (?? formals))
-                 (argument-types (?? stuff) (? return))
-                 (? body))
-              `(define (,name ,@formals)
-                 (argument-types ,@stuff ,return)
-                 ,(expression-dead-variable-elimination
-                   body (or (not (values-form? return))
-                            (map (lambda (x) #t) (cdr return))))))
-        (except-last-pair program))
+       (map eliminate-in-definition (except-last-pair program))
        (list (expression-dead-variable-elimination
               (last program) #t)))
       (expression-dead-variable-elimination program #t)))
