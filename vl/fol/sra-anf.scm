@@ -99,6 +99,11 @@
           (win name `((,name ,expr))))))
   (loop expr))
 
+;;; Checking whether a form is already in approximate ANF amounts to
+;;; checking whether the anf converter will do anything to it.
+(define (in-anf? expr)
+  (equal? expr (sra-anf expr)))
+
 ;;; An access chain like
 ;;; (car (cdr (car ...)))
 ;;; or a construction chain like
@@ -116,3 +121,8 @@
 ;;; return; and thereby avoid creating extra work for the alias
 ;;; eliminator.  I have not chosen to do so; partially because the
 ;;; alias eliminator would be needed anyway.
+
+;;; On the other hand, leaving constructor chains in place would have
+;;; the advantage that the reconstruction of structured shapes
+;;; expected by the outside world would not break that more lenient
+;;; approximate ANF.
