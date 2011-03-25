@@ -119,6 +119,10 @@
     (return-type (lookup-type thing)))
   (define (lookup-arg-types thing)
     (arg-types (lookup-type thing)))
+  ;; For this purpose, a VALUES is the same as any other construction.
+  (define (construction? expr)
+    (and (pair? expr)
+         (memq (car expr) '(cons vector values))))
   (define (loop expr env win)
     (cond ((symbol? expr)
            (win `(values ,@(get-names expr env))
@@ -133,6 +137,8 @@
            (sra-if expr env win))
           ((let-form? expr)
            (sra-let expr env win))
+          ((let-values-form? expr)
+           (sra-let-values expr env win))
           ((accessor? expr)
            (sra-access expr env win))
           ((construction? expr)
@@ -166,6 +172,23 @@
               (win (tidy-let-values
                     `(let-values ,(map list new-name-sets
                                        new-bind-expressions)
+                       ,new-body))
+                   body-shape))))))))
+  (define (sra-let-values expr env win)
+    (let* ((binding (caadr expr))
+           (body (caddr expr))
+           (names (car binding))
+           (exp (cadr binding)))
+      (loop exp env
+       (lambda (new-exp exp-shape)
+         (let ((new-name-sets (map invent-names-for-parts (shape-parts exp-shape))))
+           ;; The previous line is not idempotent because it renames
+           ;; all the bindings, even those that used to hold
+           ;; non-structured values.
+           (loop body (augment-env env names new-name-sets (shape-parts exp-shape))
+            (lambda (new-body body-shape)
+              (win (tidy-let-values
+                    `(let-values ((,(apply append new-name-sets) ,new-exp))
                        ,new-body))
                    body-shape))))))))
   (define (sra-access expr env win)
