@@ -43,7 +43,7 @@
    (map (lambda (name)
           (cons name name))
         (delete-duplicates
-         `(cons car cdr if define let vector vector-ref
+         `(cons car cdr if define let vector vector-ref let-values values
                 ,@(append-map needed-names *primitives*))))))
 
 (define (alpha-rename? exp1 exp2)
