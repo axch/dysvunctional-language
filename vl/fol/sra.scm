@@ -130,56 +130,66 @@
           ((null? expr)
            (win `(values) '()))
           ((if-form? expr)
-           (loop (cadr expr) env
-            (lambda (new-pred pred-shape)
-              (assert (eq? 'bool pred-shape))
-              (loop (caddr expr) env
-               (lambda (new-cons cons-shape)
-                 (loop (cadddr expr) env
-                  (lambda (new-alt alt-shape)
-                    ;; TODO cons-shape and alt-shape better be the same
-                    ;; (or at least compatible)
-                    (win `(if ,new-pred ,new-cons ,new-alt)
-                         cons-shape))))))))
+           (sra-if expr env win))
           ((let-form? expr)
-           (let ((bindings (cadr expr))
-                 (body (caddr expr)))
-             (if (null? (cdddr expr))
-                 (loop* (map cadr bindings) env
-                  (lambda (new-bind-expressions bind-shapes)
-                    (let ((new-name-sets
-                           (map invent-names-for-parts
-                                (map car bindings) bind-shapes)))
-                      (loop body (augment-env
-                                  env (map car bindings)
-                                  new-name-sets bind-shapes)
-                       (lambda (new-body body-shape)
-                         (win (tidy-let-values
-                               `(let-values ,(map list new-name-sets
-                                                  new-bind-expressions)
-                                  ,new-body))
-                              body-shape))))))
-                 (error "Malformed LET" expr))))
+           (sra-let expr env win))
           ((accessor? expr)
-           (loop (cadr expr) env
-            (lambda (new-cadr cadr-shape)
-              (assert (values-form? new-cadr))
-              (win (slice-values-by-access new-cadr cadr-shape expr)
-                   (select-from-shape-by-access cadr-shape expr)))))
+           (sra-access expr env win))
           ((construction? expr)
-           (loop* (cdr expr) env
-            (lambda (new-terms terms-shapes)
-              (assert (every values-form? new-terms))
-              (win (append-values new-terms)
-                   (construct-shape terms-shapes expr)))))
+           (sra-construction expr env win))
           (else ;; general application
-           (loop* (cdr expr) env
-            (lambda (new-args args-shapes)
-              (assert (every values-form? new-args))
-              ;; The type checker should have ensured this
-              ;(assert (every equal? args-shapes (lookup-arg-types (car expr))))
-              (win `(,(car expr) ,@(cdr (append-values new-args)))
-                   (lookup-return-type (car expr))))))))
+           (sra-application expr env win))))
+  (define (sra-if expr env win)
+    (loop (cadr expr) env
+     (lambda (new-pred pred-shape)
+       (assert (eq? 'bool pred-shape))
+       (loop (caddr expr) env
+        (lambda (new-cons cons-shape)
+          (loop (cadddr expr) env
+           (lambda (new-alt alt-shape)
+             ;; TODO cons-shape and alt-shape better be the same
+             ;; (or at least compatible)
+             (win `(if ,new-pred ,new-cons ,new-alt)
+                  cons-shape))))))))
+  (define (sra-let expr env win)
+    (let ((bindings (cadr expr))
+          (body (caddr expr)))
+      (if (null? (cdddr expr))
+          (loop* (map cadr bindings) env
+           (lambda (new-bind-expressions bind-shapes)
+             (let ((new-name-sets
+                    (map invent-names-for-parts
+                         (map car bindings) bind-shapes)))
+               (loop body (augment-env
+                           env (map car bindings)
+                           new-name-sets bind-shapes)
+                (lambda (new-body body-shape)
+                  (win (tidy-let-values
+                        `(let-values ,(map list new-name-sets
+                                           new-bind-expressions)
+                           ,new-body))
+                       body-shape))))))
+          (error "Malformed LET" expr))))
+  (define (sra-access expr env win)
+    (loop (cadr expr) env
+     (lambda (new-cadr cadr-shape)
+       (assert (values-form? new-cadr))
+       (win (slice-values-by-access new-cadr cadr-shape expr)
+            (select-from-shape-by-access cadr-shape expr)))))
+  (define (sra-construction expr env win)
+    (loop* (cdr expr) env
+     (lambda (new-terms terms-shapes)
+       (assert (every values-form? new-terms))
+       (win (append-values new-terms)
+            (construct-shape terms-shapes expr)))))
+  (define (sra-application expr env win)
+    (loop* (cdr expr) env
+     (lambda (new-args args-shapes)
+       (assert (every values-form? new-args))
+       ;; The type checker should have ensured this
+       ;(assert (every equal? args-shapes (lookup-arg-types (car expr))))
+       (win `(,(car expr) ,@(cdr (append-values new-args)))
+            (lookup-return-type (car expr))))))
   (define (loop* exprs env win)
     (if (null? exprs)
         (win '() '())
