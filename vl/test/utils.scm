@@ -69,29 +69,44 @@
          (variables ((fol-carefully intraprocedural-dead-variable-elimination)
                      aliases answer))
          (tidied ((fol-carefully tidy) variables answer)))
-    (check (equal? answer (fol-eval scalars)))
-    (check (alpha-renamed? anf))
+    ;; SRA emits sane code
     (check-program-types scalars)
+    (check (equal? answer (fol-eval scalars)))
+
+    ;; Alpha renaming is preserved
+    (check (alpha-renamed? anf))
     (check (alpha-renamed? scalars))
+    (check (alpha-renamed? aliases))
+    (check (alpha-renamed? variables))
+    (check (alpha-renamed? tidied))
+
+    ;; Except for reconstruction of the structure that the outside
+    ;; world expects, SRA and subsequent stages (except tidying)
+    ;; preserve ANF.
     (if (not (pair? answer))
         (begin
           (check (in-anf? scalars))
-          (check (equal? scalars (sra-program scalars)))))
-    (check (alpha-renamed? aliases))
-    (if (not (pair? answer))
-        (begin
           (check (in-anf? aliases))
-          (check (equal? aliases (sra-program aliases)))))
-    (check (alpha-renamed? variables))
+          (check (in-anf? variables))))
+
+    ;; Except for reconstruction of the structure that the outside
+    ;; world expects, SRA is idempotent and subsequent ANF-preserving
+    ;; stages do not introduce new work for it.
     (if (not (pair? answer))
         (begin
-          (check (in-anf? variables))
+          (check (equal? scalars (sra-program scalars)))
+          (check (equal? aliases (sra-program aliases)))
           (check (equal? variables (sra-program variables)))))
+
+    ;; Dead variable elimination does not introduce new aliases.
     (check (equal? variables (intraprocedural-de-alias variables)))
-    (check (alpha-renamed? tidied))
+
+    ;; In the union-free case, SRA is successful at removing all
+    ;; internal consing.
     (check (= 0 (count-free-occurrences 'car tidied)))
     (check (= 0 (count-free-occurrences 'cdr tidied)))
     (check (= 0 (count-free-occurrences 'vector-ref tidied)))
+
     (if wallpaper?
         (begin
           (display "***NEW PROGRAM ***")
