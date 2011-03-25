@@ -154,22 +154,20 @@
   (define (sra-let expr env win)
     (let ((bindings (cadr expr))
           (body (caddr expr)))
-      (if (null? (cdddr expr))
-          (loop* (map cadr bindings) env
-           (lambda (new-bind-expressions bind-shapes)
-             (let ((new-name-sets
-                    (map invent-names-for-parts
-                         (map car bindings) bind-shapes)))
-               (loop body (augment-env
-                           env (map car bindings)
-                           new-name-sets bind-shapes)
-                (lambda (new-body body-shape)
-                  (win (tidy-let-values
-                        `(let-values ,(map list new-name-sets
-                                           new-bind-expressions)
-                           ,new-body))
-                       body-shape))))))
-          (error "Malformed LET" expr))))
+      (loop* (map cadr bindings) env
+       (lambda (new-bind-expressions bind-shapes)
+         (let ((new-name-sets
+                (map invent-names-for-parts
+                     (map car bindings) bind-shapes)))
+           (loop body (augment-env
+                       env (map car bindings)
+                       new-name-sets bind-shapes)
+            (lambda (new-body body-shape)
+              (win (tidy-let-values
+                    `(let-values ,(map list new-name-sets
+                                       new-bind-expressions)
+                       ,new-body))
+                   body-shape))))))))
   (define (sra-access expr env win)
     (loop (cadr expr) env
      (lambda (new-cadr cadr-shape)
