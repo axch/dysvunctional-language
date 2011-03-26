@@ -85,8 +85,10 @@
              names))
    env))
 
-;;; With an analagous traversal, we can check whether two programs are
-;;; alpha-renamings of each other.
+;;; The traversal to check whether two programs are alpha-renamings of
+;;; each other is much simpler, because there is no reason to carry
+;;; around any avoid list, and because the recursive call need only
+;;; return one thing.
 
 (define (alpha-rename? exp1 exp2)
   (let loop ((exp1 exp1)
