@@ -81,11 +81,11 @@
     (check (equal? aliases (inline aliases)))
 
     ;; Alpha renaming is preserved
-    (check (alpha-renamed? anf))
-    (check (alpha-renamed? scalars))
-    (check (alpha-renamed? aliases))
-    (check (alpha-renamed? variables))
-    (check (alpha-renamed? tidied))
+    (check (no-shadowing? anf))
+    (check (no-shadowing? scalars))
+    (check (no-shadowing? aliases))
+    (check (no-shadowing? variables))
+    (check (no-shadowing? tidied))
 
     ;; Except for reconstruction of the structure that the outside
     ;; world expects, SRA and subsequent stages (except tidying)

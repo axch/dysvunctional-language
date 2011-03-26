@@ -92,7 +92,5 @@
 ;;; (i.e. already contains no shadowing) by looking to see whether it
 ;;; alpha renames to itself.
 
-(define (alpha-renamed? program)
+(define (no-shadowing? program)
   (equal? program (alpha-rename program)))
-
-(define no-shadowing? alpha-renamed?)

@@ -6,8 +6,12 @@ Expository explanations
   identity
 - Make FOL executable standalone, releasable, workbookable
 
-- Rename sra-anf.scm to a-normal-form.scm
 - Push new names (define foo bar) through
+fol/a-normal-form.scm:(define approximate-anf sra-anf)
+fol/a-normal-form.scm:(define approximate-anf? in-anf?)
+fol/dead-code.scm:(define eliminate-intraprocedural-dead-variables intraprocedural-dead-variable-elimination)
+fol/sra.scm:(define scalar-replace-aggregates sra-program)
+
 
 TODO: SRA is not idempotent (and does not preserve ANF) because of the
 reconstruction code
