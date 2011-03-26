@@ -58,28 +58,28 @@
 ;;; in the type reference graph.
 
 ;;; The FOL grammar accepted by the SRA algorithm replaces the
-;;; standard FOL <expression> with
+;;; standard FOL <expression>, <access>, and <construction> with
+;;;
+;;; expression = <simple-expression>
+;;;            | (if <expression> <expression> <expression>)
+;;;            | (let ((<data-var> <expression>) ...) <expression>)
+;;;            | (let-values (((<data-var> <data-var> <data-var> ...) <expression>))
+;;;                <expression>)
+;;;            | <access>
+;;;            | <construction>
+;;;            | (values <simple-expression> <simple-expression> <simple-expression> ...)
+;;;            | (<proc-var> <simple-expression> ...)
 ;;;
 ;;; simple-expression = <data-var> | <number> | <boolean> | ()
-;;;
-;;; construction = (cons <simple-expression> <simple-expression>)
-;;;              | (vector <simple-expression> ...)
 ;;;
 ;;; access = (car <simple-expression>)
 ;;;        | (cdr <simple-expression>)
 ;;;        | (vector-ref <simple-expression> <integer>)
 ;;;
-;;; expression = <simple-expression> | <construction> | <access>
-;;;            | (<proc-var> <simple-expression> ...)
-;;;            | (if <expression> <expression> <expression>)
-;;;            | (let ((<data-var> <expression>) ...) <expression>)
+;;; construction = (cons <simple-expression> <simple-expression>)
+;;;              | (vector <simple-expression> ...)
 ;;;
-;;; CONS, CAR, CDR, VECTOR, and VECTOR-REF are no longer considered
-;;; acceptable <proc-var>s.  This grammar is consistent with the
-;;; output of SRA-ANF, without VALUES or LET-VALUES.  The fact that
-;;; (TODO) SRA does not handle multiple value returns is fixable, but
-;;; also ok because the VL and DVL code generators do not emit them,
-;;; and SRA is the stage that introduces them.
+;;; This grammar is consistent with the output of APPROXIMATE-ANF.
 
 (define (scalar-replace-aggregates program)
   (let ((lookup-type (type-map program)))

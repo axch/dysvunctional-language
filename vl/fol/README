@@ -204,8 +204,17 @@ expression = <data-var>
            | (let ((<data-var> <expression>) ...) <expression>)
            | (let-values (((<data-var> <data-var> <data-var> ...) <expression>))
                <expression>)
+           | <access>
+           | <construction>
            | (values <expression> <expression> <expression> ...)
            | (<proc-var> <expression> ...)
+
+access = (car <expression>)
+       | (cdr <expression>)
+       | (vector-ref <expression> <integer>)
+
+construction = (cons <expression> <expression>)
+             | (vector <expression> ...)
 
 FOL distinguishes two types of variables, one for holding procedures
 and one for holding data; both are represented as Scheme symbols.  The

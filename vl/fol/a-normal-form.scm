@@ -18,18 +18,27 @@
 ;;; is still allowed.
 
 ;;; The precise grammar of FOL in approximate ANF is the same as the
-;;; normal FOL grammar, except for replacing the <expression>
-;;; nonterminal with the following:
-;;;
-;;; simple-expression = <data-var> | <number> | <boolean> | ()
+;;; normal FOL grammar, except for replacing the <expression>,
+;;; <access>, and <construction> nonterminals with the following:
 ;;;
 ;;; expression = <simple-expression>
 ;;;            | (if <expression> <expression> <expression>)
 ;;;            | (let ((<data-var> <expression>) ...) <expression>)
 ;;;            | (let-values (((<data-var> <data-var> <data-var> ...) <expression>))
 ;;;                <expression>)
+;;;            | <access>
+;;;            | <construction>
 ;;;            | (values <simple-expression> <simple-expression> <simple-expression> ...)
 ;;;            | (<proc-var> <simple-expression> ...)
+;;;
+;;; simple-expression = <data-var> | <number> | <boolean> | ()
+;;;
+;;; access = (car <simple-expression>)
+;;;        | (cdr <simple-expression>)
+;;;        | (vector-ref <simple-expression> <integer>)
+;;;
+;;; construction = (cons <simple-expression> <simple-expression>)
+;;;              | (vector <simple-expression> ...)
 
 ;;; The following program converts an arbitrary FOL expression into
 ;;; approximate ANF.  The way to do this is to recur down the
@@ -56,7 +65,7 @@
            (map loop expr))
           ((definition? expr)
            (approximate-anf-definition expr))
-          (else ; application or multiple value return
+          (else ; access, construction, application, or multiple value return
            (approximate-anf-application expr))))
   (define (approximate-anf-let expr)
     `(let ,(map (lambda (binding)
