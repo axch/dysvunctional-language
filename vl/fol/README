@@ -108,10 +108,6 @@ a FOL program.
   Inlines and removes all DEFINE-STRUCTURE forms from the given FOL
   program and returns the resulting FOL program.
 
-(inline <program>)
-  Inlines as many procedures in the given FOL program as possible and
-  returns the result.
-
 (alpha-rename <program>)
   Renames variables in the given program so that no local variable
   binding binds the same name as any other, and returns the result.
@@ -123,6 +119,14 @@ a FOL program.
 (alpha-rename? <program> <program>)
   Checks whether the two given programs are equal up to names of bound
   variables.
+
+(inline <program>)
+  Inlines as many procedures in the given FOL program as possible and
+  returns the result.  This is the only operation that might break
+  uniqueness of variable bindings (by copying inlined code bodies) so
+  it includes an alpha-renaming step as a post-filter.  You can also
+  run the raw inliner without post-alpha-renaming with
+  (%inline <program>).
 
 (approximate-anf <program>)
   Converts the given program into approximate A-normal form, where all
