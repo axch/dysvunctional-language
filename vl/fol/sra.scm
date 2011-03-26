@@ -363,3 +363,5 @@
                                   (win (cons new-arg new-args) names-left))))))))
                      (else
                       (error "Weird shape" shape)))))))))
+
+(define scalar-replace-aggregates sra-program)

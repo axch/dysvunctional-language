@@ -94,3 +94,5 @@
 
 (define (alpha-renamed? program)
   (equal? program (alpha-rename program)))
+
+(define no-shadowing? alpha-renamed?)

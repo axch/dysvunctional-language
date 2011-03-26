@@ -104,6 +104,9 @@
 (define (in-anf? expr)
   (equal? expr (sra-anf expr)))
 
+(define approximate-anf sra-anf)
+(define approximate-anf? in-anf?)
+
 ;;; An access chain like
 ;;; (car (cdr (car ...)))
 ;;; or a construction chain like

@@ -291,3 +291,5 @@
 ;;; 9) Run a round of intraprocedural dead variable elimination to
 ;;;    clean up (all procedure calls now do need all their inputs)
 ;;;    - Verify that all the tombstones vanish.
+
+(define eliminate-intraprocedural-dead-variables intraprocedural-dead-variable-elimination)

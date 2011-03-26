@@ -7,6 +7,9 @@ Expository explanations
   identity
 - Make FOL executable standalone, releasable, workbookable
 
+- Rename sra-anf.scm to a-normal-form.scm
+- Push new names (define foo bar) through
+
 TODO: SRA is not idempotent (and does not preserve ANF) because of the
 reconstruction code
 - The postfix of the optimizer after ANF (inclusive) should be
@@ -24,6 +27,7 @@ NB: All the arithmetic reduction rules make work for de-aliasing
   because of (let ((x (+ 0 y))) ...)
 NB: (* 0 x) -> 0 makes work for dead code elimination because x may
   have contained the last reference to something
+NB: inline may introduce shadowing
 
 Check for warning-free compilation of FOL?
 

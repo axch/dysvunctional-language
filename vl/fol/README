@@ -113,27 +113,27 @@ a FOL program.
   returns the result.
 
 (alpha-rename <program>)
-  Alpha-renames the given program, so that no local variable binding
-  shadows any other and returns the result.
+  Renames variables in the given program so that no local variable
+  binding shadows any other, and returns the result.
 
-(alpha-renamed? <program>)
+(no-shadowing? <program>)
   Returns #t if the program contains no shadowing, #f otherwise.
 
 (alpha-rename? <program> <program>)
-  Checks whether the two given programs are alpha renamings of each
-  other.
+  Checks whether the two given programs are equal up to names of bound
+  variables.
 
-(sra-anf <program>)
-  Converts the given program into (approximately) A-normal form, where
-  all procedure calls operate on variables or constants and returns
-  the result.  This is necessary for scalar replacement of aggregates,
+(approximate-anf <program>)
+  Converts the given program into approximate A-normal form, where all
+  procedure calls operate on variables or constants, and returns the
+  result.  This is necessary for scalar replacement of aggregates,
   below.
 
-(in-anf? <program>)
+(approximate-anf? <program>)
   Returns #t if the given program is already in approximate A-normal
   form, and #f otherwise.
 
-(sra-program <program>)
+(scalar-replace-aggregates <program>)
   Performs scalar replacement of aggregates and returns the resulting
   program.  All possible data structure allocations (namely, instances
   of CONS and VECTOR) are replaced by appropriate use of VALUES and
@@ -142,20 +142,21 @@ a FOL program.
   for the construction of the final answer that is returned from the
   entry point, should that be a structure.
 
-  SRA-PROGRAM expects its input to be in (approximate) A-normal form,
-  and preserves this feature.
+  SCALAR-REPLACE-AGGREGATES expects its input to be in approximate
+  A-normal form, and preserves this feature.
 
 (intraprocedural-de-alias <program>)
   Eliminates aliases inside procedure bodies and returns the result.
   An alias is a variable binding of the form (let ((x y)) ...); x
   becomes replaced by y in the body of this binding.  This step is
-  very important because between them SRA-ANF and SRA-PROGRAM end up
-  generating lots of aliases.  As suggested by its name, this does not
-  do full interprocedural must-alias analysis, and does not detect
-  circumstances where some formal parameters to some procedure are
-  reliably always given the same value.  Preserves A-normal form.
+  very important because between them a-normal form conversion and
+  scalar replacement of aggregates end up generating lots of aliases.
+  As suggested by its name, this does not do full interprocedural
+  must-alias analysis, and does not detect circumstances where some
+  formal parameters to some procedure are reliably always given the
+  same value.  Preserves A-normal form.
 
-(intraprocedural-dead-variable-elimination <program>)
+(eliminate-intraprocedural-dead-variables <program>)
   Eliminates dead code inside procedure bodies and returns the result.
   As suggested by the name, this does not detect circumstances where
   some variable is passed around from one user-defined procedure to
