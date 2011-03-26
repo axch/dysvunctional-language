@@ -119,3 +119,5 @@
 
 (define (no-shadowing? program)
   (equal? program (alpha-rename program)))
+
+(define unique-names? no-shadowing?)

@@ -114,10 +114,11 @@ a FOL program.
 
 (alpha-rename <program>)
   Renames variables in the given program so that no local variable
-  binding shadows any other, and returns the result.
+  binding binds the same name as any other, and returns the result.
 
-(no-shadowing? <program>)
-  Returns #t if the program contains no shadowing, #f otherwise.
+(unique-names? <program>)
+  Returns #t if all local variable names in the program are unique,
+  and #f otherwise.
 
 (alpha-rename? <program> <program>)
   Checks whether the two given programs are equal up to names of bound
@@ -314,7 +315,7 @@ type-check.scm      Type checker
 structs.scm         structure-definitions->vectors
 inline.scm          Inliner
   feedback-vertex-set.scm  Graph algorithm supporting inlining
-alpha-remaing.scm   Shadowing remover
+alpha-remaing.scm   Uniquifying bound names
 a-normal-form.scm   A-normal form converter
 sra.scm             Scalar replacement of aggregates
 de-alias.scm        Alias elimination
