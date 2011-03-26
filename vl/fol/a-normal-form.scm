@@ -101,10 +101,8 @@
 
 ;;; Checking whether a form is already in approximate ANF amounts to
 ;;; checking whether the anf converter will do anything to it.
-(define (in-anf? expr)
+(define (approximate-anf? expr)
   (equal? expr (approximate-anf expr)))
-
-(define approximate-anf? in-anf?)
 
 ;;; An access chain like
 ;;; (car (cdr (car ...)))

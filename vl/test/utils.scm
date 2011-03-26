@@ -92,9 +92,9 @@
     ;; preserve ANF.
     (if (not (pair? answer))
         (begin
-          (check (in-anf? scalars))
-          (check (in-anf? aliases))
-          (check (in-anf? variables))))
+          (check (approximate-anf? scalars))
+          (check (approximate-anf? aliases))
+          (check (approximate-anf? variables))))
 
     ;; Except for reconstruction of the structure that the outside
     ;; world expects, SRA is idempotent and subsequent ANF-preserving
