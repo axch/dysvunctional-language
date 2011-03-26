@@ -1,17 +1,23 @@
 (declare (usual-integrations))
 ;;;; Alpha renaming
 
-;;; Renaming all variables so that nothing shadows anything else is
+;;; Renaming all variables so that all bound names are unique is
 ;;; just a recursive descent on the structure of the code.  In fact,
 ;;; it doesn't even need to be too picky about the differences between
 ;;; various forms that do not bind names; it just has to catch the
 ;;; ones that do.
 
 ;;; The recursive traversal carries down an environment of which
-;;; symbols have been renamed to which others.  If a name being bound
-;;; doesn't shadow anything, it should be renamed to itself, otherwise
-;;; to a fresh name.  The traversal need not bring anything up besides
-;;; the renamed expression.
+;;; symbols currently in scope have been renamed to which others, and
+;;; also a list of symbols that are out of scope now but have been
+;;; bound elsewhere in the program.  If a name being bound has not
+;;; been bound before, it should be renamed to itself, otherwise to a
+;;; fresh name.  In any case, it should be registered as a name that
+;;; has been bound at some point.  In addition to the renamed
+;;; expression, the traversal needs to return the set of names that
+;;; expression had bound, so that other bindings elsewhere can avoid
+;;; them.  This global uniqueness is necessary because various later
+;;; operations may change the scopes of bound names.
 
 (define (alpha-rename program)
   ;; TODO Fix the bookkeeping of what names the primitives rely on
@@ -22,39 +28,58 @@
           (cons name name))
         (delete-duplicates
          `(cons car cdr if define let vector vector-ref let-values values
-                ,@(append-map needed-names *primitives*))))))
+                ,@(append-map needed-names *primitives*))))
+   '()
+   (lambda (new-program new-env) new-program)))
 
-(define (alpha-rename-exp exp env)
-  (cond ((assq exp env) => cdr)
+;;; This is written in continuation passing style because the
+;;; traversal needs to return two things.
+(define (alpha-rename-exp exp env avoid win)
+  (cond ((assq exp env)
+         (win (cdr (assq exp env)) avoid))
         ((lambda-form? exp)
          (let* ((names (cadr exp))
                 (body (cddr exp))
-                (new-env (extend-alpha-env env names))
+                (new-env (extend-alpha-env env names avoid))
                 (new-names (map (lambda (name)
                                   (cdr (assq name new-env)))
                                 names)))
-           `(lambda ,new-names
-              ,@(alpha-rename-exp body new-env))))
+           (alpha-rename-exp body new-env avoid
+            (lambda (new-body body-avoid)
+              (win `(lambda ,new-names ,@new-body)
+                   ;; Technically only need those names that are not
+                   ;; still in scope outside the lambda.
+                   (lset-union eq? avoid names))))))
         ((let-form? exp)
-         (->let (alpha-rename-exp (->lambda exp) env)))
+         (alpha-rename-exp (->lambda exp) env avoid
+          (lambda (new-exp new-avoid)
+            (win (->let new-exp) new-avoid))))
         ((let-values-form? exp)
-         (->let-values (alpha-rename-exp (->lambda exp) env)))
+         (alpha-rename-exp (->lambda exp) env avoid
+          (lambda (new-exp new-avoid)
+            (win (->let-values new-exp) new-avoid))))
         ((definition? exp)
          ;; Assume the definiendum is already unique
-         (reconstitute-definition
-          `(define ,(definiendum exp)
-             ,(alpha-rename-exp (definiens exp) env))))
+         (alpha-rename-exp (definiens exp) env avoid
+          (lambda (new-definiens new-avoid)
+            (win (reconstitute-definition
+                  `(define ,(definiendum exp)
+                     ,new-definiens))
+                 new-avoid))))
         ((pair? exp)
-         (cons (alpha-rename-exp (car exp) env)
-               (alpha-rename-exp (cdr exp) env)))
-        (else exp)))
+         (alpha-rename-exp (car exp) env avoid
+          (lambda (new-car car-avoid)
+            (alpha-rename-exp (cdr exp) env car-avoid
+             (lambda (new-cdr cdr-avoid)
+               (win (cons new-car new-cdr) cdr-avoid))))))
+        (else (win exp avoid))))
 
-(define (extend-alpha-env env names)
+(define (extend-alpha-env env names avoid)
   (append
    (map cons
         names
         (map (lambda (name)
-               (if (assq name env)
+               (if (or (assq name env) (memq name avoid))
                    (make-name name)
                    name))
              names))
