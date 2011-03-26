@@ -110,6 +110,13 @@
           (check (equal? aliases (scalar-replace-aggregates aliases)))
           (check (equal? variables (scalar-replace-aggregates variables)))))
 
+    ;; Inlining commutes with ANF up to removal of aliases.  Why
+    ;; aliases?  Because inlining saves ANF work by naming the
+    ;; expressions that are arguments to inlined procedures.
+    (check (alpha-rename? (intraprocedural-de-alias anf)
+                          (intraprocedural-de-alias
+                           (alpha-rename (inline (approximate-anf vectors-fol))))))
+
     ;; Dead variable elimination does not introduce new aliases.
     (check (equal? variables (intraprocedural-de-alias variables)))
 
