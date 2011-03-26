@@ -30,8 +30,8 @@
      (intraprocedural-de-alias
       (scalar-replace-aggregates
        (approximate-anf
-        (alpha-rename ; splitting inline for emphasis
-         (%inline
+        (alpha-rename ; splitting INLINE into %INLINE and ALPHA-RENAME
+         (%inline     ; for emphasis
           (structure-definitions->vectors
            output))))))))))
 
