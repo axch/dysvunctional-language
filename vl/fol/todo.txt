@@ -14,7 +14,6 @@ reconstruction code
   idempotent in spite of the reconstruction code.
   - only not, see note below
 
-NB: the index argument to vector-ref should always be a constant
 NB: literal booleans should only appear when a shape is being shipped
 to the outside world
 NB: various stages expect/emit alpha-renamed and/or anf'd code
@@ -51,6 +50,8 @@ with obvious inclusions by identity.
 Can I also talk about which stages enable which others, or generate
 work for them, or don't, in the sense of de-aliasing and dead code
 elimination being (I think) orthogonal?
+
+----------------------------------------------------------------------
 
 Good output on dvl-sqrt-5
 - MIT Scheme doesn't like multiple underscores in the same binding clause
