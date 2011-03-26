@@ -63,17 +63,17 @@
              (? body))
           `(define (,name ,@formals)
              (argument-types ,@stuff ,return)
-             ,(expression-dead-variable-elimination
+             ,(eliminate-in-expression
                body (or (not (values-form? return))
                         (map (lambda (x) #t) (cdr return)))))))
   (if (begin-form? program)
       (append
        (map eliminate-in-definition (except-last-pair program))
-       (list (expression-dead-variable-elimination
+       (list (eliminate-in-expression
               (last program) #t)))
-      (expression-dead-variable-elimination program #t)))
+      (eliminate-in-expression program #t)))
 
-(define (expression-dead-variable-elimination expr live-out)
+(define (eliminate-in-expression expr live-out)
   (define (ignore? name)
     (eq? name '_))
   (define (no-used-vars) '())
