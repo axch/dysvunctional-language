@@ -250,16 +250,16 @@ programs.
 
 FOL supports multiple value returns from procedures and expressions
 via the standard Scheme VALUES construct, and multiple value binding
-via the SRFI-11 LET-VALUES construct.  All
-VALUES expressions must be in tail
-position with respect to a matching LET-VALUES expression.  You will
-note that because multiple value returns via the VALUES construct
-cannot be stored in data structures or bound as variables without
-destructuring them, they do not need to be represented in the runtime
-as heap-allocated objects, but can instead be implemented by just
-placing the values to be returned on the stack.  The VL and DVL code
-generator does not emit VALUES or LET-VALUES expressions; FOL supports
-them as targets for the scalar replacement of aggregates optimization.
+via the SRFI-11 LET-VALUES construct.  All VALUES expressions must be
+in tail position with respect to a matching LET-VALUES expression.
+You will note that because multiple value returns via the VALUES
+construct cannot be stored in data structures or bound as variables
+without destructuring them, they do not need to be represented in the
+runtime as heap-allocated objects, but can instead be implemented by
+just placing the values to be returned on the stack.  The VL and DVL
+code generator does not emit VALUES or LET-VALUES expressions; FOL
+supports them as targets for the scalar replacement of aggregates
+optimization.
 
 For implementation convenience, LET-VALUES is restricted to binding
 from a single expression; no parallel form is provided.  Also, nullary
