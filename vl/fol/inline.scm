@@ -13,19 +13,22 @@
 
 (define (inline program)
   (alpha-rename ; Duplicating code bodies may break binding uniqueness
-   (if (begin-form? program)
-       (let* ((procedure-body (inline-map program)))
-         (define (inline? name)
-           (not (not (procedure-body name))))
-         (define (not-inline? form)
-           (or (not (definition? form))
-               (not (inline? (definiendum form)))))
-         (let walk ((program (filter not-inline? program)))
-           ((on-subexpressions
-             (rule `((? name ,inline?) (?? args))
-                   (->let `(,(walk (procedure-body name)) ,@args))))
-            program)))
-       program)))
+   (%inline program)))
+
+(define (%inline program)
+  (if (begin-form? program)
+      (let* ((procedure-body (inline-map program)))
+        (define (inline? name)
+          (not (not (procedure-body name))))
+        (define (not-inline? form)
+          (or (not (definition? form))
+              (not (inline? (definiendum form)))))
+        (let walk ((program (filter not-inline? program)))
+          ((on-subexpressions
+            (rule `((? name ,inline?) (?? args))
+                  (->let `(,(walk (procedure-body name)) ,@args))))
+           program)))
+      program))
 
 ;;; The inline map maps all procedure names to either the lambda
 ;;; expression that they are equivalent to if it was decided that they
