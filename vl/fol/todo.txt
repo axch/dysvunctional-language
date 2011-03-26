@@ -9,6 +9,8 @@ Expository explanations
 
 TODO: SRA is not idempotent (and does not preserve ANF) because of the
 reconstruction code
+- The postfix of the optimizer after ANF (inclusive) should be
+  idempotent in spite of the reconstruction code.
 
 NB: the index argument to vector-ref should always be a constant
 NB: literal booleans should only appear when a shape is being shipped
