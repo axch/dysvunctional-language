@@ -44,10 +44,11 @@
 ;;; only be done once because no stage introduces DEFINE-STRUCTURE
 ;;; forms.
 ;;;
-;;; After that, almost all other stages depend on but also preserve
-;;; uniqueness of variable names, so ALPHA-RENAME should be done next.
-;;; The definition of FOL-OPTIMIZE above bums this by relying on the
-;;; ALPHA-RENAME inside INLINE first.
+;;; After that, almost all other stages (notably except INLINE) depend
+;;; on but also preserve uniqueness of variable names, so ALPHA-RENAME
+;;; should be done next.  The definition of FOL-OPTIMIZE above bums
+;;; this by noting that INLINE is called first anyway and relying on
+;;; the ALPHA-RENAME inside it.
 
 ;;; Don't worry about the rule-based term-rewriting system that powers
 ;;; this.  That is its own pile of stuff, good for a few lectures of
