@@ -85,7 +85,7 @@
              node1)
             (else node2)))
     (fold node-max #f (filter-map vertex-node (map car graph))))
-  
+
   (let prune ((old-nodes-left (hash-table/count node-map)))
     (for-each
      (lambda (node)
@@ -105,3 +105,63 @@
              (prune (- nodes-left 1)))
             (else
              (prune nodes-left))))))
+
+;;; A note on idempotence.  In this code, feedback vertex sets are
+;;; used in the context of inlining procedures (and, when support for
+;;; union types is added, this code will also be needed for SRA).
+;;; Specifically, one must not inline all the procedures in any cycle
+;;; of the (static) call graph; so one computes that graph's feedback
+;;; vertex set and inlines all procedures that are not in it.  As a
+;;; graph operation, that consists of iteratively removing any
+;;; non-feedback vertex and multiplying out all edges that went into
+;;; it by all edges that went out of it.  One might ask whether this
+;;; operation is idempotent, or whether it might produce a graph that
+;;; may still have a non-trivial feedback vertex set.
+
+;;; To answer that question, consider when will a graph's feedback
+;;; vertex set contain all vertices in the graph.  Clearly, if all
+;;; vertices have self-loop edges, they will all be in the feedback
+;;; set.  What if not?  The above code will begin by pruning all
+;;; vertices that do have self-loops and putting them in the feedback
+;;; set.  If there is anything left, a process of heuristic selection
+;;; and deletion will ensue.  If it ever produces a vertex with zero
+;;; in-degree or zero out-degree, that vertex will not be in the
+;;; feedback set, and the feedback set will not be all the vertices in
+;;; the graph.  Otherwise, consider the last vertex that remains
+;;; unselected.  It has no other vertices left to which to send edges,
+;;; so if it is to still have positive in- and out-degree after
+;;; removal of selected vertices, it must be a self-loop.  But the
+;;; heuristic selection process cannot introduce a new self-loop, and
+;;; all self-loops were swept out before it started, so this situation
+;;; is impossible.  Therefore, the only graphs whose feedback vertex
+;;; set is their whole vertex set are those all of whose vertices have
+;;; self-loops.
+
+;;; In order for an inlining-type operation to be idempotent, then,
+;;; the result of one application of it will need to have all vertices
+;;; have self-loops.  For this feedback vertex set algorithm, that is
+;;; not true.  Consider the feedback set of the following graph G:
+;;;
+;;;      /-----\
+;;;      V     |
+;;;      A---->B
+;;;      ^    /
+;;;       \  /
+;;;        \V
+;;;         C
+;;;         ^\
+;;;        /  \
+;;;       /    V
+;;;      D<----E
+;;;      |     ^
+;;;      \-----/
+;;;
+;;; G has no vertices of in- or out- degree 0 and no vertices with
+;;; self-loops, so the first thing that FEEDBACK-VERTEX-SET will do is
+;;; heuristically select a node to put in the feedback set.  The
+;;; heuristic is such that in this case it will choose node C.  After
+;;; that G splits into two loops of size two, one vertex from each of
+;;; which (without loss of generality, A and D) will also be selected.
+;;; After inlining B and E, C will not have a self-loop in the
+;;; resulting graph, so on the initial graph G the inlining operation
+;;; is not idempotent.
