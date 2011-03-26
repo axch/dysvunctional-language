@@ -116,8 +116,8 @@
           (else (equal? exp1 exp2)))))
 
 ;;; Also, we can check whether a program is already alpha renamed
-;;; (i.e. already contains no shadowing) by looking to see whether it
-;;; alpha renames to itself.
+;;; (i.e. already has unique names) by looking to see whether it alpha
+;;; renames to itself.
 
 (define (unique-names? program)
   (equal? program (alpha-rename program)))
