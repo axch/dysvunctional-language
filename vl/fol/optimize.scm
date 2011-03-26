@@ -45,10 +45,13 @@
 ;;; only be done once because no stage introduces DEFINE-STRUCTURE
 ;;; forms.
 ;;;
-;;; After that, the remaining stages are divided into two kinds.
-;;; ALPHA-RENAME and APPROXIMATE-ANF massage FOL into forms that are
-;;; nicer for the other stages, and the other stages do the actual
-;;; work.
+;;; After that, almost all other stages depend on but also preserve
+;;; uniqueness of variable names, so ALPHA-RENAME should be done next.
+;;; The one caveat is that %INLINE does not preserve uniqueness of
+;;; bound names (because it duplicates code bodies), so the
+;;; recommended INLINE includes an additional alpha renaming step as a
+;;; post-filter.  The definition of FOL-OPTIMIZE above bums the first
+;;; ALPHA-RENAME by invoking INLINE first.
 
 ;;; Don't worry about the rule-based term-rewriting system that powers
 ;;; this.  That is its own pile of stuff, good for a few lectures of
