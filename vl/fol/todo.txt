@@ -72,4 +72,15 @@ arrays (that may be accessed at computed indecies).
    (+ x y))
  (let ((foo 3))
    (foo 1 2)))
-breaks horribly (on inlining, I think)
+breaks horribly on inlining
+
+INLINE breaks alpha renaming by duplicating code bodies.
+
+SRA depends on alpha renaming because it deparallelizes LET-VALUES (in
+its post-processor).
+
+de-aliasing depends on alpha renaming when checking whether a variable
+is aliased to something in scope at its binding site (this may be
+fixable).
+
+TIDY depends on alpha renaming because it lifts LETs.

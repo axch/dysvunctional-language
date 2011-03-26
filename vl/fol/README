@@ -122,11 +122,7 @@ a FOL program.
 
 (inline <program>)
   Inlines as many procedures in the given FOL program as possible and
-  returns the result.  This is the only operation that might break
-  uniqueness of variable bindings (by copying inlined code bodies) so
-  it includes an alpha-renaming step as a post-filter.  You can also
-  run the raw inliner without post-alpha-renaming with
-  (%inline <program>).
+  returns the result.
 
 (approximate-anf <program>)
   Converts the given program into approximate A-normal form, where all

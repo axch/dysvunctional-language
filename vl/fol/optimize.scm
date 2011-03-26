@@ -30,10 +30,9 @@
      (intraprocedural-de-alias
       (scalar-replace-aggregates
        (approximate-anf
-        (alpha-rename ; splitting INLINE into %INLINE and ALPHA-RENAME
-         (%inline     ; for emphasis
-          (structure-definitions->vectors
-           output))))))))))
+        (inline ; includes ALPHA-RENAME
+         (structure-definitions->vectors
+          output)))))))))
 
 (define (compile-to-scheme program)
   (fol-optimize
@@ -47,11 +46,8 @@
 ;;;
 ;;; After that, almost all other stages depend on but also preserve
 ;;; uniqueness of variable names, so ALPHA-RENAME should be done next.
-;;; The one caveat is that %INLINE does not preserve uniqueness of
-;;; bound names (because it duplicates code bodies), so the
-;;; recommended INLINE includes an additional alpha renaming step as a
-;;; post-filter.  The definition of FOL-OPTIMIZE above bums the first
-;;; ALPHA-RENAME by invoking INLINE first.
+;;; The definition of FOL-OPTIMIZE above bums this by relying on the
+;;; ALPHA-RENAME inside INLINE first.
 
 ;;; Don't worry about the rule-based term-rewriting system that powers
 ;;; this.  That is its own pile of stuff, good for a few lectures of
