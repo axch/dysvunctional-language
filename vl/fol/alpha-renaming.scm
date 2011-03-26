@@ -49,7 +49,7 @@
               (win `(lambda ,new-names ,@new-body)
                    ;; Technically only need those names that are not
                    ;; still in scope outside the lambda.
-                   (lset-union eq? avoid names))))))
+                   (lset-union eq? body-avoid names))))))
         ((let-form? exp)
          (alpha-rename-exp (->lambda exp) env avoid
           (lambda (new-exp new-avoid)
