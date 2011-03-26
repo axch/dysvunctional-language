@@ -62,3 +62,6 @@ autogenerating symbol names leaks memory
 
 Write inlining of used-once bindings (post-SRA); undoes ANF
 - This is the intraprocedural analog of inlining procedures (I think)
+
+Rename vector to closure, to distinguish it from (variable-length)
+arrays (that may be accessed at computed indecies).
