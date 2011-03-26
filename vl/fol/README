@@ -297,7 +297,7 @@ structs.scm         structure-definitions->vectors
 inline.scm          Inliner
   feedback-vertex-set.scm  Graph algorithm supporting inlining
 alpha-remaing.scm   Shadowing remover
-sra-anf.scm         A-normal form converter
+a-normal-form.scm   A-normal form converter
 sra.scm             Scalar replacement of aggregates
 de-alias.scm        Alias elimination
 dead-code.scm       Dead variable elimination

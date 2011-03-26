@@ -1,6 +1,5 @@
 Expository explanations
 - Push TIDY into its own file?
-- Rename all the stages to something reasonable (and update readme)
 - Make the assertions in the README true
 - Actually explain SRA
 - Update explanation of VL (and DVL?) to reflect FOL's separate

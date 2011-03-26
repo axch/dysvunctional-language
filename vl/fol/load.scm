@@ -19,7 +19,7 @@
    "type-check"
    "feedback-vertex-set"
    "inline"
-   "sra-anf"
+   "a-normal-form"
    "srfi-11"
    "de-alias"
    "dead-code"
