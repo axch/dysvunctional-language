@@ -55,6 +55,11 @@
 (define (union-free-answer program #!optional wallpaper?)
   (if (default-object? wallpaper?)
       (set! wallpaper? #f))
+  (if wallpaper?
+      (begin
+        (display "***NEW PROGRAM ***")
+        (newline)
+        (pp program)))
   (let* ((kernel (careful-macroexpand program))
          (answer (interpret kernel))
          (analysis (analyze kernel))
@@ -114,12 +119,7 @@
     (check (= 0 (count-free-occurrences 'cdr tidied)))
     (check (= 0 (count-free-occurrences 'vector-ref tidied)))
 
-    (if wallpaper?
-        (begin
-          (display "***NEW PROGRAM ***")
-          (newline)
-          (pp program)
-          (pp tidied)))
+    (if wallpaper? (pp tidied))
     answer))
 
 (define (analyzed-answer program)
