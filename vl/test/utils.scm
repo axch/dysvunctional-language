@@ -64,7 +64,7 @@
          (inlined ((fol-carefully inline) vectors-fol answer))
          (alpha ((fol-carefully alpha-rename) inlined answer))
          (anf ((fol-carefully approximate-anf) alpha answer))
-         (scalars (sra-program anf)) ; SRA is not idempotent
+         (scalars (scalar-replace-aggregates anf)) ; SRA is not idempotent
          (aliases ((fol-carefully intraprocedural-de-alias) scalars answer))
          (variables ((fol-carefully intraprocedural-dead-variable-elimination)
                      aliases answer))
@@ -101,9 +101,9 @@
     ;; stages do not introduce new work for it.
     (if (not (pair? answer))
         (begin
-          (check (equal? scalars (sra-program scalars)))
-          (check (equal? aliases (sra-program aliases)))
-          (check (equal? variables (sra-program variables)))))
+          (check (equal? scalars (scalar-replace-aggregates scalars)))
+          (check (equal? aliases (scalar-replace-aggregates aliases)))
+          (check (equal? variables (scalar-replace-aggregates variables)))))
 
     ;; Dead variable elimination does not introduce new aliases.
     (check (equal? variables (intraprocedural-de-alias variables)))

@@ -31,7 +31,7 @@
    (tidy
     (intraprocedural-dead-variable-elimination
      (intraprocedural-de-alias
-      (sra-program
+      (scalar-replace-aggregates
        (approximate-anf
         (alpha-rename
          (inline

@@ -81,7 +81,7 @@
 ;;; also ok because the VL and DVL code generators do not emit them,
 ;;; and SRA is the stage that introduces them.
 
-(define (sra-program program)
+(define (scalar-replace-aggregates program)
   (let ((lookup-type (type-map program)))
     (define (sra-entry-point expression)
       (sra-expression
@@ -365,5 +365,3 @@
                                   (win (cons new-arg new-args) names-left))))))))
                      (else
                       (error "Weird shape" shape)))))))))
-
-(define scalar-replace-aggregates sra-program)
