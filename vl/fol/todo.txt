@@ -65,3 +65,11 @@ Write inlining of used-once bindings (post-SRA); undoes ANF
 
 Rename vector to closure, to distinguish it from (variable-length)
 arrays (that may be accessed at computed indecies).
+
+(begin
+ (define (foo x y)
+   (argument-types real real real)
+   (+ x y))
+ (let ((foo 3))
+   (foo 1 2)))
+breaks horribly (on inlining, I think)
