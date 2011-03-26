@@ -85,13 +85,14 @@
 
 (define empty-let-rule (rule `(let () (? body)) body))
 
-;; This is safe assuming the program has no shadowing; if not, can
-;; break because of
+;; This is safe assuming the program has unique bound names; if not,
+;; can break because of
 #;
  (let ((x 3))
    (let ((y (let ((x 4)) x)))
      x))
-;; Unfortunately, this can also introduce shadowing because of
+;; Unfortunately, mere lack of shadowing is not enough, as this can
+;; introduce shadowing because of
 #;
  (let ((x (let ((y 3)) y)))
    (let ((y 4))
