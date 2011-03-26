@@ -17,6 +17,10 @@ NB: various stages expect/emit alpha-renamed and/or anf'd code
 NB: The reason that some of my recursions are broken into expression
   loops and a toplevel crunch is that the top level is the only
   place that introduces bindings with letrec scope.
+NB: All the arithmetic reduction rules make work for de-aliasing
+  because of (let ((x (+ 0 y))) ...)
+NB: (* 0 x) -> 0 makes work for dead code elimination because x may
+  have contained the last reference to something
 
 Check for warning-free compilation of FOL?
 
