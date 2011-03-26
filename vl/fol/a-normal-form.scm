@@ -41,7 +41,7 @@
 ;;; return, because the places where <simple-expression>s are needed
 ;;; only accept single values by the rules of FOL anyway.
 
-(define (sra-anf expr)
+(define (approximate-anf expr)
   (define (loop expr)
     (cond ((simple-form? expr) expr)
           ((if-form? expr)
@@ -49,33 +49,33 @@
                 ,(loop (caddr expr))
                 ,(loop (cadddr expr))))
           ((let-form? expr)
-           (sra-anf-let expr))
+           (approximate-anf-let expr))
           ((let-values-form? expr)
-           (sra-anf-let-values expr))
+           (approximate-anf-let-values expr))
           ((begin-form? expr)
            (map loop expr))
           ((definition? expr)
-           (sra-anf-definition expr))
+           (approximate-anf-definition expr))
           (else ; application or multiple value return
-           (sra-anf-application expr))))
-  (define (sra-anf-let expr)
+           (approximate-anf-application expr))))
+  (define (approximate-anf-let expr)
     `(let ,(map (lambda (binding)
                   `(,(car binding) ,(loop (cadr binding))))
                 (cadr expr))
        ,(loop (caddr expr))))
-  (define sra-anf-let-values
+  (define approximate-anf-let-values
     (rule `(let-values (((? names) (? exp)))
              (? body))
           `(let-values ((,names ,(loop exp)))
              ,(loop body))))
-  (define sra-anf-definition
+  (define approximate-anf-definition
     (rule `(define (? formals)
              (argument-types (?? stuff))
              (? body))
           `(define ,formals
              (argument-types ,@stuff)
              ,(loop body))))
-  (define (sra-anf-application expr)
+  (define (approximate-anf-application expr)
     (rename-nontrivial-expressions
      expr
      (lambda (results names)
@@ -104,7 +104,6 @@
 (define (in-anf? expr)
   (equal? expr (approximate-anf expr)))
 
-(define approximate-anf sra-anf)
 (define approximate-anf? in-anf?)
 
 ;;; An access chain like

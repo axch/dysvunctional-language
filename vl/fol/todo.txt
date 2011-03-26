@@ -7,7 +7,6 @@ Expository explanations
 - Make FOL executable standalone, releasable, workbookable
 
 - Push new names (define foo bar) through
-fol/a-normal-form.scm:(define approximate-anf sra-anf)
 fol/a-normal-form.scm:(define approximate-anf? in-anf?)
 fol/dead-code.scm:(define eliminate-intraprocedural-dead-variables intraprocedural-dead-variable-elimination)
 fol/sra.scm:(define scalar-replace-aggregates sra-program)
