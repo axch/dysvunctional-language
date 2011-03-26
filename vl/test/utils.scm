@@ -110,12 +110,16 @@
           (check (equal? aliases (scalar-replace-aggregates aliases)))
           (check (equal? variables (scalar-replace-aggregates variables)))))
 
+    (define anf-then-inline (alpha-rename (inline (approximate-anf vectors-fol))))
+
     ;; Inlining commutes with ANF up to removal of aliases.  Why
     ;; aliases?  Because inlining saves ANF work by naming the
     ;; expressions that are arguments to inlined procedures.
     (check (alpha-rename? (intraprocedural-de-alias anf)
-                          (intraprocedural-de-alias
-                           (alpha-rename (inline (approximate-anf vectors-fol))))))
+                          (intraprocedural-de-alias anf-then-inline)))
+
+    ;; Inlining also preserves ANF
+    (check (approximate-anf? anf-then-inline))
 
     ;; Likewise, inlining commutes with the ANF-SRA pair.
     (check (alpha-rename?
