@@ -73,6 +73,13 @@
     (check-program-types scalars)
     (check (equal? answer (fol-eval scalars)))
 
+    ;; The state of being maximally inlined is preserved (until
+    ;; possibly dead code elimination and tidying)
+    (check (equal? alpha (inline alpha)))
+    (check (equal? anf (inline anf)))
+    (check (equal? scalars (inline scalars)))
+    (check (equal? aliases (inline aliases)))
+
     ;; Alpha renaming is preserved
     (check (alpha-renamed? anf))
     (check (alpha-renamed? scalars))
