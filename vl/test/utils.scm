@@ -67,8 +67,7 @@
          (vectors-fol ((fol-carefully structure-definitions->vectors)
                        raw-fol answer))
          (inlined ((fol-carefully inline) vectors-fol answer))
-         (alpha ((fol-carefully alpha-rename) inlined answer))
-         (anf ((fol-carefully approximate-anf) alpha answer))
+         (anf ((fol-carefully approximate-anf) inlined answer))
          (scalars (scalar-replace-aggregates anf)) ; SRA is not idempotent
          (aliases ((fol-carefully intraprocedural-de-alias) scalars answer))
          (variables ((fol-carefully eliminate-intraprocedural-dead-variables)
@@ -78,19 +77,19 @@
     (check-program-types scalars)
     (check (equal? answer (fol-eval scalars)))
 
-    ;; The state of being maximally inlined is preserved (until
-    ;; possibly dead code elimination and tidying)
-    (check (equal? alpha (inline alpha)))
-    (check (equal? anf (inline anf)))
-    (check (equal? scalars (inline scalars)))
-    (check (equal? aliases (inline aliases)))
-
-    ;; Alpha renaming is preserved
+    ;; INLINE alpha renames; alpha renaming is preserved thereafter
+    (check (unique-names? inlined))
     (check (unique-names? anf))
     (check (unique-names? scalars))
     (check (unique-names? aliases))
     (check (unique-names? variables))
     (check (unique-names? tidied))
+
+    ;; The state of being maximally inlined is preserved (until
+    ;; possibly dead code elimination and tidying)
+    (check (equal? anf (inline anf)))
+    (check (equal? scalars (inline scalars)))
+    (check (equal? aliases (inline aliases)))
 
     ;; Except for reconstruction of the structure that the outside
     ;; world expects, SRA and subsequent stages (except tidying)
@@ -110,7 +109,7 @@
           (check (equal? aliases (scalar-replace-aggregates aliases)))
           (check (equal? variables (scalar-replace-aggregates variables)))))
 
-    (define anf-then-inline (alpha-rename (inline (approximate-anf vectors-fol))))
+    (define anf-then-inline (inline (approximate-anf (alpha-rename vectors-fol))))
 
     ;; Inlining commutes with ANF up to removal of aliases.  Why
     ;; aliases?  Because inlining saves ANF work by naming the
@@ -125,9 +124,9 @@
     (check (alpha-rename?
             (intraprocedural-de-alias scalars)
             (intraprocedural-de-alias
-             (alpha-rename
-              (inline
-               (scalar-replace-aggregates (approximate-anf vectors-fol)))))))
+             (inline
+              (scalar-replace-aggregates
+               (approximate-anf (alpha-rename vectors-fol)))))))
 
     ;; Dead variable elimination does not introduce new aliases.
     (check (equal? variables (intraprocedural-de-alias variables)))
