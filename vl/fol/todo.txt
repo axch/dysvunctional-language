@@ -14,8 +14,6 @@ reconstruction code
   idempotent in spite of the reconstruction code.
   - only not, see note below
 
-NB: literal booleans should only appear when a shape is being shipped
-to the outside world
 NB: various stages expect/emit alpha-renamed and/or anf'd code
 NB: The reason that some of my recursions are broken into expression
   loops and a toplevel crunch is that the top level is the only
