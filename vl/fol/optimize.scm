@@ -1,21 +1,18 @@
 (declare (usual-integrations))
 ;;;; Optimization toplevel
 
-;;; The FOL optimizer consists of several stages.  They need to be
-;;; done in order (TODO describe exact limits), but you can invoke any
-;;; subsequence to see the effect of doing only those optimizations.
-;;; We have:
+;;; The FOL optimizer consists of several stages:
 ;;; - STRUCTURE-DEFINITIONS->VECTORS
 ;;;   Replace DEFINE-STRUCTURE with explicit vectors.
 ;;; - INLINE
 ;;;   Inline non-recursive function definitions.
 ;;; - ALPHA-RENAME
 ;;;   Change local variable names to avoid shadowing anything.
-;;; - SRA-ANF
-;;;   Convert the program to A-normal form to prepare for SRA,
-;;; - SRA-PROGRAM
+;;; - APPROXIMATE-ANF
+;;;   Convert the program to A-normal form to prepare for SRA.
+;;; - SCALAR-REPLACE-AGGREGATES
 ;;;   Replace aggregates with scalars.  This relies on argument-type
-;;;   annotations.
+;;;   annotations and requires approximate A-normal form.
 ;;; - INTRAPROCEDURAL-DE-ALIAS
 ;;;   Eliminate redundant variables that are just aliases of other
 ;;;   variables or constants.
@@ -41,6 +38,17 @@
 (define (compile-to-scheme program)
   (fol-optimize
    (analyze-and-generate program)))
+;;; The stages have the following structure and interrelationships:
+;;;
+;;; STRUCTURE-DEFINITIONS->VECTORS has to be done first, because none
+;;; of the other stages can handle DEFINE-STRUCTURE forms, but it need
+;;; only be done once because no stage introduces DEFINE-STRUCTURE
+;;; forms.
+;;;
+;;; After that, the remaining stages are divided into two kinds.
+;;; ALPHA-RENAME and APPROXIMATE-ANF massage FOL into forms that are
+;;; nicer for the other stages, and the other stages do the actual
+;;; work.
 
 ;;; Don't worry about the rule-based term-rewriting system that powers
 ;;; this.  That is its own pile of stuff, good for a few lectures of
@@ -77,7 +85,17 @@
 
 (define empty-let-rule (rule `(let () (? body)) body))
 
-;; This is safe assuming the program has been alpha renamed
+;; This is safe assuming the program has no shadowing; if not, can
+;; break because of
+#;
+ (let ((x 3))
+   (let ((y (let ((x 4)) x)))
+     x))
+;; Unfortunately, this can also introduce shadowing because of
+#;
+ (let ((x (let ((y 3)) y)))
+   (let ((y 4))
+     y))
 (define let-let-lifting-rule
   (rule `(let ((?? bindings1)
                ((? name ,symbol?) (let (? in-bindings) (? exp)))
