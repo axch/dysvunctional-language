@@ -225,6 +225,8 @@
 (define (check-unique-names names message)
   (pair-for-each
    (lambda (names)
+     (if (memq (car names) fol-reserved)
+         (error "Trying to bind reserved name" (car names)))
      (if (memq (car names) (cdr names))
          (error message (car names))))
    names))
