@@ -117,10 +117,6 @@
   ;; pieces of information from the recursive call.  The win
   ;; continuation accepts the new, SRA'd expression, and the shape of
   ;; the value it used to return before SRA.
-  (define (lookup-return-type thing)
-    (return-type (lookup-type thing)))
-  (define (lookup-arg-types thing)
-    (arg-types (lookup-type thing)))
   ;; For this purpose, a VALUES is the same as any other construction.
   (define (construction? expr)
     (and (pair? expr)
@@ -210,9 +206,9 @@
      (lambda (new-args args-shapes)
        (assert (every values-form? new-args))
        ;; The type checker should have ensured this
-       ;(assert (every equal? args-shapes (lookup-arg-types (car expr))))
+       ;(assert (every equal? args-shapes (arg-types (lookup-type (car expr))))
        (win `(,(car expr) ,@(cdr (append-values new-args)))
-            (lookup-return-type (car expr))))))
+            (return-type (lookup-type (car expr)))))))
   (define (loop* exprs env win)
     (if (null? exprs)
         (win '() '())

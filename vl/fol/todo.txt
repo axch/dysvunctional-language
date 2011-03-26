@@ -26,8 +26,6 @@ NB: (* 0 x) -> 0 makes work for dead code elimination because x may
   have contained the last reference to something
 NB: inline may introduce shadowing
 
-Check for warning-free compilation of FOL?
-
 Define and test asserted invariants such as being in ANF or being
 alpha renamed?  "Prove" that various stages (e.g. SRA) always preserve
 them?
