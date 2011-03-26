@@ -117,6 +117,14 @@
                           (intraprocedural-de-alias
                            (alpha-rename (inline (approximate-anf vectors-fol))))))
 
+    ;; Likewise, inlining commutes with the ANF-SRA pair.
+    (check (alpha-rename?
+            (intraprocedural-de-alias scalars)
+            (intraprocedural-de-alias
+             (alpha-rename
+              (inline
+               (scalar-replace-aggregates (approximate-anf vectors-fol)))))))
+
     ;; Dead variable elimination does not introduce new aliases.
     (check (equal? variables (intraprocedural-de-alias variables)))
 
