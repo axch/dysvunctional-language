@@ -67,6 +67,8 @@
 (define (construction? expr)
   (and (pair? expr)
        (memq (car expr) '(cons vector))))
+
+(define fol-reserved '(cons car cdr vector vector-ref begin define if let let-values values))
 
 (define (constructors-only? exp)
   (or (symbol? exp)

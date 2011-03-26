@@ -2,6 +2,7 @@ Expository explanations
 - Push TIDY into its own file?
 - Make the assertions in the README true
 - Actually explain SRA
+- Garbage collect syntax.scm
 - Update explanation of VL (and DVL?) to reflect FOL's separate
   identity
 - Make FOL executable standalone, releasable, workbookable

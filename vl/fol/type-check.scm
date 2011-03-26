@@ -38,6 +38,8 @@
       (if (not (= (length types) (+ 1 (length formals))))
           (error "Type declaration not parallel to formals list"
                  definition))
+      (if (memq (car formals) fol-reserved)
+          (error "Defining a reserved name" (car formals)))
       (for-each
        (lambda (type sub-index)
          (if (not (fol-shape? type))
