@@ -66,7 +66,7 @@
          (anf ((fol-carefully approximate-anf) alpha answer))
          (scalars (scalar-replace-aggregates anf)) ; SRA is not idempotent
          (aliases ((fol-carefully intraprocedural-de-alias) scalars answer))
-         (variables ((fol-carefully intraprocedural-dead-variable-elimination)
+         (variables ((fol-carefully eliminate-intraprocedural-dead-variables)
                      aliases answer))
          (tidied ((fol-carefully tidy) variables answer)))
     ;; SRA emits sane code

@@ -29,7 +29,7 @@
 (define (fol-optimize output)
   ((lambda (x) x) ; This makes the last stage show up in the stack sampler
    (tidy
-    (intraprocedural-dead-variable-elimination
+    (eliminate-intraprocedural-dead-variables
      (intraprocedural-de-alias
       (scalar-replace-aggregates
        (approximate-anf

@@ -56,7 +56,7 @@
 ;;; procedure formal parameters are not removed even if they may be
 ;;; dead in the body.
 
-(define (intraprocedural-dead-variable-elimination program)
+(define (eliminate-intraprocedural-dead-variables program)
   (define eliminate-in-definition
     (rule `(define ((? name ,symbol?) (?? formals))
              (argument-types (?? stuff) (? return))
@@ -291,5 +291,3 @@
 ;;; 9) Run a round of intraprocedural dead variable elimination to
 ;;;    clean up (all procedure calls now do need all their inputs)
 ;;;    - Verify that all the tombstones vanish.
-
-(define eliminate-intraprocedural-dead-variables intraprocedural-dead-variable-elimination)
