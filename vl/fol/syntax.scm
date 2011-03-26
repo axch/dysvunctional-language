@@ -57,12 +57,10 @@
       (vector-ref? expr)))
 
 (define (cons-ref? expr)
-  (and (pair? expr) (pair? (cdr expr)) (null? (cddr expr))
+  (and (pair? expr)
        (memq (car expr) '(car cdr))))
 
-(define (vector-ref? expr)
-  (and (pair? expr) (pair? (cdr expr)) (pair? (cddr expr)) (null? (cdddr expr))
-       (eq? (car expr) 'vector-ref) (number? (caddr expr))))
+(define vector-ref? (tagged-list? 'vector-ref))
 
 (define (construction? expr)
   (and (pair? expr)
