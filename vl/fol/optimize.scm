@@ -32,7 +32,7 @@
     (intraprocedural-dead-variable-elimination
      (intraprocedural-de-alias
       (sra-program
-       (sra-anf
+       (approximate-anf
         (alpha-rename
          (inline
           (structure-definitions->vectors

@@ -63,7 +63,7 @@
                        raw-fol answer))
          (inlined ((fol-carefully inline) vectors-fol answer))
          (alpha ((fol-carefully alpha-rename) inlined answer))
-         (anf ((fol-carefully sra-anf) alpha answer))
+         (anf ((fol-carefully approximate-anf) alpha answer))
          (scalars (sra-program anf)) ; SRA is not idempotent
          (aliases ((fol-carefully intraprocedural-de-alias) scalars answer))
          (variables ((fol-carefully intraprocedural-dead-variable-elimination)

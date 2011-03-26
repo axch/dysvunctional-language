@@ -102,7 +102,7 @@
 ;;; Checking whether a form is already in approximate ANF amounts to
 ;;; checking whether the anf converter will do anything to it.
 (define (in-anf? expr)
-  (equal? expr (sra-anf expr)))
+  (equal? expr (approximate-anf expr)))
 
 (define approximate-anf sra-anf)
 (define approximate-anf? in-anf?)

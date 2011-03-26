@@ -24,8 +24,10 @@
 ;;; return.  Calls to a procedure are changed to supply the pieces of
 ;;; input data structures as separete arguments.  Procedure bodies are
 ;;; transformed by recursive descent to match.  This implementation of
-;;; SRA also depends on the input being in A-normal form as produced
-;;; by SRA-ANF (see sra-anf.scm).  The output remains in A-normal form.
+;;; SRA also depends on the input being in approximate A-normal form
+;;; as produced by APPROXIMATE-ANF (see a-normal-form.scm).  The
+;;; output remains in approximate A-normal form (TODO except for the
+;;; influence of RECONSTRUCT-PRE-SRA-SHAPE).
 
 ;;; The structure of the recursive descent is as follows: walk down
 ;;; the expression (traversing LET bindings before LET bodies)
