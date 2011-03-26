@@ -48,7 +48,7 @@ with the LET-VALUES macro from SRFI 11.  What they do should be
 obvious.  The type declarations serve to aid the FOL optimizer, and
 while they can be used to type-check a FOL program, you can also just
 ignore them.  In fact, the FOL runtime defines ARGUMENT-TYPES as a
-macro that expands into nothing.  As to the primmitives, FOL comes
+macro that expands into nothing.  As to the primitives, FOL comes
 with the following procedures predefined:
 
   CONS, CAR, CDR, VECTOR, VECTOR-REF, ABS, EXP, LOG, SIN, COS, TAN,
@@ -267,13 +267,22 @@ and unary multiple value returns are not permitted in FOL because they
 are easy to get rid of and would not interact as well as one would
 like with MIT Scheme's expression return semantics.
 
-TODO Do I really need to duplicate these two paragraphs here?
-FOL comes with the following procedures predefined:
+FOL reserves the tokens that appear in the grammar as names to which
+procedures and formal parameters may not be bound.  The set of FOL
+reserved words is:
 
-  CONS, CAR, CDR, VECTOR, VECTOR-REF, ABS, EXP, LOG, SIN, COS, TAN,
-  ASIN, ACOS, SQRT, +, -, *, /, ATAN, EXPT, PAIR?, NULL?, REAL?, <,
-  <=, >, >=, =, ZERO?, POSITIVE?, NEGATIVE?, READ-REAL, WRITE-REAL,
-  REAL, GENSYM, GENSYM?, and GENSYM=.
+  BEGIN, DEFINE, IF, LET, LET-VALUES, VALUES, CONS, CAR, CDR, VECTOR,
+  and VECTOR-REF.
+
+These all behave as in Scheme.  In addition, FOL predefines the
+following procedures:
+
+  ABS, EXP, LOG, SIN, COS, TAN, ASIN, ACOS, SQRT, +, -, *, /, ATAN,
+  EXPT, PAIR?, NULL?, REAL?, <, <=, >, >=, =, ZERO?, POSITIVE?,
+  NEGATIVE?, READ-REAL, WRITE-REAL, REAL, GENSYM, GENSYM?, and
+  GENSYM=.
+
+TODO Do I really need to duplicate these two paragraphs here?
 
 Those with Scheme equivalents have the same semantics.  REAL is the
 identity function, but instructs the compiler to treat its argument as
