@@ -131,8 +131,9 @@
 ;;; opportunities, for example by collapsing intervening LETs or by
 ;;; making bindings singletons.
 ;;;
-;;; Tidy then inline: Tidying may delete edges in the call graph (by,
-;;; e.g., eliminating (* 0 (some-proc foo bar baz))).
+;;; Tidy then inline: Tidying may delete edges in the call graph by
+;;; collapsing (* 0 (some-proc foo bar baz)) to 0 or by collapsing
+;;; (if (some-proc foo) bar bar) into bar.
 ;;;
 ;;; Tidy then SRA: Tidying does not create SRA opportunities (though
 ;;; it could in the non-union-free case).  It does, however, do some
@@ -147,7 +148,8 @@
 ;;; to y.
 ;;;
 ;;; Tidy then eliminate: Tidying may expose dead variables by
-;;; collapsing (* 0 foo) to 0.
+;;; collapsing (* 0 foo) to 0 or by collapsing (if foo bar bar) to
+;;; bar.
 ;;;
 ;;; Tidy then tidy: Tidying is idempotent (because it is run to
 ;;; convergence).
@@ -253,5 +255,3 @@
 
     values-let-lifting-rule
     singleton-inlining-rule)))
-
-

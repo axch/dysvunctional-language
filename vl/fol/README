@@ -169,6 +169,10 @@ the remaining stages as much as you like, in any order.
   Performs other optimizations that do not have dedicated stages and
   returns the result.  The most important of them for legibility is to
   inline the definitions of variables that are used only once.
+  Besides that, TIDY collapses IFs with identical branches and
+  simplifies arithmetic, namely (+ 0 foo) -> foo, (* 1 foo) -> foo,
+  and (* 0 foo) -> 0.  The last of these is not floating-safe, because
+  foo might have been a NaN, say, but I'll leave it in for now.
 
 In addition to the optimizer and its individual stages, FOL also
 provides some legibility aids.  On one side, there is a utility to
@@ -334,7 +338,7 @@ Implementing FOL
 The implementation of FOL is, of course, the matter at hand in the
 rest of this program.  Here is the table of contents:
 
-optimize.scm        Toplevel; architecture overview
+optimize.scm        Toplevel; architecture overview; tidier
 type-check.scm      Type checker
 structs.scm         structure-definitions->vectors
 inline.scm          Inliner
