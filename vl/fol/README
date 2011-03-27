@@ -16,14 +16,17 @@ optimizing compiler from FOL to itself, and a runtime library for
 executing FOL as MIT Scheme.  I have not yet experimented with
 compiling FOL to any other target language.
 
-The remainder of this document consists of three sections,
+The remainder of this document consists of four sections,
 corresponding to the reasons why you might wish to peruse it:
 
-Reading FOL If you just want to understand what the VL and DVL
-compilers generate and what transformations are done to it.
+Reading FOL If you just want to understand the final output of the VL
+and DVL compilers.
 
-Writing FOL If you want to know the constraints under which the VL and
-DVL compilers operate and how they enable the services FOL provides.
+Optimizing FOL If you want to know what optimizations FOL provides to
+VL and DVL and what they do.
+
+Writing FOL If you want to know the constraints FOL imposes on the VL
+and DVL compilers and how they enable the FOL optimizations.
 
 Implementing FOL If you want to know how the FOL optimizer itself
 works, and how to write analagous programs.
@@ -74,7 +77,7 @@ variable elimination good enough to make the same termination
 guarantees that laziness does?
 
 
-TODO Section Name
+Optimizing FOL
 
 The FOL optimizer provides a number of services to the VL and DVL
 compilers, in the form of post-optimizing their output so they don't
