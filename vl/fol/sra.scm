@@ -20,10 +20,10 @@
 ;;; procedures in FOL to transform both their definitions and their
 ;;; call sites in synchrony.  The definition of a procedure is changed
 ;;; to accept the pieces of input data structures as separate
-;;; arguments and to return the pieces of the output data structure as a multivalue
-;;; return.  Calls to a procedure are changed to supply the pieces of
-;;; input data structures as separate arguments.  Procedure bodies are
-;;; transformed by recursive descent to match.
+;;; arguments and to return the pieces of the output data structure as
+;;; a multivalue return.  Calls to a procedure are changed to supply
+;;; the pieces of input data structures as separate arguments.
+;;; Procedure bodies are transformed by recursive descent to match.
 
 ;;; This implementation of
 ;;; SRA also depends on the input being in approximate A-normal form
