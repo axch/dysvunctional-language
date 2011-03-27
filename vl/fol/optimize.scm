@@ -49,17 +49,19 @@
 ;;; this by noting that INLINE is called first anyway and relying on
 ;;; the ALPHA-RENAME inside it.
 ;;;
-;;; Scalar replacement of aggregates requires its input to be in
-;;; approximate A-normal form.  The other stages except TIDY preseve
-;;; approximate A-normal form; SRA itself preserves it unless the
-;;; final answer returned by the entry point is a structure type.
+;;; Scalar replacement of aggregates pre-converts its input into
+;;; approximate A-normal form, and does not attempt to undo this
+;;; conversion.  This means other stages may have interesting
+;;; commutators with SCALAR-REPLACE-AGGREGATES through their effect on
+;;; ANF.
 ;;;
 ;;; Inlining is not idempotent in theory (see discussion in
 ;;; feedback-vertex-set.scm) but is idempotent on the extant examples.
 ;;;
-;;; Inlining commutes with SRA (up to removal of aliases), but makes
-;;; SRA go faster (I think) because it reduces the number of procedure
-;;; boundaries.
+;;; Inlining implies ANF-conversion of the call sites of the
+;;; procedures that were inlined.  Otherwise it commutes with SRA (up
+;;; to removal of aliases).  I think inlining makes SRA go faster
+;;; because it reduces the number of procedure boundaries.
 ;;;
 ;;; Inlining exposes aliases to de-aliasing by collapsing procedure
 ;;; boundaries.
@@ -116,7 +118,9 @@
 ;;; (* 0 (some-proc foo bar baz))).
 ;;;
 ;;; Tidying does not create SRA opportunities (though it could in the
-;;; non-union-free case).
+;;; non-union-free case).  It does, however, do some reverse
+;;; ANF-conversion, in the form of inlining variables that are only
+;;; used once.
 ;;;
 ;;; Tidying may expose aliases by removing intervening arithmetic
 ;;; operations.
