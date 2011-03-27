@@ -32,14 +32,6 @@
        (inline                          ; includes ALPHA-RENAME
         program)))))))
 
-(define (compile-to-scheme program)
-  (fol-optimize
-   (compile-to-fol program)))
-
-(define (compile-to-fol program)
-  (structure-definitions->vectors
-   (analyze-and-generate program)))
-
 ;;; The stages have the following structure and interrelationships:
 ;;;
 ;;; STRUCTURE-DEFINITIONS->VECTORS has to be done first, because none

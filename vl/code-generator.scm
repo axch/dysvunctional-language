@@ -291,3 +291,10 @@
 
 (define (analyze-and-generate program)
   (generate program (analyze program)))
+
+(define (compile-to-fol program)
+  (structure-definitions->vectors
+   (analyze-and-generate program)))
+
+(define (compile-to-scheme program)
+  (fol-optimize (compile-to-fol program)))
