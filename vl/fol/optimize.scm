@@ -236,15 +236,19 @@
   (rule-simplifier
    (list
     (rule `(begin (? body)) body)
-    (rule `(* 0 (? thing)) 0)
-    (rule `(* (? thing) 0) 0)
-    (rule `(/ 0 (? thing)) 0)
+
     (rule `(+ 0 (? thing)) thing)
     (rule `(+ (? thing) 0) thing)
     (rule `(- (? thing) 0) thing)
+
     (rule `(* 1 (? thing)) thing)
     (rule `(* (? thing) 1) thing)
     (rule `(/ (? thing) 1) thing)
+
+    ;; Warning: these may replace a runtime NaN answer with 0.
+    (rule `(* 0 (? thing)) 0)
+    (rule `(* (? thing) 0) 0)
+    (rule `(/ 0 (? thing)) 0)
 
     (rule `(if (? predicate) (? exp) (? exp))
           exp)
