@@ -29,10 +29,9 @@
     (eliminate-intraprocedural-dead-variables
      (intraprocedural-de-alias
       (scalar-replace-aggregates
-       (approximate-anf
-        (inline ; includes ALPHA-RENAME
-         (structure-definitions->vectors
-          output)))))))))
+       (inline                          ; includes ALPHA-RENAME
+        (structure-definitions->vectors
+         output))))))))
 
 (define (compile-to-scheme program)
   (fol-optimize

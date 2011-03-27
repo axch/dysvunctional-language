@@ -25,12 +25,6 @@
 ;;; the pieces of input data structures as separate arguments.
 ;;; Procedure bodies are transformed by recursive descent to match.
 
-;;; This implementation of
-;;; SRA also depends on the input being in approximate A-normal form
-;;; as produced by APPROXIMATE-ANF (see a-normal-form.scm).  The
-;;; output remains in approximate A-normal form (TODO except for the
-;;; influence of RECONSTRUCT-PRE-SRA-SHAPE).
-
 ;;; The structure of the recursive descent is as follows: walk down
 ;;; the expression (traversing LET bindings before LET bodies)
 ;;; carrying a map from all bound variables to a) the shape that
@@ -39,25 +33,21 @@
 ;;; subexpression, the SRA'd subexpression together with the shape of
 ;;; the value that subexpression used to return before SRA.
 
-;;; In this scenario, a construction (CONS or VECTOR form) becomes a
-;;; multivalue return of the appended names for the things being
-;;; constructed (which I have, because of the ANF); an access becomes
-;;; a multivalue return of an appropriate slice of the names being
-;;; accessed (which I again have because of the ANF); a call becomes
-;;; applied to the append of the names for each former element in the
-;;; call (ANF strikes again); a name becomes a multivalue return of
-;;; those assigned names; a constant remains a constant; and a let
-;;; becomes a multi-value let (whereupon I invent the names to hold
-;;; the pieces of the that used to be bound here); a definition
-;;; becomes a definition taking the appropriately larger number of
-;;; arguments, whose internal names I can invent at this point.  The
-;;; entry point is transformed without any initial name bindings.
-
 ;;; When union types are added to FOL, the effect will be the addition
 ;;; of types that are "primitive" as far as the SRA process in
 ;;; concerned, while being "compound" in the actual underlying code.
 ;;; Which are which will be decided by finding a feedback vertex set
 ;;; in the type reference graph.
+
+(define (scalar-replace-aggregates program)
+  (%scalar-replace-aggregates (approximate-anf program)))
+
+;;; The actual implementation of SRA makes its bookkeeping easier by
+;;; first converting its input to approximate A-normal form with
+;;; APPROXIMATE-ANF (see a-normal-form.scm).  As it happens, the
+;;; output remains in approximate A-normal form (TODO except for the
+;;; influence of RECONSTRUCT-PRE-SRA-SHAPE), but no other stage cares
+;;; about this.
 
 ;;; The FOL grammar accepted by the SRA algorithm replaces the
 ;;; standard FOL <expression>, <access>, and <construction> with
@@ -81,9 +71,23 @@
 ;;; construction = (cons <simple-expression> <simple-expression>)
 ;;;              | (vector <simple-expression> ...)
 ;;;
-;;; This grammar is consistent with the output of APPROXIMATE-ANF.
+;;; This is the grammar of the output of APPROXIMATE-ANF.
 
-(define (scalar-replace-aggregates program)
+;;; Given ANF, a construction (CONS or VECTOR form) becomes a
+;;; multivalue return of the appended names for the things being
+;;; constructed (which I have, because of the ANF); an access becomes
+;;; a multivalue return of an appropriate slice of the names being
+;;; accessed (which I again have because of the ANF); a call becomes
+;;; applied to the append of the names for each former element in the
+;;; call (ANF strikes again); a name becomes a multivalue return of
+;;; those assigned names; a constant remains a constant; and a let
+;;; becomes a multi-value let (whereupon I invent the names to hold
+;;; the pieces of the that used to be bound here); a definition
+;;; becomes a definition taking the appropriately larger number of
+;;; arguments, whose internal names I can invent at this point.  The
+;;; entry point is transformed without any initial name bindings.
+
+(define (%scalar-replace-aggregates program)
   (let ((lookup-type (type-map program)))
     (define (sra-entry-point expression)
       (sra-expression
