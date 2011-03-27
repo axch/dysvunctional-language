@@ -95,9 +95,9 @@ separately.
   that does the same job.
 
 (check-program-types <program>)
-  Verifies that the given FOL program is well typed.  If so, returns
-  the type returned by the entry point; if not, signals an appropriate
-  error.
+  Verifies that the given FOL program is syntactically correct and
+  well typed.  If so, returns the type returned by the entry point; if
+  not, signals an appropriate error.
 
 (fol-optimize <program>)
   Completely optimizes the given FOL program and returns the result.
@@ -146,7 +146,7 @@ the remaining stages as much as you like, in any order.
 
   The SRA algorithm requires its input to be in approximate A-normal
   form, so SCALAR-REPLACE-AGGREGATES preprocesses its input program
-  into it with APPROXIMATE-ANF.
+  with APPROXIMATE-ANF.
 
 (intraprocedural-de-alias <program>)
   Eliminates aliases inside procedure bodies and returns the result.
