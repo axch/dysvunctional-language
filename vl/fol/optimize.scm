@@ -49,6 +49,82 @@
 ;;; should be done next.  The definition of FOL-OPTIMIZE above bums
 ;;; this by noting that INLINE is called first anyway and relying on
 ;;; the ALPHA-RENAME inside it.
+;;;
+;;; Scalar replacement of aggregates requires its input to be in
+;;; approximate A-normal form.  The other stages except TIDY preseve
+;;; approximate A-normal form; SRA itself preserves it unless the
+;;; final answer returned by the entry point is a structure type.
+;;;
+;;; Inlining is not idempotent in theory (see discussion in
+;;; feedback-vertex-set.scm) but is idempotent on the extant examples.
+;;;
+;;; Inlining commutes with SRA (up to removal of aliases), but makes
+;;; SRA go faster (I think) because it reduces the number of procedure
+;;; boundaries.
+;;;
+;;; Inlining exposes aliases to de-aliasing by collapsing procedure
+;;; boundaries.
+;;;
+;;; Inlining exposes dead variables to elimination by collapsing
+;;; procedure boundaries.
+;;;
+;;; Inlining exposes opprotunities for tidying by collapsing procedure
+;;; boundaries.
+;;;
+;;; SRA commutes with inlining up to removal of aliases.
+;;;
+;;; SRA is idempotent except in the case of structured returns (or in
+;;; the non-union-free case for feedback-vertex-set reasons).
+;;;
+;;; SRA exposes structure-slot aliases to variable de-aliasing.
+;;;
+;;; SRA exposes dead structure slots to elimination.
+;;;
+;;; SRA exposes tidying opportunities across containment in
+;;; structures.
+;;;
+;;; De-aliasing does not create new inlining opportunities.
+;;;
+;;; De-aliasing does not create SRA opportunities.
+;;;
+;;; De-aliasing is idempotent.
+;;;
+;;; De-aliasing leaves some aliases around to be cleaned up by dead
+;;; variable elimination, in the case where some names bound by a
+;;; multiple value binding are aliases but others are not.
+;;;
+;;; De-aliasing exposes tidying opportunities, for example by constant
+;;; propagation.
+;;;
+;;; Dead variable elimination may delete edges in the call graph (if
+;;; the result of a called procedure turned out not to be used); and
+;;; may thus open inlining opportunities.
+;;;
+;;; Dead variable elimination does not create SRA opportunities
+;;; (though it could in the non-union-free case if I eliminated dead
+;;; structure slots and were willing to change the type graph
+;;; accordingly).
+;;;
+;;; Dead variable elimination does not expose aliases.
+;;;
+;;; Dead variable elimination is idempotent.
+;;;
+;;; Dead variable elimination exposes tidying opportunities, for
+;;; example by collapsing intervening LETs or by making bindings
+;;; singletons.
+;;;
+;;; Tidying may delete edges in the call graph (by, e.g., eliminating
+;;; (* 0 (some-proc foo bar baz))).
+;;;
+;;; Tidying does not create SRA opportunities (though it could in the
+;;; non-union-free case).
+;;;
+;;; Tidying may expose aliases by removing intervening arithmetic
+;;; operations.
+;;;
+;;; Tidying may expose dead variables by eliminating (* 0 foo).
+;;;
+;;; Tidying is idempotent (because it is run to convergence).
 
 ;;; Don't worry about the rule-based term-rewriting system that powers
 ;;; this.  That is its own pile of stuff, good for a few lectures of
