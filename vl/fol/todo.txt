@@ -7,6 +7,13 @@ Expository explanations
   identity
 - Make FOL executable standalone, releasable, workbookable
 
+SRA can remove call graph edges by eliminating contentless expressions
+that contain calls to procedures.  However, all procedures are
+contentful, because otherwise the code generator would not have
+emitted them.  Does the code generator emit expressions that request
+some content and then throw it away?  In any case, there are FOL
+programs where SRA exposes work for inlining; should I explain this?
+Should I explain that VL and DVL do not emit such programs?
 
 TODO: SRA is not idempotent (and does not preserve ANF) because of the
 reconstruction code
