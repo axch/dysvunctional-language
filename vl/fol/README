@@ -127,8 +127,7 @@ a FOL program.
 (approximate-anf <program>)
   Converts the given program into approximate A-normal form, where all
   procedure calls operate on variables or constants, and returns the
-  result.  This is necessary for scalar replacement of aggregates,
-  below.
+  result.  This is used for scalar replacement of aggregates, below.
 
 (approximate-anf? <program>)
   Returns #t if the given program is already in approximate A-normal
@@ -143,8 +142,9 @@ a FOL program.
   for the construction of the final answer that is returned from the
   entry point, should that be a structure.
 
-  SCALAR-REPLACE-AGGREGATES expects its input to be in approximate
-  A-normal form, and preserves this feature.
+  The SRA algorithm requires its input to be in approximate A-normal
+  form, so SCALAR-REPLACE-AGGREGATES preprocesses its input program
+  into it with APPROXIMATE-ANF.
 
 (intraprocedural-de-alias <program>)
   Eliminates aliases inside procedure bodies and returns the result.
@@ -155,19 +155,18 @@ a FOL program.
   As suggested by its name, this does not do full interprocedural
   must-alias analysis, and does not detect circumstances where some
   formal parameters to some procedure are reliably always given the
-  same value.  Preserves A-normal form.
+  same value.
 
 (eliminate-intraprocedural-dead-variables <program>)
   Eliminates dead code inside procedure bodies and returns the result.
   As suggested by the name, this does not detect circumstances where
   some variable is passed around from one user-defined procedure to
-  another but then never used.  Preserves A-normal form.
+  another but then never used.
 
 (tidy <program>)
   Performs other optimizations that do not have dedicated stages and
   returns the result.  The most important of them for legibility is to
-  inline the definitions of variables that are used only once.  This
-  breaks A-normal form, but leads to much more legible output.
+  inline the definitions of variables that are used only once.
 
 In addition to the optimizer and its individual stages, FOL also
 provides a utility to remove the argument type declarations if
