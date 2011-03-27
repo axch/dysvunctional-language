@@ -277,7 +277,18 @@
           (cadr exp)
           exp)))))
 
-;;; Reconstruction of the shape the outside world expects
+;;; Reconstruction of the shape the outside world expects.
+
+;;; The NEW-EXPR argument is an expression (freshly produced by SRA)
+;;; that returns some contentful stuff as a multiple value return, and
+;;; the SHAPE argument is the shape this stuff used to have before
+;;; SRA, and which, presumably, the outside world still expects.  The
+;;; expression to produce that consists, in the general case, of
+;;; multiple value binding the incoming pieces to synthetic names, and
+;;; reconstructing the desired structure out of those variables.  The
+;;; actual reconstructing expression is built by structural recursion
+;;; on the shape, cdring down the list of synthetic names in parallel
+;;; with the fringe of the shape.
 
 (define (reconstruct-pre-sra-shape new-expr shape)
   (if (primitive-shape? shape)
