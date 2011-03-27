@@ -277,6 +277,45 @@
           (cadr exp)
           exp)))))
 
+;;; Reconstruction of the shape the outside world expects
+
+(define (reconstruct-pre-sra-shape new-expr shape)
+  (if (primitive-shape? shape)
+      new-expr
+      (let ((piece-names (invent-names-for-parts 'receipt shape)))
+        (tidy-let-values
+         `(let-values ((,piece-names ,new-expr))
+            ,(let walk ((shape shape)
+                        (names piece-names)
+                        (win (lambda (shape new-names)
+                               (assert (null? new-names))
+                               shape)))
+               (cond ((primitive-shape? shape)
+                      (win (car names) (cdr names)))
+                     ((null? shape)
+                      (win '() names))
+                     ((eq? 'cons (car shape))
+                      (walk (cadr shape) names
+                       (lambda (car-expr names-left)
+                         (walk (caddr shape) names-left
+                          (lambda (cdr-expr names-left)
+                            (win `(cons ,car-expr ,cdr-expr)
+                                 names-left))))))
+                     ((eq? 'vector (car shape))
+                      (let walk* ((args-left (cdr shape))
+                                  (names-left names)
+                                  (win (lambda (new-args names-left)
+                                         (win `(vector ,@new-args) names-left))))
+                        (if (null? args-left)
+                            (win '() names-left)
+                            (walk (car args-left) names-left
+                             (lambda (new-arg names-left)
+                               (walk* (cdr args-left) names-left
+                                (lambda (new-args names-left)
+                                  (win (cons new-arg new-args) names-left))))))))
+                     (else
+                      (error "Weird shape" shape)))))))))
+
 ;;; SRA supporting procedures
 
 (define (empty-env) '())
@@ -337,39 +376,3 @@
          (caddr old-shape))
         ((eq? (car access-form) 'vector-ref)
          (list-ref (cdr old-shape) (caddr access-form)))))
-(define (reconstruct-pre-sra-shape new-expr shape)
-  (if (primitive-shape? shape)
-      new-expr
-      (let ((piece-names (invent-names-for-parts 'receipt shape)))
-        (tidy-let-values
-         `(let-values ((,piece-names ,new-expr))
-            ,(let walk ((shape shape)
-                        (names piece-names)
-                        (win (lambda (shape new-names)
-                               (assert (null? new-names))
-                               shape)))
-               (cond ((primitive-shape? shape)
-                      (win (car names) (cdr names)))
-                     ((null? shape)
-                      (win '() names))
-                     ((eq? 'cons (car shape))
-                      (walk (cadr shape) names
-                       (lambda (car-expr names-left)
-                         (walk (caddr shape) names-left
-                          (lambda (cdr-expr names-left)
-                            (win `(cons ,car-expr ,cdr-expr)
-                                 names-left))))))
-                     ((eq? 'vector (car shape))
-                      (let walk* ((args-left (cdr shape))
-                                  (names-left names)
-                                  (win (lambda (new-args names-left)
-                                         (win `(vector ,@new-args) names-left))))
-                        (if (null? args-left)
-                            (win '() names-left)
-                            (walk (car args-left) names-left
-                             (lambda (new-arg names-left)
-                               (walk* (cdr args-left) names-left
-                                (lambda (new-args names-left)
-                                  (win (cons new-arg new-args) names-left))))))))
-                     (else
-                      (error "Weird shape" shape)))))))))
