@@ -1,5 +1,7 @@
 Expository explanations
 - Push TIDY into its own file?
+- Explain the rule system
+- Sweep TODOs
 - Make the assertions in the README true
 - Actually explain SRA
 - Garbage collect syntax.scm
@@ -7,55 +9,18 @@ Expository explanations
   identity
 - Make FOL executable standalone, releasable, workbookable
 
-SRA can remove call graph edges by eliminating contentless expressions
-that contain calls to procedures.  However, all procedures are
-contentful, because otherwise the code generator would not have
-emitted them.  Does the code generator emit expressions that request
-some content and then throw it away?  In any case, there are FOL
-programs where SRA exposes work for inlining; should I explain this?
-Should I explain that VL and DVL do not emit such programs?
-
-TODO: SRA is not idempotent (and does not preserve ANF) because of the
-reconstruction code
-- The postfix of the optimizer after ANF (inclusive) should be
-  idempotent in spite of the reconstruction code.
-  - only not, see note below
+NB: SRA can remove call graph edges by eliminating contentless
+  expressions that contain calls to procedures.  However, all
+  procedures are contentful, because otherwise the code generator
+  would not have emitted them.  Does the code generator emit
+  expressions that request some content and then throw it away?  In
+  any case, there are FOL programs where SRA exposes work for
+  inlining; should I explain this?  Should I explain that VL and DVL
+  do not emit such programs?
 
 NB: The reason that some of my recursions are broken into expression
   loops and a toplevel crunch is that the top level is the only
   place that introduces bindings with letrec scope.
-NB: All the arithmetic reduction rules make work for de-aliasing
-  because of (let ((x (+ 0 y))) ...)
-NB: (* 0 x) -> 0 makes work for dead code elimination because x may
-  have contained the last reference to something
-NB: inline may introduce shadowing
-NB: dead code elimination may permit more inlining
-NB: inlining is not actually idempotent
-
-Define and test asserted invariants such as being in ANF or being
-alpha renamed?  "Prove" that various stages (e.g. SRA) always preserve
-them?
-- Use the grammars to construct programs that generate random
-  structures obeying those grammars?
-- Being in ANF might be defined as "the ANF transform does nothing"
-- Ditto being alpha renamed
-
-There is a diagram: Each box is a set of properties that a FOL program
-might satisfy, and each arrow defines the applicability of a
-transformation.  I want this diagram to have as few boxes as possible;
-I want all loops in this diagram to be idempotent (up to equality?
-alpha renaming?).  Current states are:
-- FOL + define-structure without multivalue returns
-- FOL without multivalue returns
-- FOL without shadowing or multivalue returns
-- FOL in ANF without shadowing or multivalue returns
-- FOL in ANF without shadowing
-- FOL without shadowing
-- FOL without shadowing or type declarations
-with obvious inclusions by identity.
-Can I also talk about which stages enable which others, or generate
-work for them, or don't, in the sense of de-aliasing and dead code
-elimination being (I think) orthogonal?
 
 ----------------------------------------------------------------------
 
@@ -70,6 +35,21 @@ autogenerating symbol names leaks memory
 Write inlining of used-once bindings (post-SRA); undoes ANF
 - This is the intraprocedural analog of inlining procedures (I think)
 
+
+Generate syntax checkers from the grammars?  Generate random example
+programs from the grammars?
+
+Software-validate the following assertions:
+- all optimizer stages preserve uniqueness of names
+- all optimizer stages preserve the semantics of any valid FOL program
+  (with alpha renaming inserted where needed)
+  - what is the exact list of criteria for "valid"?
+    - can I effectively check those with the type checker?
+      - can I efficiently generate random valid programs?
+- de-aliasing, dead code elimination, and tidying are idempotent
+- de-aliasing does not generate work for inlining and SRA
+- dead variable elimination does not generate work for SRA or de-aliasing
+
 Rename vector to closure, to distinguish it from (variable-length)
 arrays (that may be accessed at computed indecies).
 
@@ -79,7 +59,7 @@ arrays (that may be accessed at computed indecies).
    (+ x y))
  (let ((foo 3))
    (foo 1 2)))
-breaks horribly on inlining
+breaks horribly on inlining (global vs local name clash)
 
 INLINE breaks alpha renaming by duplicating code bodies.
 
