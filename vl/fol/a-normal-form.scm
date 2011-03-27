@@ -113,6 +113,8 @@
 (define (approximate-anf? expr)
   (equal? expr (approximate-anf expr)))
 
+;;;; A note on chained access
+
 ;;; An access chain like
 ;;; (car (cdr (car ...)))
 ;;; or a construction chain like
