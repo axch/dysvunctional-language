@@ -85,10 +85,16 @@
 ;;; the pieces of the that used to be bound here); a definition
 ;;; becomes a definition taking the appropriately larger number of
 ;;; arguments, whose internal names I can invent at this point.  The
-;;; entry point is transformed without any initial name bindings.
+;;; entry point is transformed without any initial name bindings, and
+;;; care is taken to reconstruct the shape the outside world expects
+;;; (see RECONSTRUCT-PRE-SRA-SHAPE).
 
 (define (%scalar-replace-aggregates program)
   (let ((lookup-type (type-map program)))
+    ;; TODO This is not idempotent because if repeated on an entry
+    ;; point that has to produce a structure, it will re-SRA the
+    ;; reconstruction code and then add more reconstruction code to
+    ;; reconstruct the output of that.  Perhaps this can be fixed.
     (define (sra-entry-point expression)
       (sra-expression
        expression (empty-env) lookup-type reconstruct-pre-sra-shape))

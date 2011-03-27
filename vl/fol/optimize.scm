@@ -87,9 +87,10 @@
 ;;; just become aliases after inlining.  Up to removal of aliases,
 ;;; however, SRA and inlining commute.
 ;;;
-;;; SRA then SRA: SRA is idempotent except in the case of structured
-;;; returns.  When support for union types is added, SRA will also
-;;; become non-idempotent for the same reason that inlining is not
+;;; SRA then SRA: SRA is idempotent except in the case when the entry
+;;; point returns a structured object (see sra.scm for why).  When
+;;; support for union types is added, SRA will also become
+;;; non-idempotent for the same reason that inlining is not
 ;;; idempotent.
 ;;; 
 ;;; SRA then others: SRA converts structure slots to variables,
