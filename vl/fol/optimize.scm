@@ -2,17 +2,12 @@
 ;;;; Optimization toplevel
 
 ;;; The FOL optimizer consists of several stages:
-;;; - STRUCTURE-DEFINITIONS->VECTORS
-;;;   Replace DEFINE-STRUCTURE with explicit vectors.
+;;; - ALPHA-RENAME
+;;;   Uniquify local variable names.
 ;;; - INLINE
 ;;;   Inline non-recursive function definitions.
-;;; - ALPHA-RENAME
-;;;   Change local variable names to avoid shadowing anything.
-;;; - APPROXIMATE-ANF
-;;;   Convert the program to A-normal form to prepare for SRA.
 ;;; - SCALAR-REPLACE-AGGREGATES
-;;;   Replace aggregates with scalars.  This relies on argument-type
-;;;   annotations and requires approximate A-normal form.
+;;;   Replace aggregates with scalars.
 ;;; - INTRAPROCEDURAL-DE-ALIAS
 ;;;   Eliminate redundant variables that are just aliases of other
 ;;;   variables or constants.
@@ -34,96 +29,128 @@
 
 ;;; The stages have the following structure and interrelationships:
 ;;;
-;;; STRUCTURE-DEFINITIONS->VECTORS has to be done first, because none
-;;; of the other stages can handle DEFINE-STRUCTURE forms, but it need
-;;; only be done once because no stage introduces DEFINE-STRUCTURE
-;;; forms.
-;;;
-;;; After that, almost all other stages (notably except INLINE) depend
+;;; Almost all other stages (notably except INLINE) depend
 ;;; on but also preserve uniqueness of variable names, so ALPHA-RENAME
-;;; should be done next.  The definition of FOL-OPTIMIZE above bums
+;;; should be done first.  The definition of FOL-OPTIMIZE above bums
 ;;; this by noting that INLINE is called first anyway and relying on
 ;;; the ALPHA-RENAME inside it.
 ;;;
+;;; Other than that, any stage is valid at any point, so the order and
+;;; frequency of calling them is a question of their idempotence, what
+;;; opportunities they expose for each other, and whether they give
+;;; each other any excess work.  The following table summarizes these
+;;; relationships.
+#|
+|          | Inline        | SRA         | de-alias  | dead var | tidy   |
+|----------+---------------+-------------+-----------+----------+--------|
+| Inline   | almost idem   | no effect   | expose    | expose   | expose |
+| SRA      | extra aliases | almost idem | expose    | expose   | expose |
+| de-alias | no effect     | no effect   | idem      | expose   | expose |
+| dead var | ~ expose      | no effect   | no effect | idem     | expose |
+| tidy     | ~ expose      | form fight  | ~ expose  | ~ expose | idem   |
+|#
+;;; Each cell in the table says what effect doing the stage on the
+;;; left first has on subsequently doing the stage above.  "Expose"
+;;; means that the stage on the left exposes opportunities for the
+;;; stage above to be more effective.  "Idem" means the stage is
+;;; idempotent, that is that repeating it twice in a row is no better
+;;; than doing it once.  "~ expose" means it exposes opportunities in
+;;; principle, but the current set of examples has not yet motivated
+;;; me to try to take advantage of this.  I explain each cell
+;;; individually below.
+
 ;;; Scalar replacement of aggregates pre-converts its input into
 ;;; approximate A-normal form, and does not attempt to undo this
 ;;; conversion.  This means other stages may have interesting
 ;;; commutators with SCALAR-REPLACE-AGGREGATES through their effect on
 ;;; ANF.
 ;;;
-;;; Inlining is not idempotent in theory (see discussion in
-;;; feedback-vertex-set.scm) but is idempotent on the extant examples.
+;;; Inline then Inline: Inlining is not idempotent in theory (see
+;;; discussion in feedback-vertex-set.scm) but is idempotent on the
+;;; extant examples.
 ;;;
-;;; Inlining implies ANF-conversion of the call sites of the
-;;; procedures that were inlined.  Otherwise it commutes with SRA (up
-;;; to removal of aliases).  I think inlining makes SRA go faster
-;;; because it reduces the number of procedure boundaries.
-;;;
-;;; Inlining exposes aliases to de-aliasing by collapsing procedure
-;;; boundaries.
-;;;
-;;; Inlining exposes dead variables to elimination by collapsing
+;;; Inline then SRA: Inlining commutes with SRA up to removal of
+;;; aliases (see explanation in SRA then Inline below).  I think
+;;; inlining also makes SRA go faster because it reduces the number of
 ;;; procedure boundaries.
 ;;;
-;;; Inlining exposes opprotunities for tidying by collapsing procedure
-;;; boundaries.
+;;; Inline then others: Inlining exposes some interprocedural aliases,
+;;; dead code, and tidying opportunities to intraprocedural methods by
+;;; collapsing some procedure boundaries.
 ;;;
-;;; SRA commutes with inlining up to removal of aliases.
+;;; SRA then Inline: Inlining gives explicit names (former formal
+;;; parameters) to the argument expressions of the procedure calls
+;;; that are inlined, whether those expressions are compound or not.
+;;; The ANF pre-filter of SRA synthesizes explicit names for any
+;;; compound expression, including arguments of procedures that are up
+;;; for inlining.  Therefore, doing SRA first creates extra names that
+;;; just become aliases after inlining.  Up to removal of aliases,
+;;; however, SRA and inlining commute.
 ;;;
-;;; SRA is idempotent except in the case of structured returns (or in
-;;; the non-union-free case for feedback-vertex-set reasons).
+;;; SRA then SRA: SRA is idempotent except in the case of structured
+;;; returns.  When support for union types is added, SRA will also
+;;; become non-idempotent for the same reason that inlining is not
+;;; idempotent.
+;;; 
+;;; SRA then others: SRA converts structure slots to variables,
+;;; thereby exposing any aliases, dead code, or tidying opportunities
+;;; over those structure slots to the other stages, which focus
+;;; exclusively on variables.
 ;;;
-;;; SRA exposes structure-slot aliases to variable de-aliasing.
+;;; De-alias then others: De-aliasing is idempotent, does not create
+;;; inlining opportunities, and does not create SRA opportunities.
 ;;;
-;;; SRA exposes dead structure slots to elimination.
+;;; De-alias then eliminate: Formally, the job of de-aliasing is
+;;; just to rename references to aliases to refer to the objects they
+;;; are aliases of, so that the bindings of the aliases themselves can
+;;; be cleaned up by dead variable elimination.  The particular
+;;; de-aliasing program implemented here opportunistically eliminates
+;;; most of those alias bindings itself, but it does leave a few
+;;; aliases around to be cleaned up by dead variable elimination, in
+;;; the case where some names bound by a multiple value binding form
+;;; are aliases but others are not.
 ;;;
-;;; SRA exposes tidying opportunities across containment in
-;;; structures.
+;;; De-alias then tidy: De-aliasing exposes tidying opportunities, for
+;;; example by constant propagation.
 ;;;
-;;; De-aliasing does not create new inlining opportunities.
+;;; Eliminate then inline: Dead variable elimination may delete edges
+;;; in the call graph (if the result of a called procedure turned out
+;;; not to be used); and may thus open inlining opportunities.
 ;;;
-;;; De-aliasing does not create SRA opportunities.
+;;; Eliminate then SRA: Dead variable elimination does not create SRA
+;;; opportunities (though it could in the non-union-free case if I
+;;; eliminated dead structures or structure slots and were willing to
+;;; change the type graph accordingly).
 ;;;
-;;; De-aliasing is idempotent.
+;;; Eliminate then de-alias: Dead variable elimination does not expose
+;;; aliases.
 ;;;
-;;; De-aliasing leaves some aliases around to be cleaned up by dead
-;;; variable elimination, in the case where some names bound by a
-;;; multiple value binding are aliases but others are not.
+;;; Eliminate then eliminate: Dead variable elimination is idempotent.
 ;;;
-;;; De-aliasing exposes tidying opportunities, for example by constant
-;;; propagation.
+;;; Eliminate then tidy: Dead variable elimination exposes tidying
+;;; opportunities, for example by collapsing intervening LETs or by
+;;; making bindings singletons.
 ;;;
-;;; Dead variable elimination may delete edges in the call graph (if
-;;; the result of a called procedure turned out not to be used); and
-;;; may thus open inlining opportunities.
+;;; Tidy then inline: Tidying may delete edges in the call graph (by,
+;;; e.g., eliminating (* 0 (some-proc foo bar baz))).
 ;;;
-;;; Dead variable elimination does not create SRA opportunities
-;;; (though it could in the non-union-free case if I eliminated dead
-;;; structure slots and were willing to change the type graph
-;;; accordingly).
+;;; Tidy then SRA: Tidying does not create SRA opportunities (though
+;;; it could in the non-union-free case).  It does, however, do some
+;;; reverse ANF-conversion, in the form of inlining variables that are
+;;; only used once.  Consequently, SRA and tidying could fight
+;;; indefinitely over the "normal form" of a program, each appearing
+;;; to change it while neither doing anything useful.
 ;;;
-;;; Dead variable elimination does not expose aliases.
+;;; Tidy then de-alias: Tidying may expose aliases by removing
+;;; intervening arithmetic.  For example, in (let ((x (+ 0 y))) ...),
+;;; x would not register as an alias of y until after tidying (+ 0 y)
+;;; to y.
 ;;;
-;;; Dead variable elimination is idempotent.
+;;; Tidy then eliminate: Tidying may expose dead variables by
+;;; collapsing (* 0 foo) to 0.
 ;;;
-;;; Dead variable elimination exposes tidying opportunities, for
-;;; example by collapsing intervening LETs or by making bindings
-;;; singletons.
-;;;
-;;; Tidying may delete edges in the call graph (by, e.g., eliminating
-;;; (* 0 (some-proc foo bar baz))).
-;;;
-;;; Tidying does not create SRA opportunities (though it could in the
-;;; non-union-free case).  It does, however, do some reverse
-;;; ANF-conversion, in the form of inlining variables that are only
-;;; used once.
-;;;
-;;; Tidying may expose aliases by removing intervening arithmetic
-;;; operations.
-;;;
-;;; Tidying may expose dead variables by eliminating (* 0 foo).
-;;;
-;;; Tidying is idempotent (because it is run to convergence).
+;;; Tidy then tidy: Tidying is idempotent (because it is run to
+;;; convergence).
 
 ;;; Don't worry about the rule-based term-rewriting system that powers
 ;;; this.  That is its own pile of stuff, good for a few lectures of
