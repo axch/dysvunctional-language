@@ -23,19 +23,23 @@
 ;;;   a simple-minded reverse-anf which inlines bindings of variables
 ;;;   that are only used once, to make the output easier to read.
 
-(define (fol-optimize output)
+(define (fol-optimize program)
   ((lambda (x) x) ; This makes the last stage show up in the stack sampler
    (tidy
     (eliminate-intraprocedural-dead-variables
      (intraprocedural-de-alias
       (scalar-replace-aggregates
        (inline                          ; includes ALPHA-RENAME
-        (structure-definitions->vectors
-         output))))))))
+        program)))))))
 
 (define (compile-to-scheme program)
   (fol-optimize
+   (compile-to-fol program)))
+
+(define (compile-to-fol program)
+  (structure-definitions->vectors
    (analyze-and-generate program)))
+
 ;;; The stages have the following structure and interrelationships:
 ;;;
 ;;; STRUCTURE-DEFINITIONS->VECTORS has to be done first, because none
