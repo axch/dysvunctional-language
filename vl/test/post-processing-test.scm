@@ -144,7 +144,18 @@
             (car (cdr x))))))
 
    (equal? #t (fol-optimize '#t))
-   (equal? #f (fol-optimize '#f))))
+   (equal? #f (fol-optimize '#f))
+
+   ;; Elimination should not get confused by procedures that return
+   ;; multiple things only one of which is needed.
+   (check-program-types
+    (eliminate-intraprocedural-dead-variables
+     '(begin
+        (define (foo)
+          (argument-types (values real real))
+          (values 1 2))
+        (let-values (((x y) (foo)))
+          y))))))
 
 ;; Here is a case where serious SRA is necessary
 ;; (let ((x (if ... (cons) (cons))))

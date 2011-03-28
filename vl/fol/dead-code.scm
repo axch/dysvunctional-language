@@ -213,10 +213,13 @@
          (let ((new-call
                 (if (all-wanted? live-out)
                     simple-new-call
-                    (let ((receipt-names (map invent-name live-out)))
+                    (let* ((receipt-names (map invent-name live-out))
+                           (useful-names (filter (lambda (x) (not (ignore? x)))
+                                                 receipt-names)))
                       `(let-values ((,receipt-names ,simple-new-call))
-                         (values ,@(filter (lambda (x) (not (ignore? x)))
-                                           receipt-names)))))))
+                         ,(if (> (length useful-names) 1)
+                              `(values ,@useful-names)
+                              (car useful-names)))))))
            (win new-call (reduce union (no-used-vars) args-used)))))))
   (define (loop* exprs win)
     (if (null? exprs)
