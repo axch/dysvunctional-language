@@ -75,7 +75,7 @@
 
 (define (eliminate-in-expression expr live-out)
   (define (ignore? name)
-    (eq? name '_))
+    (equal? (strip-trailing-counts name) "_"))
   (define (no-used-vars) '())
   (define (single-used-var var) (list var))
   (define (union vars1 vars2)
@@ -208,7 +208,7 @@
        (define (invent-name wanted?)
          (if wanted?
              (make-name 'receipt)
-             '_))
+             (make-name '_)))
        (let ((simple-new-call `(,(car expr) ,@new-args)))
          (let ((new-call
                 (if (all-wanted? live-out)
