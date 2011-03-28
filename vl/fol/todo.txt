@@ -25,7 +25,6 @@ NB: The reason that some of my recursions are broken into expression
 ----------------------------------------------------------------------
 
 Good output on dvl-sqrt-5
-- MIT Scheme doesn't like multiple underscores in the same binding clause
 
 Fast enough to put dvl-sqrt-5 into the test suite?
 
