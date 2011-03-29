@@ -75,7 +75,7 @@
 
 (define (eliminate-in-expression expr live-out)
   (define (ignore? name)
-    (equal? (strip-trailing-counts name) "_"))
+    (eq? (name-base name) '_))
   (define (no-used-vars) '())
   (define (single-used-var var) (list var))
   (define (union vars1 vars2)

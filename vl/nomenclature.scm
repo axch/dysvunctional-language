@@ -5,15 +5,15 @@
 
 (define *symbol-count* 0)
 
-(define (make-name prefix)
+(define (make-name template)
   (set! *symbol-count* (+ *symbol-count* 1))
-  (symbol (strip-trailing-counts prefix) '- *symbol-count*))
+  (symbol (name-base template) '- *symbol-count*))
 
-(define (strip-trailing-counts symbol)
+(define (name-base symbol)
   (let* ((the-string (symbol->string symbol))
          (prefix-end (re-match-start-index 0 (re-string-search-forward "[-0-9]*$" the-string)))
          (prefix (substring the-string 0 prefix-end)))
-    prefix))
+    (string->symbol prefix)))
 
 (define (vl-variable->scheme-variable var) var)
 
