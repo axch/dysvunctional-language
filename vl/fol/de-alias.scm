@@ -47,7 +47,7 @@
 
 (define (intraprocedural-de-alias program)
   (define de-alias-definition
-    (rule `(define ((? name ,symbol?) (?? formals))
+    (rule `(define ((? name ,fol-var?) (?? formals))
              (argument-types (?? stuff))
              (? body))
           `(define (,name ,@formals)
@@ -105,8 +105,8 @@
   ;; new, de-aliased expression, and a list of the names of the
   ;; variables that hold the return values from this expression.
   (define (loop expr env win)
-    (cond ((symbol? expr)
-           (de-alias-symbol expr env win))
+    (cond ((fol-var? expr)
+           (de-alias-fol-var expr env win))
           ((number? expr)
            (win expr (list expr)))
           ((boolean? expr)
@@ -123,7 +123,7 @@
            (de-alias-values expr env win))
           (else ; general application
            (de-alias-application expr env win))))
-  (define (de-alias-symbol expr env win)
+  (define (de-alias-fol-var expr env win)
     (let ((alias-binding (lookup expr env)))
       (if alias-binding
           (win (cdr alias-binding) (list (cdr alias-binding)))

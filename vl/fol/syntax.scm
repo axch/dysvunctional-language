@@ -2,7 +2,7 @@
 ;;;; Syntax and manipulations of the output language
 
 (define (simple-form? thing)
-  (or (symbol? thing) (number? thing) (boolean? thing) (null? thing)))
+  (or (fol-var? thing) (number? thing) (boolean? thing) (null? thing)))
 
 (define begin-form? (tagged-list? 'begin))
 

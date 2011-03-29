@@ -204,7 +204,7 @@
      y))
 (define let-let-lifting-rule
   (rule `(let ((?? bindings1)
-               ((? name ,symbol?) (let (? in-bindings) (? exp)))
+               ((? name ,fol-var?) (let (? in-bindings) (? exp)))
                (?? bindings2))
            (?? body))
         `(let ,in-bindings
@@ -224,7 +224,7 @@
 ;; This is safe assuming the program has been alpha renamed
 (define singleton-inlining-rule
   (rule `(let ((?? bindings1)
-               ((? name ,symbol?) (? exp))
+               ((? name ,fol-var?) (? exp))
                (?? bindings2))
            (?? body))
         (let ((occurrence-count (count-free-occurrences name body)))

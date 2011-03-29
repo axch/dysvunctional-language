@@ -99,7 +99,7 @@
       (sra-expression
        expression (empty-env) lookup-type reconstruct-pre-sra-shape))
     (define sra-definition
-      (rule `(define ((? name ,symbol?) (?? formals))
+      (rule `(define ((? name ,fol-var?) (?? formals))
                (argument-types (?? arg-shapes) (? return))
                (? body))
             (let* ((new-name-sets
@@ -134,7 +134,7 @@
     (and (pair? expr)
          (memq (car expr) '(cons vector values))))
   (define (loop expr env win)
-    (cond ((symbol? expr)
+    (cond ((fol-var? expr)
            (win `(values ,@(get-names expr env))
                 (get-shape expr env)))
           ((number? expr)
@@ -253,7 +253,7 @@
                          ,@bindings2)
               ,@body))
      (rule `(let-values ((?? bindings)
-                         (((? name ,symbol?)) (? exp)))
+                         (((? name ,fol-var?)) (? exp)))
               (?? body))
            `(let-values ,bindings
               (let ((,name ,exp))

@@ -15,6 +15,8 @@
          (prefix (substring the-string 0 prefix-end)))
     (string->symbol prefix)))
 
+(define fol-var? symbol?)
+
 (define (vl-variable->scheme-variable var) var)
 
 (define (vl-variable->scheme-field-name var) var)

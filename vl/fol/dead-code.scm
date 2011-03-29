@@ -58,7 +58,7 @@
 
 (define (eliminate-intraprocedural-dead-variables program)
   (define eliminate-in-definition
-    (rule `(define ((? name ,symbol?) (?? formals))
+    (rule `(define ((? name ,fol-var?) (?? formals))
              (argument-types (?? stuff) (? return))
              (? body))
           `(define (,name ,@formals)
@@ -94,7 +94,7 @@
   ;; accepts the transformed expression and the set of variables that
   ;; it needs to compute its live results.
   (define (loop expr live-out win)
-    (cond ((symbol? expr)
+    (cond ((fol-var? expr)
            (win expr (single-used-var expr)))
           ((number? expr)
            (win expr (no-used-vars)))

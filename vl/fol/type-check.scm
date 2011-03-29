@@ -90,7 +90,7 @@
     (and (pair? expr)
          (memq (car expr) '(cons vector values))))
   (define (loop expr env)
-    (cond ((symbol? expr) (lookup-type expr env))
+    (cond ((fol-var? expr) (lookup-type expr env))
           ((number? expr) 'real)
           ((boolean? expr) 'bool)
           ((null? expr) '())
@@ -204,7 +204,7 @@
 (define (fol-shape? thing)
   ;; This will need to be updated when union types appear
   (or (null? thing)
-      (and (symbol? thing)
+      (and (fol-var? thing)
            (memq thing '(real bool gensym)))
       (and (list? thing)
            (> (length thing) 0)
@@ -263,7 +263,7 @@
   (let ((type-map (make-initial-type-map)))
     (if (begin-form? program)
         (for-each
-         (rule `(define ((? name ,symbol?) (?? formals))
+         (rule `(define ((? name ,fol-var?) (?? formals))
                   (argument-types (?? args) (? return))
                   (? body))
                (hash-table/put!
