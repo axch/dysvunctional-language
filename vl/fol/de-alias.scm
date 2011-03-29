@@ -68,30 +68,6 @@
   ;; scope here.  For purposes of this process, (constant) numbers,
   ;; booleans, and empty-lists are legitimate things that variables
   ;; may be aliases of (and are always in scope).
-  (define (augment-alias-env env old-names aliases win)
-    (define (acceptable-alias? alias)
-      (and (not (non-alias? alias))
-           (or (number? alias)
-               (boolean? alias)
-               (null? alias)
-               (find-alias alias env))))
-    (let ((aliases (if (non-alias? aliases)
-                       (make-list (length old-names) the-non-alias)
-                       aliases)))
-      (win
-       (append
-        (map (lambda (old-name alias)
-               (if (acceptable-alias? alias)
-                   (cons old-name alias)
-                   (cons old-name old-name)))
-             old-names
-             aliases)
-        env)
-       (map acceptable-alias? aliases))))
-  (define find-alias assq)
-  (define the-non-alias (list 'not-an-alias))
-  (define (non-alias? thing)
-    (eq? the-non-alias thing))
   (define (merge-name-lists names1 names2)
     (if (or (non-alias? names1) (non-alias? names2))
         the-non-alias
@@ -209,3 +185,31 @@
                    ;; The name list might be useful to an
                    ;; interprocedural must-alias crunch.
                    new-expr)))
+
+(define (augment-alias-env env old-names aliases win)
+  (define (acceptable-alias? alias)
+    (and (not (non-alias? alias))
+         (or (number? alias)
+             (boolean? alias)
+             (null? alias)
+             (find-alias alias env))))
+  (let ((aliases (if (non-alias? aliases)
+                     (make-list (length old-names) the-non-alias)
+                     aliases)))
+    (win
+     (append
+      (map (lambda (old-name alias)
+             (if (acceptable-alias? alias)
+                 (cons old-name alias)
+                 (cons old-name old-name)))
+           old-names
+           aliases)
+      env)
+     (map acceptable-alias? aliases))))
+
+(define find-alias assq)
+
+(define the-non-alias (list 'not-an-alias))
+
+(define (non-alias? thing)
+  (eq? the-non-alias thing))
