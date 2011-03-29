@@ -39,8 +39,8 @@ support.  You can run any FOL program right at your Scheme REPL:
 
 (fol-eval <program>)
   Evaluates a FOL program in the ambient MIT Scheme.  This has the
-  same effect as typing that data structure into the REPL (provided
-  the FOL runtime support is loaded).
+  same effect as typing a printout of that data structure into the
+  REPL (provided the FOL runtime support is loaded).
 
 You can also read FOL as though it were Scheme.  The only things you
 might not recognize are multiple value returns, type declarations, and
