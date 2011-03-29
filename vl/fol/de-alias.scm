@@ -68,13 +68,13 @@
   ;; scope here.  For purposes of this process, (constant) numbers,
   ;; booleans, and empty-lists are legitimate things that variables
   ;; may be aliases of (and are always in scope).
-  (define (augment-env env old-names aliases win)
+  (define (augment-alias-env env old-names aliases win)
     (define (acceptable-alias? alias)
       (and (not (non-alias? alias))
            (or (number? alias)
                (boolean? alias)
                (null? alias)
-               (lookup alias env))))
+               (find-alias alias env))))
     (let ((aliases (if (non-alias? aliases)
                        (make-list (length old-names) the-non-alias)
                        aliases)))
@@ -88,7 +88,7 @@
              aliases)
         env)
        (map acceptable-alias? aliases))))
-  (define lookup assq)
+  (define find-alias assq)
   (define the-non-alias (list 'not-an-alias))
   (define (non-alias? thing)
     (eq? the-non-alias thing))
@@ -124,7 +124,7 @@
           (else ; general application
            (de-alias-application expr env win))))
   (define (de-alias-fol-var expr env win)
-    (let ((alias-binding (lookup expr env)))
+    (let ((alias-binding (find-alias expr env)))
       (if alias-binding
           (win (cdr alias-binding) (list (cdr alias-binding)))
           (error "Trying to de-alias an unbound variable" expr env))))
@@ -149,7 +149,7 @@
                            the-non-alias
                            (car bind-name-list)))
                      bind-name-lists)))
-           (augment-env env (map car bindings) bind-names
+           (augment-alias-env env (map car bindings) bind-names
             (lambda (env acceptable-aliases)
               (loop body env
                (lambda (new-body body-name-list)
@@ -170,7 +170,7 @@
            (body (caddr expr)))
       (loop subexpr env
        (lambda (new-subexpr subexpr-names)
-         (augment-env env names subexpr-names
+         (augment-alias-env env names subexpr-names
           (lambda (env acceptable-aliases)
             (loop body env
              (lambda (new-body body-name-list)
