@@ -28,8 +28,6 @@ Good output on dvl-sqrt-5
 
 Fast enough to put dvl-sqrt-5 into the test suite?
 
-autogenerating symbol names leaks memory
-
 
 Write inlining of used-once bindings (post-SRA); undoes ANF
 - This is the intraprocedural analog of inlining procedures (I think)
