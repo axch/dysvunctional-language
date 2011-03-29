@@ -46,6 +46,8 @@
 ;;; formal parameters are always assumed not to be aliases.
 
 (define (intraprocedural-de-alias program)
+  (define (de-alias-entry-point expression)
+    (de-alias-expression expression (empty-alias-env)))
   (define de-alias-definition
     (rule `(define ((? name ,fol-var?) (?? formals))
              (argument-types (?? stuff))
@@ -56,8 +58,8 @@
   (if (begin-form? program)
       (append
        (map de-alias-definition (except-last-pair program))
-       (list (de-alias-expression (last program) '())))
-      (de-alias-expression program '())))
+       (list (de-alias-entry-point (last program))))
+      (de-alias-entry-point program)))
 
 (define (de-alias-expression expr env)
   ;; An alias environment is not like a normal environment.  This
@@ -185,6 +187,8 @@
                    ;; The name list might be useful to an
                    ;; interprocedural must-alias crunch.
                    new-expr)))
+
+(define (empty-alias-env) '())
 
 (define (augment-alias-env env old-names aliases win)
   (define (acceptable-alias? alias)
