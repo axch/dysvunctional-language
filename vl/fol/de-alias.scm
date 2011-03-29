@@ -131,6 +131,7 @@
             (lambda (env acceptable-aliases)
               (loop body env
                (lambda (new-body body-name-list)
+                 (degment-alias-env! env (map car bindings))
                  (win (empty-let-rule
                        `(let ,(filter-map
                                (lambda (name alias? expr)
@@ -160,6 +161,7 @@
                ;; look for the VALUES that supplies the corresponding
                ;; values.  For now, I will just kill the whole
                ;; let-values if it is useless.
+               (degment-alias-env! env names)
                (win (if (any not acceptable-aliases)
                         `(let-values ((,names ,new-subexpr))
                            ,new-body)
@@ -215,6 +217,9 @@
            aliases)
       env)
      (map acceptable-alias? aliases))))
+
+(define (degment-alias-env! env names)
+  'ok)
 
 (define find-alias assq)
 
