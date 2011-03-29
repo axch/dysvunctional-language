@@ -208,16 +208,13 @@
   (let ((aliases (if (non-alias? aliases)
                      (make-list (length old-names) the-non-alias)
                      aliases)))
-    (win
-     (begin
-       (for-each (lambda (old-name alias)
-                   (if (acceptable-alias? alias)
-                       (hash-table/put! env old-name alias)
-                       (hash-table/put! env old-name old-name)))
-                 old-names
-                 aliases)
-       env)
-     (map acceptable-alias? aliases))))
+    (for-each (lambda (old-name alias)
+                (if (acceptable-alias? alias)
+                    (hash-table/put! env old-name alias)
+                    (hash-table/put! env old-name old-name)))
+              old-names
+              aliases)
+    (win env (map acceptable-alias? aliases))))
 
 (define (degment-alias-env! env names)
   (for-each (lambda (name)
