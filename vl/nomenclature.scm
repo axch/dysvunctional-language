@@ -6,7 +6,12 @@
 (define *symbol-count* 0)
 
 (define-structure
-  (fol-name safe-accessors)
+  (fol-name
+   safe-accessors
+   (print-procedure
+    (simple-unparser-method 'fol-name
+     (lambda (object)
+       (list (fol-name-base object) (fol-name-count object))))))
   base
   count)
 
