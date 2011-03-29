@@ -5,17 +5,35 @@
 
 (define *symbol-count* 0)
 
+(define-structure
+  (fol-name safe-accessors)
+  base
+  count)
+
+(define (name-base thing)
+  (cond ((fol-name? thing)
+         (fol-name-base thing))
+        ((symbol? thing) thing)
+        (else (error "Invalid name" thing))))
+
 (define (make-name template)
   (set! *symbol-count* (+ *symbol-count* 1))
-  (symbol (name-base template) '- *symbol-count*))
+  (make-fol-name (name-base template) *symbol-count*))
 
-(define (name-base symbol)
-  (let* ((the-string (symbol->string symbol))
-         (prefix-end (re-match-start-index 0 (re-string-search-forward "[-0-9]*$" the-string)))
-         (prefix (substring the-string 0 prefix-end)))
-    (string->symbol prefix)))
+(define (fol-var? thing)
+  (or (symbol? thing)
+      (fol-name? thing)))
 
-(define fol-var? symbol?)
+(define (name->symbol thing)
+  (cond ((fol-name? thing)
+         (symbol (fol-name-base thing) '- (fol-name-count thing)))
+        ((symbol? thing) thing)
+        (else "Invalid var" thing)))
+
+(define prepare-for-scheme
+  (rule-simplifier
+   (list
+    (rule `(? name ,fol-name?) (name->symbol name)))))
 
 (define (vl-variable->scheme-variable var) var)
 
@@ -35,7 +53,7 @@
   (hash-table/lookup *closure-names* closure
    (lambda (value) value)
    (lambda ()
-     (let ((answer (make-name 'closure-)))
+     (let ((answer (name->symbol (make-name 'closure))))
        (hash-table/put! *closure-names* closure answer)
        answer))))
 
@@ -48,7 +66,7 @@
   (hash-table/lookup *call-site-names* (cons closure abstract-arg)
    (lambda (value) value)
    (lambda ()
-     (let ((answer (make-name 'operation-)))
+     (let ((answer (name->symbol (make-name 'operation))))
        (hash-table/put! *call-site-names*
         (cons closure abstract-arg) answer)
        answer))))
