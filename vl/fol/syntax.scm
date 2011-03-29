@@ -119,9 +119,6 @@
 
 ;;;; "Runtime system"
 
-(define (pp-fol code)
-  (pp (prepare-for-scheme code)))
-
 (define (fol-eval code)
   (eval (prepare-for-scheme code) (nearest-repl/environment)))
 

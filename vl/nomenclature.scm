@@ -9,9 +9,12 @@
   (fol-name
    safe-accessors
    (print-procedure
-    (simple-unparser-method 'fol-name
-     (lambda (object)
-       (list (fol-name-base object) (fol-name-count object))))))
+    (lambda (state object)
+      (with-current-unparser-state state
+        (lambda (port)
+          (write (fol-name-base object) port)
+          (write '- port)
+          (write (fol-name-count object) port))))))
   base
   count)
 
