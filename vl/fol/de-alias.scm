@@ -54,7 +54,7 @@
              (? body))
           `(define (,name ,@formals)
              (argument-types ,@stuff)
-             ,(de-alias-expression body (map cons formals formals)))))
+             ,(de-alias-expression body (fresh-alias-env formals)))))
   (if (begin-form? program)
       (append
        (map de-alias-definition (except-last-pair program))
@@ -189,6 +189,11 @@
                    new-expr)))
 
 (define (empty-alias-env) '())
+
+(define (fresh-alias-env names)
+  (augment-alias-env (empty-alias-env) names names
+   (lambda (env acceptable-aliases)
+     env)))
 
 (define (augment-alias-env env old-names aliases win)
   (define (acceptable-alias? alias)
