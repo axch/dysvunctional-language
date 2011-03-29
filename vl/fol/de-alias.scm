@@ -190,7 +190,8 @@
                    ;; interprocedural must-alias crunch.
                    new-expr)))
 
-(define (empty-alias-env) '())
+(define (empty-alias-env)
+  (make-eq-hash-table))
 
 (define (fresh-alias-env names)
   (augment-alias-env (empty-alias-env) names names
@@ -208,20 +209,26 @@
                      (make-list (length old-names) the-non-alias)
                      aliases)))
     (win
-     (append
-      (map (lambda (old-name alias)
-             (if (acceptable-alias? alias)
-                 (cons old-name alias)
-                 (cons old-name old-name)))
-           old-names
-           aliases)
-      env)
+     (begin
+       (for-each (lambda (old-name alias)
+                   (if (acceptable-alias? alias)
+                       (hash-table/put! env old-name alias)
+                       (hash-table/put! env old-name old-name)))
+                 old-names
+                 aliases)
+       env)
      (map acceptable-alias? aliases))))
 
 (define (degment-alias-env! env names)
-  'ok)
+  (for-each (lambda (name)
+              (hash-table/remove! env name))
+            names))
 
-(define find-alias assq)
+(define (find-alias name env)
+  (hash-table/lookup env name
+    (lambda (datum)
+      (cons name datum))
+    (lambda () #f)))
 
 (define the-non-alias (list 'not-an-alias))
 
