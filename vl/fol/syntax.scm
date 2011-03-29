@@ -68,14 +68,6 @@
 
 (define fol-reserved '(cons car cdr vector vector-ref begin define if let let-values values))
 
-(define (constructors-only? exp)
-  (or (symbol? exp)
-      (constant? exp)
-      (null? exp)
-      (and (pair? exp)
-           (memq (car exp) '(cons vector real car cdr vector-ref))
-           (every constructors-only? (cdr exp)))))
-
 (define (occurs-in-tree? thing tree)
   (cond ((equal? thing tree) #t)
         ((pair? tree)
