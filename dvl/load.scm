@@ -84,10 +84,11 @@
             `(,@context1
               ,@context2)))) forms)))
 
+(define (dvl-read-file filename)
+  (dvl-prepare (vlad->dvl `(let () ,@(read-source filename)))))
+
 (define (dvl-run-file filename)
-  (let* ((forms (read-source filename))
-         (program (dvl-prepare (vlad->dvl `(let () ,@forms))))
+  (let* ((program (dvl-read-file filename))
          (compiled-program (compile-to-scheme program))
-         (compiled-answer
-          (eval compiled-program (nearest-repl/environment))))
+         (compiled-answer (fol-eval compiled-program)))
     (pp compiled-answer)))
