@@ -125,7 +125,7 @@
             (lset-union equal? (free-variables (car form))
                         (free-variables (cdr form))))
            (else
-            (error "Invalid expression type" form forms))))))
+            (error "Invalid expression type" form))))))
 
 (define-structure
   (world
