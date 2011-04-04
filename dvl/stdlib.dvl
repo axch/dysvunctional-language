@@ -76,9 +76,18 @@
 
 (define (length l) (if (null? l) 0 (+ (length (cdr l)) 1)))
 
+(define (map2 f l1 l2)
+ (if (null? l1)
+     '()
+     (cons (f (car l1) (car l2)) (map2 f (cdr l1) (cdr l2)))))
+
 (define (map-n f n)
  (letrec ((loop (lambda (i) (if (= i n) '() (cons (f i) (loop (+ i 1)))))))
   (loop 0)))
+
+(define (v+ u v) (map2 g:+ u v))
+
+(define (v- u v) (map2 g:- u v))
 
 ;;; An n-dimensional vector with x in position i and zeros elsewhere.
 (define (ex x i n)
@@ -88,12 +97,13 @@
 (define (e i n) (ex (real 1) i n))
 
 (define (gradient-f f)
-  (let ((epsilon (gensym)))
-    (lambda (x)
-      (let ((n (length x)))
-        (map-n (lambda (i)
-                 (tangent epsilon (f (make-bundle epsilon x (e i n)))))
-               n)))))
+  (lambda (x)
+    (let ((n (length x)))
+      (map-n (lambda (i)
+               ((derivative (lambda (displacement)
+                              (f (v+ x (ex displacement i n)))))
+                0))
+             n))))
 
 (define (jacobian-using-j* f)
   (gradient-f f))
