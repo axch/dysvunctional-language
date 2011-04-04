@@ -263,3 +263,33 @@
 
     values-let-lifting-rule
     singleton-inlining-rule)))
+
+;;; Watching the behavior of the optimizer
+
+(define-syntax fol-stage
+  (syntax-rules ()
+    ((_ name)
+     (fol-named-stage name 'name))))
+
+(define (fol-named-stage stage name)
+  (lambda (input)
+    (display "Stage ")
+    (display name)
+    (display " on ")
+    (display (count-pairs input))
+    (display " pairs")
+    (newline)
+    (let ((answer (show-time (lambda () (stage input)))))
+      (newline)
+      answer)))
+
+(define (compile-visibly program)
+  ((lambda (x) x) ; This makes the last stage show up in the stack sampler
+   ((fol-stage tidy)
+    ((fol-stage eliminate-intraprocedural-dead-variables)
+     ((fol-stage intraprocedural-de-alias)
+      ((fol-stage scalar-replace-aggregates)
+       ((fol-stage inline)                        ; includes ALPHA-RENAME
+        ((fol-stage structure-definitions->vectors)
+         ((fol-stage analyze-and-generate)
+          program)))))))))
