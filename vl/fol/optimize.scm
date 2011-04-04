@@ -291,5 +291,7 @@
       ((fol-stage scalar-replace-aggregates)
        ((fol-stage inline)                        ; includes ALPHA-RENAME
         ((fol-stage structure-definitions->vectors)
-         ((fol-stage analyze-and-generate)
-          program)))))))))
+         (let ((raw-fol ((fol-stage analyze-and-generate)
+                         program)))
+           (clear-name-caches!)
+           raw-fol)))))))))

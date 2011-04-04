@@ -79,7 +79,17 @@
         (cons closure abstract-arg) answer)
        answer))))
 
-(define (initialize-name-caches!)
-  (set! *symbol-count* 0)
+(define (clear-name-caches!)
   (set! *closure-names* (make-abstract-hash-table))
-  (set! *call-site-names* (make-abstract-hash-table)))
+  (set! *call-site-names* (make-abstract-hash-table))
+  ;; Also poke memoized functions to clear out table structure I may
+  ;; have just freed
+  (gc-flip)
+  (if (lexical-unbound? (->environment clear-name-caches!) 'abstract-hash)
+      'ok
+      (abstract-hash 0)))
+
+(define (initialize-name-caches!)
+  (set! *closure-names* (make-abstract-hash-table))
+  (set! *call-site-names* (make-abstract-hash-table))
+  (set! *symbol-count* 0))
