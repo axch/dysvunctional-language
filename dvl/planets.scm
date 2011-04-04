@@ -7,9 +7,9 @@
          0)
         (else
          (+ (pairwise-sum f (cdr lst))
-            (reduce + 0 (map (lambda (second)
-                               (f (car lst) second))
-                             (cdr lst)))))))
+            ((reduce + 0) (map (lambda (second)
+                                (f (car lst) second))
+                              (cdr lst)))))))
 
 (define (distance pos1 pos2)
   (magnitude (v- pos2 pos1)))
@@ -57,7 +57,7 @@
     (if (<= count 0)
         state
         (loop
-         (+ state (k*v step (state-deriv state)))
+         (v+ state (k*v step (state-deriv state)))
          (- count 1)))))
 
 (define step-size (real 20000))              ; s
