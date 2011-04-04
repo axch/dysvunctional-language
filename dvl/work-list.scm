@@ -93,18 +93,22 @@
                 (env (binding-env binding))
                 (world (binding-world binding))
                 (value (binding-value binding)))
-            (refine-eval exp env world analysis
-             (lambda (new-value new-world)
-               (let ((new-value (abstract-union value new-value)))
-                 (if (abstract-equal? value new-value)
-                     #t
-                     (begin
-                       (set-binding-value! binding new-value)
-                       (set-binding-new-world! binding new-world)
-                       (for-each (lambda (dependency)
-                                   (analysis-notify! analysis dependency))
-                                 (binding-notify binding))
-                       #t))))))))))
+            (let ((answer ; break tail recursion here makes it easier
+                          ; to debug errors inside the flow analysis
+                   (refine-eval
+                    exp env world analysis
+                    (lambda (new-value new-world)
+                      (let ((new-value (abstract-union value new-value)))
+                        (if (abstract-equal? value new-value)
+                            #t
+                            (begin
+                              (set-binding-value! binding new-value)
+                              (set-binding-new-world! binding new-world)
+                              (for-each (lambda (dependency)
+                                          (analysis-notify! analysis dependency))
+                                        (binding-notify binding))
+                              #t)))))))
+              answer))))))
 
 (define (show-analysis analysis)
   (display analysis)
