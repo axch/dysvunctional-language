@@ -1,3 +1,9 @@
+Compilation with MIT Scheme
+
+Compilation with MIT Scheme and floating-only numerics?
+
+----------------------------------------------------------------------
+
 Expository explanations
 - Push TIDY into its own file?
 - Explain the rule system
@@ -24,10 +30,12 @@ NB: The reason that some of my recursions are broken into expression
 
 ----------------------------------------------------------------------
 
-Good output on dvl-sqrt-5
+The next step both for good output and fast compilation is:
 
-Fast enough to put dvl-sqrt-5 into the test suite?
-
+Try to break gensym handling
+- Try to make solved gensyms actually solved
+  - Good output on dvl-sqrt-5
+  - Fast enough to put dvl-sqrt-5 into the test suite?
 
 Write inlining of used-once bindings (post-SRA); undoes ANF
 - This is the intraprocedural analog of inlining procedures (I think)
