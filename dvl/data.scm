@@ -146,15 +146,6 @@
 (define (world-equal? world1 world2)
   (equal? (world-gensym world1) (world-gensym world2)))
 
-(define-structure
-  (gensym
-   safe-accessors
-   (print-procedure
-    (simple-unparser-method 'gensym
-     (lambda (gensym)
-       (list (gensym-number gensym))))))
-  number)
-
 (define (union-world world1 world2)
   (cond ((impossible-world? world1) world2)
         ((impossible-world? world2) world1)

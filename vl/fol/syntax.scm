@@ -139,6 +139,15 @@
   (newline)
   x)
 
+(define-structure
+  (gensym
+   safe-accessors
+   (print-procedure
+    (simple-unparser-method 'gensym
+     (lambda (gensym)
+       (list (gensym-number gensym))))))
+  number)
+
 (define *the-gensym* 0)
 (define (gensym)
   (set! *the-gensym* (+ *the-gensym* 1))
