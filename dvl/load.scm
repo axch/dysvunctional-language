@@ -30,9 +30,9 @@
    "abstract-eval"
    "work-list"
    "../vl/nomenclature"
+   "../vl/fol/load"
    "../vl/code-generator"
    "primitives"
-   "../vl/fol/load"
    "read"))
 
 (define stdlib-file

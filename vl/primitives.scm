@@ -129,25 +129,13 @@
 ;;; Side-effects from I/O procedures need to be hidden from the
 ;;; analysis.
 
-(define read-real read)
-
 (add-primitive!
  (simple-primitive 'read-real 0 read-real (lambda (x) abstract-real)))
-
-(define (write-real x)
-  (write x)
-  (newline)
-  x)
 
 (add-primitive!
  (simple-primitive 'write-real 1 write-real (lambda (x) x)))
 
 ;;; We need a mechanism to introduce imprecision into the analysis.
-
-(define (real x)
-  (if (real? x)
-      x
-      (error "A non-real object is asserted to be real" x)))
 
 ;;; REAL must take care to always emit an ABSTRACT-REAL during
 ;;; analysis, even though it's the identity function at runtime.

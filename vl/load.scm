@@ -29,9 +29,9 @@
    "abstract-values"
    "abstract-eval"
    "nomenclature"
+   "fol/load"
    "code-generator"
    "primitives"
-   "fol/load"
    "read"))
 
 (define (vl-run-file filename)

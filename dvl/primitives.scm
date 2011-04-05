@@ -136,17 +136,10 @@
 ;;; Side-effects from I/O procedures need to be hidden from the
 ;;; analysis.
 
-(define read-real read)
-
 (add-primitive!
  (simple-primitive 'read-real 0
   (lambda (arg) (read-real))
   (lambda (arg) abstract-real)))
-
-(define (write-real x)
-  (write x)
-  (newline)
-  x)
 
 (add-primitive!
  (simple-primitive 'write-real 1
@@ -154,12 +147,6 @@
   (lambda (arg) arg)))
 
 ;;; We need a mechanism to introduce imprecision into the analysis.
-
-(define (real x)
-  (if (real? x)
-      x
-      (error "A non-real object is asserted to be real" x)))
-
 ;;; REAL must take care to always emit an ABSTRACT-REAL during
 ;;; analysis, even though it's the identity function at runtime.
 ;;; Without this, "union-free flow analysis" would amount to running
@@ -246,11 +233,6 @@
 
 ;;;; Gensym
 
-(define *the-gensym* 0)
-(define (gensym)
-  (set! *the-gensym* (+ *the-gensym* 1))
-  (make-gensym (- *the-gensym* 1)))
-
 (add-primitive!
  (make-primitive 'gensym
   (lambda (arg world win)
@@ -261,9 +243,6 @@
          (do-gensym world)))
   (lambda (arg world analysis) '())
   (simple-primitive-application 'gensym 0)))
-
-(define (gensym= gensym1 gensym2)
-  (= (gensym-number gensym1) (gensym-number gensym2)))
 
 (add-primitive!
  (simple-primitive 'gensym= 2
