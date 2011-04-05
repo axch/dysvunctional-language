@@ -76,3 +76,23 @@
 ;; perfect serial utilization.
 
 (naive-euler initial-state state-derivative step-size (real 10000))
+
+#|
+On khazad-dum, Apr 4, 2011:
+(define tidied (compile-visibly (dvl-read-file "planets.scm")))
+Stage analyze-and-generate on 2731 pairs
+;process time: 45890 (22480 RUN + 23410 GC); real time: 48822
+Stage structure-definitions->vectors on 801317 pairs
+;process time: 4540 (1500 RUN + 3040 GC); real time: 4551
+Stage inline on 799903 pairs
+;process time: 790 (560 RUN + 230 GC); real time: 781
+Stage scalar-replace-aggregates on 103805 pairs
+;process time: 4490 (1360 RUN + 3130 GC); real time: 4501
+Stage intraprocedural-de-alias on 1264796 pairs
+;process time: 12940 (1590 RUN + 11350 GC); real time: 15904
+Stage eliminate-intraprocedural-dead-variables on 14650 pairs
+;process time: 12370 (12280 RUN + 90 GC); real time: 20852
+Stage tidy on 8489 pairs
+;process time: 680 (440 RUN + 240 GC); real time: 689
+;Value: tidied
+|#
