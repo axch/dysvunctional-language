@@ -295,3 +295,21 @@
                          program)))
            (clear-name-caches!)
            raw-fol)))))))))
+
+;;;; Compilation with MIT Scheme
+
+(define (fol->mit-scheme program)
+  (let* ((srfi-11 (read-source "../vl/fol/srfi-11.scm"))
+         (runtime (read-source "../vl/fol/runtime.scm"))
+         (output
+          `(,@srfi-11                   ; includes usual-integrations
+            ,@(cdr runtime)             ; remove usual-integrations
+            ,@(cdr program)             ; remove begin
+            )))
+    (with-output-to-file "frobnozzle.scm"
+      (lambda ()
+        (for-each (lambda (form)
+                    (pp form)
+                    (newline)) output)))
+    (cf "frobnozzle.scm")
+    (load "frobnozzle")))
