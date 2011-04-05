@@ -14,6 +14,7 @@
 (for-each
  load-relative-compiled
  '("syntax"
+   "runtime"
    "alpha-renaming"
    "structs"
    "type-check"
