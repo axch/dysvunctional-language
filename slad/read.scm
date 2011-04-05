@@ -21,10 +21,10 @@
 
 (define (read-source pathname)
   (let ((pathname (default-extension-to-vlad pathname)))
-    (call-with-input-file pathname
-      (lambda (input-port)
+    (with-input-from-file pathname
+      (lambda ()
         (let loop ((forms '()) (ignore? #f))
-          (let ((form (read input-port)))
+          (let ((form (read)))
             (cond
              ((eof-object? form) (reverse forms))
              (ignore? (loop forms #f))
