@@ -62,4 +62,17 @@
 
 (define step-size (real 20000))              ; s
 
+;; Sussman says that with Runge-Kutta, one can reasonably take one-day
+;; steps for the outer solar system for a few thousand years before
+;; the roundoff and truncation error start to get you (see
+;; ~gjs/physics/solar/; planet.scm).
+
+;; A billion years on the digital orrery (15 Mflop machine) took a few
+;; months, with 32.7-day steps for outer solar system (four big
+;; planets, hairy integrator).  That's 11 billion steps, at about 11
+;; kflop per step.  I have a 2 Gflop (serial) machine, so I should be
+;; able to do 180000 steps of that per second; so repeating the
+;; digital orrery should take about 20 hours of compute, assuming
+;; perfect serial utilization.
+
 (naive-euler initial-state state-derivative step-size (real 10000))
