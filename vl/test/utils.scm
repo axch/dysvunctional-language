@@ -52,7 +52,7 @@
          (raw-fol (careful-solved-generate kernel analysis answer)))
     answer))
 
-(define (union-free-answer program #!optional wallpaper?)
+(define (optimize-carefully program #!optional wallpaper?)
   (if (default-object? wallpaper?)
       (set! wallpaper? #f))
   (if wallpaper?
@@ -131,14 +131,18 @@
     ;; Dead variable elimination does not introduce new aliases.
     (check (equal? variables (intraprocedural-de-alias variables)))
 
+    (if wallpaper? (pp tidied))
+    tidied))
+
+(define (union-free-answer program #!optional wallpaper?)
+  (let ((tidied (optimize-carefully program wallpaper?)))
     ;; In the union-free case, SRA is successful at removing all
     ;; internal consing.
     (check (= 0 (count-free-occurrences 'car tidied)))
     (check (= 0 (count-free-occurrences 'cdr tidied)))
     (check (= 0 (count-free-occurrences 'vector-ref tidied)))
 
-    (if wallpaper? (pp tidied))
-    answer))
+    (fol-eval tidied)))
 
 (define (analyzed-answer program)
   (let ((full-prog (macroexpand program)))
