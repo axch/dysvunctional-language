@@ -123,10 +123,8 @@
  (for-each-example "../vl/test/test-vl-programs.scm"
                    define-union-free-example-test)
 
- ;; TODO Make the tangent-of-function test acceptably fast
- #;
  (define-test (tangent-of-function)
-   (check (equal? 1 (union-free-answer
+   (check (equal? 1 (fast-union-free-answer
                      (dvl-prepare
                       '(let ()
                          (define (adder n)
@@ -138,6 +136,6 @@
  #;
  (for-each-example "../slad/essential-examples.scm"
   (lambda (program #!optional value)
-    (define-union-free-example-test
+    (define-fast-union-free-example-test
       (dvl-prepare (vlad->dvl program)) value)))
  )

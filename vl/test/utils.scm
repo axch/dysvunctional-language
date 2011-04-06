@@ -52,7 +52,7 @@
          (raw-fol (careful-solved-generate kernel analysis answer)))
     answer))
 
-(define (optimize-carefully program)
+(define (compile-carefully program)
   (let* ((kernel (careful-macroexpand program))
          (answer (interpret kernel))
          (analysis (analyze kernel))
@@ -126,7 +126,7 @@
 
     tidied))
 
-(define (union-free-answer program #!optional wallpaper?)
+(define ((union-free-answerer compile) program #!optional wallpaper?)
   (if (default-object? wallpaper?)
       (set! wallpaper? #f))
   (if wallpaper?
@@ -134,7 +134,7 @@
         (display "***NEW PROGRAM ***")
         (newline)
         (pp program)))
-  (let ((tidied (optimize-carefully program)))
+  (let ((tidied (compile program)))
     (if wallpaper? (pp tidied))
     ;; In the union-free case, SRA is successful at removing all
     ;; internal consing.
@@ -143,6 +143,9 @@
     (check (= 0 (count-free-occurrences 'vector-ref tidied)))
 
     (fol-eval tidied)))
+
+(define union-free-answer (union-free-answerer compile-carefully))
+(define fast-union-free-answer (union-free-answerer compile-to-scheme))
 
 (define (analyzed-answer program)
   (let ((full-prog (macroexpand program)))
@@ -189,3 +192,11 @@
       (define-test
         ;; At least check that interpret and compile-to-scheme agree
         (union-free-answer program *compilation-results-wallp*))))
+
+(define (define-fast-union-free-example-test program #!optional value)
+  (if (not (default-object? value))
+      (define-test
+        (check (equal? value (fast-union-free-answer program *compilation-results-wallp*))))
+      (define-test
+        ;; At least check that interpret and compile-to-scheme agree
+        (fast-union-free-answer program *compilation-results-wallp*))))
