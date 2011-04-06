@@ -9,6 +9,18 @@
            answer
            (loop (- count 1) (and answer ,expression))))))
 
+(define (in-frobnicating-loop expression)
+  `(let ((x (gensym)))
+     (define (frobnicate symbol)
+       (if (> (real 2) 1)
+           symbol
+           x))
+     (let loop ((count (real 10))
+                (answer #t))
+       (if (= count 0)
+           answer
+           (loop (- count 1) (and answer ,expression))))))
+
 (in-test-group
  dvl
  (define-each-check
@@ -56,6 +68,55 @@
    (equal? #f
     (union-free-answer
      (in-and-loop '(gensym= (gensym) (if (> (real 2) (real 1)) x (gensym))))))
+
+   ;; TODO These two break the analysis because it replicates the loop
+   ;; body for every different gensym it might be passed.
+   #;
+   (let ((x (gensym)))
+     (gensym= x
+      (let loop ((count (real 10))
+                 (y (gensym)))
+        (if (= count 0)
+            (if (< (real 2) 1)
+                x
+                y)
+            (loop (- count 1) (gensym))))))
+   #;
+   (let ((x (gensym)))
+     (gensym= x
+      (let loop ((count (real 10))
+                 (y (gensym)))
+        (if (= count 0)
+            (if (< (real 2) 1)
+                x
+                y)
+            (loop (- count 1) (if (> (real 2) 1) (gensym) y))))))
+
+   (equal? #f
+    (union-free-answer
+     (in-frobnicating-loop '(gensym= x (frobnicate (gensym))))))
+
+   (equal? #t
+    (union-free-answer ;; TODO Actually determined, except for sweeping out dead cruft
+     (in-frobnicating-loop '(gensym= x (frobnicate x)))))
+
+   (equal? #t
+    (union-free-answer
+     (in-frobnicating-loop '(let ((y (gensym)))
+                              (gensym= y (frobnicate y))))))
+
+   (equal? #f
+    (union-free-answer
+     (in-frobnicating-loop '(let ((y (gensym)))
+                              (gensym= y (frobnicate (gensym)))))))
+
+   (equal? '(if (= (real 10) 0)
+                #t
+                #f)
+    (compile-to-scheme
+     (in-frobnicating-loop '(let ((y (gensym)))
+                              (let ((z (gensym)))
+                                (gensym= z (frobnicate y)))))))
    )
 
  (for-each-example "../vl/examples.scm" define-union-free-example-test)
