@@ -10,6 +10,14 @@
      (rule '+ 'g:+)
      (rule '* 'g:*)))))
 
+(define (in-and-loop expression)
+  `(let ((x (gensym)))
+     (let loop ((count (real 10))
+                (answer #t))
+       (if (= count 0)
+           answer
+           (loop (- count 1) (and answer ,expression))))))
+
 (in-test-group
  dvl
  (define-each-check
@@ -27,6 +35,36 @@
     (union-free-answer
      '(let ((x (gensym)))
         (gensym= x (if (< (real 2) (real 1)) x (gensym))))))
+
+   (equal? #f
+    (union-free-answer
+     '(let ((x (gensym)))
+        ;; The analysis could solve this with more accurate modeling
+        ;; of possible gensym values
+        (gensym= (gensym) (if (< (real 2) (real 1)) x (gensym))))))
+
+   (equal?
+    '(if (= (real 10) 0)
+         #t
+         #f)
+    (compile-to-scheme
+     (in-and-loop '(gensym= (gensym) (gensym)))))
+
+   (equal? #t
+    (union-free-answer
+     (in-and-loop '(gensym= x (if (> (real 2) (real 1)) x (gensym))))))
+
+   (equal? #f
+    (union-free-answer
+     (in-and-loop '(gensym= x (if (< (real 2) (real 1)) x (gensym))))))
+
+   (equal? #f
+    (union-free-answer
+     (in-and-loop '(gensym= (gensym) (if (< (real 2) (real 1)) x (gensym))))))
+
+   (equal? #f
+    (union-free-answer
+     (in-and-loop '(gensym= (gensym) (if (> (real 2) (real 1)) x (gensym))))))
    )
 
  (for-each-example "../vl/examples.scm" define-union-free-example-test)
