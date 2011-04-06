@@ -1,15 +1,6 @@
 (load-relative "../../testing/load")
 (load-relative "../../vl/test/utils")
 
-(define slad->dvl
-  (on-subexpressions
-   (rule-list
-    (list
-     (rule `(? thing ,number?)
-           `(real ,thing))
-     (rule '+ 'g:+)
-     (rule '* 'g:*)))))
-
 (define (in-and-loop expression)
   `(let ((x (gensym)))
      (let loop ((count (real 10))
@@ -87,5 +78,5 @@
  (for-each-example "../slad/essential-examples.scm"
   (lambda (program #!optional value)
     (define-union-free-example-test
-      (dvl-prepare (slad->dvl program)) value)))
+      (dvl-prepare (vlad->dvl program)) value)))
  )
