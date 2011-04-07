@@ -1,4 +1,8 @@
 Compilation with MIT Scheme
+- Interprocedural must-alias analysis?
+- Interprocedural dead variable elimination?
+- Analysis-time dead variable elimination??
+- Solved gensyms?  Is this actually possible?
 
 Compilation with MIT Scheme and floating-only numerics?
 
@@ -40,6 +44,16 @@ Try to break gensym handling
 Write inlining of used-once bindings (post-SRA); undoes ANF
 - This is the intraprocedural analog of inlining procedures (I think)
 
+
+Sussman's example of where differentiating functions that output
+functions is useful:
+
+(define (((delta eta) f) q)
+  (let ((g (lambda (eps) (f (+ q (* eps eta))))))
+    ((D g) 0)))
+
+; Nonsense useage example:
+((((delta cos) D) square) 3)
 
 Generate syntax checkers from the grammars?  Generate random example
 programs from the grammars?
