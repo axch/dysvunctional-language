@@ -318,7 +318,7 @@
 (define (interprocedural-dead-code-elimination program)
   (let* ((defns (program->procedure-definitions program))
          (i/o-need-map (compute-i/o-need-map defns))
-         (needed-var-map (compute-need-map defns i/o-need-map)))
+         (needed-var-map ((compute-need-map i/o-need-map) defns)))
     (intraprocedural-dead-variable-elimination ;; TODO Check absence of tombstones
      (procedure-definitions->program
       (map (lambda (defn)
@@ -497,11 +497,24 @@
            (loop body (all-slots-live return)))))
   (improve-i/o-need-map defn))
 
-(define compute-need-map
-  (iterate-defn-map initial-need-map improve-need-map))
+(define (compute-need-map i/o-need-map)
+  (iterate-defn-map initial-need-map (improve-need-map i/o-need-map)))
+
+(define (initial-need-map defns)
+  (let ((answer
+         (alist->eq-hash-table
+          (map (rule `(define ((? name) (?? args))
+                        (argument-types (?? stuff) (? return))
+                        (? body))
+                     (cons name
+                           (cons (vector-map (lambda (x) #f) (all-slots-live return))
+                                 (make-vector (length args) #f))))
+               defns))))
+    (output-needed! answer (definiendum (last defns)) 0)
+    answer))
 
 ;;; TODO This file now contains *three* very similar recursive traversals!
-(define (improve-need-map defn need-map i/o-need-map)
+(define ((improve-need-map i/o-need-map) defn need-map)
   (define (loop expr live-out)
     (cond ((fol-var? expr)
            (single-used-var expr))
