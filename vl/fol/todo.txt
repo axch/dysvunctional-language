@@ -1,5 +1,8 @@
 Compilation with MIT Scheme
 - Interprocedural must-alias analysis?
+  - Can this collapse identical perturbations and recover tower mode on
+    (D (D (lambda (x) ...)))?
+  - Can this collapse primals and recover stack tangent mode?
 - Interprocedural dead variable elimination?
 - Analysis-time dead variable elimination??
 - Solved gensyms?  Is this actually possible?
@@ -54,6 +57,9 @@ functions is useful:
 
 ; Nonsense useage example:
 ((((delta cos) D) square) 3)
+
+A good testing strategy is to differentiate (lambda (x) (/ (f x) (f
+x))) for some suitably horrible f many times.
 
 Generate syntax checkers from the grammars?  Generate random example
 programs from the grammars?

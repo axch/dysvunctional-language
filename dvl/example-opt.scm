@@ -9,3 +9,8 @@
 (define (line-search f)
   ;; One step of Newton's method
   )
+
+;; The optimization routine is generic
+;; The line search routine is generic
+;; They are independent
+;; Etc.
