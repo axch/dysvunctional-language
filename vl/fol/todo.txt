@@ -21,6 +21,8 @@ Expository explanations
 - Update explanation of VL (and DVL?) to reflect FOL's separate
   identity
 - Make FOL executable standalone, releasable, workbookable
+- Do I want to make all the analysis stages treat the entry point
+  as yet another definition?
 
 NB: SRA can remove call graph edges by eliminating contentless
   expressions that contain calls to procedures.  However, all
