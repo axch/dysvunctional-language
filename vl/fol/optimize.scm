@@ -188,6 +188,7 @@
 
 ;;;; Term-rewriting tidier
 
+(define trivial-begin-rule (rule `(begin (? body)) body))
 (define empty-let-rule (rule `(let () (? body)) body))
 
 ;; This is safe assuming the program has unique bound names; if not,
@@ -236,7 +237,7 @@
 (define tidy
   (rule-simplifier
    (list
-    (rule `(begin (? body)) body)
+    trivial-begin-rule
 
     (rule `(+ 0 (? thing)) thing)
     (rule `(+ (? thing) 0) thing)
