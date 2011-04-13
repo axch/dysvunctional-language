@@ -325,20 +325,24 @@
              (rewrite-interface defn needed-var-map))
            defns)))))
 
-(define (compute-i/o-need-map defns)
-  (let loop ((overall-i/o-need-map (initial-i/o-need-map defns))
+(define ((iterate-defn-map initialize improve-locally) defns)
+  (let loop ((overall-map (initialize defns))
              (maybe-done? #t))
-    (for-each (lambda (defn)
-                (let ((local-i/o-need-map (improve-i/o-need-map defn overall-i/o-need-map)))
-                  (if (equal? local-i/o-need-map (lookup overall-i/o-need-map (definiendum defn)))
-                      'ok
-                      (begin
-                        (add! overall-i/o-need-map local-i/o-need-map)
-                        (set! maybe-done? #f)))))
-              defns)
+    (for-each
+     (lambda (defn)
+       (let ((local-map (improve-locally defn overall-map)))
+         (if (equal? local-map (lookup overall-map (definiendum defn)))
+             'ok
+             (begin
+               (add! overall-map (definiendum defn) local-map)
+               (set! maybe-done? #f)))))
+     defns)
     (if (not maybe-done?)
-        (loop overall-i/o-need-map #t)
-        overall-i/o-need-map)))
+        (loop overall-map #t)
+        overall-map)))
+
+(define compute-i/o-need-map
+  (iterate-defn-map initial-i/o-need-map improve-i/o-need-map))
 
 (define (improve-i/o-need-map defn i/o-need-map)
   (define (loop expr live-out)
@@ -466,5 +470,4 @@
                         (find-index var args))
                       out-needs))
            (loop body (all-slots-live return)))))
-  (improve-i/o-need-map defn)
-)
+  (improve-i/o-need-map defn))
