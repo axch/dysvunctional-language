@@ -344,6 +344,31 @@
 (define compute-i/o-need-map
   (iterate-defn-map initial-i/o-need-map improve-i/o-need-map))
 
+(define (initial-i/o-need-map defns)
+  (define (primitive-i/o-need-map)
+   (define (nullary name)
+     (cons name (vector (no-used-vars))))
+   (define (unary name)
+     (cons name (vector (single-used-var 0))))
+   (define (binary name)
+     (cons name (vector (union (single-used-var 0) (single-used-var 1)))))
+   (alist->eq-hash-table
+    `(,@(map nullary '(read-real gensym))
+      ;; Type testers real? gensym? null? pair? should never be emitted
+      ,@(map unary '(abs exp log sin cos tan asin acos sqrt write-real real
+                         zero? positive? negative?))
+      ,@(map binary '(+ - * / atan expt < <= > >= = gensym=)))))
+  (let ((answer (primitive-i/o-need-map)))
+    (for-each
+     (rule `(define ((? name) (?? args))
+              (argument-types (?? stuff) (? return))
+              (? body))
+           (add! answer name
+                 (vector-map (lambda (item) (no-used-vars))
+                             (all-slots-live return))))
+     defns)
+    answer))
+
 (define (improve-i/o-need-map defn i/o-need-map)
   (define (loop expr live-out)
     (cond ((fol-var? expr)
