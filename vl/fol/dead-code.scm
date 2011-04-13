@@ -318,12 +318,12 @@
 (define (interprocedural-dead-code-elimination program)
   (let* ((defns (program->procedure-definitions program))
          (i/o-need-map (compute-i/o-need-map defns))
-         (needed-var-map ((compute-need-map i/o-need-map) defns)))
+         (needed-var-map ((compute-need-map i/o-need-map) defns))
+         (definitions-fixed (rewrite-definitions needed-var-map defns))
+         (all-fixed (rewrite-call-sites needed-var-map definitions-fixed)))
     (intraprocedural-dead-variable-elimination ;; TODO Check absence of tombstones
      (procedure-definitions->program
-      (map (lambda (defn)
-             (rewrite-interface defn needed-var-map))
-           defns)))))
+      all-fixed))))
 
 (define ((iterate-defn-map initialize improve-locally) defns)
   (let loop ((overall-map (initialize defns))
@@ -625,3 +625,49 @@
                                      (find-index var args))
                                    (loop body (lookup need-map name))))))
   (improve-need-map defn))
+
+(define (rewrite-definitions needed-var-map defns)
+  ((on-subexpressions
+    (rule `(define ((? name) (?? args))
+             (argument-types (?? stuff) (? return))
+             (? body))
+          `(define (,name ,@(needed-args args needed-var-map))
+             (argument-types ,@(needed-args stuff needed-var-map)
+                             ,(munch-return-type return needed-var-map))
+             ,(let ((the-body (if (all-ins-needed? name needed-var-map)
+                                  body
+                                  `(let (,(map (lambda (name)
+                                                 `(,name ,(make-tombstone)))
+                                               (unneeded-ins name needed-var-map)))
+                                     ,body))))
+                (if (all-outs-needed? name needed-var-map)
+                    the-body
+                    `(let-values ((,(invent-names-for-parts return) ,the-body))
+                       (values ,@(needed-return those-names needed-var-map))))))))
+   defns))
+
+(define (rewrite-call-sites needed-var-map defns)
+  ((on-subexpressions
+    (rule `((? operator ,procedure?) (?? operands))
+          (let ((the-call
+                 ;; TODO One could, actually, eliminate even more dead
+                 ;; code than this: imagine a call site that only
+                 ;; needs some of the needed outputs of the callee,
+                 ;; where the callee only needs some of its needed
+                 ;; inputs to compute those outputs.  Then the
+                 ;; remaining inputs need to be supplied, because the
+                 ;; callee's interface has to support callers that may
+                 ;; need the outputs those inputs help it compute, but
+                 ;; it would be safe to put tombstones there, because
+                 ;; the analysis just proved that they will not be
+                 ;; needed.
+                 `(,operator ,@(filter needed? operands))))
+            (if (all-outs-needed? operator needed-var-map)
+                the-call
+                `(let-values ((,(invent-names-for-parts ...) the-call))
+                   (values (map (lambda (output)
+                                  (if (needed? output operator needed-var-map)
+                                      that-name
+                                      (make-tombstone)))
+                                outputs-of-operator)))))))
+   defns))
