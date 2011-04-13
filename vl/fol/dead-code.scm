@@ -294,3 +294,177 @@
 ;;; 9) Run a round of intraprocedural dead variable elimination to
 ;;;    clean up (all procedure calls now do need all their inputs)
 ;;;    - Verify that all the tombstones vanish.
+
+(define (program->procedure-definitions program)
+  (define (expression->procedure-definition entry-point)
+    `(define (%%main)
+       (argument-types real) ;; TODO Get the actual type of the entry point
+       ,entry-point))
+  (if (begin-form? program)
+      (append (cdr (except-last-pair program))
+              (list (expression->procedure-definition (last program))))
+      (list (expression->procedure-definition program))))
+
+(define (procedure-definitions->program defns)
+  (trivial-begin-rule
+   `(begin
+      ,@(except-last-pair defns)
+      ,((rule `(define (%%main)
+                 (argument-types (? whatever))
+                 (? expr))
+              expr)
+        (last defns)))))
+
+(define (interprocedural-dead-code-elimination program)
+  (let* ((defns (program->procedure-definitions program))
+         (i/o-need-map (compute-i/o-need-map defns))
+         (needed-var-map (compute-need-map defns i/o-need-map)))
+    (intraprocedural-dead-variable-elimination ;; TODO Check absence of tombstones
+     (procedure-definitions->program
+      (map (lambda (defn)
+             (rewrite-interface defn needed-var-map))
+           defns)))))
+
+(define (compute-i/o-need-map defns)
+  (let loop ((overall-i/o-need-map (initial-i/o-need-map defns))
+             (maybe-done? #t))
+    (for-each (lambda (defn)
+                (let ((local-i/o-need-map (improve-i/o-need-map defn overall-i/o-need-map)))
+                  (if (equal? local-i/o-need-map (lookup overall-i/o-need-map (definiendum defn)))
+                      'ok
+                      (begin
+                        (add! overall-i/o-need-map local-i/o-need-map)
+                        (set! maybe-done? #f)))))
+              defns)
+    (if (not maybe-done?)
+        (loop overall-i/o-need-map #t)
+        overall-i/o-need-map)))
+
+(define (improve-i/o-need-map defn i/o-need-map)
+  (define (loop expr live-out)
+    (cond ((fol-var? expr)
+           (vector (single-used-var expr)))
+          ((number? expr)
+           (vector (no-used-vars)))
+          ((boolean? expr)
+           (vector (no-used-vars)))
+          ((null? expr)
+           (vector (no-used-vars)))
+          ((if-form? expr)
+           (study-if expr live-out))
+          ((let-form? expr)
+           (study-let expr live-out))
+          ((let-values-form? expr)
+           (study-let-values expr live-out))
+          ;; If used post SRA, there may be constructions to build the
+          ;; answer for the outside world, but there should be no
+          ;; accesses.
+          ((construction? expr)
+           (study-construction expr live-out))
+          ((access? expr)
+           (study-access expr live-out))
+          ((values-form? expr)
+           (study-values expr live-out))
+          (else ; general application
+           (study-application expr live-out))))
+  (define (study-if expr live-out)
+    (let ((predicate (cadr expr))
+          (consequent (caddr expr))
+          (alternate (cadddr expr)))
+      (let ((pred-needs (loop predicate (vector #t)))
+            (cons-needs (loop consequent live-out))
+            (alt-needs (loop alternate live-out)))
+        (vector-map
+         (lambda (live? needed-in)
+           (if live?
+               (union (vector-ref pred-needs 0) needed-in)
+               (no-used-vars)))
+         live-out
+         (vector-map union cons-needs alt-needs)))))
+  (define (study-let expr live-out)
+    (let ((bindings (cadr expr))
+          (body (caddr expr)))
+      (let ((body-needs (loop body live-out))
+            (bindings-need (map (lambda (binding)
+                                  (cons (car binding)
+                                        (vector-ref (loop (cadr binding) (vector #t)) 0)))
+                                bindings)))
+        (vector-map
+         (lambda (live? needs)
+           (if live?
+               (union-map
+                (lambda (needed-var)
+                  (let ((xxx (assq needed-var bindings-need)))
+                    (if xxx
+                        (cdr xxx)
+                        (single-used-var needed-var))))
+                needs)
+               (no-used-vars)))
+         live-out
+         body-needs))))
+  (define (study-let-values expr live-out)
+    (let* ((binding (caadr expr))
+           (names (car binding))
+           (sub-expr (cadr binding))
+           (body (caddr expr)))
+      (let ((body-needs (loop body live-out))
+            (bindings-need
+             (map cons names (vector->list (loop expr (list->vector (map (lambda (x) #t) names)))))))
+        (vector-map
+         (lambda (live? needs)
+           (if live?
+               (union-map
+                (lambda (needed-var)
+                  (let ((xxx (assq needed-var bindings-need)))
+                    (if xxx
+                        (cdr xxx)
+                        (single-used-var needed-var))))
+                needs)
+               (no-used-vars)))
+         live-out
+         body-needs))))
+  (define (study-construction expr live-out)
+    (vector
+     (reduce union (no-used-vars)
+             (map (lambda (arg)
+                    (vector-ref (loop arg (vector #t)) 0))
+                  (cdr expr)))))
+  (define (study-access expr live-out)
+    (loop (cadr expr) (vector #t)))
+  (define (study-values expr live-out)
+    (vector-map
+     (lambda (live? sub-expr)
+       (if live?
+           (vector-ref (loop sub-expr (vector #t)) 0)
+           (no-used-vars)))
+     live-out
+     (cdr expr)))
+  (define (study-application expr live-out)
+    (let ((operator (car expr))
+          (operands (cdr expr)))
+      (let ((operator-i/o-need-map (lookup i/o-need-map operator))
+            (operands-need (map (lambda (operand)
+                                  (vector-ref (loop operand (vector #t)) 0))
+                                operands)))
+        (vector-map
+         (lambda (live? operator-i/o-need)
+           (if live?
+               (union-map
+                (lambda (needed-index)
+                  (list-ref operands-need needed-index))
+                operator-i/o-need)
+               (no-used-vars)))
+         live-out
+         operator-i/o-need-map))))
+  (define improve-i/o-need-map
+    (rule `(define ((? name) (?? args))
+             (argument-types (?? stuff) (? return))
+             (? body))
+          (vector-map
+           (lambda (out-needs)
+             (set-map (lambda (var)
+                        (find-index var args))
+                      out-needs))
+           (loop body (all-slots-live return)))))
+  (improve-i/o-need-map defn)
+)
