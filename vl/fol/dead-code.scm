@@ -319,11 +319,10 @@
   (let* ((defns (program->procedure-definitions program))
          (i/o-need-map (compute-i/o-need-map defns))
          (needed-var-map ((compute-need-map i/o-need-map) defns))
-         (definitions-fixed (rewrite-definitions needed-var-map defns))
-         (all-fixed (rewrite-call-sites needed-var-map definitions-fixed)))
+         (rewritten (rewrite-definitions needed-var-map defns)))
     (intraprocedural-dead-variable-elimination ;; TODO Check absence of tombstones
      (procedure-definitions->program
-      all-fixed))))
+      rewritten))))
 
 (define ((iterate-defn-map initialize improve-locally) defns)
   (let loop ((overall-map (initialize defns))
@@ -634,19 +633,20 @@
           `(define (,name ,@(needed-args args needed-var-map))
              (argument-types ,@(needed-args stuff needed-var-map)
                              ,(munch-return-type return needed-var-map))
-             ,(let ((the-body (if (all-ins-needed? name needed-var-map)
-                                  body
-                                  `(let (,(map (lambda (name)
-                                                 `(,name ,(make-tombstone)))
-                                               (unneeded-ins name needed-var-map)))
-                                     ,body))))
-                (if (all-outs-needed? name needed-var-map)
-                    the-body
-                    `(let-values ((,(invent-names-for-parts return) ,the-body))
-                       (values ,@(needed-return those-names needed-var-map))))))))
+             ,(let ((body (rewrite-call-sites needed-var-map body)))
+                (let ((the-body (if (all-ins-needed? name needed-var-map)
+                                    body
+                                    `(let (,(map (lambda (name)
+                                                   `(,name ,(make-tombstone)))
+                                                 (unneeded-ins name needed-var-map)))
+                                       ,body))))
+                  (if (all-outs-needed? name needed-var-map)
+                      the-body
+                      `(let-values ((,(invent-names-for-parts return) ,the-body))
+                         (values ,@(needed-return those-names needed-var-map)))))))))
    defns))
 
-(define (rewrite-call-sites needed-var-map defns)
+(define (rewrite-call-sites needed-var-map form)
   ((on-subexpressions
     (rule `((? operator ,procedure?) (?? operands))
           (let ((the-call
@@ -670,4 +670,4 @@
                                       that-name
                                       (make-tombstone)))
                                 outputs-of-operator)))))))
-   defns))
+   form))
