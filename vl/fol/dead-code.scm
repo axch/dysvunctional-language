@@ -496,8 +496,17 @@
            (loop body (all-slots-live return)))))
   (improve-i/o-need-map defn))
 
-(define (compute-need-map i/o-need-map)
-  (iterate-defn-map initial-need-map (improve-need-map i/o-need-map)))
+(define ((compute-need-map i/o-need-map) defns)
+  (let ((need-map (initial-need-map defns)))
+    (let loop ()
+      (clear-changed! need-map)
+      (for-each
+       (lambda (defn)
+         ((improve-need-map! i/o-need-map) defn need-map))
+       defns)
+      (if (changed? need-map)
+          (loop)
+          need-map))))
 
 (define (initial-need-map defns)
   (let ((answer
@@ -513,7 +522,7 @@
     answer))
 
 ;;; TODO This file now contains *three* very similar recursive traversals!
-(define ((improve-need-map i/o-need-map) defn need-map)
+(define ((improve-need-map! i/o-need-map) defn need-map)
   (define (loop expr live-out)
     (cond ((fol-var? expr)
            (single-used-var expr))
