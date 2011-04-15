@@ -136,3 +136,24 @@ Stage tidy on 8489 pairs
 ;process time: 220 (220 RUN + 0 GC); real time: 228
 ;Value: tidied
 |#
+
+#|
+On arrakis, in the same Scheme as before,
+Apr 15, 2011
+(define tidied (compile-visibly (dvl-read-file "planets.scm")))
+Stage analyze-and-generate on 2731 pairs
+;process time: 7790 (6810 RUN + 980 GC); real time: 7798
+Stage structure-definitions->vectors on 801317 pairs
+;process time: 810 (810 RUN + 0 GC); real time: 809
+Stage inline on 799903 pairs
+;process time: 900 (710 RUN + 190 GC); real time: 901
+Stage scalar-replace-aggregates on 189633 pairs
+;process time: 1300 (1010 RUN + 290 GC); real time: 1311
+Stage intraprocedural-de-alias on 2345105 pairs
+;process time: 1620 (1320 RUN + 300 GC); real time: 1624
+Stage eliminate-intraprocedural-dead-variables on 16502 pairs
+;process time: 1170 (1170 RUN + 0 GC); real time: 1176
+Stage tidy on 7190 pairs
+;process time: 410 (270 RUN + 140 GC); real time: 413
+;Value: tidied
+|#
