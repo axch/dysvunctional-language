@@ -313,4 +313,6 @@
                     (pp form)
                     (newline)) output)))
     (cf "frobnozzle.scm")
+    ;; TODO Actually loading this into the currently running Scheme
+    ;; redefines the gensym structure, leading to trouble.
     (load "frobnozzle")))
