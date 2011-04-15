@@ -470,7 +470,7 @@
     (map
      (lambda (live? sub-expr)
        (if live?
-           (car (loop sub-expr (vector #t)))
+           (car (loop sub-expr (list #t)))
            (no-used-vars)))
      live-out
      (cdr expr)))
