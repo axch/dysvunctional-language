@@ -369,7 +369,7 @@
               (argument-types (?? stuff) (? return))
               (? body))
            (hash-table/put! answer name
-            (map (lambda (item) (list (no-used-vars)))
+            (map (lambda (item) (no-used-vars))
                  (primitive-fringe return))))
      defns)
     answer))
