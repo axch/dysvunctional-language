@@ -783,3 +783,9 @@
          item))
    items
    (iota (length items))))
+
+(define (make-tombstone)
+  ;; A tombstone is a value that needs to be supplied but I know will
+  ;; never be used.  TODO Make the tombstones distinctive so I can
+  ;; check whether they all disappear?
+  '())
