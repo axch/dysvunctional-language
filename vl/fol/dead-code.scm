@@ -716,9 +716,10 @@
               (define new-return-type
                 (if (or all-outs-needed? (not (values-form? return)))
                     return
-                    `(values ,@(filter-map (lambda (item live?)
-                                             (and live? item))
-                                           (cdr return) needed-outputs))))
+                    (tidy-values
+                     `(values ,@(filter-map (lambda (item live?)
+                                              (and live? item))
+                                            (cdr return) needed-outputs)))))
               `(define (,name ,@(needed-items args needed-input-indexes))
                  (argument-types ,@(needed-items stuff needed-input-indexes) ,new-return-type)
                  ,(let ((body (rewrite-call-sites type-map i/o-need-map needed-var-map body)))
@@ -731,10 +732,12 @@
                       (if all-outs-needed?
                           the-body ; All the outs of the entry point will always be needed
                           (let ((output-names (invent-names-for-parts 'receipt return)))
-                            `(let-values ((,output-names ,the-body))
-                               (values ,@(filter-map (lambda (item live?)
-                                                       (and live? item))
-                                                     output-names needed-outputs)))))))))))
+                            (tidy-let-values
+                             `(let-values ((,output-names ,the-body))
+                                ,(tidy-values
+                                  `(values ,@(filter-map (lambda (item live?)
+                                                           (and live? item))
+                                                         output-names needed-outputs)))))))))))))
      defns)))
 
 (define (rewrite-call-sites type-map i/o-need-map needed-var-map form)
@@ -771,13 +774,15 @@
                            (filter-map (lambda (item live?)
                                          (and live? item))
                                        output-names needed-outputs)))
-                      `(let-values ((,needed-names ,the-call))
-                         (values ,@(map (lambda (name live?)
-                                          (if live?
-                                              name
-                                              (make-tombstone)))
-                                        output-names
-                                        needed-outputs))))))))))
+                      (tidy-let-values
+                       `(let-values ((,needed-names ,the-call))
+                          ,(tidy-values
+                            `(values ,@(map (lambda (name live?)
+                                              (if live?
+                                                  name
+                                                  (make-tombstone)))
+                                            output-names
+                                            needed-outputs))))))))))))
    form))
 
 (define (needed-items items needed-indexes)

@@ -172,7 +172,29 @@
           (if (= n 0)
               1
               (* n (fact dead (- n 1)))))
-        (fact (real 1) (real 5)))))))
+        (fact (real 1) (real 5)))))
+
+   (equal?
+    '(begin
+       (define (fact n)
+         (argument-types real real)
+         (if (= n 0)
+             1
+             (* n (fact (- n 1)))))
+       (fact (real 5)))
+    (tidy
+     (interprocedural-dead-code-elimination
+      '(begin
+         (define (fact n)
+           (argument-types real (values real real))
+           (if (= n 0)
+               (values 0 1)
+               (let-values (((dead n-1!) (fact (- n 1))))
+                 (values
+                  dead
+                  (* n n-1!)))))
+         (let-values (((dead n!) (fact (real 5))))
+           n!)))))))
 
 ;; Here is a case where serious SRA is necessary
 ;; (let ((x (if ... (cons) (cons))))
