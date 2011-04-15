@@ -444,7 +444,7 @@
            (body (caddr expr)))
       (let ((body-needs (loop body live-out))
             (bindings-need
-             (map cons names (loop expr (map (lambda (x) #t) names)))))
+             (map cons names (loop sub-expr (map (lambda (x) #t) names)))))
         (map
          (lambda (live? needs)
            (if live?
