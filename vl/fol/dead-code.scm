@@ -294,7 +294,7 @@
 ;;; 9) Run a round of intraprocedural dead variable elimination to
 ;;;    clean up (all procedure calls now do need all their inputs)
 ;;;    - Verify that all the tombstones vanish.
-
+#|
 (define (program->procedure-definitions program)
   (define (expression->procedure-definition entry-point)
     `(define (%%main)
@@ -680,3 +680,4 @@
                                       (make-tombstone)))
                                 outputs-of-operator)))))))
    form))
+|#
