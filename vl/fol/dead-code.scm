@@ -706,22 +706,6 @@
                                              needed-output-indexes i/o-map)))
                  (all-ins-needed? (= (var-set-size needed-input-indexes) (length args)))
                  (all-outs-needed? (every (lambda (x) x) needed-output-indexes)))
-            (define (needed-items items needed-indexes)
-              (filter-map
-               (lambda (item index)
-                 (if (var-used? index needed-indexes)
-                     item
-                     #f))
-               items
-               (iota (length items))))
-            (define (unneeded-items items needed-indexes)
-              (filter-map
-               (lambda (item index)
-                 (if (var-used? index needed-indexes)
-                     #f
-                     item))
-               items
-               (iota (length items))))
             (define new-return-type
               (if (or all-outs-needed? (not (values-form? return)))
                   return
@@ -743,27 +727,57 @@
    defns))
 
 (define (rewrite-call-sites needed-var-map form)
+  (define (procedure? name)
+    (hash-table/get needed-var-map name #f))
   ((on-subexpressions
     (rule `((? operator ,procedure?) (?? operands))
-          (let ((the-call
-                 ;; TODO One could, actually, eliminate even more dead
-                 ;; code than this: imagine a call site that only
-                 ;; needs some of the needed outputs of the callee,
-                 ;; where the callee only needs some of its needed
-                 ;; inputs to compute those outputs.  Then the
-                 ;; remaining inputs need to be supplied, because the
-                 ;; callee's interface has to support callers that may
-                 ;; need the outputs those inputs help it compute, but
-                 ;; it would be safe to put tombstones there, because
-                 ;; the analysis just proved that they will not be
-                 ;; needed.
-                 `(,operator ,@(filter needed? operands))))
-            (if (all-outs-needed? operator needed-var-map)
-                the-call
-                `(let-values ((,(invent-names-for-parts ...) the-call))
-                   (values (map (lambda (output)
-                                  (if (needed? output operator needed-var-map)
-                                      that-name
-                                      (make-tombstone)))
-                                outputs-of-operator)))))))
+          (let* ((needed-output-indexes (hash-table/get needed-var-map operator #f))
+                 (i/o-map (hash-table/get i/o-need-map operator #f))
+                 (needed-input-indexes (var-set-union*
+                                        (map (lambda (live? in-set)
+                                               (if live? in-set (no-used-vars)))
+                                             needed-output-indexes i/o-map)))
+                 (all-ins-needed? (= (var-set-size needed-input-indexes) (length args)))
+                 (all-outs-needed? (every (lambda (x) x) needed-output-indexes)))
+            (let ((the-call
+                  ;; TODO One could, actually, eliminate even more
+                  ;; dead code than this: imagine a call site that
+                  ;; only needs some of the needed outputs of the
+                  ;; callee, where the callee only needs some of its
+                  ;; needed inputs to compute those outputs.  Then the
+                  ;; remaining inputs need to be supplied, because the
+                  ;; callee's interface has to support callers that
+                  ;; may need the outputs those inputs help it
+                  ;; compute, but it would be safe to put tombstones
+                  ;; there, because the analysis just proved that they
+                  ;; will not be needed.
+                  `(,operator ,@(needed-items needed-input-indexes operands))))
+              (if all-outs-needed?
+                  the-call
+                  (let ((output-names (invent-names-for-parts 'receipt (return-type operator))))
+                    `(let-values ((,output-names ,the-call))
+                       (values ,@(map (lambda (name index)
+                                        (if (var-used? index needed-output-indexes)
+                                            name
+                                            (make-tombstone)))
+                                      output-names
+                                      (iota (length output-names)))))))))))
    form))
+
+(define (needed-items items needed-indexes)
+  (filter-map
+   (lambda (item index)
+     (if (var-used? index needed-indexes)
+         item
+         #f))
+   items
+   (iota (length items))))
+
+(define (unneeded-items items needed-indexes)
+  (filter-map
+   (lambda (item index)
+     (if (var-used? index needed-indexes)
+         #f
+         item))
+   items
+   (iota (length items))))
