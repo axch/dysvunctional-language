@@ -80,7 +80,7 @@
   (define (single-used-var var) (list var))
   (define (var-set-union vars1 vars2)
     (lset-union eq? vars1 vars2))
-  (define (difference vars1 vars2)
+  (define (var-set-difference vars1 vars2)
     (lset-difference eq? vars1 vars2))
   (define used? memq)
   ;; The live-out parameter indicates which of the return values of
@@ -149,7 +149,7 @@
                       `(let ,(map list (map car new-bindings)
                                   new-exprs)
                          ,new-body))
-                     (var-set-union used (difference
+                     (var-set-union used (var-set-difference
                                   body-used (map car bindings))))))))))))
   (define (eliminate-in-let-values expr live-out win)
     (let ((binding (caadr expr))
@@ -171,7 +171,7 @@
                                          ,new-sub-expr))
                              ,new-body))
                          (var-set-union sub-expr-used
-                                (difference body-used names)))))
+                                (var-set-difference body-used names)))))
                  (win new-body body-used))))))))
   ;; Given that I decided not to do proper elimination of dead
   ;; structure slots, I will say that if a structure is needed then
@@ -581,7 +581,7 @@
         (define (slot-used? name)
           (used? name body-needs))
         (let ((sub-expr-live-out (list->vector (map slot-used? names))))
-          (var-set-union (difference body-used names)
+          (var-set-union (var-set-difference body-used names)
                  (loop sub-expr sub-expr-live-out))))))
   (define (study-construction expr live-out)
     (reduce var-set-union (no-used-vars)
