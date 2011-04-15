@@ -700,7 +700,7 @@
   (improve-need-map defn))
 
 (define (rewrite-definitions i/o-need-map needed-var-map defns)
-  (let ((type-map (type-map `(,@defns 'bogon)))) ; This bogon has to do with the entry point being a definition now
+  (let ((type-map (type-map `(begin ,@defns 'bogon)))) ; This bogon has to do with the entry point being a definition now
     ((on-subexpressions
       (rule `(define ((? name) (?? args))
                (argument-types (?? stuff) (? return))
