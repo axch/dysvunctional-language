@@ -705,18 +705,20 @@
       (rule `(define ((? name) (?? args))
                (argument-types (?? stuff) (? return))
                (? body))
-            (let* ((needed-output-indexes (hash-table/get needed-var-map name #f))
+            (let* ((needed-outputs (hash-table/get needed-var-map name #f))
                    (i/o-map (hash-table/get i/o-need-map name #f))
                    (needed-input-indexes (var-set-union*
                                           (map (lambda (live? in-set)
                                                  (if live? in-set (no-used-vars)))
-                                               needed-output-indexes i/o-map)))
+                                               needed-outputs i/o-map)))
                    (all-ins-needed? (= (var-set-size needed-input-indexes) (length args)))
-                   (all-outs-needed? (every (lambda (x) x) needed-output-indexes)))
+                   (all-outs-needed? (every (lambda (x) x) needed-outputs)))
               (define new-return-type
                 (if (or all-outs-needed? (not (values-form? return)))
                     return
-                    `(values ,@(needed-items (cdr return) needed-output-indexes))))
+                    `(values ,@(filter-map (lambda (item live?)
+                                             (and live? item))
+                                           (cdr return) needed-outputs))))
               `(define (,name ,@(needed-items args needed-input-indexes))
                  (argument-types ,@(needed-items stuff needed-input-indexes) ,new-return-type)
                  ,(let ((body (rewrite-call-sites type-map i/o-need-map needed-var-map body)))
@@ -730,7 +732,9 @@
                           the-body ; All the outs of the entry point will always be needed
                           (let ((output-names (invent-names-for-parts 'receipt return)))
                             `(let-values ((,output-names ,the-body))
-                               (values ,@(needed-items output-names needed-output-indexes)))))))))))
+                               (values ,@(filter-map (lambda (item live?)
+                                                       (and live? item))
+                                                     output-names needed-outputs)))))))))))
      defns)))
 
 (define (rewrite-call-sites type-map i/o-need-map needed-var-map form)
@@ -738,13 +742,13 @@
     (hash-table/get needed-var-map name #f))
   ((on-subexpressions
     (rule `((? operator ,procedure?) (?? operands))
-          (let* ((needed-output-indexes (hash-table/get needed-var-map operator #f))
+          (let* ((needed-outputs (hash-table/get needed-var-map operator #f))
                  (i/o-map (hash-table/get i/o-need-map operator #f))
                  (needed-input-indexes (var-set-union*
                                         (map (lambda (live? in-set)
                                                (if live? in-set (no-used-vars)))
-                                             needed-output-indexes i/o-map)))
-                 (all-outs-needed? (every (lambda (x) x) needed-output-indexes)))
+                                             needed-outputs i/o-map)))
+                 (all-outs-needed? (every (lambda (x) x) needed-outputs)))
             (let ((the-call
                   ;; TODO One could, actually, eliminate even more
                   ;; dead code than this: imagine a call site that
@@ -762,13 +766,18 @@
                   the-call
                   (let ((output-names
                          (invent-names-for-parts 'receipt (return-type (type-map operator)))))
-                    `(let-values ((,output-names ,the-call))
-                       (values ,@(map (lambda (name index)
-                                        (if (var-used? index needed-output-indexes)
-                                            name
-                                            (make-tombstone)))
-                                      output-names
-                                      (iota (length output-names)))))))))))
+                    (let ((needed-names
+                           ;; TODO Copied from rewrite-definitions
+                           (filter-map (lambda (item live?)
+                                         (and live? item))
+                                       output-names needed-outputs)))
+                      `(let-values ((,needed-names ,the-call))
+                         (values ,@(map (lambda (name live?)
+                                          (if live?
+                                              name
+                                              (make-tombstone)))
+                                        output-names
+                                        needed-outputs))))))))))
    form))
 
 (define (needed-items items needed-indexes)
