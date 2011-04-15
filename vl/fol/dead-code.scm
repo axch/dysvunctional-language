@@ -241,6 +241,12 @@
 (define (var-set-difference vars1 vars2)
   (lset-difference eq? vars1 vars2))
 
+(define (var-set-union-map f vars)
+  (var-set-union* (var-set-map f vars)))
+
+(define (var-set-map f vars)
+  (map f vars))
+
 (define var-used? memq)
 
 ;;; To do interprocedural dead variable elimination I have to proceed
@@ -335,14 +341,20 @@
      (procedure-definitions->program
       rewritten))))
 
+;;; The i/o-need-map is the structure built by steps 1-3 above.  It
+;;; maps every procedure name to a list of sets of numbers.  The list
+;;; is parallel to the values that the procedure returns, and each set
+;;; of numbers indicates which of the procedure's inputs are needed
+;;; for it to compute that output.
+
 (define (initial-i/o-need-map defns)
   (define (primitive-i/o-need-map)
    (define (nullary name)
-     (cons name (vector (no-used-vars))))
+     (cons name (list (no-used-vars))))
    (define (unary name)
-     (cons name (vector (single-used-var 0))))
+     (cons name (list (single-used-var 0))))
    (define (binary name)
-     (cons name (vector (var-set-union (single-used-var 0) (single-used-var 1)))))
+     (cons name (list (var-set-union (single-used-var 0) (single-used-var 1)))))
    (alist->eq-hash-table
     `(,@(map nullary '(read-real gensym))
       ;; Type testers real? gensym? null? pair? should never be emitted
@@ -354,9 +366,9 @@
      (rule `(define ((? name) (?? args))
               (argument-types (?? stuff) (? return))
               (? body))
-           (add! answer name
-                 (vector-map (lambda (item) (no-used-vars))
-                             (all-slots-live return))))
+           (hash-table/put! answer name
+            (map (lambda (item) (list (no-used-vars)))
+                 (primitive-fringe return))))
      defns)
     answer))
 
@@ -391,25 +403,25 @@
     (let ((predicate (cadr expr))
           (consequent (caddr expr))
           (alternate (cadddr expr)))
-      (let ((pred-needs (loop predicate (vector #t)))
+      (let ((pred-needs (car (loop predicate (list #t))))
             (cons-needs (loop consequent live-out))
             (alt-needs (loop alternate live-out)))
-        (vector-map
+        (map
          (lambda (live? needed-in)
            (if live?
-               (var-set-union (vector-ref pred-needs 0) needed-in)
+               (var-set-union pred-needs needed-in)
                (no-used-vars)))
          live-out
-         (vector-map var-set-union cons-needs alt-needs)))))
+         (map var-set-union cons-needs alt-needs)))))
   (define (study-let expr live-out)
     (let ((bindings (cadr expr))
           (body (caddr expr)))
       (let ((body-needs (loop body live-out))
             (bindings-need (map (lambda (binding)
                                   (cons (car binding)
-                                        (vector-ref (loop (cadr binding) (vector #t)) 0)))
+                                        (car (loop (cadr binding) (list #t)))))
                                 bindings)))
-        (vector-map
+        (map
          (lambda (live? needs)
            (if live?
                (var-set-union-map
@@ -429,8 +441,8 @@
            (body (caddr expr)))
       (let ((body-needs (loop body live-out))
             (bindings-need
-             (map cons names (vector->list (loop expr (list->vector (map (lambda (x) #t) names)))))))
-        (vector-map
+             (map cons names (loop expr (map (lambda (x) #t) names)))))
+        (map
          (lambda (live? needs)
            (if live?
                (var-set-union-map
@@ -444,29 +456,29 @@
          live-out
          body-needs))))
   (define (study-construction expr live-out)
-    (vector
+    (list
      (var-set-union*
-             (map (lambda (arg)
-                    (vector-ref (loop arg (vector #t)) 0))
-                  (cdr expr)))))
+      (map (lambda (arg)
+             (car (loop arg (list #t))))
+           (cdr expr)))))
   (define (study-access expr live-out)
-    (loop (cadr expr) (vector #t)))
+    (loop (cadr expr) (list #t)))
   (define (study-values expr live-out)
-    (vector-map
+    (map
      (lambda (live? sub-expr)
        (if live?
-           (vector-ref (loop sub-expr (vector #t)) 0)
+           (car (loop sub-expr (vector #t)))
            (no-used-vars)))
      live-out
      (cdr expr)))
   (define (study-application expr live-out)
     (let ((operator (car expr))
           (operands (cdr expr)))
-      (let ((operator-i/o-need-map (lookup i/o-need-map operator))
+      (let ((operator-i/o-need-map (hash-table/get i/o-need-map operator #f))
             (operands-need (map (lambda (operand)
-                                  (vector-ref (loop operand (vector #t)) 0))
+                                  (car (loop operand (list #t))))
                                 operands)))
-        (vector-map
+        (map
          (lambda (live? operator-i/o-need)
            (if live?
                (var-set-union-map
@@ -480,12 +492,12 @@
     (rule `(define ((? name) (?? args))
              (argument-types (?? stuff) (? return))
              (? body))
-          (vector-map
+          (map
            (lambda (out-needs)
-             (set-map (lambda (var)
-                        (find-index var args))
-                      out-needs))
-           (loop body (all-slots-live return)))))
+             (var-set-map (lambda (var)
+                            (find-index var args))
+                          out-needs))
+           (loop body (map (lambda (x) #t) (primitive-fringe return))))))
   (improve-i/o-need-map defn))
 
 (define ((iterate-defn-map initialize improve-locally) defns)
@@ -494,10 +506,10 @@
     (for-each
      (lambda (defn)
        (let ((local-map (improve-locally defn overall-map)))
-         (if (equal? local-map (lookup overall-map (definiendum defn)))
+         (if (equal? local-map (hash-table/get overall-map (definiendum defn) #f))
              'ok
              (begin
-               (add! overall-map (definiendum defn) local-map)
+               (hash-table/put! overall-map (definiendum defn) local-map)
                (set! maybe-done? #f)))))
      defns)
     (if (not maybe-done?)
