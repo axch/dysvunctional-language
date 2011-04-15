@@ -82,7 +82,7 @@
     (lset-union eq? vars1 vars2))
   (define (var-set-difference vars1 vars2)
     (lset-difference eq? vars1 vars2))
-  (define used? memq)
+  (define var-used? memq)
   ;; The live-out parameter indicates which of the return values of
   ;; this expression are needed by the context in whose tail position
   ;; this expression is evaluated.  It will be #t unless the context
@@ -140,7 +140,7 @@
        (lambda (new-body body-used)
          (let ((new-bindings
                 (filter (lambda (binding)
-                          (used? (car binding) body-used))
+                          (var-used? (car binding) body-used))
                         bindings)))
            (loop* (map cadr new-bindings)
             (lambda (new-exprs exprs-used)
@@ -160,7 +160,7 @@
          (lambda (new-body body-used)
            (define (slot-used? name)
              (or (ignore? name)
-                 (and (used? name body-used)
+                 (and (var-used? name body-used)
                       #t)))
            (let ((sub-expr-live-out (map slot-used? names)))
              (if (any (lambda (x) x) sub-expr-live-out)
@@ -579,7 +579,7 @@
            (body (caddr expr)))
       (let ((body-needs (loop body live-out)))
         (define (slot-used? name)
-          (used? name body-needs))
+          (var-used? name body-needs))
         (let ((sub-expr-live-out (list->vector (map slot-used? names))))
           (var-set-union (var-set-difference body-used names)
                  (loop sub-expr sub-expr-live-out))))))
