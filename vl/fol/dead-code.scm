@@ -497,7 +497,7 @@
           (map
            (lambda (out-needs)
              (var-set-map (lambda (var)
-                            (find-index var args))
+                            (list-index (lambda (arg) (eq? var arg)) args))
                           out-needs))
            (loop body (map (lambda (x) #t) (primitive-fringe return))))))
   (improve-i/o-need-map defn))
@@ -676,7 +676,7 @@
           #;
           (inputs-needed! need-map operator
                           (set-map (lambda (var)
-                                     (find-index var args))
+                                     (list-index (lambda (arg) (eq? arg var)) args))
                                    (loop body body-live-out)))
           (let ((body-live-out (hash-table/get need-map name #f)))
             (loop body body-live-out))))
