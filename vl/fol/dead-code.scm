@@ -628,7 +628,7 @@
         (define (slot-used? name)
           (var-used? name body-needs))
         (let ((sub-expr-live-out (map slot-used? names)))
-          (var-set-union (var-set-difference body-used names)
+          (var-set-union (var-set-difference body-needs names)
                          (loop sub-expr sub-expr-live-out))))))
   (define (study-construction expr live-out)
     (var-set-union*
