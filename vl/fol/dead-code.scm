@@ -76,13 +76,6 @@
 (define (eliminate-in-expression expr live-out)
   (define (ignore? name)
     (eq? (name-base name) '_))
-  (define (no-used-vars) '())
-  (define (single-used-var var) (list var))
-  (define (var-set-union vars1 vars2)
-    (lset-union eq? vars1 vars2))
-  (define (var-set-difference vars1 vars2)
-    (lset-difference eq? vars1 vars2))
-  (define var-used? memq)
   ;; The live-out parameter indicates which of the return values of
   ;; this expression are needed by the context in whose tail position
   ;; this expression is evaluated.  It will be #t unless the context
@@ -231,6 +224,18 @@
               (win (cons new-expr new-exprs)
                    (cons expr-used exprs-used))))))))
   (loop expr live-out (lambda (new-expr used-vars) new-expr)))
+
+(define (no-used-vars) '())
+
+(define (single-used-var var) (list var))
+
+(define (var-set-union vars1 vars2)
+  (lset-union eq? vars1 vars2))
+
+(define (var-set-difference vars1 vars2)
+  (lset-difference eq? vars1 vars2))
+
+(define var-used? memq)
 
 ;;; To do interprocedural dead variable elimination I have to proceed
 ;;; as follows:
