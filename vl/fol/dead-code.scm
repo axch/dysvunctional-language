@@ -125,7 +125,8 @@
                (win `(if ,new-predicate
                          ,new-consequent
                          ,new-alternate)
-                    (var-set-union pred-used (var-set-union cons-used alt-used)))))))))))
+                    (var-set-union
+                     pred-used (var-set-union cons-used alt-used)))))))))))
   (define (eliminate-in-let expr live-out win)
     (let ((bindings (cadr expr))
           (body (caddr expr)))
@@ -142,8 +143,9 @@
                       `(let ,(map list (map car new-bindings)
                                   new-exprs)
                          ,new-body))
-                     (var-set-union used (var-set-difference
-                                  body-used (map car bindings))))))))))))
+                     (var-set-union
+                      used (var-set-difference
+                            body-used (map car bindings))))))))))))
   (define (eliminate-in-let-values expr live-out win)
     (let ((binding (caadr expr))
           (body (caddr expr)))
@@ -163,8 +165,9 @@
                           `(let-values ((,(filter slot-used? names)
                                          ,new-sub-expr))
                              ,new-body))
-                         (var-set-union sub-expr-used
-                                (var-set-difference body-used names)))))
+                         (var-set-union
+                          sub-expr-used
+                          (var-set-difference body-used names)))))
                  (win new-body body-used))))))))
   ;; Given that I decided not to do proper elimination of dead
   ;; structure slots, I will say that if a structure is needed then
