@@ -339,7 +339,7 @@
          (i/o-need-map (compute-i/o-need-map defns))
          (needed-var-map ((compute-need-map i/o-need-map) defns))
          (rewritten (rewrite-definitions i/o-need-map needed-var-map defns)))
-    (intraprocedural-dead-variable-elimination ;; TODO Check absence of tombstones
+    (eliminate-intraprocedural-dead-variables ;; TODO Check absence of tombstones
      (procedure-definitions->program
       rewritten))))
 

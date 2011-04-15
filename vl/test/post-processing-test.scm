@@ -155,7 +155,24 @@
           (argument-types (values real real))
           (values 1 2))
         (let-values (((x y) (foo)))
-          y))))))
+          y))))
+
+   (equal?
+    '(begin
+       (define (fact n)
+         (argument-types real real)
+         (if (= n 0)
+             1
+             (* n (fact (- n 1)))))
+       (fact (real 5)))
+    (interprocedural-dead-code-elimination
+     '(begin
+        (define (fact dead n)
+          (argument-types real real real)
+          (if (= n 0)
+              1
+              (* n (fact dead (- n 1)))))
+        (fact (real 1) (real 5)))))))
 
 ;; Here is a case where serious SRA is necessary
 ;; (let ((x (if ... (cons) (cons))))
