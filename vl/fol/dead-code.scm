@@ -706,40 +706,40 @@
                                              needed-output-indexes i/o-map)))
                  (all-ins-needed? (= (var-set-size needed-input-indexes) (length args)))
                  (all-outs-needed? (every (lambda (x) x) needed-output-indexes)))
-            (define (needed-names names needed-indexes)
+            (define (needed-items items needed-indexes)
               (filter-map
-               (lambda (name index)
+               (lambda (item index)
                  (if (var-used? index needed-indexes)
-                     name
+                     item
                      #f))
-               names
-               (iota (length names))))
-            (define (unneeded-names names)
+               items
+               (iota (length items))))
+            (define (unneeded-items items needed-indexes)
               (filter-map
-               (lambda (name index)
-                 (if (var-used? index needed-name-indexes)
+               (lambda (item index)
+                 (if (var-used? index needed-indexes)
                      #f
-                     name))
-               names
-               (iota (length names))))
+                     item))
+               items
+               (iota (length items))))
             (define new-return-type
               (if (or all-outs-needed? (not (values-form? return)))
                   return
-                  `(values ,@(needed-names (cdr return) needed-output-indexes))))
-           `(define (,name ,@(needed-names args needed-input-indexes))
-              (argument-types ,@(needed-names stuff needed-input-indexes) ,new-return-type)
+                  `(values ,@(needed-items (cdr return) needed-output-indexes))))
+           `(define (,name ,@(needed-items args needed-input-indexes))
+              (argument-types ,@(needed-items stuff needed-input-indexes) ,new-return-type)
               ,(let ((body (rewrite-call-sites needed-var-map body)))
                  (let ((the-body (if all-ins-needed?
                                      body
                                      `(let (,(map (lambda (name)
                                                     `(,name ,(make-tombstone)))
-                                                  (unneeded-inputs args needed-input-indexes)))
+                                                  (unneeded-items args needed-input-indexes)))
                                         ,body))))
                    (if all-outs-needed?
                        the-body ; All the outs of the entry point will always be needed
                        (let ((output-names (invent-names-for-parts 'receipt return)))
                          `(let-values ((,output-names ,the-body))
-                            (values ,@(needed-names output-names needed-output-indexes)))))))))))
+                            (values ,@(needed-items output-names needed-output-indexes)))))))))))
    defns))
 
 (define (rewrite-call-sites needed-var-map form)
