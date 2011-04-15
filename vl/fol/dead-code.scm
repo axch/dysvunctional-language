@@ -315,14 +315,15 @@
 ;;;    - Verify that all the tombstones vanish.
 
 (define (program->procedure-definitions program)
-  (define (expression->procedure-definition entry-point)
+  (define (expression->procedure-definition entry-point return-type)
     `(define (%%main)
-       (argument-types real) ;; TODO Get the actual type of the entry point
+       (argument-types ,return-type) ;; TODO Get the actual type of the entry point
        ,entry-point))
-  (if (begin-form? program)
-      (append (cdr (except-last-pair program))
-              (list (expression->procedure-definition (last program))))
-      (list (expression->procedure-definition program))))
+  (let ((return-type (check-program-types program)))
+    (if (begin-form? program)
+        (append (cdr (except-last-pair program))
+                (list (expression->procedure-definition (last program) return-type)))
+        (list (expression->procedure-definition program return-type)))))
 
 (define (procedure-definitions->program defns)
   (tidy-begin
