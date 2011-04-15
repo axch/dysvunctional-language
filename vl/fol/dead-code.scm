@@ -335,25 +335,6 @@
      (procedure-definitions->program
       rewritten))))
 
-(define ((iterate-defn-map initialize improve-locally) defns)
-  (let loop ((overall-map (initialize defns))
-             (maybe-done? #t))
-    (for-each
-     (lambda (defn)
-       (let ((local-map (improve-locally defn overall-map)))
-         (if (equal? local-map (lookup overall-map (definiendum defn)))
-             'ok
-             (begin
-               (add! overall-map (definiendum defn) local-map)
-               (set! maybe-done? #f)))))
-     defns)
-    (if (not maybe-done?)
-        (loop overall-map #t)
-        overall-map)))
-
-(define compute-i/o-need-map
-  (iterate-defn-map initial-i/o-need-map improve-i/o-need-map))
-
 (define (initial-i/o-need-map defns)
   (define (primitive-i/o-need-map)
    (define (nullary name)
@@ -506,6 +487,25 @@
                       out-needs))
            (loop body (all-slots-live return)))))
   (improve-i/o-need-map defn))
+
+(define ((iterate-defn-map initialize improve-locally) defns)
+  (let loop ((overall-map (initialize defns))
+             (maybe-done? #t))
+    (for-each
+     (lambda (defn)
+       (let ((local-map (improve-locally defn overall-map)))
+         (if (equal? local-map (lookup overall-map (definiendum defn)))
+             'ok
+             (begin
+               (add! overall-map (definiendum defn) local-map)
+               (set! maybe-done? #f)))))
+     defns)
+    (if (not maybe-done?)
+        (loop overall-map #t)
+        overall-map)))
+
+(define compute-i/o-need-map
+  (iterate-defn-map initial-i/o-need-map improve-i/o-need-map))
 
 (define ((compute-need-map i/o-need-map) defns)
   (let ((need-map (initial-need-map defns)))
