@@ -738,7 +738,6 @@
                                         (map (lambda (live? in-set)
                                                (if live? in-set (no-used-vars)))
                                              needed-output-indexes i/o-map)))
-                 (all-ins-needed? (= (var-set-size needed-input-indexes) (length operands)))
                  (all-outs-needed? (every (lambda (x) x) needed-output-indexes)))
             (let ((the-call
                   ;; TODO One could, actually, eliminate even more
