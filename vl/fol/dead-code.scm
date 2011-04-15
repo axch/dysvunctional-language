@@ -249,6 +249,8 @@
 
 (define var-used? memq)
 
+(define var-set-size length)
+
 ;;; To do interprocedural dead variable elimination I have to proceed
 ;;; as follows:
 ;;; -1) Run a round of intraprocedural dead variable elimination to
@@ -696,20 +698,45 @@
     (rule `(define ((? name) (?? args))
              (argument-types (?? stuff) (? return))
              (? body))
-          `(define (,name ,@(needed-args args needed-var-map))
-             (argument-types ,@(needed-args stuff needed-var-map)
-                             ,(munch-return-type return needed-var-map))
-             ,(let ((body (rewrite-call-sites needed-var-map body)))
-                (let ((the-body (if (all-ins-needed? name needed-var-map)
-                                    body
-                                    `(let (,(map (lambda (name)
-                                                   `(,name ,(make-tombstone)))
-                                                 (unneeded-ins name needed-var-map)))
-                                       ,body))))
-                  (if (all-outs-needed? name needed-var-map)
-                      the-body
-                      `(let-values ((,(invent-names-for-parts return) ,the-body))
-                         (values ,@(needed-return those-names needed-var-map)))))))))
+          (let* ((needed-output-indexes (hash-table/get needed-var-map name #f))
+                 (i/o-map (hash-table/get i/o-need-map name #f))
+                 (needed-input-indexes (var-set-union*
+                                        (map (lambda (live? in-set)
+                                               (if live? in-set (no-used-vars)))
+                                             needed-output-indexes i/o-map)))
+                 (all-ins-needed? (= (var-set-size needed-input-indexes) (length args)))
+                 (all-outs-needed? (every (lambda (x) x) needed-output-indexes)))
+            (define (needed-names names needed-indexes)
+              (filter-map
+               (lambda (name index)
+                 (if (var-used? index needed-indexes)
+                     name
+                     #f))
+               names
+               (iota (length names))))
+            (define (unneeded-names names)
+              (filter-map
+               (lambda (name index)
+                 (if (var-used? index needed-name-indexes)
+                     #f
+                     name))
+               names
+               (iota (length names))))
+           `(define (,name ,@(needed-names args needed-input-indexes))
+              (argument-types ,@(needed-names stuff needed-input-indexes)
+                              ,(munch-return-type return needed-var-map))
+              ,(let ((body (rewrite-call-sites needed-var-map body)))
+                 (let ((the-body (if all-ins-needed?
+                                     body
+                                     `(let (,(map (lambda (name)
+                                                    `(,name ,(make-tombstone)))
+                                                  (unneeded-inputs args needed-input-indexes)))
+                                        ,body))))
+                   (if all-outs-needed?
+                       the-body ; All the outs of the entry point will always be needed
+                       (let ((output-names (invent-names-for-parts 'receipt return)))
+                         `(let-values ((,output-names ,the-body))
+                            (values ,@(needed-names output-names needed-output-indexes)))))))))))
    defns))
 
 (define (rewrite-call-sites needed-var-map form)
