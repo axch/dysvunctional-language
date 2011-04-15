@@ -761,7 +761,7 @@
               (if all-outs-needed?
                   the-call
                   (let ((output-names
-                         (invent-names-for-parts 'receipt (return-type (lookup-type operator)))))
+                         (invent-names-for-parts 'receipt (return-type (type-map operator)))))
                     `(let-values ((,output-names ,the-call))
                        (values ,@(map (lambda (name index)
                                         (if (var-used? index needed-output-indexes)
