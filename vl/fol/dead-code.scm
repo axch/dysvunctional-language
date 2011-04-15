@@ -338,7 +338,7 @@
   (let* ((defns (program->procedure-definitions program))
          (i/o-need-map (compute-i/o-need-map defns))
          (needed-var-map ((compute-need-map i/o-need-map) defns))
-         (rewritten (rewrite-definitions needed-var-map defns)))
+         (rewritten (rewrite-definitions i/o-need-map needed-var-map defns)))
     (intraprocedural-dead-variable-elimination ;; TODO Check absence of tombstones
      (procedure-definitions->program
       rewritten))))
@@ -693,40 +693,41 @@
           'ok)))
   (improve-need-map defn))
 
-(define (rewrite-definitions needed-var-map defns)
-  ((on-subexpressions
-    (rule `(define ((? name) (?? args))
-             (argument-types (?? stuff) (? return))
-             (? body))
-          (let* ((needed-output-indexes (hash-table/get needed-var-map name #f))
-                 (i/o-map (hash-table/get i/o-need-map name #f))
-                 (needed-input-indexes (var-set-union*
-                                        (map (lambda (live? in-set)
-                                               (if live? in-set (no-used-vars)))
-                                             needed-output-indexes i/o-map)))
-                 (all-ins-needed? (= (var-set-size needed-input-indexes) (length args)))
-                 (all-outs-needed? (every (lambda (x) x) needed-output-indexes)))
-            (define new-return-type
-              (if (or all-outs-needed? (not (values-form? return)))
-                  return
-                  `(values ,@(needed-items (cdr return) needed-output-indexes))))
-           `(define (,name ,@(needed-items args needed-input-indexes))
-              (argument-types ,@(needed-items stuff needed-input-indexes) ,new-return-type)
-              ,(let ((body (rewrite-call-sites needed-var-map body)))
-                 (let ((the-body (if all-ins-needed?
-                                     body
-                                     `(let (,(map (lambda (name)
-                                                    `(,name ,(make-tombstone)))
-                                                  (unneeded-items args needed-input-indexes)))
-                                        ,body))))
-                   (if all-outs-needed?
-                       the-body ; All the outs of the entry point will always be needed
-                       (let ((output-names (invent-names-for-parts 'receipt return)))
-                         `(let-values ((,output-names ,the-body))
-                            (values ,@(needed-items output-names needed-output-indexes)))))))))))
-   defns))
+(define (rewrite-definitions i/o-need-map needed-var-map defns)
+  (let ((type-map (type-map `(,@defns 'bogon)))) ; This bogon has to do with the entry point being a definition now
+    ((on-subexpressions
+      (rule `(define ((? name) (?? args))
+               (argument-types (?? stuff) (? return))
+               (? body))
+            (let* ((needed-output-indexes (hash-table/get needed-var-map name #f))
+                   (i/o-map (hash-table/get i/o-need-map name #f))
+                   (needed-input-indexes (var-set-union*
+                                          (map (lambda (live? in-set)
+                                                 (if live? in-set (no-used-vars)))
+                                               needed-output-indexes i/o-map)))
+                   (all-ins-needed? (= (var-set-size needed-input-indexes) (length args)))
+                   (all-outs-needed? (every (lambda (x) x) needed-output-indexes)))
+              (define new-return-type
+                (if (or all-outs-needed? (not (values-form? return)))
+                    return
+                    `(values ,@(needed-items (cdr return) needed-output-indexes))))
+              `(define (,name ,@(needed-items args needed-input-indexes))
+                 (argument-types ,@(needed-items stuff needed-input-indexes) ,new-return-type)
+                 ,(let ((body (rewrite-call-sites type-map i/o-need-map needed-var-map body)))
+                    (let ((the-body (if all-ins-needed?
+                                        body
+                                        `(let (,(map (lambda (name)
+                                                       `(,name ,(make-tombstone)))
+                                                     (unneeded-items args needed-input-indexes)))
+                                           ,body))))
+                      (if all-outs-needed?
+                          the-body ; All the outs of the entry point will always be needed
+                          (let ((output-names (invent-names-for-parts 'receipt return)))
+                            `(let-values ((,output-names ,the-body))
+                               (values ,@(needed-items output-names needed-output-indexes)))))))))))
+     defns)))
 
-(define (rewrite-call-sites needed-var-map form)
+(define (rewrite-call-sites type-map i/o-need-map needed-var-map form)
   (define (procedure? name)
     (hash-table/get needed-var-map name #f))
   ((on-subexpressions
@@ -754,7 +755,8 @@
                   `(,operator ,@(needed-items needed-input-indexes operands))))
               (if all-outs-needed?
                   the-call
-                  (let ((output-names (invent-names-for-parts 'receipt (return-type operator))))
+                  (let ((output-names
+                         (invent-names-for-parts 'receipt (return-type (lookup-type operator)))))
                     `(let-values ((,output-names ,the-call))
                        (values ,@(map (lambda (name index)
                                         (if (var-used? index needed-output-indexes)
