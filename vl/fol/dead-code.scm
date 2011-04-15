@@ -317,7 +317,7 @@
       (list (expression->procedure-definition program))))
 
 (define (procedure-definitions->program defns)
-  (trivial-begin-rule
+  (tidy-begin
    `(begin
       ,@(except-last-pair defns)
       ,((rule `(define (%%main)
