@@ -371,7 +371,7 @@
               (? body))
            (hash-table/put! answer name
             (map (lambda (item) (no-used-vars))
-                 (primitive-fringe return))))
+                 (desirable-slot-list return))))
      defns)
     answer))
 
@@ -500,8 +500,13 @@
              (var-set-map (lambda (var)
                             (list-index (lambda (arg) (eq? var arg)) args))
                           out-needs))
-           (loop body (map (lambda (x) #t) (primitive-fringe return))))))
+           (loop body (map (lambda (x) #t) (desirable-slot-list return))))))
   (improve-i/o-need-map defn))
+
+(define (desirable-slot-list shape)
+  (if (values-form? shape)
+      (cdr shape)
+      (list shape)))
 
 (define ((iterate-defn-map initialize improve-locally) defns)
   (let loop ((overall-map (initialize defns))
@@ -555,7 +560,7 @@
                         (argument-types (?? stuff) (? return))
                         (? body))
                      (cons name
-                           (map (lambda (x) #f) (primitive-fringe return))))
+                           (map (lambda (x) #f) (desirable-slot-list return))))
                defns))))
     (hash-table/put! answer (definiendum (last defns)) (list #t))
     answer))
