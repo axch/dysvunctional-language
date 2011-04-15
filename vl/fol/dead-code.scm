@@ -137,7 +137,7 @@
                         bindings)))
            (loop* (map cadr new-bindings)
             (lambda (new-exprs exprs-used)
-              (let ((used (reduce var-set-union (no-used-vars) exprs-used)))
+              (let ((used (var-set-union* exprs-used)))
                 (win (empty-let-rule
                       `(let ,(map list (map car new-bindings)
                                   new-exprs)
@@ -174,7 +174,7 @@
     (loop* (cdr expr)
      (lambda (new-args args-used)
        (win `(,(car expr) ,@new-args)
-            (reduce var-set-union (no-used-vars) args-used)))))
+            (var-set-union* args-used)))))
   (define (eliminate-in-access expr live-out win)
     (loop (cadr expr) #t
      (lambda (new-accessee accessee-uses)
@@ -191,7 +191,7 @@
          (win (if (= 1 (length new-elts))
                   (car new-elts)
                   `(values ,@new-elts))
-              (reduce var-set-union (no-used-vars) elts-used))))))
+              (var-set-union* elts-used))))))
   (define (eliminate-in-application expr live-out win)
     (loop* (cdr expr)
      (lambda (new-args args-used)
@@ -213,7 +213,7 @@
                          ,(if (> (length useful-names) 1)
                               `(values ,@useful-names)
                               (car useful-names)))))))
-           (win new-call (reduce var-set-union (no-used-vars) args-used)))))))
+           (win new-call (var-set-union* args-used)))))))
   (define (loop* exprs win)
     (if (null? exprs)
         (win '() '())
@@ -231,6 +231,9 @@
 
 (define (var-set-union vars1 vars2)
   (lset-union eq? vars1 vars2))
+
+(define (var-set-union* vars-lst)
+  (reduce var-set-union (no-used-vars) vars-lst))
 
 (define (var-set-difference vars1 vars2)
   (lset-difference eq? vars1 vars2))
@@ -458,7 +461,7 @@
          body-needs))))
   (define (study-construction expr live-out)
     (vector
-     (reduce var-set-union (no-used-vars)
+     (var-set-union*
              (map (lambda (arg)
                     (vector-ref (loop arg (vector #t)) 0))
                   (cdr expr)))))
@@ -589,14 +592,14 @@
           (var-set-union (var-set-difference body-used names)
                  (loop sub-expr sub-expr-live-out))))))
   (define (study-construction expr live-out)
-    (reduce var-set-union (no-used-vars)
+    (var-set-union*
             (map (lambda (arg)
                    (loop arg (vector #t)))
                  (cdr expr))))
   (define (study-access expr live-out)
     (loop (cadr expr) (vector #t)))
   (define (study-values expr live-out)
-    (reduce var-set-union (no-used-vars)
+    (var-set-union*
             (map
              (lambda (live? sub-expr)
                (if live?
@@ -621,7 +624,7 @@
                   ;; TODO Switch this around to first computing the
                   ;; set of operands that are needed, and then
                   ;; computing which variables that means.
-                  (reduce var-set-union (no-used-vars)
+                  (var-set-union*
                           (map (lambda (arg-index)
                                  (cdr (assq (list-ref operands arg-index) operands-need)))
                                (vector->list
