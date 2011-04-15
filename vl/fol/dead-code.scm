@@ -752,7 +752,7 @@
                   ;; compute, but it would be safe to put tombstones
                   ;; there, because the analysis just proved that they
                   ;; will not be needed.
-                  `(,operator ,@(needed-items needed-input-indexes operands))))
+                  `(,operator ,@(needed-items operands needed-input-indexes))))
               (if all-outs-needed?
                   the-call
                   (let ((output-names
