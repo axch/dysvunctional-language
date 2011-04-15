@@ -251,6 +251,9 @@
 
 (define var-set-size length)
 
+(define (var-set-equal? vars1 vars2)
+  (lset= eq? vars1 vars2))
+
 ;;; To do interprocedural dead variable elimination I have to proceed
 ;;; as follows:
 ;;; -1) Run a round of intraprocedural dead variable elimination to
@@ -514,7 +517,7 @@
     (for-each
      (lambda (defn)
        (let ((local-map (improve-locally defn overall-map)))
-         (if (equal? local-map (hash-table/get overall-map (definiendum defn) #f))
+         (if (every var-set-equal? local-map (hash-table/get overall-map (definiendum defn) #f))
              'ok
              (begin
                (hash-table/put! overall-map (definiendum defn) local-map)
