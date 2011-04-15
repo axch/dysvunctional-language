@@ -722,9 +722,12 @@
                      name))
                names
                (iota (length names))))
+            (define new-return-type
+              (if (or all-outs-needed? (not (values-form? return)))
+                  return
+                  `(values ,@(needed-names (cdr return) needed-output-indexes))))
            `(define (,name ,@(needed-names args needed-input-indexes))
-              (argument-types ,@(needed-names stuff needed-input-indexes)
-                              ,(munch-return-type return needed-var-map))
+              (argument-types ,@(needed-names stuff needed-input-indexes) ,new-return-type)
               ,(let ((body (rewrite-call-sites needed-var-map body)))
                  (let ((the-body (if all-ins-needed?
                                      body
