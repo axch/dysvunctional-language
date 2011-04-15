@@ -3,7 +3,11 @@ Compilation with MIT Scheme
   - Can this collapse identical perturbations and recover tower mode on
     (D (D (lambda (x) ...)))?
   - Can this collapse primals and recover stack tangent mode?
-- Interprocedural dead variable elimination?
+- Interprocedural dead variable elimination
+  - Need to hand the i/o-need-map to the final round of
+    intraprocedural dead variable elimination so it can kill
+    expressions that would compute arguments that other callers need
+    to supply but this caller does not.
 - Analysis-time dead variable elimination??
 - Solved gensyms?  Is this actually possible?
 

@@ -531,6 +531,20 @@
           (loop)
           need-map))))
 
+(define (clear-changed! thing)
+  (eq-put! thing 'changed #f))
+
+(define (changed? thing)
+  (eq-get thing 'changed))
+
+(define (changed! thing)
+  (eq-put! thing 'changed #t))
+
+;;; The need map is the structure constructed during steps 4-6 above.
+;;; It maps every procedure name to the set of its outputs that are
+;;; actually needed.  The needed inputs can be inferred from this
+;;; given the i/o-need-map.
+
 (define (initial-need-map defns)
   (let ((answer
          (alist->eq-hash-table
@@ -538,10 +552,9 @@
                         (argument-types (?? stuff) (? return))
                         (? body))
                      (cons name
-                           (cons (vector-map (lambda (x) #f) (all-slots-live return))
-                                 (make-vector (length args) #f))))
+                           (map (lambda (x) #f) (primitive-fringe return))))
                defns))))
-    (output-needed! answer (definiendum (last defns)) 0)
+    (hash-table/put! answer (definiendum (last defns)) (list #t))
     answer))
 
 ;;; TODO This file now contains *three* very similar recursive traversals!
@@ -576,18 +589,21 @@
     (let ((predicate (cadr expr))
           (consequent (caddr expr))
           (alternate (cadddr expr)))
-      (let ((pred-needs (loop predicate (vector #t)))
+      (let ((pred-needs (loop predicate (list #t)))
             (cons-needs (loop consequent live-out))
             (alt-needs (loop alternate live-out)))
         (var-set-union pred-needs (var-set-union cons-needs alt-needs)))))
   (define (study-let expr live-out)
     (let ((bindings (cadr expr))
           (body (caddr expr)))
-      (let ((body-needs (loop body live-out))
-            (bindings-need (map (lambda (binding)
-                                  (cons (car binding)
-                                        (loop (cadr binding) (vector #t))))
-                                bindings)))
+      (let* ((body-needs (loop body live-out))
+             (bindings-need
+              (map (lambda (binding)
+                     (cons (car binding)
+                           (if (var-used? (car binding) body-needs)
+                               (loop (cadr binding) (list #t))
+                               (no-used-vars))))
+                   bindings)))
         (var-set-union-map
          (lambda (needed-var)
            (let ((xxx (assq needed-var bindings-need)))
@@ -603,58 +619,76 @@
       (let ((body-needs (loop body live-out)))
         (define (slot-used? name)
           (var-used? name body-needs))
-        (let ((sub-expr-live-out (list->vector (map slot-used? names))))
+        (let ((sub-expr-live-out (map slot-used? names)))
           (var-set-union (var-set-difference body-used names)
-                 (loop sub-expr sub-expr-live-out))))))
+                         (loop sub-expr sub-expr-live-out))))))
   (define (study-construction expr live-out)
     (var-set-union*
-            (map (lambda (arg)
-                   (loop arg (vector #t)))
-                 (cdr expr))))
+     (map (lambda (arg)
+            (loop arg (list #t)))
+          (cdr expr))))
   (define (study-access expr live-out)
-    (loop (cadr expr) (vector #t)))
+    (loop (cadr expr) (list #t)))
   (define (study-values expr live-out)
     (var-set-union*
-            (map
-             (lambda (live? sub-expr)
-               (if live?
-                   (loop sub-expr (vector #t))
-                   (no-used-vars)))
-             (vector->list live-out)
-             (cdr expr))))
+     (map
+      (lambda (live? sub-expr)
+        (if live?
+            (loop sub-expr (list #t))
+            (no-used-vars)))
+      live-out
+      (cdr expr))))
   (define (study-application expr live-out)
     (let ((operator (car expr))
           (operands (cdr expr)))
-      (let ((operator-i/o-need-map (lookup i/o-need-map operator))
-            (operands-need (map (lambda (operand)
-                                  (cons operand (loop operand (vector #t))))
-                                operands)))
-        (reduce
-         var-set-union (no-used-vars)
-         (map
-          (lambda (live? index)
-            (if live?
-                (begin
-                  (output-needed! need-map operator index)
-                  ;; TODO Switch this around to first computing the
-                  ;; set of operands that are needed, and then
-                  ;; computing which variables that means.
-                  (var-set-union*
-                          (map (lambda (arg-index)
-                                 (cdr (assq (list-ref operands arg-index) operands-need)))
-                               (vector->list
-                                (lookup operator-i/o-need-map index)))))
-                (no-used-vars)))
-          (vector->list live-out)
-          (iota (vector-length live-out)))))))
+      (let* ((operator-i/o-need-map (hash-table/get i/o-need-map operator #f))
+             (operand-indecies-needed
+              (var-set-union*
+               (map
+                (lambda (live? index operator-needs)
+                  (if live?
+                      (begin
+                        (output-needed! need-map operator index)
+                        operator-needs)
+                      (no-used-vars)))
+                live-out
+                (iota (length live-out))
+                operator-i/o-need-map)))
+             (operands-needed
+              (var-set-map
+               (lambda (arg-index)
+                 (list-ref operands arg-index))
+               operand-indecies-needed)))
+        (var-set-union-map
+         (lambda (operand)
+           (loop operand (list #t)))
+         operands-needed))))
   (define improve-need-map
     (rule `(define ((? name) (?? args))
              (argument-types (?? stuff) (? return))
              (? body))
+          ;; This is redundant because the i/o-need-map of this
+          ;; operator also allows one to deduce which inputs the
+          ;; operator needs, given which of the operator's outputs are
+          ;; needed.
+          #;
           (inputs-needed! need-map operator
                           (set-map (lambda (var)
                                      (find-index var args))
-                                   (loop body (lookup need-map name))))))
+                                   (loop body body-live-out)))
+          (let ((body-live-out (hash-table/get need-map name #f)))
+            (loop body body-live-out))))
+  (define (output-needed! need-map name index)
+    (let ((needed-outputs (hash-table/get need-map name #f)))
+      (if needed-outputs
+          (let ((relevant-pair (drop needed-outputs index)))
+            (if (car relevant-pair)
+                'ok
+                (begin
+                  (set-car! relevant-pair #t)
+                  (changed! need-map))))
+          ;; I don't care which inputs of primitives are needed.
+          'ok)))
   (improve-need-map defn))
 
 (define (rewrite-definitions needed-var-map defns)
