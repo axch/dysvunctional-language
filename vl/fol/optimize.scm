@@ -21,11 +21,12 @@
 (define (fol-optimize program)
   ((lambda (x) x) ; This makes the last stage show up in the stack sampler
    (tidy
-    (eliminate-intraprocedural-dead-variables
-     (intraprocedural-de-alias
-      (scalar-replace-aggregates
-       (inline                          ; includes ALPHA-RENAME
-        program)))))))
+    (interprocedural-dead-code-elimination
+     (eliminate-intraprocedural-dead-variables
+      (intraprocedural-de-alias
+       (scalar-replace-aggregates
+        (inline                         ; includes ALPHA-RENAME
+         program))))))))
 
 ;;; The stages have the following structure and interrelationships:
 ;;;
@@ -290,15 +291,16 @@
 (define (compile-visibly program)
   ((lambda (x) x) ; This makes the last stage show up in the stack sampler
    ((fol-stage tidy)
-    ((fol-stage eliminate-intraprocedural-dead-variables)
-     ((fol-stage intraprocedural-de-alias)
-      ((fol-stage scalar-replace-aggregates)
-       ((fol-stage inline)                        ; includes ALPHA-RENAME
-        ((fol-stage structure-definitions->vectors)
-         (let ((raw-fol ((fol-stage analyze-and-generate)
-                         program)))
-           (clear-name-caches!)
-           raw-fol)))))))))
+    ((fol-stage interprocedural-dead-code-elimination)
+     ((fol-stage eliminate-intraprocedural-dead-variables)
+      ((fol-stage intraprocedural-de-alias)
+       ((fol-stage scalar-replace-aggregates)
+        ((fol-stage inline)             ; includes ALPHA-RENAME
+         ((fol-stage structure-definitions->vectors)
+          (let ((raw-fol ((fol-stage analyze-and-generate)
+                          program)))
+            (clear-name-caches!)
+            raw-fol))))))))))
 
 ;;;; Compilation with MIT Scheme
 

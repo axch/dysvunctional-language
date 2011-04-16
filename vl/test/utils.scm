@@ -65,7 +65,9 @@
          (aliases ((fol-carefully intraprocedural-de-alias) scalars answer))
          (variables ((fol-carefully eliminate-intraprocedural-dead-variables)
                      aliases answer))
-         (tidied ((fol-carefully tidy) variables answer)))
+         (more-variables ((fol-carefully interprocedural-dead-code-elimination)
+                          variables answer))
+         (tidied ((fol-carefully tidy) more-variables answer)))
     ;; SRA emits sane code
     (check-program-types scalars)
     (check (equal? answer (fol-eval scalars)))
@@ -76,6 +78,7 @@
     (check (unique-names? scalars))
     (check (unique-names? aliases))
     (check (unique-names? variables))
+    (check (unique-names? more-variables))
     (check (unique-names? tidied))
 
     ;; The state of being maximally inlined is preserved (until
@@ -91,7 +94,8 @@
         (begin
           (check (approximate-anf? scalars))
           (check (approximate-anf? aliases))
-          (check (approximate-anf? variables))))
+          (check (approximate-anf? variables))
+          (check (approximate-anf? more-variables))))
 
     ;; Except for reconstruction of the structure that the outside
     ;; world expects, SRA is idempotent and subsequent ANF-preserving
@@ -100,7 +104,9 @@
         (begin
           (check (equal? scalars (scalar-replace-aggregates scalars)))
           (check (equal? aliases (scalar-replace-aggregates aliases)))
-          (check (equal? variables (scalar-replace-aggregates variables)))))
+          (check (equal? variables (scalar-replace-aggregates variables)))
+          (check (equal? more-variables
+                         (scalar-replace-aggregates more-variables)))))
 
     (define anf-then-inline (inline (approximate-anf (alpha-rename vectors-fol))))
 
@@ -123,6 +129,7 @@
 
     ;; Dead variable elimination does not introduce new aliases.
     (check (equal? variables (intraprocedural-de-alias variables)))
+    (check (equal? more-variables (intraprocedural-de-alias more-variables)))
 
     tidied))
 
