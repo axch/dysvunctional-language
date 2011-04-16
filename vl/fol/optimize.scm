@@ -188,7 +188,10 @@
 
 ;;;; Term-rewriting tidier
 
-(define tidy-begin (rule `(begin (? body)) body))
+(define (tidy-begin form)
+  (if (and (begin-form? form) (null? (cddr form)))
+      (cadr form)
+      form))
 (define empty-let-rule (rule `(let () (? body)) body))
 
 ;; This is safe assuming the program has unique bound names; if not,
