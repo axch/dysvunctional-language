@@ -335,3 +335,27 @@
 
 (define (run-mit-scheme)
   (load "frobnozzle"))
+
+(define (flonumize program)
+  (define floating-versions
+    (cons (cons 'atan 'flo:atan2)
+          (map (lambda (name)
+                 (cons name (symbol 'flo: name)))
+               '(+ - * / < = > <= >= abs exp log sin cos tan asin acos
+                   sqrt expt zero? negative? positive?))))
+  (define (arithmetic? expr)
+    (and (pair? expr)
+         (assq (car expr) floating-versions)))
+  (define (replace thing)
+    (cdr (assq thing floating-versions)))
+  (define (loop expr)
+    (cond ((number? expr) (exact->inexact expr))
+          ((access? expr) `(,(car expr) ,(loop (cadr expr)) ,@(cddr expr)))
+          ((arithmetic? expr)
+           `(,(replace (car expr)) ,@(map loop (cdr expr))))
+          ((pair? expr) (map loop expr))
+          (else expr)))
+  (loop program))
+
+(define (fol->floating-mit-scheme program)
+  (fol->mit-scheme (flonumize program)))
