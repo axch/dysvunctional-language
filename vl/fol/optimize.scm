@@ -299,7 +299,7 @@
 
 ;;;; Compilation with MIT Scheme
 
-(define (fol->mit-scheme program)
+(define (fol->standalone-mit-scheme program)
   (let* ((srfi-11 (read-source "../vl/fol/srfi-11.scm"))
          (runtime (read-source "../vl/fol/runtime.scm"))
          (output
@@ -316,3 +316,17 @@
     ;; TODO Actually loading this into the currently running Scheme
     ;; redefines the gensym structure, leading to trouble.
     (load "frobnozzle")))
+
+(define (fol->mit-scheme program)
+  (let ((output `((declare (usual-integrations))
+                  (let () ,@(cdr program))))) ; definitions become internal
+    (with-output-to-file "frobnozzle.scm"
+      (lambda ()
+        (for-each (lambda (form)
+                    (pp form)
+                    (newline)) output)))
+    (fluid-let ((sf/default-syntax-table (nearest-repl/environment)))
+      (cf "frobnozzle"))))
+
+(define (run-mit-scheme)
+  (load "frobnozzle"))
