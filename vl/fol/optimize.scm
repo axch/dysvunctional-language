@@ -362,5 +362,32 @@
           (else expr)))
   (loop program))
 
+;;; Manually integrating arithmetic to avoid binding variables to hold
+;;; intermediate floating point values, in the hopes that this will
+;;; improve compiled floating point performance in MIT Scheme.  It did
+;;; not, however, appear to have worked.
+(define integrate-arithmetic
+  (let ((arithmetic?
+         (lambda (symbol)
+           (memq symbol '(+ - * / < = > <= >= abs exp log sin cos tan asin acos
+                            atan sqrt expt zero? negative? positive? real)))))
+    (define (all-arithmetic? expr)
+      (cond ((pair? expr)
+             (and (arithmetic? (car expr))
+                  (every all-arithmetic? (cdr expr))))
+            ((number? expr) #t)
+            ((fol-var? expr) #t)
+            (else #f)))
+    (rule-simplifier
+     (list
+      empty-let-rule
+      (rule `(let ((?? bindings1)
+                   ((? name ,fol-var?) (? exp ,all-arithmetic?))
+                   (?? bindings2))
+               (?? body))
+            `(let (,@bindings1
+                   ,@bindings2)
+               ,@(replace-free-occurrences name exp body)))))))
+
 (define (fol->floating-mit-scheme program)
   (fol->mit-scheme (flonumize program)))
