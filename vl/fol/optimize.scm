@@ -324,11 +324,16 @@
     ;; redefines the gensym structure, leading to trouble.
     (load output-base)))
 
+(define (internalize-definitions program)
+  (if (begin-form? program)
+      `(let () ,@(cdr program))
+      program))
+
 (define (fol->mit-scheme program #!optional output-base)
   (if (default-object? output-base)
       (set! output-base "frobnozzle"))
   (let ((output `((declare (usual-integrations))
-                  (let () ,@(cdr program))))) ; definitions become internal
+                  ,(internalize-definitions program))))
     (with-output-to-file (string-append output-base ".scm")
       (lambda ()
         (for-each (lambda (form)
