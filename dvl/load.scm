@@ -89,6 +89,6 @@
 
 (define (dvl-run-file filename)
   (let* ((program (dvl-read-file filename))
-         (compiled-program (compile-to-scheme program))
-         (compiled-answer (fol-eval compiled-program)))
-    (pp compiled-answer)))
+         (compiled-program (compile-to-scheme program)))
+    (fol->floating-mit-scheme compiled-program filename)
+    (pp (run-mit-scheme filename))))
