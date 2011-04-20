@@ -304,7 +304,9 @@
 
 ;;;; Compilation with MIT Scheme
 
-(define (fol->standalone-mit-scheme program)
+(define (fol->standalone-mit-scheme program #!optional output-base)
+  (if (default-object? output-base)
+      (set! output-base "frobnozzle"))
   (let* ((srfi-11 (read-source "../vl/fol/srfi-11.scm"))
          (runtime (read-source "../vl/fol/runtime.scm"))
          (output
@@ -312,29 +314,33 @@
             ,@(cdr runtime)             ; remove usual-integrations
             ,@(cdr program)             ; remove begin
             )))
-    (with-output-to-file "frobnozzle.scm"
+    (with-output-to-file (string-append output-base ".scm")
       (lambda ()
         (for-each (lambda (form)
                     (pp form)
                     (newline)) output)))
-    (cf "frobnozzle.scm")
+    (cf output-base)
     ;; TODO Actually loading this into the currently running Scheme
     ;; redefines the gensym structure, leading to trouble.
-    (load "frobnozzle")))
+    (load output-base)))
 
-(define (fol->mit-scheme program)
+(define (fol->mit-scheme program #!optional output-base)
+  (if (default-object? output-base)
+      (set! output-base "frobnozzle"))
   (let ((output `((declare (usual-integrations))
                   (let () ,@(cdr program))))) ; definitions become internal
-    (with-output-to-file "frobnozzle.scm"
+    (with-output-to-file (string-append output-base ".scm")
       (lambda ()
         (for-each (lambda (form)
                     (pp form)
                     (newline)) output)))
     (fluid-let ((sf/default-syntax-table (nearest-repl/environment)))
-      (cf "frobnozzle"))))
+      (cf output-base))))
 
-(define (run-mit-scheme)
-  (load "frobnozzle"))
+(define (run-mit-scheme #!optional output-base)
+  (if (default-object? output-base)
+      (set! output-base "frobnozzle"))
+  (load output-base))
 
 (define (flonumize program)
   (define floating-versions
@@ -389,5 +395,5 @@
                    ,@bindings2)
                ,@(replace-free-occurrences name exp body)))))))
 
-(define (fol->floating-mit-scheme program)
-  (fol->mit-scheme (flonumize program)))
+(define (fol->floating-mit-scheme program #!optional output-base)
+  (fol->mit-scheme (flonumize program) output-base))
