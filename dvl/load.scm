@@ -90,5 +90,6 @@
 (define (dvl-run-file filename)
   (let* ((program (dvl-read-file filename))
          (compiled-program (compile-to-scheme program)))
-    (fol->floating-mit-scheme compiled-program filename)
-    (pp (run-mit-scheme filename))))
+    (let ((scm-file (->namestring (pathname-new-type filename #f))))
+      (fol->floating-mit-scheme compiled-program scm-file)
+      (pp (run-mit-scheme scm-file)))))
