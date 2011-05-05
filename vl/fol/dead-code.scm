@@ -332,11 +332,7 @@
   (tidy-begin
    `(begin
       ,@(except-last-pair defns)
-      ,((rule `(define (%%main)
-                 (argument-types (? whatever))
-                 (? expr))
-              expr)
-        (last defns)))))
+      ,(cadddr (last defns)))))
 
 (define (interprocedural-dead-code-elimination program)
   (let* ((defns (program->procedure-definitions program))

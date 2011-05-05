@@ -75,7 +75,7 @@
 ;; digital orrery should take about 20 hours of compute, assuming
 ;; perfect serial utilization.
 
-(naive-euler initial-state state-derivative step-size (real 1000000))
+(naive-euler initial-state state-derivative step-size (real 10000000))
 
 #|
 On khazad-dum, Apr 4, 2011:

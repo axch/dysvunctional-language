@@ -21,11 +21,12 @@
 (define (fol-optimize program)
   ((lambda (x) x) ; This makes the last stage show up in the stack sampler
    (tidy
-    (eliminate-intraprocedural-dead-variables
-     (intraprocedural-de-alias
-      (scalar-replace-aggregates
-       (inline                          ; includes ALPHA-RENAME
-        program)))))))
+    (interprocedural-dead-code-elimination
+     (eliminate-intraprocedural-dead-variables
+      (intraprocedural-de-alias
+       (scalar-replace-aggregates
+        (inline                         ; includes ALPHA-RENAME
+         program))))))))
 
 ;;; The stages have the following structure and interrelationships:
 ;;;
@@ -188,7 +189,10 @@
 
 ;;;; Term-rewriting tidier
 
-(define tidy-begin (rule `(begin (? body)) body))
+(define (tidy-begin form)
+  (if (and (begin-form? form) (null? (cddr form)))
+      (cadr form)
+      form))
 (define empty-let-rule (rule `(let () (? body)) body))
 
 ;; This is safe assuming the program has unique bound names; if not,
@@ -287,19 +291,20 @@
 (define (compile-visibly program)
   ((lambda (x) x) ; This makes the last stage show up in the stack sampler
    ((fol-stage tidy)
-    ((fol-stage eliminate-intraprocedural-dead-variables)
-     ((fol-stage intraprocedural-de-alias)
-      ((fol-stage scalar-replace-aggregates)
-       ((fol-stage inline)                        ; includes ALPHA-RENAME
-        ((fol-stage structure-definitions->vectors)
-         (let ((raw-fol ((fol-stage analyze-and-generate)
-                         program)))
-           (clear-name-caches!)
-           raw-fol)))))))))
+    ((fol-stage interprocedural-dead-code-elimination)
+     ((fol-stage eliminate-intraprocedural-dead-variables)
+      ((fol-stage intraprocedural-de-alias)
+       ((fol-stage scalar-replace-aggregates)
+        ((fol-stage inline)             ; includes ALPHA-RENAME
+         ((fol-stage structure-definitions->vectors)
+          (let ((raw-fol ((fol-stage analyze-and-generate)
+                          program)))
+            (clear-name-caches!)
+            raw-fol))))))))))
 
 ;;;; Compilation with MIT Scheme
 
-(define (fol->mit-scheme program)
+(define (fol->standalone-mit-scheme program)
   (let* ((srfi-11 (read-source "../vl/fol/srfi-11.scm"))
          (runtime (read-source "../vl/fol/runtime.scm"))
          (output
@@ -316,3 +321,73 @@
     ;; TODO Actually loading this into the currently running Scheme
     ;; redefines the gensym structure, leading to trouble.
     (load "frobnozzle")))
+
+(define (fol->mit-scheme program)
+  (let ((output `((declare (usual-integrations))
+                  (let () ,@(cdr program))))) ; definitions become internal
+    (with-output-to-file "frobnozzle.scm"
+      (lambda ()
+        (for-each (lambda (form)
+                    (pp form)
+                    (newline)) output)))
+    (fluid-let ((sf/default-syntax-table (nearest-repl/environment)))
+      (cf "frobnozzle"))))
+
+(define (run-mit-scheme)
+  (load "frobnozzle"))
+
+(define (flonumize program)
+  (define floating-versions
+    (cons (cons 'atan 'flo:atan2)
+          (map (lambda (name)
+                 (cons name (symbol 'flo: name)))
+               '(+ - * / < = > <= >= abs exp log sin cos tan asin acos
+                   sqrt expt zero? negative? positive?))))
+  (define (arithmetic? expr)
+    (and (pair? expr)
+         (assq (car expr) floating-versions)))
+  (define (real-call? expr)
+    (and (pair? expr)
+         (eq? (car expr) 'real)))
+  (define (replace thing)
+    (cdr (assq thing floating-versions)))
+  (define (loop expr)
+    (cond ((number? expr) (exact->inexact expr))
+          ((access? expr) `(,(car expr) ,(loop (cadr expr)) ,@(cddr expr)))
+          ((arithmetic? expr)
+           `(,(replace (car expr)) ,@(map loop (cdr expr))))
+          ((real-call? expr)
+           (loop (cadr expr)))
+          ((pair? expr) (map loop expr))
+          (else expr)))
+  (loop program))
+
+;;; Manually integrating arithmetic to avoid binding variables to hold
+;;; intermediate floating point values, in the hopes that this will
+;;; improve compiled floating point performance in MIT Scheme.  It did
+;;; not, however, appear to have worked.
+(define integrate-arithmetic
+  (let ((arithmetic?
+         (lambda (symbol)
+           (memq symbol '(+ - * / < = > <= >= abs exp log sin cos tan asin acos
+                            atan sqrt expt zero? negative? positive? real)))))
+    (define (all-arithmetic? expr)
+      (cond ((pair? expr)
+             (and (arithmetic? (car expr))
+                  (every all-arithmetic? (cdr expr))))
+            ((number? expr) #t)
+            ((fol-var? expr) #t)
+            (else #f)))
+    (rule-simplifier
+     (list
+      empty-let-rule
+      (rule `(let ((?? bindings1)
+                   ((? name ,fol-var?) (? exp ,all-arithmetic?))
+                   (?? bindings2))
+               (?? body))
+            `(let (,@bindings1
+                   ,@bindings2)
+               ,@(replace-free-occurrences name exp body)))))))
+
+(define (fol->floating-mit-scheme program)
+  (fol->mit-scheme (flonumize program)))

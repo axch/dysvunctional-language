@@ -157,6 +157,9 @@
         (let-values (((x y) (foo)))
           y))))
 
+   (equal? #f (procedure-definitions->program
+               (program->procedure-definitions #f)))
+
    (equal?
     '(begin
        (define (fact n)
