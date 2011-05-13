@@ -1,19 +1,4 @@
-Compilation with MIT Scheme
-- Interprocedural must-alias analysis?
-  - Can this collapse identical perturbations and recover tower mode on
-    (D (D (lambda (x) ...)))?
-  - Can this collapse primals and recover stack tangent mode?
-- Interprocedural dead variable elimination
-  - Need to hand the i/o-need-map to the final round of
-    intraprocedural dead variable elimination so it can kill
-    expressions that would compute arguments that other callers need
-    to supply but this caller does not.
-- Analysis-time dead variable elimination??
-- Solved gensyms?  Is this actually possible?
-
-Compilation with MIT Scheme and floating-only numerics?
-
-----------------------------------------------------------------------
+Pull FOL stuff into its own environment
 
 Expository explanations
 - Push TIDY into its own file?
@@ -43,6 +28,13 @@ NB: The reason that some of my recursions are broken into expression
   place that introduces bindings with letrec scope.
 
 ----------------------------------------------------------------------
+
+Compilation with MIT Scheme
+- Interprocedural must-alias analysis?
+  - Can this collapse identical perturbations and recover tower mode on
+    (D (D (lambda (x) ...)))?
+  - Can this collapse primals and recover stack tangent mode?
+- Solved gensyms?  Is this actually possible?
 
 The next step both for good output and fast compilation is:
 
