@@ -42,7 +42,7 @@
 ;;; the body of the LET can be transformed.  LET-VALUES are analagous,
 ;;; but take parallel lists of canonical objects.  Because this is an
 ;;; intraprocedural alias elimination, procedure applications are
-;;; assume to always produce non-canonical objects, and procedure
+;;; assumed to always produce non-canonical objects, and procedure
 ;;; formal parameters are always assumed not to be aliases.
 
 (define (intraprocedural-de-alias program)
@@ -231,3 +231,34 @@
 
 (define (non-alias? thing)
   (eq? the-non-alias thing))
+
+;;; Must-alias analysis is a subset of common subexpression
+;;; elimination.  The de-aliasing recursion can be extended to being
+;;; full common subexpression elimination as follows.  Replace the
+;;; concept of "non-canonical object" with "symbolic expression of
+;;; other canonical objects".  Bring down a table of which symbolic
+;;; expressions have which canonical names.  Return up, along with the
+;;; rewritten subexpression, the minimal symbolic expression that
+;;; describes what this expression returns in terms of existing
+;;; in-scope canonical objects.  At procedure calls: cons up the
+;;; symbolic expression for what that procedure does to its arguments.
+;;; If that symbolic expression already exists in the table, the call
+;;; can be replaced with a reference to that canonical name, and that
+;;; canonical name can be returned.  If not, return that expression.
+;;; Impure procedures should always synthesize new symbolic answers,
+;;; that won't register as existing in the table (but may if they are
+;;; then themselves aliased).  If a LET expression returns a single
+;;; in-scope, then the bound variable has that name as its canonical
+;;; name.  If not, the bound variable becomes the new canonical name
+;;; for that expression.  IFs are not different from procedure calls
+;;; (except that if the consequent and alternate are the same
+;;; expression, then that's the result of the whole IF).  Accesses
+;;; invert the canonical expressions that are the corresponding
+;;; constructions in the appropriate way.  This whole thing will work
+;;; a whole lot better if the input is in A-normal form, because
+;;; intermediate values will always get names, and there will be a
+;;; maximum of opportunities for detecting commonalities.  It will
+;;; probably also work better if all lets are lifted, because then
+;;; previously computed subexpressions will spend more time in scope.
+;;; In the place where I said "minimal symbolic expression", there is
+;;; ample room for algebraic simplification, if desired.
