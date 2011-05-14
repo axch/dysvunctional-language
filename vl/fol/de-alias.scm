@@ -467,6 +467,13 @@
      ;; same expression to multiple names.
      (let ((symbolic (cse-canonical env symbolic)))
        (if (acceptable-alias? symbolic)
+           ;; Somewhere around here I can also accumulate information
+           ;; of the form "this value has had the following names over
+           ;; its lifetime".  Such information would be useful for
+           ;; picking representative names to use for the final
+           ;; output, so as to try and preserve the names originally
+           ;; chosen by the user, for legibility of the output.  This
+           ;; idea is due to Taylor Campbell.
            (hash-table/put! env name symbolic)
            (begin
              (hash-table/put! env name name)
