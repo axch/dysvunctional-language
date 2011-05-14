@@ -11,8 +11,10 @@
 ;;; - INTRAPROCEDURAL-CSE
 ;;;   Eliminate common subexpressions (including redundant variables
 ;;;   that are just aliases of other variables or constants).
-;;; - INTRAPROCEDURAL-DEAD-VARIABLE-ELIMINATION
+;;; - ELIMINATE-INTRAPROCEDURAL-DEAD-VARIABLES
 ;;;   Eliminate dead code.
+;;; - INTERPROCEDURAL-DEAD-VARIABLE-ELIMINATION
+;;;   Eliminate dead code across procedure boundaries.
 ;;; - TIDY
 ;;;   Clean up and optimize locally by term-rewriting.  This includes
 ;;;   a simple-minded reverse-anf which inlines bindings of variables
@@ -129,6 +131,9 @@
 ;;; common subexpressions.
 ;;;
 ;;; Eliminate then eliminate: Dead variable elimination is idempotent.
+;;; The intraprocedural version is run first because it's faster and
+;;; reduces the amount of work the interprocedural version would do
+;;; while deciding what's dead and what isn't.
 ;;;
 ;;; Eliminate then tidy: Dead variable elimination exposes tidying
 ;;; opportunities, for example by collapsing intervening LETs or by
@@ -412,5 +417,8 @@
                    ,@bindings2)
                ,@(replace-free-occurrences name exp body)))))))
 
+;;; Note: The semantics of a flonumized FOL program are different than
+;;; those of one executed straight, because of differences in the
+;;; interpretation of numbers.
 (define (fol->floating-mit-scheme program #!optional output-base)
   (fol->mit-scheme (flonumize program) output-base))

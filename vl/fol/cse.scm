@@ -144,6 +144,9 @@
         (lambda (new-cons symbolic-cons)
           (loop (cadddr expr) env
            (lambda (new-alt symbolic-alt)
+             ;; TODO SYMBOLIC-IF detects cases where both branches of
+             ;; the IF are equal.  Do I want to simplify the returned
+             ;; IF expression in that case?
              (win `(if ,new-pred ,new-cons ,new-alt)
                   (symbolic-if symbolic-pred symbolic-cons symbolic-alt)))))))))
   (define (cse-let expr env win)
