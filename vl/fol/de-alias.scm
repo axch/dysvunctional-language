@@ -444,6 +444,9 @@
 
 (define (symbolic-if pred cons alt)
   (if (equal? cons alt)
+      ;; This is somewhat dangerous, if evaluating the predicate might
+      ;; have had some interesting effect like signaling a divide by
+      ;; zero error.
       cons
       (if (and (values-form? cons)
                (values-form? alt))

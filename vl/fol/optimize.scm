@@ -8,9 +8,9 @@
 ;;;   Inline non-recursive function definitions.
 ;;; - SCALAR-REPLACE-AGGREGATES
 ;;;   Replace aggregates with scalars.
-;;; - INTRAPROCEDURAL-DE-ALIAS
-;;;   Eliminate redundant variables that are just aliases of other
-;;;   variables or constants.
+;;; - INTRAPROCEDURAL-CSE
+;;;   Eliminate common subexpressions (including redundant variables
+;;;   that are just aliases of other variables or constants).
 ;;; - INTRAPROCEDURAL-DEAD-VARIABLE-ELIMINATION
 ;;;   Eliminate dead code.
 ;;; - TIDY
@@ -23,7 +23,7 @@
    (tidy
     (interprocedural-dead-code-elimination
      (eliminate-intraprocedural-dead-variables
-      (intraprocedural-de-alias
+      (intraprocedural-cse
        (scalar-replace-aggregates
         (inline                         ; includes ALPHA-RENAME
          program))))))))
@@ -42,11 +42,11 @@
 ;;; each other any excess work.  The following table summarizes these
 ;;; relationships.
 #|
-|          | Inline        | SRA         | de-alias  | dead var | tidy   |
+|          | Inline        | SRA         | CSE       | dead var | tidy   |
 |----------+---------------+-------------+-----------+----------+--------|
 | Inline   | almost idem   | no effect   | expose    | expose   | expose |
 | SRA      | extra aliases | almost idem | expose    | expose   | expose |
-| de-alias | no effect     | no effect   | idem      | expose   | expose |
+| CSE      | no effect     | no effect   | idem      | expose   | expose |
 | dead var | ~ expose      | no effect   | no effect | idem     | expose |
 | tidy     | ~ expose      | form fight  | ~ expose  | ~ expose | idem   |
 |#
@@ -76,8 +76,8 @@
 ;;; procedure boundaries.
 ;;;
 ;;; Inline then others: Inlining exposes some interprocedural aliases,
-;;; dead code, and tidying opportunities to intraprocedural methods by
-;;; collapsing some procedure boundaries.
+;;; common subexpressions, dead code, and tidying opportunities to
+;;; intraprocedural methods by collapsing some procedure boundaries.
 ;;;
 ;;; SRA then Inline: Inlining gives explicit names (former formal
 ;;; parameters) to the argument expressions of the procedure calls
@@ -95,25 +95,26 @@
 ;;; idempotent.
 ;;; 
 ;;; SRA then others: SRA converts structure slots to variables,
-;;; thereby exposing any aliases, dead code, or tidying opportunities
-;;; over those structure slots to the other stages, which focus
-;;; exclusively on variables.
+;;; thereby exposing any aliases, common subexpressions, dead code, or
+;;; tidying opportunities over those structure slots to the other
+;;; stages, which focus exclusively on variables.
 ;;;
-;;; De-alias then others: De-aliasing is idempotent, does not create
-;;; inlining opportunities, and does not create SRA opportunities.
+;;; CSE then others: CSE is idempotent, does not create inlining
+;;; opportunities, and does not create SRA opportunities.
 ;;;
-;;; De-alias then eliminate: Formally, the job of de-aliasing is
-;;; just to rename references to aliases to refer to the objects they
-;;; are aliases of, so that the bindings of the aliases themselves can
-;;; be cleaned up by dead variable elimination.  The particular
-;;; de-aliasing program implemented here opportunistically eliminates
-;;; most of those alias bindings itself, but it does leave a few
-;;; aliases around to be cleaned up by dead variable elimination, in
-;;; the case where some names bound by a multiple value binding form
-;;; are aliases but others are not.
+;;; CSE then eliminate: Formally, the job of common subexpression
+;;; elimination is just to rename groups of references to some
+;;; (possibly computed) object to refer to one representative variable
+;;; holding that object, so that the bindings of the others can be
+;;; cleaned up by dead variable elimination.  The particular CSE
+;;; program implemented here opportunistically eliminates most of
+;;; those dead bindings itself, but it does leave a few around to be
+;;; cleaned up by dead variable elimination, in the case where some
+;;; names bound by a multiple value binding form are dead but others
+;;; are not.
 ;;;
-;;; De-alias then tidy: De-aliasing exposes tidying opportunities, for
-;;; example by constant propagation.
+;;; CSE then tidy: CSE exposes tidying opportunities, for example by
+;;; constant propagation.
 ;;;
 ;;; Eliminate then inline: Dead variable elimination may delete edges
 ;;; in the call graph (if the result of a called procedure turned out
@@ -124,8 +125,8 @@
 ;;; eliminated dead structures or structure slots and were willing to
 ;;; change the type graph accordingly).
 ;;;
-;;; Eliminate then de-alias: Dead variable elimination does not expose
-;;; aliases.
+;;; Eliminate then CSE: Dead variable elimination does not expose
+;;; common subexpressions.
 ;;;
 ;;; Eliminate then eliminate: Dead variable elimination is idempotent.
 ;;;
@@ -144,10 +145,11 @@
 ;;; indefinitely over the "normal form" of a program, each appearing
 ;;; to change it while neither doing anything useful.
 ;;;
-;;; Tidy then de-alias: Tidying may expose aliases by removing
-;;; intervening arithmetic.  For example, in (let ((x (+ 0 y))) ...),
-;;; x would not register as an alias of y until after tidying (+ 0 y)
-;;; to y.
+;;; Tidy then CSE: Tidying may in general expose common subexpressions
+;;; by removing intervening arithmetic.  For example, in (let ((x (* 0
+;;; y))) ...), x would not register as in common with 0 until after
+;;; tidying (* 0 y) to 0.  More such algebra might be migratable into
+;;; the CSE program itself, if desired.
 ;;;
 ;;; Tidy then eliminate: Tidying may expose dead variables by
 ;;; collapsing (* 0 foo) to 0 or by collapsing (if foo bar bar) to
@@ -300,7 +302,7 @@
    ((fol-stage tidy)
     ((fol-stage interprocedural-dead-code-elimination)
      ((fol-stage eliminate-intraprocedural-dead-variables)
-      ((fol-stage intraprocedural-de-alias)
+      ((fol-stage intraprocedural-cse)
        ((fol-stage scalar-replace-aggregates)
         ((fol-stage inline)             ; includes ALPHA-RENAME
          ((fol-stage structure-definitions->vectors)

@@ -62,9 +62,9 @@
          (inlined ((fol-carefully inline) vectors-fol answer))
          (anf ((fol-carefully approximate-anf) inlined answer))
          (scalars (scalar-replace-aggregates anf)) ; SRA is not idempotent
-         (aliases ((fol-carefully intraprocedural-de-alias) scalars answer))
+         (cse ((fol-carefully intraprocedural-cse) scalars answer))
          (variables ((fol-carefully eliminate-intraprocedural-dead-variables)
-                     aliases answer))
+                     cse answer))
          (more-variables ((fol-carefully interprocedural-dead-code-elimination)
                           variables answer))
          (tidied ((fol-carefully tidy) more-variables answer)))
@@ -76,7 +76,7 @@
     (check (unique-names? inlined))
     (check (unique-names? anf))
     (check (unique-names? scalars))
-    (check (unique-names? aliases))
+    (check (unique-names? cse))
     (check (unique-names? variables))
     (check (unique-names? more-variables))
     (check (unique-names? tidied))
@@ -85,7 +85,7 @@
     ;; possibly dead code elimination and tidying)
     (check (equal? anf (inline anf)))
     (check (equal? scalars (inline scalars)))
-    (check (equal? aliases (inline aliases)))
+    (check (equal? cse (inline cse)))
 
     ;; Except for reconstruction of the structure that the outside
     ;; world expects, SRA and subsequent stages (except tidying)
@@ -93,7 +93,7 @@
     (if (not (pair? answer))
         (begin
           (check (approximate-anf? scalars))
-          (check (approximate-anf? aliases))
+          (check (approximate-anf? cse))
           (check (approximate-anf? variables))
           (check (approximate-anf? more-variables))))
 
@@ -103,7 +103,7 @@
     (if (not (pair? answer))
         (begin
           (check (equal? scalars (scalar-replace-aggregates scalars)))
-          (check (equal? aliases (scalar-replace-aggregates aliases)))
+          (check (equal? cse (scalar-replace-aggregates cse)))
           (check (equal? variables (scalar-replace-aggregates variables)))
           (check (equal? more-variables
                          (scalar-replace-aggregates more-variables)))))
@@ -113,23 +113,24 @@
     ;; Inlining commutes with ANF up to removal of aliases.  Why
     ;; aliases?  Because inlining saves ANF work by naming the
     ;; expressions that are arguments to inlined procedures.
-    (check (alpha-rename? (intraprocedural-de-alias anf)
-                          (intraprocedural-de-alias anf-then-inline)))
+    (check (alpha-rename? (intraprocedural-cse anf)
+                          (intraprocedural-cse anf-then-inline)))
 
     ;; Inlining also preserves ANF
     (check (approximate-anf? anf-then-inline))
 
     ;; Likewise, inlining commutes with the ANF-SRA pair.
     (check (alpha-rename?
-            (intraprocedural-de-alias scalars)
-            (intraprocedural-de-alias
+            (intraprocedural-cse scalars)
+            (intraprocedural-cse
              (inline
               (scalar-replace-aggregates
                (approximate-anf (alpha-rename vectors-fol)))))))
 
-    ;; Dead variable elimination does not introduce new aliases.
-    (check (equal? variables (intraprocedural-de-alias variables)))
-    (check (equal? more-variables (intraprocedural-de-alias more-variables)))
+    ;; Dead variable elimination does not introduce new common
+    ;; subexpressions.
+    (check (equal? variables (intraprocedural-cse variables)))
+    (check (equal? more-variables (intraprocedural-cse more-variables)))
 
     tidied))
 
