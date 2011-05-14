@@ -445,7 +445,12 @@
 (define (symbolic-if pred cons alt)
   (if (equal? cons alt)
       cons
-      `(if ,pred ,cons ,alt)))
+      (if (and (values-form? cons)
+               (values-form? alt))
+          `(values ,@(map (lambda (sub-cons sub-alt)
+                            (symbolic-if pred sub-cons sub-alt))
+                          (cdr cons) (cdr alt)))
+          `(if ,pred ,cons ,alt))))
 
 (define-structure unique-expression)
 (define unique-expression (make-unique-expression))
