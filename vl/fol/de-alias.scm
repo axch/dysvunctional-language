@@ -1,80 +1,85 @@
 (declare (usual-integrations))
-;;;; Alias elimination
+;;;; Common subexpression elimination
 
-;;; Alias elimination is the process of removing variables that can be
-;;; statically determined to always contain the same values as other
-;;; variables, or as constants.  This can also be called constant
-;;; propagation and copy propagation.  Alias elimination is very
-;;; important in compiling FOL, because between them the A-normal form
-;;; conversion and the subsequent scalar replacement of aggregates
-;;; introduce a huge number of variables, many of which end up being
-;;; aliases.
+;;; Common subexpression elimination (CSE) is the process of removing
+;;; expressions that can be statically determined to always return the
+;;; same values as are already stored in in-scope variables (where a
+;;; constant stores itself and is always in scope).  This includes
+;;; constant propagation and copy propagation as special cases with
+;;; trivial common subexpressions.  Common subexpression elimination
+;;; is very important in compiling FOL, because between them the
+;;; A-normal form conversion and the subsequent scalar replacement of
+;;; aggregates introduce a huge number of variables, many of which end
+;;; up being just aliases of other variables, and thus removable.
+;;; Also, the interaction of the flow analysis making multiple
+;;; variants of a procedure and the inliner inlining them can generate
+;;; more interesting common subexpressions.
 
-;;; I only do intraprocedural alias elimination.  Interprocedural
-;;; alias elimination is substantially hairier.  I will probably need
-;;; it eventually, but I can do without for now.
+;;; I only do intraprocedural CSE.  Interprocedural CSE is
+;;; substantially hairier.  I will probably need it eventually (to
+;;; eliminate interprocedural aliases, if nothing else), but I can do
+;;; without for now.
 
-;;; Intraprocedural alias elimination is a structural recursion over
-;;; the code, walking LET bindings before LET bodies.  The recursion
-;;; carries down an environment mapping every bound name to the
-;;; canonical object of which it is an alias (itself, in the case of
-;;; non-aliases).  This environment is also used to detect when some
-;;; name is not in scope somewhere.  The recursive call returns the
-;;; de-aliased subexpression and also the canonical object of which
-;;; the return value of the subexpression is an alias, or a sentinel
-;;; if the subexpression does not return such an object (for example,
-;;; procedure calls or IF statements with sufficiently different
-;;; branches).  The canonical object may be a list to handle multiple
-;;; value returns and corresponding parallel bindings.
+;;; Intraprocedural CSE is a structural recursion over the code,
+;;; walking LET bindings before LET bodies.  The recursion carries
+;;; down an environment mapping every computed expression to the
+;;; canonical variable storing the result of that expression.  Special
+;;; circumstances: a variable mapped to itself is the canonical name
+;;; for whatever object it holds; a variable mapped to something else
+;;; is an alias; all variables that are keys are in scope; if an
+;;; expression does not occur as a key, then it is fresh, in the sense
+;;; that no in-scope variable already stores the value it would
+;;; compute.  The recursive call returns the CSE'd subexpression and
+;;; also the (canonized) expression said subexpression computes (there
+;;; is ample potential for algebraic simplification here, but beware
+;;; floating point).  This may also be a sentinel meaning "this
+;;; expression is not pure, so do not eliminate copies of it".  The
+;;; expression may be a values-form to handle multiple value returns
+;;; and corresponding parallel bindings.
 
-;;; In this setup, a constant becomes itself and is its own canonical
-;;; object.  A variable reference becomes and forwards its canonical
-;;; object (which may be itself if the variable is not an alias).
-;;; Multiple value returns aggregate lists of canonical objects.  IF
-;;; forms intersect the canonical object lists of their branches: if
-;;; different branches may return different things in the same slot,
-;;; that slot is marked as not canonical (meaning whatever value it
-;;; will be bound to is not an alias).  LET forms process their
-;;; binding form first.  If the binding form is a canonical object
-;;; that is in scope in the whole LET expression, then the bound
-;;; variable is an alias to that object and can be so marked;
-;;; otherwise the variable is not an alias.  This being determined,
-;;; the body of the LET can be transformed.  LET-VALUES are analagous,
-;;; but take parallel lists of canonical objects.  Because this is an
-;;; intraprocedural alias elimination, procedure applications are
-;;; assumed to always produce non-canonical objects, and procedure
-;;; formal parameters are always assumed not to be aliases.
+;;; In this setup:
+;;; - A constant becomes itself and is its own canonical variable.
+;;; - A variable reference becomes and forwards its canonical
+;;;   variable (which may be itself if the variable is not an alias).
+;;; - Multiple value returns aggregate lists of canonized expressions.
+;;; - LET forms process their binding form first.  If the binding
+;;;   form's expression is a variable or constant that is in scope in
+;;;   the whole LET expression, then the bound variable is an alias to
+;;;   that object and can be so marked; otherwise the variable is not
+;;;   an alias, but becomes the canonical variable for itself and for
+;;;   whatever expression the body computed (unless that computation
+;;;   was impure).  This being determined, the body of the LET can be
+;;;   transformed.
+;;; - LET-VALUES are analagous, but take parallel lists of expressions
+;;;   (except in the case where a procedure boundary intervenes
+;;;   between the VALUES and the LET-VALUES).
+;;; - Procedure applications are the places where new expressions get
+;;;   constructed.  If the expression describing the value this
+;;;   procedure computes from its arguments is stored in an in-scope
+;;;   canonical variable, then this procedure call can be replaced by
+;;;   a reference to that variable.  If not, the call is left as is
+;;;   and the expression is returned (presumably some variable will
+;;;   soon become the canonical variable holding this expression, when
+;;;   the value returned by the procedure is bound).
+;;; - IF forms are analagous to procedures, with the simplification
+;;;   being that if both branches are equal then the test can be
+;;;   elided (IFs also map into multivalue returns when possible).
+;;; - Accesses are also analagous to procedures, with the
+;;;   simplification being to invert the canonical expressions that
+;;;   are the corresponding constructions in the appropriate way.
+;;;   This is not implemented yet, but doesn't much matter if CSE
+;;;   follows SRA.
 
-;;; Must-alias analysis is a subset of common subexpression
-;;; elimination.  The de-aliasing recursion can be extended to being
-;;; full common subexpression elimination as follows.  Replace the
-;;; concept of "non-canonical object" with "symbolic expression of
-;;; other canonical objects".  Bring down a table of which symbolic
-;;; expressions have which canonical names.  Return up, along with the
-;;; rewritten subexpression, the minimal symbolic expression that
-;;; describes what this expression returns in terms of existing
-;;; in-scope canonical objects.  At procedure calls: cons up the
-;;; symbolic expression for what that procedure does to its arguments.
-;;; If that symbolic expression already exists in the table, the call
-;;; can be replaced with a reference to that canonical name, and that
-;;; canonical name can be returned.  If not, return that expression.
-;;; Impure procedures should always synthesize new symbolic answers,
-;;; that won't register as existing in the table (but may if they are
-;;; then themselves aliased).  If a LET expression returns a single
-;;; in-scope, then the bound variable has that name as its canonical
-;;; name.  If not, the bound variable becomes the new canonical name
-;;; for that expression.  IFs are not different from procedure calls
-;;; (except that if the consequent and alternate are the same
-;;; expression, then that's the result of the whole IF).  Accesses
-;;; invert the canonical expressions that are the corresponding
-;;; constructions in the appropriate way.  This whole thing will work
-;;; a whole lot better if the input is in A-normal form, because
-;;; intermediate values will always get names, and there will be a
-;;; maximum of opportunities for detecting commonalities.  It will
-;;; probably also work better if all lets are lifted, because then
-;;; previously computed subexpressions will spend more time in scope.
-;;; In the place where I said "minimal symbolic expression", there is
-;;; ample room for algebraic simplification, if desired.
+;;; Because this is an intraprocedural common subexpression
+;;; elimination, user procedures are not studied, but always assumed
+;;; to be impure; and incoming procedure formal parameters are always
+;;; assumed to be their own canonical variables (in particular, not
+;;; aliases of each other).  This whole thing will work a whole lot
+;;; better if the input is in A-normal form, because intermediate
+;;; values will always get names, and there will be a maximum of
+;;; opportunities for detecting commonalities.  It will probably also
+;;; work better if all lets are lifted, because then previously
+;;; computed subexpressions will spend more time in scope.
 
 (define (intraprocedural-cse program)
   (define (cse-entry-point expression)
