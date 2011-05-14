@@ -262,3 +262,214 @@
 ;;; previously computed subexpressions will spend more time in scope.
 ;;; In the place where I said "minimal symbolic expression", there is
 ;;; ample room for algebraic simplification, if desired.
+
+(define (intraprocedural-cse program)
+  (define (cse-entry-point expression)
+    (cse-expression expression (empty-cse-env)))
+  (define cse-definition
+    (rule `(define ((? name ,fol-var?) (?? formals))
+             (argument-types (?? stuff))
+             (? body))
+          `(define (,name ,@formals)
+             (argument-types ,@stuff)
+             ,(cse-expression body (fresh-cse-env formals)))))
+  (if (begin-form? program)
+      (append
+       (map cse-definition (except-last-pair program))
+       (list (cse-entry-point (last program))))
+      (cse-entry-point program)))
+
+(define (cse-expression expr env)
+  ;; A CSE environment is not like a normal environment.  This
+  ;; environment maps every symbolic expression to the name of the
+  ;; canonical variable that holds that expression, if any (notes: an
+  ;; expression whose value is a known constant will be mapped to that
+  ;; constant; a variable may be mapped to itself to indicate that it
+  ;; holds something that no previously computed variable holds).  It
+  ;; is important to know when such an environment does not bind a
+  ;; variable at all; that means that variable in not in scope here
+  ;; (constants are always in scope).
+  (define (merge-name-lists names1 names2) ; <-- symbolic-if
+    (if (or (non-alias? names1) (non-alias? names2))
+        the-non-alias
+        (map (lambda (name1 name2)
+               (if (eq? name1 name2)
+                   name1
+                   the-non-alias))
+             names1 names2)))
+  ;; This is written in continuation passing style because recursive
+  ;; calls must return two things.  The win continuation accepts the
+  ;; new, CSE'd expression, the symbolic expression representing the
+  ;; return value from this expression (the symbolic expressions for
+  ;; the elements of a multivalue return are held in a parallel list).
+  (define (loop expr env win)
+    (cond ((fol-var? expr)
+           (cse-fol-var expr env win))
+          ((number? expr)
+           (win expr expr))
+          ((boolean? expr)
+           (win expr expr))
+          ((null? expr)
+           (win expr expr))
+          ((if-form? expr)
+           (cse-if expr env win))
+          ((let-form? expr)
+           (cse-let expr env win))
+          ((let-values-form? expr)
+           (cse-let-values expr env win))
+          ((values-form? expr)
+           (cse-values expr env win))
+          (else ; general application
+           (cse-application expr env win))))
+  (define (cse-fol-var expr env win)
+    (let ((alias-binding (find-alias expr env)))
+      (if alias-binding
+          (win (cdr alias-binding) (cdr alias-binding))
+          (error "Trying to cse an unbound variable" expr env))))
+  (define (cse-if expr env win)
+    (loop (cadr expr) env
+     (lambda (new-pred symbolic-pred)
+       (loop (caddr expr) env
+        (lambda (new-cons symbolic-cons)
+          (loop (cadddr expr) env
+           (lambda (new-alt symbolic-alt)
+             (win `(if ,new-pred ,new-cons ,new-alt)
+                  (symbolic-if symbolic-pred symbolic-cons symbolic-alt)))))))))
+  (define (cse-let expr env win)
+    (let ((bindings (cadr expr))
+          (body (caddr expr)))
+      (loop* (map cadr bindings) env
+       (lambda (new-bind-expressions bound-symbolics)
+         (augment-cse-env env (map car bindings) bound-symbolics
+          (lambda (env dead-bindings)
+            (loop body env
+             (lambda (new-body body-symbolic)
+               (degment-cse-env! env (map car bindings))
+               (win (empty-let-rule
+                     `(let ,(filter-map
+                             (lambda (name dead? expr)
+                               (and (not dead?)
+                                    (list name expr)))
+                             (map car bindings)
+                             dead-bindings
+                             new-bind-expressions)
+                        ,new-body))
+                    body-symbolic)))))))))
+  (define (cse-let-values expr env win)
+    (let* ((binding (caadr expr))
+           (names (car binding))
+           (subexpr (cadr binding))
+           (body (caddr expr)))
+      (loop subexpr env
+       (lambda (new-subexpr subexpr-symbolic)
+         (augment-cse-env env names subexpr-symbolic
+          (lambda (env dead-bindings)
+            (loop body env
+             (lambda (new-body body-symbolic)
+               ;; DEAD-BINDINGS tells me which of these bindings
+               ;; are guaranteed to be dead because the variables
+               ;; being bound are aliases and have already been
+               ;; replaced in the new body.  I could eliminate them,
+               ;; but that would require traversing subexpr again to
+               ;; look for the VALUES that supplies the corresponding
+               ;; values.  For now, I will just kill the whole
+               ;; let-values if it is useless.
+               (degment-cse-env! env names)
+               (win (if (any not dead-bindings)
+                        `(let-values ((,names ,new-subexpr))
+                           ,new-body)
+                        new-body)
+                    body-symbolic)))))))))
+  (define (cse-values expr env win)
+    (loop* (cdr expr) env
+     (lambda (exprs symbolics)
+       (win `(values ,@exprs) symbolics))))
+  (define (cse-application expr env win)
+    (loop* (cdr expr) env
+     (lambda (new-args args-symbolics)
+       (let* ((symb-candidate (symbolic-application (car expr) args-symbolics))
+              (symbolic (cse-canonical env symb-candidate)))
+         (win (if (or (fol-var? symbolic) (fol-const? symbolic))
+                  symbolic
+                  `(,(car expr) ,@new-args))
+              symbolic)))))
+  (define (loop* exprs env win)
+    (if (null? exprs)
+        (win '() '())
+        (loop (car exprs) env
+         (lambda (new-expr expr-symbolic)
+           (loop* (cdr exprs) env
+            (lambda (new-exprs expr-symbolics)
+              (win (cons new-expr new-exprs)
+                   (cons expr-symbolic expr-symbolics))))))))
+  (loop expr env (lambda (new-expr symbolic)
+                   ;; The symbolic expression might be useful to an
+                   ;; interprocedural CSE crunch.
+                   new-expr)))
+
+(define (fol-const? thing)
+  (or (number? thing) (boolean? thing) (null? thing)))
+
+(define (symbolic-application operator arguments)
+  (define simplify
+    ;; There are lots of possibilities for simplification here,
+    ;; especially if I request the environment and look up the
+    ;; symbolic expressions that various variables among the arguments
+    ;; hold.
+    (rule-simplifier
+     (list
+      (rule `(+ 0 (? thing)) thing)
+      (rule `(+ (? thing) 0) thing)
+      (rule `(- (? thing) 0) thing)
+
+      (rule `(* 1 (? thing)) thing)
+      (rule `(* (? thing) 1) thing)
+      (rule `(/ (? thing) 1) thing))))
+  (simplify
+   (cond ((memq operator '(read-real real))
+          unique-expression)
+         ;; Somewhere around here I also have a choice as to whether
+         ;; this CSE will have the effect of identifying equal pairs.
+         (else `(,operator ,@arguments)))))
+
+(define (symbolic-if pred cons alt)
+  (if (equal? cons alt)
+      cons
+      `(if ,pred ,cons ,alt)))
+
+(define-structure unique-expression)
+(define unique-expression (make-unique-expression))
+
+(define (cse-canonical env symbolic)
+  (hash-table/get env symbolic symbolic))
+
+(define (empty-cse-env)
+  (make-equal-hash-table))
+
+(define (fresh-cse-env names)
+  (augment-cse-env (empty-cse-env) names names
+   (lambda (env dead-bindings)
+     env)))
+
+(define (augment-cse-env env names symbolics win)
+  (define (acceptable-alias? symbolic)
+    (or (fol-const? symbolic)
+        (and (fol-var? symbolic)
+             (find-alias symbolic env))))
+  (for-each (lambda (name symbolic)
+              ;; Canonizing here catches places where a parallel let
+              ;; binds the same expression to multiple names.
+              (let ((symbolic (cse-canonical env symbolic)))
+                (if (acceptable-alias? symbolic)
+                    (hash-table/put! env name symbolic)
+                    (begin (hash-table/put! env name name)
+                           (if (not (unique-expression? symbolic))
+                               (hash-table/put! env symbolic name))))))
+            names
+            symbolics)
+  (win env (map acceptable-alias? symbolics)))
+
+(define (degment-cse-env! env names)
+  (for-each (lambda (name)
+              (hash-table/remove! env name))
+            names))

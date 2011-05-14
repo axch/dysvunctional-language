@@ -197,7 +197,39 @@
                   dead
                   (* n n-1!)))))
          (let-values (((dead n!) (fact (real 5))))
-           n!)))))))
+           n!)))))
+
+   (equal?
+    '(let ((x (real 5)))
+       (let ((y (+ x 2)))
+         (+ y y)))
+    (intraprocedural-cse
+     `(let ((x (real 5)))
+        (let ((y (+ x 2)))
+          (let ((z (+ x 2)))
+            (+ y z))))))
+
+   (equal?
+    '(let ((x (real 5)))
+       ;; I could improve this by hacking intraprocedural-cse more,
+       ;; or I can just let dead code elimination deal with it.
+       (let ((y (+ x 2)) (z (+ x 2)))
+         (+ y y)))
+    (intraprocedural-cse
+     `(let ((x (real 5)))
+        (let ((y (+ x 2)) (z (+ x 2)))
+          (+ y z)))))
+
+   (equal?
+    '(let ((x (real 5)))
+       (+ x x))
+    (intraprocedural-cse
+     `(let ((x (real 5)))
+        (let ((y (+ x 0)))
+          (let ((z (+ x 0)))
+            (+ y z))))))
+
+   ))
 
 ;; Here is a case where serious SRA is necessary
 ;; (let ((x (if ... (cons) (cons))))
