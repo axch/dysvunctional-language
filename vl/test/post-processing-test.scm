@@ -270,6 +270,19 @@
             (let ((u (+ x 3)))
               (+ w (* z u))))))))
 
+   (equal?
+    '(begin
+       (define (op a b)
+         (values (+ a b) (- a b)))
+       (let-values (((x y) (op 1 2)))
+         (+ x y)))
+    (intraprocedural-cse
+     '(begin
+        (define (op a b)
+          (values (+ a b) (- a b)))
+        (let-values (((x y) (op 1 2)))
+          (+ x y)))))
+
    ))
 
 ;; Here is a case where serious SRA is necessary

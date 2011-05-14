@@ -300,8 +300,8 @@
   ;; This is written in continuation passing style because recursive
   ;; calls must return two things.  The win continuation accepts the
   ;; new, CSE'd expression, the symbolic expression representing the
-  ;; return value from this expression (the symbolic expressions for
-  ;; the elements of a multivalue return are held in a parallel list).
+  ;; return value from this expression (using a values form for the
+  ;; symbolic expressions for the elements of a multivalue return).
   (define (loop expr env win)
     (cond ((fol-var? expr)
            (cse-fol-var expr env win))
@@ -362,7 +362,17 @@
            (body (caddr expr)))
       (loop subexpr env
        (lambda (new-subexpr subexpr-symbolic)
-         (augment-cse-env env names subexpr-symbolic
+         (augment-cse-env env names
+          (if (values-form? subexpr-symbolic)
+              (cdr subexpr-symbolic)
+              ;; If the symbolic expression is not a values form, it
+              ;; must be a procedure call that returns multiple
+              ;; values.  I can still represent the operation of
+              ;; destructuring it, on the off chance that the same
+              ;; procedure may be called again.
+              (map (lambda (i)
+                     `(values-ref ,subexpr-symbolic ,i))
+                   (iota (length names))))
           (lambda (env dead-bindings)
             (loop body env
              (lambda (new-body body-symbolic)
@@ -383,7 +393,7 @@
   (define (cse-values expr env win)
     (loop* (cdr expr) env
      (lambda (exprs symbolics)
-       (win `(values ,@exprs) symbolics))))
+       (win `(values ,@exprs) `(values ,@symbolics)))))
   (define (cse-application expr env win)
     (loop* (cdr expr) env
      (lambda (new-args args-symbolics)
