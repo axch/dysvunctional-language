@@ -288,8 +288,15 @@
       (newline)
       answer)))
 
+(define (report-size program)
+  (display "Final output has ")
+  (display (count-pairs program))
+  (display " pairs")
+  (newline)
+  program)
+
 (define (compile-visibly program)
-  ((lambda (x) x) ; This makes the last stage show up in the stack sampler
+  (report-size ; This makes the last stage show up in the stack sampler
    ((fol-stage tidy)
     ((fol-stage interprocedural-dead-code-elimination)
      ((fol-stage eliminate-intraprocedural-dead-variables)
