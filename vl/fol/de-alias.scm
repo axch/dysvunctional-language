@@ -456,27 +456,26 @@
     (or (fol-const? symbolic)
         (and (fol-var? symbolic)
              (find-alias symbolic env))))
-  (for-each (lambda (name symbolic)
-              ;; Canonizing here catches places where a parallel let
-              ;; binds the same expression to multiple names.
-              (let ((symbolic (cse-canonical env symbolic)))
-                (if (acceptable-alias? symbolic)
-                    (hash-table/put! env name symbolic)
-                    (begin
-                      (hash-table/put! env name name)
-                      ;; Don't put variables back because if a
-                      ;; variable is not acceptable alias, then it's
-                      ;; out of scope, and putting it back would
-                      ;; forget that.  Also don't put unique
-                      ;; expressions in at all, because they represent
-                      ;; situations where repeating the same
-                      ;; expression (e.g. (read-real)) would have
-                      ;; different effects.
-                      (if (and (not (fol-var? symbolic))
-                               (not (unique-expression? symbolic)))
-                          (hash-table/put! env symbolic name))))))
-            names
-            symbolics)
+  (for-each
+   (lambda (name symbolic)
+     ;; Canonizing here catches places where a parallel let binds the
+     ;; same expression to multiple names.
+     (let ((symbolic (cse-canonical env symbolic)))
+       (if (acceptable-alias? symbolic)
+           (hash-table/put! env name symbolic)
+           (begin
+             (hash-table/put! env name name)
+             ;; Don't put variables back because if a variable is not
+             ;; an acceptable alias, then it's out of scope, and
+             ;; putting it back would forget that.  Also don't put
+             ;; unique expressions in at all, because they represent
+             ;; situations where repeating the same expression
+             ;; (e.g. (read-real)) would have different effects.
+             (if (and (not (fol-var? symbolic))
+                      (not (unique-expression? symbolic)))
+                 (hash-table/put! env symbolic name))))))
+   names
+   symbolics)
   (win env (map acceptable-alias? symbolics)))
 
 (define (degment-cse-env! env names)
