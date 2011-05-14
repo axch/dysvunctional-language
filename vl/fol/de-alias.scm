@@ -441,7 +441,10 @@
 (define unique-expression (make-unique-expression))
 
 (define (cse-canonical env symbolic)
-  (hash-table/get env symbolic symbolic))
+  (let ((candidate (hash-table/get env symbolic symbolic)))
+    (if (find-alias candidate env) ; the candidate is in scope
+        candidate
+        symbolic)))
 
 (define (empty-cse-env)
   (make-equal-hash-table))

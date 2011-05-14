@@ -247,6 +247,17 @@
         (let ((w (let ((y (+ x 3))) y)))
           w))))
 
+   (equal?
+    '(let ((x (real 5)))
+       (let ((w (let ((y (+ x 3))) y)))
+         (let ((z (+ x 3)))
+           (+ w z))))
+    (intraprocedural-cse
+     '(let ((x (real 5)))
+        (let ((w (let ((y (+ x 3))) y)))
+          (let ((z (+ x 3)))
+            (+ w z))))))
+
    ))
 
 ;; Here is a case where serious SRA is necessary
