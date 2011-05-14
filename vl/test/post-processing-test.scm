@@ -204,7 +204,7 @@
        (let ((y (+ x 2)))
          (+ y y)))
     (intraprocedural-cse
-     `(let ((x (real 5)))
+     '(let ((x (real 5)))
         (let ((y (+ x 2)))
           (let ((z (+ x 2)))
             (+ y z))))))
@@ -216,7 +216,7 @@
        (let ((y (+ x 2)) (z (+ x 2)))
          (+ y y)))
     (intraprocedural-cse
-     `(let ((x (real 5)))
+     '(let ((x (real 5)))
         (let ((y (+ x 2)) (z (+ x 2)))
           (+ y z)))))
 
@@ -224,10 +224,28 @@
     '(let ((x (real 5)))
        (+ x x))
     (intraprocedural-cse
-     `(let ((x (real 5)))
+     '(let ((x (real 5)))
         (let ((y (+ x 0)))
           (let ((z (+ x 0)))
             (+ y z))))))
+
+   (equal?
+    '(let ((x (real 5)))
+       (let ((y (+ x 3)))
+         y))
+    (intraprocedural-cse
+     '(let ((x (real 5)))
+        (let ((y (+ x 3)))
+          y))))
+
+   (equal?
+    '(let ((x (real 5)))
+       (let ((w (let ((y (+ x 3))) y)))
+         w))
+    (intraprocedural-cse
+     '(let ((x (real 5)))
+        (let ((w (let ((y (+ x 3))) y)))
+          w))))
 
    ))
 

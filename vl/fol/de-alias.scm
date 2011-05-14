@@ -426,7 +426,7 @@
       (rule `(* (? thing) 1) thing)
       (rule `(/ (? thing) 1) thing))))
   (simplify
-   (cond ((memq operator '(read-real real))
+   (cond ((memq operator '(read-real real gensym))
           unique-expression)
          ;; Somewhere around here I also have a choice as to whether
          ;; this CSE will have the effect of identifying equal pairs.
@@ -462,9 +462,19 @@
               (let ((symbolic (cse-canonical env symbolic)))
                 (if (acceptable-alias? symbolic)
                     (hash-table/put! env name symbolic)
-                    (begin (hash-table/put! env name name)
-                           (if (not (unique-expression? symbolic))
-                               (hash-table/put! env symbolic name))))))
+                    (begin
+                      (hash-table/put! env name name)
+                      ;; Don't put variables back because if a
+                      ;; variable is not acceptable alias, then it's
+                      ;; out of scope, and putting it back would
+                      ;; forget that.  Also don't put unique
+                      ;; expressions in at all, because they represent
+                      ;; situations where repeating the same
+                      ;; expression (e.g. (read-real)) would have
+                      ;; different effects.
+                      (if (and (not (fol-var? symbolic))
+                               (not (unique-expression? symbolic)))
+                          (hash-table/put! env symbolic name))))))
             names
             symbolics)
   (win env (map acceptable-alias? symbolics)))
