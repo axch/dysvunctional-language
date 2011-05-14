@@ -441,6 +441,8 @@
 (define unique-expression (make-unique-expression))
 
 (define (cse-canonical env symbolic)
+  ;; Either here or in degment-cse-env!, I have to flush expressions
+  ;; whose canonical variables are not in scope any more.
   (let ((candidate (hash-table/get env symbolic symbolic)))
     (if (find-alias candidate env) ; the candidate is in scope
         candidate
