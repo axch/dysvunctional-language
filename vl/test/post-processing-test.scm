@@ -273,12 +273,14 @@
    (equal?
     '(begin
        (define (op a b)
+         (argument-types real real (values real real))
          (values (+ a b) (- a b)))
        (let-values (((x y) (op 1 2)))
          (+ x y)))
     (intraprocedural-cse
      '(begin
         (define (op a b)
+          (argument-types real real (values real real))
           (values (+ a b) (- a b)))
         (let-values (((x y) (op 1 2)))
           (+ x y)))))
@@ -299,6 +301,19 @@
                           (values (+ x 1) (+ x 3)))))
           (let ((y (+ x 1)))
             (* something (+ y x+1)))))))
+
+   ;; TODO An example for intreprocedural CSE
+   #;
+   (begin
+     (define (double-fact n1 n2)
+       (argument-types real real (values real real))
+       (if (<= n1 1)
+           (values n1 n2)
+           (let-values (((n1-1! n2-1!) (double-fact (- n1 1) (- n2 1))))
+             (values (* n1 n1-1!) (* n2 n2-1!)))))
+     (let ((x (real 5)))
+       (let-values (((a1 a2) (double-fact x x)))
+         (cons a1 a2))))
    ))
 
 ;; Here is a case where serious SRA is necessary

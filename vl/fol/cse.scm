@@ -332,3 +332,70 @@
     (lambda (datum)
       (cons name datum))
     (lambda () #f)))
+
+;;; To do interprocedural must-alias analysis and alias elimination, I
+;;; have to proceed as follows:
+;;; 1) Initialize a cse-env for each user procedure, indicating which
+;;;    formal parameters are aliases of each other.
+;;;    - Start them all as treating all parameters as aliases (because
+;;;      I have no evidence to the contrary yet).
+;;; 2) Initialize a map for each procedure, producing an expression for
+;;;    the return value(s) if given expressions for the parameters.
+;;;    - I know the answer for primitives
+;;;    - Start every user procedure mapping all outputs to being
+;;;      aliases of the first input (or, for nullary functions, the
+;;;      same fresh nullary (pure?) function term).
+;;; 3) I can improve the map for any procedure (and the cse-envs of
+;;;    all procedures it calls) by doing a CSE down the body of that
+;;;    procedure, starting with that cse-env.
+;;;    - At procedure calls, use the current map for the callee, and
+;;;      intersect the cse-env of the callee with the normalized
+;;;      expressions for the arguments passed in (thus discovering
+;;;      situations where procedures are actually called with
+;;;      different things).
+;;;    - On return from the walk, update the map for the procedure
+;;;      just walked; if needed, use generated function symbols
+;;;      applied to the inputs (a function symbol would be an object
+;;;      with a basename, in this case the name of the procedure just
+;;;      walked, an index to indicate with of multiple returns it's
+;;;      talking about (#f for unary returns), and a flag marking
+;;;      whether the answer is pure.)
+;;; 4) Repeat step 3 until the maps and environments stabilize.
+;;; 5) Replace all procedure definitions to
+;;;    - Accept only those parameters that are actually not aliases of
+;;;      each other (internally LET-bind the dropped formals to the
+;;;      canonical representatives)
+;;;    - Return only those answers that are not aliases of each other
+;;;      or the incoming formals (internally LET-VALUES everything the
+;;;      body will generate, and VALUES out that which is wanted).
+;;; 6) Replace all call sites to
+;;;    - Supply only those arguments that are actually needed (just
+;;;      drop the rest).
+;;;    - Solicit only those outputs that are actually provided
+;;;      (LET-VALUES them, and VALUES what the body expects, with
+;;;      appropriate copying; for this to work, I think all the passed
+;;;      parameters will need to be variables, so they can be reused).
+;;; 7) Do a pass of intraprocedural CSE to clean up.  The only
+;;;    information I need from the interprocedural step that is not
+;;;    encoded in the rewrites is which slots in the output of some
+;;;    procedure are pure and which are not.
+
+;;; What would have to be done to extend the above to interprocedural
+;;; CSE?  One improvement would be for the formal environments to
+;;; track not just which things are aliases, but also whether some
+;;; formal parameter actually stores an expression computed from the
+;;; others.  That way, any internal recomuptation of that expression
+;;; can be avoided; or, alternately, the computed input could not be
+;;; passed across the procedure call, but recomputed by the client (in
+;;; which case it becomes accessible to intraprocedural CSE on the
+;;; client's end).
+
+;;; An analagous improvements would be for the output expressions to
+;;; expose the expressions that are hidden behind their function
+;;; symbols, should any output be an expression in terms of the inputs
+;;; or other outputs, so that the client can avoid recomputing it.
+;;; Here, however, there lies a risk infinite regress, so the outputs
+;;; must mask some expressions behind opaque symbols.  Which ones?  A
+;;; limited version of this would only expose outputs that are
+;;; expressions in terms of other outputs; the same considerations as
+;;; for formals that are expressions in therms of other formals apply.
