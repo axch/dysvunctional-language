@@ -386,9 +386,15 @@
 ;;; formal parameter actually stores an expression computed from the
 ;;; others.  That way, any internal recomuptation of that expression
 ;;; can be avoided; or, alternately, the computed input could not be
-;;; passed across the procedure call, but recomputed by the client (in
+;;; passed across the procedure call, but recomputed by the callee (in
 ;;; which case it becomes accessible to intraprocedural CSE on the
-;;; client's end).
+;;; callee's end).  In the case of a recursive procedure implementing
+;;; a tail-recursion loop, the effect of such a shift would be to move
+;;; the computation of the expression from the point of self-call to
+;;; the entry into procedure -- moving it out of CSE view in one place
+;;; just as it moves into view in another (and also absorbing it from
+;;; the actual initial caller into the loop itself).  That's why
+;;; actual communication across the call boundary is important.
 
 ;;; An analagous improvements would be for the output expressions to
 ;;; expose the expressions that are hidden behind their function
