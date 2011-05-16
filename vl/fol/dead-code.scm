@@ -720,17 +720,16 @@
            (needed-inputs (find-needed-inputs needed-outputs i/o-map))
            (all-outs-needed? (every (lambda (x) x) needed-outputs)))
       (let ((the-call
-             ;; TODO One could, actually, eliminate even more
-             ;; dead code than this: imagine a call site that
-             ;; only needs some of the needed outputs of the
-             ;; callee, where the callee only needs some of its
-             ;; needed inputs to compute those outputs.  Then the
-             ;; remaining inputs need to be supplied, because the
-             ;; callee's interface has to support callers that
-             ;; may need the outputs those inputs help it
-             ;; compute, but it would be safe to put tombstones
-             ;; there, because the analysis just proved that they
-             ;; will not be needed.
+             ;; TODO One could, actually, eliminate even more dead
+             ;; code than this: imagine a call site that only needs
+             ;; some of the needed outputs of the callee, where the
+             ;; callee only needs some of its needed inputs to compute
+             ;; those outputs.  Then the remaining inputs need to be
+             ;; supplied, because the callee's interface has to
+             ;; support callers that may need the outputs those inputs
+             ;; help it compute, but it would be safe to put
+             ;; tombstones there, because the analysis just proved
+             ;; that they will not be needed.
              `(,operator ,@(select-masked needed-inputs operands))))
         (if all-outs-needed?
             the-call
