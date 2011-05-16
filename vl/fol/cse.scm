@@ -116,11 +116,7 @@
   (define (loop expr env win)
     (cond ((fol-var? expr)
            (cse-fol-var expr env win))
-          ((number? expr)
-           (win expr expr))
-          ((boolean? expr)
-           (win expr expr))
-          ((null? expr)
+          ((fol-const? expr)
            (win expr expr))
           ((if-form? expr)
            (cse-if expr env win))
@@ -230,9 +226,6 @@
                    ;; The symbolic expression might be useful to an
                    ;; interprocedural CSE crunch.
                    new-expr)))
-
-(define (fol-const? thing)
-  (or (number? thing) (boolean? thing) (null? thing)))
 
 (define (symbolic-application operator arguments)
   (define simplify

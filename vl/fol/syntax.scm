@@ -49,6 +49,9 @@
 (define strip-argument-types
   (rule-simplifier (list remove-defn-argument-types)))
 
+(define (fol-const? thing)
+  (or (number? thing) (boolean? thing) (null? thing)))
+
 (define values-form? (tagged-list? 'values))
 (define let-values-form? (tagged-list? 'let-values))
 
