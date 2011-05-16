@@ -741,12 +741,11 @@
               (tidy-let-values
                `(let-values ((,needed-names ,the-call))
                   ,(tidy-values
-                    `(values ,@(map (lambda (live? name)
-                                      (if live?
-                                          name
-                                          (make-tombstone)))
-                                    needed-outputs
-                                    output-names))))))))))
+                    `(values
+                      ,@(map (lambda (live? name)
+                               (if live? name (make-tombstone)))
+                             needed-outputs
+                             output-names))))))))))
   ((on-subexpressions
     (rule `((? operator ,procedure?) (?? operands))
           (rewrite-call-site operator operands)))
