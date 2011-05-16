@@ -4,10 +4,6 @@
 ;;; Variables that hold values that are never used can be eliminated.
 ;;; The code that computes those values can also be eliminated.
 
-;;; I only intraprocedural dead variable elimination.  See the end of
-;;; the file for an outline of interprocedural dead variable
-;;; elimination; that will be the reason why I don't do it (yet).
-
 ;;; Intraprocedural dead variable elimination can be done by recursive
 ;;; traversal of the code, traversing LET bodies before LET bindings.
 ;;; In the absence of multiple value returns, the recursion need not
@@ -22,31 +18,33 @@
 ;;; compute its live outputs.  Variables not in that set at their
 ;;; binding site are dead and may be removed.
 
-;;; In this scheme, variables use themselves and constants use
-;;; nothing.  If any of the outputs of an IF form are live, then its
-;;; predicate is live, and the IF form uses everything its predicate
-;;; and its branches use.  A LET body is processed first; any
-;;; variables the LET binds that its body doesn't use are dead and can
-;;; be skipped.  A LET-VALUES is analagous, except that some of the
-;;; values may be live and others not.  In that case, the LET-VALUES
-;;; drops the dead variables, and recurs on the subexpression giving
-;;; it that mask for what to keep and what to leave off.  A VALUES
-;;; form must conversely interpret the incoming mask and only keep
-;;; those of its subexpressions that are actually needed.
+;;; In this setup:
+;;; - Constants use nothing.
+;;; - Variables use themselves.
+;;; - If any of the outputs of an IF form are live, then its predicate
+;;;   and branches are live, and the IF form uses everything its
+;;;   predicate and its branches use.
+;;; - A LET body is processed first; any variables (and their
+;;;   expressions) the LET binds that its body doesn't use are dead
+;;;   and can be skipped.  A LET uses all the variables that are used
+;;;   by its body less those bound by the LET itself, and all the
+;;;   variables that are used by the expressions that the LET binds to
+;;;   its live variables.
+;;; - A LET-VALUES is analagous, except that it has only one
+;;;   expression binding several variables, some of which may be live
+;;;   and others not.  In that case, the LET-VALUES drops the dead
+;;;   variables, and recurs on the subexpression giving it that mask
+;;;   for what to keep and what to leave off.
+;;; - A VALUES form must conversely interpret the incoming mask and
+;;;   only keep those of its subexpressions that are actually needed.
+;;; - Procedure applications: Since the analysis is intraprocedural,
+;;;   it assumes that all the arguments of a live procedure call are
+;;;   live.
 
-;;; In principle, similar masking could be used to do elimination on
-;;; the slots of structures, but for simplicity I have chosen instead
-;;; to rely on SRA to separate said structures into individually named
-;;; variables and just do elimination on those variables.  I may
-;;; revisit this decision when I add union types.
-
-;;; Procedure applications introduce a wrinkle.  Since the analysis is
-;;; intraprocedural, is assumes that all the arguments of a live
-;;; procedure call are live.  Furthermore, said procedure call may
-;;; return multiple values, not all of which may be wanted by the
-;;; caller.  The transformation cannot change the set of values the
-;;; procedure will return, but the caller will already have been
-;;; tranformed expecting to only be given live values.  At this point,
+;;; A procedure call may return multiple values, not all of which may
+;;; be wanted by the caller.  The transformation cannot change the set
+;;; of values the procedure will return, but the caller will be
+;;; tranformed to expect to be given only live values.  At this point,
 ;;; the transformation pulls a trick: it binds all the values that the
 ;;; procedure will emit in a LET-VALUES, and immediately returns the
 ;;; live ones with a VALUES.  The others are bound to a special name
@@ -55,6 +53,13 @@
 ;;; it's coming here whether I want it or not."  Analagously,
 ;;; procedure formal parameters are not removed even if they may be
 ;;; dead in the body.
+
+;;; In principle, masking similar to what is used for VALUES could be
+;;; used to do elimination on the slots of structures, but for
+;;; simplicity I have chosen instead to rely on SRA to separate said
+;;; structures into individually named variables and just do
+;;; elimination on those variables.  I may revisit this decision when
+;;; I add union types.
 
 (define (eliminate-intraprocedural-dead-variables program)
   (define eliminate-in-definition
