@@ -266,25 +266,36 @@
 ;;;     procedure calls need all their inputs)
 ;;; 0) Treat the final expression as a nullary procedure definition
 ;;; 1) Initialize a map for each procedure, mapping from output that
-;;;    might be desired (by index) to input that is known to be needed
-;;;    to compute that output.
+;;;    might be desired (by index) to set of inputs that are known to
+;;;    be needed to compute that output.
 ;;;    - I know the answer for primitives
-;;;    - All compound procedures start mapping every output to the empty
-;;;      set of inputs known to be needed.
-;;; 2) I can improve the map by walking the body of a procedure, carrying
-;;;    down the set of desired outputs and bringing up the map saying
-;;;    which outputs require which inputs
+;;;    - All compound procedures start mapping every output to the
+;;;      empty set of inputs known to be needed.
+;;; 2) I can improve the map by walking the body of a procedure,
+;;;    carrying down the set of desired outputs and bringing up the
+;;;    map saying which outputs require which inputs.  This is exactly
+;;;    analagous to the intraprocedural dead code recursion, except
+;;;    for distinguishing which inputs are needed for which outputs.
 ;;;    - Start with all outputs desired.
-;;;    - A number requires no inputs for one output
-;;;    - A variable requires itself for one output
-;;;    - A VALUES maps its subexpressions to the desired outputs
-;;;    - A LET is transparent on the way down, but if the variable it
-;;;      is binding is desired as an input to its body, it recurs on
-;;;      its expression desiring the one output.  Whatever inputs come
-;;;      up need to be spliced in to the answers in the map coming from
-;;;      the body.
-;;;    - A LET-VALUES is analagous, but may choose to desire a subset
-;;;      of its bound names.
+;;;    - A constant requires no inputs for one output.
+;;;    - A variable requires itself for one output.
+;;;    - A VALUES maps the requirements of subexpressions to the
+;;;      desired outputs.
+;;;    - A LET is processed body first:
+;;;      - Forward the set of desired outputs to the body, and get the
+;;;        map for which of them need what variables from the
+;;;        environment.
+;;;      - Any bound variables that are not needed for any desired
+;;;        output of the body are dead and can be skipped.
+;;;      - Process the expressions generating the bound variables that
+;;;        are needed for something to determine what they need.
+;;;      - For each of its outputs, the LET form as a whole needs the
+;;;        variables the body needs for it that the LET didn't bind,
+;;;        and all the variables needed by the LET's expressions for
+;;;        the variables the body needed that the LET did bind.
+;;;    - A LET-VALUES is analagous, except that there is only one
+;;;      expression for all the bound names, so it may be given a
+;;;      mask.
 ;;;    - An IF recurs on the predicate desiring its output, and then
 ;;;      on the consequent and alternate passing the requests.  When
 ;;;      the answers come back, it needs to union the consequent and
@@ -297,15 +308,18 @@
 ;;; 3) Repeat step 2 until no more improvements are possible.
 ;;; 4) Initialize a table of which inputs and outputs to each compound
 ;;;    procedure are actually needed.
-;;;    - All procedures start not needed
-;;;    - The entry point starts fully needed
-;;; 5) I can improve this table by walking the body of a procedure
-;;;    some of whose outputs are needed, carrying down the set of outputs
-;;;    that are needed and bringing back up the set of inputs that are needed.
-;;;    - At a procedure call, mark outputs of that procedure as needed in
-;;;      the table if I found that I needed them on the walk; then take back
-;;;      up the set of things that that procedure says it needs.
-;;;    - Otherwise walk as in step 2 (check this!)
+;;;    - I actually only need to store the outputs, because the inputs
+;;;      can be deduced from them using the map computed in steps 1-3.
+;;;    - All procedures start not needed.
+;;;    - The entry point starts fully needed.
+;;; 5) I can improve this table by pretending to do an intraprocedural
+;;;    dead code elimination on the body of a procedure some of whose
+;;;    outputs are needed, except
+;;;    - At a procedure call, mark outputs of that procedure as needed
+;;;      in the table if I found that I needed them on the walk; then
+;;;      take back up the set of things that that procedure says it
+;;;      needs to produce what I needed from it.
+;;;    - Otherwise walk as for intraprocedural (check this!)
 ;;; 6) Repeat step 5 until no more improvements are possible.
 ;;; 7) Replace all definitions to
 ;;;    - Accept only those arguments they need (internally LET-bind all
