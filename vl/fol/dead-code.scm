@@ -644,8 +644,7 @@
       (outputs-needed! liveness-map operator live-out)
       (let* ((operator-dependency-map (hash-table/get dependency-map operator #f))
              (operands-live
-              (parallel-list-and
-               (select-masked live-out operator-dependency-map))))
+              (find-needed-inputs live-out operator-dependency-map)))
         (var-set-union*
          (map (lambda (operand) (loop operand (list #t)))
               (select-masked operands-live operands))))))
