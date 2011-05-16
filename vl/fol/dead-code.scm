@@ -255,14 +255,6 @@
 (define (var-set-equal? vars1 vars2)
   (lset= eq? vars1 vars2))
 
-(define (parallel-list-and lists)
-  (reduce (lambda (input answer)
-            (map boolean/and input answer))
-          '() ; Relying on this being needed only if there are no
-              ; lists, because to do the initialization properly I
-              ; need to know how long the lists are.
-          lists))
-
 ;;; To do interprocedural dead variable elimination I have to proceed
 ;;; as follows:
 ;;; -1) Run a round of intraprocedural dead variable elimination to
@@ -758,6 +750,13 @@
    form))
 
 (define (find-needed-inputs needed-outputs i/o-map)
+  (define (parallel-list-and lists)
+    (reduce (lambda (input answer)
+              (map boolean/and input answer))
+            '() ; Relying on this being needed only if there are no
+                ; lists, because to do the initialization properly I
+                ; need to know how long the lists are.
+            lists))
   (parallel-list-and
    (select-masked needed-outputs i/o-map)))
 
