@@ -616,19 +616,12 @@
   (define (study-let expr live-out)
     (let ((bindings (cadr expr))
           (body (caddr expr)))
-      (let* ((body-needs (loop body live-out))
-             (bindings-need
-              (map (lambda (binding)
-                     (cons (car binding)
-                           (if (var-used? (car binding) body-needs)
-                               (loop (cadr binding) (list #t))
-                               (no-used-vars))))
-                   bindings)))
+      (let ((body-needs (loop body live-out)))
         (var-set-union-map
          (lambda (needed-var)
-           (let ((xxx (assq needed-var bindings-need)))
-             (if xxx
-                 (cdr xxx)
+           (let ((binding (assq needed-var bindings)))
+             (if binding
+                 (loop (cadr binding) (list #t))
                  (single-used-var needed-var))))
          body-needs))))
   (define (study-let-values expr live-out)
