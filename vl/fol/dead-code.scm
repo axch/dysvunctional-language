@@ -489,7 +489,7 @@
         (map
          (lambda (operands-live)
            (var-set-union*
-            (needed-items-parallel
+            (select-masked
              operands-live
              operands-need)))
          operator-dependency-map))))
@@ -705,10 +705,10 @@
                 (if (or all-outs-needed? (not (values-form? return)))
                     return
                     (tidy-values
-                     `(values ,@(needed-items-parallel
+                     `(values ,@(select-masked
                                  needed-outputs (cdr return))))))
-              `(define (,name ,@(needed-items-parallel needed-inputs args))
-                 (argument-types ,@(needed-items-parallel needed-inputs stuff)
+              `(define (,name ,@(select-masked needed-inputs args))
+                 (argument-types ,@(select-masked needed-inputs stuff)
                                  ,new-return-type)
                  ,(let ((body (rewrite-call-sites
                                type-map dependency-map liveness-map body)))
@@ -717,7 +717,7 @@
                                body
                                `(let (,(map (lambda (name)
                                               `(,name ,(make-tombstone)))
-                                            (needed-items-parallel
+                                            (select-masked
                                              (map not needed-inputs) args)))
                                   ,body))))
                       (if all-outs-needed?
@@ -728,7 +728,7 @@
                              `(let-values ((,output-names ,the-body))
                                 ,(tidy-values
                                   `(values
-                                    ,@(needed-items-parallel
+                                    ,@(select-masked
                                        needed-outputs output-names)))))))))))))
      defns)))
 
@@ -753,14 +753,14 @@
                   ;; compute, but it would be safe to put tombstones
                   ;; there, because the analysis just proved that they
                   ;; will not be needed.
-                  `(,operator ,@(needed-items-parallel needed-inputs operands))))
+                  `(,operator ,@(select-masked needed-inputs operands))))
               (if all-outs-needed?
                   the-call
                   (let ((output-names
                          (invent-names-for-parts
                           'receipt (return-type (type-map operator)))))
                     (let ((needed-names
-                           (needed-items-parallel needed-outputs output-names)))
+                           (select-masked needed-outputs output-names)))
                       (tidy-let-values
                        `(let-values ((,needed-names ,the-call))
                           ,(tidy-values
@@ -774,11 +774,9 @@
 
 (define (find-needed-inputs needed-outputs i/o-map)
   (parallel-list-and
-   (filter-map (lambda (live? in-set)
-                 (and live? in-set))
-               needed-outputs i/o-map)))
+   (select-masked needed-outputs i/o-map)))
 
-(define (needed-items-parallel liveness items)
+(define (select-masked liveness items)
   (filter-map (lambda (live? item)
                 (and live? item))
               liveness items))
