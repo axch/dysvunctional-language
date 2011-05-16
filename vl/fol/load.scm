@@ -22,7 +22,7 @@
    "inline"
    "a-normal-form"
    "srfi-11"
-   "de-alias"
+   "cse"
    "dead-code"
    "sra"
    "optimize"))

@@ -7,7 +7,8 @@
             (loop (line (line-search (compose f line)))))))))
 
 (define (line-search f)
-  ;; One step of Newton's method
+  ;; For example, one step of Newton's method, involves first and
+  ;; second derivatives of f.
   )
 
 ;; The optimization routine is generic

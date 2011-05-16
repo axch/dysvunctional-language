@@ -12,9 +12,10 @@ MIT Scheme, augmented with type declarations, supporting a limited
 range of constructs.
 
 The present code collection includes a FOL type checker, an in-memory
-optimizing compiler from FOL to itself, and a runtime library for
-executing FOL as MIT Scheme.  I have not yet experimented with
-compiling FOL to any other target language.
+optimizing compiler from FOL to itself, a runtime library for
+executing FOL as MIT Scheme, and a compiler from FOL to native code
+via MIT Scheme.  I have not yet experimented with compiling FOL to any
+other targets.
 
 The remainder of this document consists of four sections,
 corresponding to the reasons why you might wish to peruse it:
@@ -84,7 +85,7 @@ compilers, in the form of post-optimizing their output so they don't
 have to worry as much.  Specifically, the FOL optimizer aggressively
 inlines procedures, aggressively replaces aggregates with
 corresponding collections of scalars, and aggressively eliminates dead
-and useless code.  The standard use case of COMPILE-TO-SCHEME emits
+and redundant code.  The standard use case of COMPILE-TO-SCHEME emits
 FOL with all these optimizations already performed, but you can also
 get the output from the code generator, examine it, and optimize it
 separately.
@@ -104,9 +105,9 @@ separately.
 
 FOL Optimization proceeds as a cascade of stages, which you can also
 run one by one to see their effect.  The stages are all
-self-contained, except that most of them assume unique local variable
-names; you should alpha-rename the program first, but then you can run
-the remaining stages as much as you like, in any order.
+self-contained, except that most of them assume unique variable names;
+you should alpha-rename the program first, but then you can run the
+remaining stages as much as you like, in any order.
 
 (alpha-rename <program>)
   Renames variables in the given program so that no local variable
@@ -148,22 +149,26 @@ the remaining stages as much as you like, in any order.
   form, so SCALAR-REPLACE-AGGREGATES preprocesses its input program
   with APPROXIMATE-ANF.
 
-(intraprocedural-de-alias <program>)
-  Eliminates aliases inside procedure bodies and returns the result.
-  An alias is a variable binding of the form (let ((x y)) ...); x
-  becomes replaced by y in the body of this binding.  This step is
-  very important because between them a-normal form conversion and
-  scalar replacement of aggregates end up generating lots of aliases.
-  As suggested by its name, this does not do full interprocedural
-  must-alias analysis, and does not detect circumstances where some
-  formal parameters to some procedure are reliably always given the
-  same value.
+(intraprocedural-cse <program>)
+  Eliminates common subexpressions inside procedure bodies and returns
+  the result (this automatically also propagates constants and
+  copies).  This step is very important because between them A-normal
+  form conversion and scalar replacement of aggregates end up
+  generating lots of aliases.  As suggested by its name, this does not
+  do full interprocedural CSE, and does not detect circumstances where
+  some formal parameters to some procedure are reliably always given
+  the same value.
 
 (eliminate-intraprocedural-dead-variables <program>)
   Eliminates dead code inside procedure bodies and returns the result.
   As suggested by the name, this does not detect circumstances where
   some variable is passed around from one user-defined procedure to
   another but then never used.
+
+(interprocedural-dead-variable-elimination <program>)
+  Detects circumstances when some value is passed around from one
+  procedure to another but never used, and flushes the computation and
+  storage of those values.
 
 (tidy <program>)
   Performs other optimizations that do not have dedicated stages and
@@ -346,7 +351,7 @@ inline.scm          Inliner
 alpha-remaing.scm   Uniquifying bound names
 a-normal-form.scm   A-normal form converter
 sra.scm             Scalar replacement of aggregates
-de-alias.scm        Alias elimination
+cse.scm             Common subexpression elimination
 dead-code.scm       Dead variable elimination
 syntax.scm          Low-level support; FOL syntax
 srfi-11.scm         Reference implementation of SRFI 11
@@ -357,26 +362,39 @@ replacement system.  TODO Explain enough of it.
 
 Future of FOL
 
-There are two glaring gaps in the extant FOL system.  One is that it
-does not accept non-union-free programs.  At this moment this is OK
-because neither VL nor DVL compile non-union-free programs either, but
-in time this defect will need to be corrected.  Doing so will involve
-a reworking of the FOL type system and an updating of the SRA
-algorithm, but should not require any other major changes.
+There are four major improvements needed for the extant FOL system:
 
-The other glaring defect is the absence of a really fast execution
-engine for FOL.  Obvious candidates include compiling FOL to machine
-code or C with the MIT Scheme compiler, or direct custom translation
-to C (or C--) for further processing with, e.g., gcc.  The latter
-activity may not be a trivial variation on the former, because in so
-doing the semantics of FOL may perhaps be fruitfully made somewhat
-different from Scheme semantics, particularly with respect to the
-numeric tower.  This process will be undertaken as VL, DVL, and FOL
-scale to examples that are too slow to interpret.
+1) FOL will need to accept non-union-free programs.  At this moment,
+neither VL nor DVL compile non-union-free programs either, but in time
+this defect will need to be corrected; and FOL will need to go first.
+Doing this will involve a reworking of the FOL type system and an
+updating of the SRA algorithm, but should not require any other major
+changes.
+
+2) FOL will need to preserve the presence and order of side-effects,
+without compromising the optimizations available to pure code.
+Perhaps adding the IO monad to the type system?
+
+3) FOL will need a foreign interface, at least to the ambient MIT
+Scheme (which then has a foreign interface to the rest of the world).
+This is how VL and DVL can be given foreign interfaces.
+
+4) FOL will need to run on a different platform.  Even MIT Scheme
+native code at the moment boxes its floating point numbers, which
+seems to cost about 5x or 10x; also, MIT Scheme is not exactly a
+paragon of interoperation with other things.  Candidate platforms
+include:
+- Integrating FOL with Racket.
+- Treating FOL as Common Lisp and compiling with, e.g., SBCL.
+- Compiling to and running on the JVM or on .NET.
+- Compiling FOL to/with LLVM.
+- Translating FOL to C (or C--) and compiling with, e.g., gcc.
+This process will be undertaken as VL, DVL, and FOL scale to examples
+that are too slow to interpret, or too big to implement directly in
+the VL or DVL source languages without foreign libraries.
 
 Finally, the current state of FOL is also open to some improvements
 that don't affect its interface, namely implementing interprocedural
-must alias analysis and dead code elimination, and better
-understanding the nature of what the rule-based tidier does to
-implement it directly in algorithms (as that stands to improve its
-asymptotic complexity).
+common subexpression elimination, and better understanding the nature
+of what the rule-based tidier does to implement it directly in
+algorithms (as that stands to improve its asymptotic complexity).

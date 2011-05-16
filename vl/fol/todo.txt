@@ -1,19 +1,4 @@
-Compilation with MIT Scheme
-- Interprocedural must-alias analysis?
-  - Can this collapse identical perturbations and recover tower mode on
-    (D (D (lambda (x) ...)))?
-  - Can this collapse primals and recover stack tangent mode?
-- Interprocedural dead variable elimination
-  - Need to hand the i/o-need-map to the final round of
-    intraprocedural dead variable elimination so it can kill
-    expressions that would compute arguments that other callers need
-    to supply but this caller does not.
-- Analysis-time dead variable elimination??
-- Solved gensyms?  Is this actually possible?
-
-Compilation with MIT Scheme and floating-only numerics?
-
-----------------------------------------------------------------------
+Pull FOL stuff into its own environment
 
 Expository explanations
 - Push TIDY into its own file?
@@ -42,7 +27,27 @@ NB: The reason that some of my recursions are broken into expression
   loops and a toplevel crunch is that the top level is the only
   place that introduces bindings with letrec scope.
 
+NB: From the compiler writer's perspective, FOL is a funny
+  representation for a dataflow graph: a list of trees of
+  single-predecessor nodes.  This facilitates writing dataflow and
+  optimization passes that cascade over said single-predecessor nodes.
+  With the important difference that the stack, the heap, and
+  procedure returns are implicit.  In particular, knoweldge of returns
+  gives me flow information that Appel-style data flow analyses don't
+  have: which node will be the target of a return-jump, given
+  the node that was the source of the call-jump.
+
+NB: INTERPROCEDURAL-DEAD-CODE-ELIMINATION is solving the following
+  liveness equations: TODO
+
 ----------------------------------------------------------------------
+
+Compilation with MIT Scheme
+- Interprocedural must-alias analysis?
+  - Can this collapse identical perturbations and recover tower mode on
+    (D (D (lambda (x) ...)))?
+  - Can this collapse primals and recover stack tangent mode?
+- Solved gensyms?  Is this actually possible?
 
 The next step both for good output and fast compilation is:
 

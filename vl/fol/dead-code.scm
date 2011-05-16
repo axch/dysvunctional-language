@@ -320,7 +320,7 @@
 (define (program->procedure-definitions program)
   (define (expression->procedure-definition entry-point return-type)
     `(define (%%main)
-       (argument-types ,return-type) ;; TODO Get the actual type of the entry point
+       (argument-types ,return-type)
        ,entry-point))
   (let ((return-type (check-program-types program)))
     (if (begin-form? program)
@@ -526,6 +526,11 @@
 (define compute-i/o-need-map
   (iterate-defn-map initial-i/o-need-map improve-i/o-need-map))
 
+;;; The need map is the structure constructed during steps 4-6 above.
+;;; It maps every procedure name to the set of its outputs that are
+;;; actually needed.  The needed inputs can be inferred from this
+;;; given the i/o-need-map.
+
 (define ((compute-need-map i/o-need-map) defns)
   (let ((need-map (initial-need-map defns)))
     (let loop ()
@@ -546,11 +551,6 @@
 
 (define (changed! thing)
   (eq-put! thing 'changed #t))
-
-;;; The need map is the structure constructed during steps 4-6 above.
-;;; It maps every procedure name to the set of its outputs that are
-;;; actually needed.  The needed inputs can be inferred from this
-;;; given the i/o-need-map.
 
 (define (initial-need-map defns)
   (let ((answer
