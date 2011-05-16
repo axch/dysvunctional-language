@@ -645,14 +645,7 @@
       (let* ((operator-dependency-map (hash-table/get dependency-map operator #f))
              (operands-live
               (parallel-list-and
-               (map
-                (lambda (live? index operator-needs)
-                  (if live?
-                      operator-needs
-                      (map (lambda (x) #f) operands)))
-                live-out
-                (iota (length live-out))
-                operator-dependency-map))))
+               (select-masked live-out operator-dependency-map))))
         (var-set-union*
          (map (lambda (operand) (loop operand (list #t)))
               (select-masked operands-live operands))))))
