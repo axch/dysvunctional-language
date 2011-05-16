@@ -783,24 +783,6 @@
                 (and live? item))
               liveness items))
 
-(define (needed-items items needed-indexes)
-  (filter-map
-   (lambda (item index)
-     (if (var-used? index needed-indexes)
-         item
-         #f))
-   items
-   (iota (length items))))
-
-(define (unneeded-items items needed-indexes)
-  (filter-map
-   (lambda (item index)
-     (if (var-used? index needed-indexes)
-         #f
-         item))
-   items
-   (iota (length items))))
-
 (define (make-tombstone)
   ;; A tombstone is a value that needs to be supplied but I know will
   ;; never be used.  TODO Make the tombstones distinctive so I can
