@@ -641,15 +641,14 @@
   (define (study-application expr live-out)
     (let ((operator (car expr))
           (operands (cdr expr)))
+      (outputs-needed! liveness-map operator live-out)
       (let* ((operator-dependency-map (hash-table/get dependency-map operator #f))
              (operands-live
               (parallel-list-and
                (map
                 (lambda (live? index operator-needs)
                   (if live?
-                      (begin
-                        (output-needed! liveness-map operator index)
-                        operator-needs)
+                      operator-needs
                       (map (lambda (x) #f) operands)))
                 live-out
                 (iota (length live-out))
@@ -668,16 +667,19 @@
             ;; deduce which inputs the operator needs, given which of
             ;; the operator's outputs are needed.
             (loop body body-live-out))))
-  (define (output-needed! liveness-map name index)
+  (define (outputs-needed! liveness-map name live)
     (let ((needed-outputs (hash-table/get liveness-map name #f)))
       (if needed-outputs
-          (let ((relevant-pair (drop needed-outputs index)))
-            (if (car relevant-pair)
-                'ok
-                (begin
-                  (set-car! relevant-pair #t)
-                  (changed! liveness-map))))
-          ;; I don't care which inputs of primitives are needed.
+          (pair-for-each
+           (lambda (known-needed new-needed)
+             (if (and (car new-needed) (not (car known-needed)))
+                 (begin
+                   (set-car! known-needed #t)
+                   (changed! liveness-map))
+                 'ok))
+           needed-outputs
+           live)
+          ;; I don't care which outputs of primitives are needed.
           'ok)))
   (improve-liveness-map defn))
 
