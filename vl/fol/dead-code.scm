@@ -751,21 +751,19 @@
               (if all-outs-needed?
                   the-call
                   (let ((output-names
-                         (invent-names-for-parts 'receipt (return-type (type-map operator)))))
+                         (invent-names-for-parts
+                          'receipt (return-type (type-map operator)))))
                     (let ((needed-names
-                           ;; TODO Copied from rewrite-definitions
-                           (filter-map (lambda (item live?)
-                                         (and live? item))
-                                       output-names needed-outputs)))
+                           (needed-items-parallel needed-outputs output-names)))
                       (tidy-let-values
                        `(let-values ((,needed-names ,the-call))
                           ,(tidy-values
-                            `(values ,@(map (lambda (name live?)
+                            `(values ,@(map (lambda (live? name)
                                               (if live?
                                                   name
                                                   (make-tombstone)))
-                                            output-names
-                                            needed-outputs))))))))))))
+                                            needed-outputs
+                                            output-names))))))))))))
    form))
 
 (define (needed-inputs needed-outputs i/o-map)
