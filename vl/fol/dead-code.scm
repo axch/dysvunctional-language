@@ -704,11 +704,11 @@
                         `(values
                           ,@(select-masked
                              needed-outputs output-names)))))))))))
-  ((on-subexpressions
-    (rule `(define ((? name) (?? args))
-             (argument-types (?? arg-types) (? return))
-             (? body))
-          (rewrite-definition name args arg-types return body)))
+  (map
+   (rule `(define ((? name) (?? args))
+            (argument-types (?? arg-types) (? return))
+            (? body))
+         (rewrite-definition name args arg-types return body))
    defns))
 
 (define (rewrite-call-sites type-map dependency-map liveness-map form)
