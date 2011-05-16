@@ -255,6 +255,14 @@
 (define (var-set-equal? vars1 vars2)
   (lset= eq? vars1 vars2))
 
+(define (parallel-list-and lists)
+  (reduce (lambda (input answer)
+            (map boolean/and input answer))
+          '() ; Relying on this being needed only if there are no
+              ; lists, because to do the initialization properly I
+              ; need to know how long the lists are.
+          lists))
+
 ;;; To do interprocedural dead variable elimination I have to proceed
 ;;; as follows:
 ;;; -1) Run a round of intraprocedural dead variable elimination to
@@ -359,19 +367,20 @@
       rewritten))))
 
 ;;; The dependency-map is the structure built by steps 1-3 above.  It
-;;; maps every procedure name to a list of sets of numbers.  The list
-;;; is parallel to the values that the procedure returns, and each set
-;;; of numbers is the indices of those of the procedure's inputs that
-;;; are needed for it to compute that output.
+;;; maps every procedure name to a list of boolean lists.  The outer
+;;; list is parallel to the values that the procedure returns, each
+;;; inner list is parallel to the procedure's inputs, and each boolean
+;;; answers the question of whether that input is needed for the
+;;; procedure to compute that output.
 
 (define (initial-dependency-map defns)
   (define (primitive-dependency-map)
    (define (nullary name)
-     (cons name (list (no-used-vars))))
+     (cons name (list '())))
    (define (unary name)
-     (cons name (list (single-used-var 0))))
+     (cons name (list '(#t))))
    (define (binary name)
-     (cons name (list (var-set-union (single-used-var 0) (single-used-var 1)))))
+     (cons name (list '(#t #t))))
    (alist->eq-hash-table
     `(,@(map nullary '(read-real gensym))
       ;; Type testers real? gensym? null? pair? should never be emitted
@@ -384,7 +393,7 @@
               (argument-types (?? stuff) (? return))
               (? body))
            (hash-table/put! answer name
-            (map (lambda (item) (no-used-vars))
+            (map (lambda (item) (map (lambda (x) #f) args))
                  (desirable-slot-list return))))
      defns)
     answer))
@@ -478,11 +487,11 @@
                                   (car (loop operand)))
                                 operands)))
         (map
-         (lambda (operator-dependency)
-           (var-set-union-map
-            (lambda (needed-index)
-              (list-ref operands-need needed-index))
-            operator-dependency))
+         (lambda (operands-live)
+           (var-set-union*
+            (needed-items-parallel
+             operands-live
+             operands-need)))
          operator-dependency-map))))
   (define improve-dependency-map
     (rule `(define ((? name) (?? args))
@@ -490,9 +499,9 @@
              (? body))
           (map
            (lambda (out-needs)
-             (var-set-map (lambda (var)
-                            (list-index (lambda (arg) (eq? var arg)) args))
-                          out-needs))
+             (map (lambda (arg)
+                    (and (var-used? arg out-needs) #t))
+                  args))
            (loop body))))
   (improve-dependency-map defn))
 
@@ -507,7 +516,7 @@
     (for-each
      (lambda (defn)
        (let ((local-map (improve-locally defn overall-map)))
-         (if (every var-set-equal? local-map (hash-table/get overall-map (definiendum defn) #f))
+         (if (every equal? local-map (hash-table/get overall-map (definiendum defn) #f))
              'ok
              (begin
                (hash-table/put! overall-map (definiendum defn) local-map)
@@ -638,27 +647,25 @@
     (let ((operator (car expr))
           (operands (cdr expr)))
       (let* ((operator-dependency-map (hash-table/get dependency-map operator #f))
-             (operand-indecies-needed
-              (var-set-union*
+             (operands-live
+              (parallel-list-and
                (map
                 (lambda (live? index operator-needs)
                   (if live?
                       (begin
                         (output-needed! liveness-map operator index)
                         operator-needs)
-                      (no-used-vars)))
+                      (map (lambda (x) #f) operands)))
                 live-out
                 (iota (length live-out))
-                operator-dependency-map)))
-             (operands-needed
-              (var-set-map
-               (lambda (arg-index)
-                 (list-ref operands arg-index))
-               operand-indecies-needed)))
-        (var-set-union-map
-         (lambda (operand)
-           (loop operand (list #t)))
-         operands-needed))))
+                operator-dependency-map))))
+        (var-set-union*
+         (map (lambda (live? operand)
+                (if live?
+                    (loop operand (list #t))
+                    (no-used-vars)))
+              operands-live
+              operands)))))
   (define improve-liveness-map
     (rule `(define ((? name) (?? args))
              (argument-types (?? stuff) (? return))
@@ -691,9 +698,8 @@
                (? body))
             (let* ((needed-outputs (hash-table/get liveness-map name #f))
                    (i/o-map (hash-table/get dependency-map name #f))
-                   (needed-input-indexes (needed-inputs needed-outputs i/o-map))
-                   (all-ins-needed? (= (var-set-size needed-input-indexes)
-                                       (length args)))
+                   (needed-inputs (find-needed-inputs needed-outputs i/o-map))
+                   (all-ins-needed? (every (lambda (x) x) needed-inputs))
                    (all-outs-needed? (every (lambda (x) x) needed-outputs)))
               (define new-return-type
                 (if (or all-outs-needed? (not (values-form? return)))
@@ -701,8 +707,8 @@
                     (tidy-values
                      `(values ,@(needed-items-parallel
                                  needed-outputs (cdr return))))))
-              `(define (,name ,@(needed-items args needed-input-indexes))
-                 (argument-types ,@(needed-items stuff needed-input-indexes)
+              `(define (,name ,@(needed-items-parallel needed-inputs args))
+                 (argument-types ,@(needed-items-parallel needed-inputs stuff)
                                  ,new-return-type)
                  ,(let ((body (rewrite-call-sites
                                type-map dependency-map liveness-map body)))
@@ -711,8 +717,8 @@
                                body
                                `(let (,(map (lambda (name)
                                               `(,name ,(make-tombstone)))
-                                            (unneeded-items
-                                             args needed-input-indexes)))
+                                            (needed-items-parallel
+                                             (map not needed-inputs) args)))
                                   ,body))))
                       (if all-outs-needed?
                           the-body ; All the outs of the entry point will always be needed
@@ -733,7 +739,7 @@
     (rule `((? operator ,procedure?) (?? operands))
           (let* ((needed-outputs (hash-table/get liveness-map operator #f))
                  (i/o-map (hash-table/get dependency-map operator #f))
-                 (needed-input-indexes (needed-inputs needed-outputs i/o-map))
+                 (needed-inputs (find-needed-inputs needed-outputs i/o-map))
                  (all-outs-needed? (every (lambda (x) x) needed-outputs)))
             (let ((the-call
                   ;; TODO One could, actually, eliminate even more
@@ -747,7 +753,7 @@
                   ;; compute, but it would be safe to put tombstones
                   ;; there, because the analysis just proved that they
                   ;; will not be needed.
-                  `(,operator ,@(needed-items operands needed-input-indexes))))
+                  `(,operator ,@(needed-items-parallel needed-inputs operands))))
               (if all-outs-needed?
                   the-call
                   (let ((output-names
@@ -766,11 +772,11 @@
                                             output-names))))))))))))
    form))
 
-(define (needed-inputs needed-outputs i/o-map)
-  (var-set-union*
-   (map (lambda (live? in-set)
-          (if live? in-set (no-used-vars)))
-        needed-outputs i/o-map)))
+(define (find-needed-inputs needed-outputs i/o-map)
+  (parallel-list-and
+   (filter-map (lambda (live? in-set)
+                 (and live? in-set))
+               needed-outputs i/o-map)))
 
 (define (needed-items-parallel liveness items)
   (filter-map (lambda (live? item)
