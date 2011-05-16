@@ -699,9 +699,9 @@
                 (if (or all-outs-needed? (not (values-form? return)))
                     return
                     (tidy-values
-                     `(values ,@(filter-map (lambda (item live?)
+                     `(values ,@(filter-map (lambda (live? item)
                                               (and live? item))
-                                            (cdr return) needed-outputs)))))
+                                            needed-outputs (cdr return))))))
               `(define (,name ,@(needed-items args needed-input-indexes))
                  (argument-types ,@(needed-items stuff needed-input-indexes) ,new-return-type)
                  ,(let ((body (rewrite-call-sites type-map dependency-map liveness-map body)))
