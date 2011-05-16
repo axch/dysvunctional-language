@@ -668,84 +668,89 @@
   (improve-liveness-map defn))
 
 (define (rewrite-definitions dependency-map liveness-map defns)
-  (let ((type-map (type-map `(begin ,@defns 'bogon)))) ; This bogon has to do with the entry point being a definition now
-    ((on-subexpressions
-      (rule `(define ((? name) (?? args))
-               (argument-types (?? stuff) (? return))
-               (? body))
-            (let* ((needed-outputs (hash-table/get liveness-map name #f))
-                   (i/o-map (hash-table/get dependency-map name #f))
-                   (needed-inputs (find-needed-inputs needed-outputs i/o-map))
-                   (all-ins-needed? (every (lambda (x) x) needed-inputs))
-                   (all-outs-needed? (every (lambda (x) x) needed-outputs)))
-              (define new-return-type
-                (if (or all-outs-needed? (not (values-form? return)))
-                    return
-                    (tidy-values
-                     `(values ,@(select-masked needed-outputs (cdr return))))))
-              `(define (,name ,@(select-masked needed-inputs args))
-                 (argument-types ,@(select-masked needed-inputs stuff)
-                                 ,new-return-type)
-                 ,(let* ((body (rewrite-call-sites
-                                type-map dependency-map liveness-map body))
-                         (the-body
-                           (if all-ins-needed?
-                               body
-                               `(let (,(map (lambda (name)
-                                              `(,name ,(make-tombstone)))
-                                            (select-masked
-                                             (map not needed-inputs) args)))
-                                  ,body))))
-                    (if all-outs-needed?
-                        the-body ; All the outs of the entry point will always be needed
-                        (let ((output-names
-                               (invent-names-for-parts 'receipt return)))
-                          (tidy-let-values
-                           `(let-values ((,output-names ,the-body))
-                              ,(tidy-values
-                                `(values
-                                  ,@(select-masked
-                                     needed-outputs output-names))))))))))))
-     defns)))
+  ;; This bogon has to do with the entry point being a definition now
+  (define the-type-map (type-map `(begin ,@defns 'bogon)))
+  (define (rewrite-definition name args stuff return body)
+    (let* ((needed-outputs (hash-table/get liveness-map name #f))
+           (i/o-map (hash-table/get dependency-map name #f))
+           (needed-inputs (find-needed-inputs needed-outputs i/o-map))
+           (all-ins-needed? (every (lambda (x) x) needed-inputs))
+           (all-outs-needed? (every (lambda (x) x) needed-outputs)))
+      (define new-return-type
+        (if (or all-outs-needed? (not (values-form? return)))
+            return
+            (tidy-values
+             `(values ,@(select-masked needed-outputs (cdr return))))))
+      `(define (,name ,@(select-masked needed-inputs args))
+         (argument-types ,@(select-masked needed-inputs stuff)
+                         ,new-return-type)
+         ,(let* ((body (rewrite-call-sites
+                        the-type-map dependency-map liveness-map body))
+                 (the-body
+                  (if all-ins-needed?
+                      body
+                      `(let (,(map (lambda (name)
+                                     `(,name ,(make-tombstone)))
+                                   (select-masked
+                                    (map not needed-inputs) args)))
+                         ,body))))
+            (if all-outs-needed?
+                the-body ; All the outs of the entry point will always be needed
+                (let ((output-names
+                       (invent-names-for-parts 'receipt return)))
+                  (tidy-let-values
+                   `(let-values ((,output-names ,the-body))
+                      ,(tidy-values
+                        `(values
+                          ,@(select-masked
+                             needed-outputs output-names)))))))))))
+  ((on-subexpressions
+    (rule `(define ((? name) (?? args))
+             (argument-types (?? stuff) (? return))
+             (? body))
+          (rewrite-definition name args stuff return body)))
+   defns))
 
 (define (rewrite-call-sites type-map dependency-map liveness-map form)
   (define (procedure? name)
     (hash-table/get liveness-map name #f))
+  (define (rewrite-call-site operator operands)
+    (let* ((needed-outputs (hash-table/get liveness-map operator #f))
+           (i/o-map (hash-table/get dependency-map operator #f))
+           (needed-inputs (find-needed-inputs needed-outputs i/o-map))
+           (all-outs-needed? (every (lambda (x) x) needed-outputs)))
+      (let ((the-call
+             ;; TODO One could, actually, eliminate even more
+             ;; dead code than this: imagine a call site that
+             ;; only needs some of the needed outputs of the
+             ;; callee, where the callee only needs some of its
+             ;; needed inputs to compute those outputs.  Then the
+             ;; remaining inputs need to be supplied, because the
+             ;; callee's interface has to support callers that
+             ;; may need the outputs those inputs help it
+             ;; compute, but it would be safe to put tombstones
+             ;; there, because the analysis just proved that they
+             ;; will not be needed.
+             `(,operator ,@(select-masked needed-inputs operands))))
+        (if all-outs-needed?
+            the-call
+            (let* ((output-names
+                    (invent-names-for-parts
+                     'receipt (return-type (type-map operator))))
+                   (needed-names
+                    (select-masked needed-outputs output-names)))
+              (tidy-let-values
+               `(let-values ((,needed-names ,the-call))
+                  ,(tidy-values
+                    `(values ,@(map (lambda (live? name)
+                                      (if live?
+                                          name
+                                          (make-tombstone)))
+                                    needed-outputs
+                                    output-names))))))))))
   ((on-subexpressions
     (rule `((? operator ,procedure?) (?? operands))
-          (let* ((needed-outputs (hash-table/get liveness-map operator #f))
-                 (i/o-map (hash-table/get dependency-map operator #f))
-                 (needed-inputs (find-needed-inputs needed-outputs i/o-map))
-                 (all-outs-needed? (every (lambda (x) x) needed-outputs)))
-            (let ((the-call
-                  ;; TODO One could, actually, eliminate even more
-                  ;; dead code than this: imagine a call site that
-                  ;; only needs some of the needed outputs of the
-                  ;; callee, where the callee only needs some of its
-                  ;; needed inputs to compute those outputs.  Then the
-                  ;; remaining inputs need to be supplied, because the
-                  ;; callee's interface has to support callers that
-                  ;; may need the outputs those inputs help it
-                  ;; compute, but it would be safe to put tombstones
-                  ;; there, because the analysis just proved that they
-                  ;; will not be needed.
-                  `(,operator ,@(select-masked needed-inputs operands))))
-              (if all-outs-needed?
-                  the-call
-                  (let* ((output-names
-                          (invent-names-for-parts
-                           'receipt (return-type (type-map operator))))
-                         (needed-names
-                          (select-masked needed-outputs output-names)))
-                    (tidy-let-values
-                     `(let-values ((,needed-names ,the-call))
-                        ,(tidy-values
-                          `(values ,@(map (lambda (live? name)
-                                            (if live?
-                                                name
-                                                (make-tombstone)))
-                                          needed-outputs
-                                          output-names)))))))))))
+          (rewrite-call-site operator operands)))
    form))
 
 (define (find-needed-inputs needed-outputs i/o-map)
