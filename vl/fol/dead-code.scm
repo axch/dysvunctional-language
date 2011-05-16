@@ -682,14 +682,13 @@
                 (if (or all-outs-needed? (not (values-form? return)))
                     return
                     (tidy-values
-                     `(values ,@(select-masked
-                                 needed-outputs (cdr return))))))
+                     `(values ,@(select-masked needed-outputs (cdr return))))))
               `(define (,name ,@(select-masked needed-inputs args))
                  (argument-types ,@(select-masked needed-inputs stuff)
                                  ,new-return-type)
-                 ,(let ((body (rewrite-call-sites
-                               type-map dependency-map liveness-map body)))
-                    (let ((the-body
+                 ,(let* ((body (rewrite-call-sites
+                                type-map dependency-map liveness-map body))
+                         (the-body
                            (if all-ins-needed?
                                body
                                `(let (,(map (lambda (name)
@@ -697,16 +696,16 @@
                                             (select-masked
                                              (map not needed-inputs) args)))
                                   ,body))))
-                      (if all-outs-needed?
-                          the-body ; All the outs of the entry point will always be needed
-                          (let ((output-names
-                                 (invent-names-for-parts 'receipt return)))
-                            (tidy-let-values
-                             `(let-values ((,output-names ,the-body))
-                                ,(tidy-values
-                                  `(values
-                                    ,@(select-masked
-                                       needed-outputs output-names)))))))))))))
+                    (if all-outs-needed?
+                        the-body ; All the outs of the entry point will always be needed
+                        (let ((output-names
+                               (invent-names-for-parts 'receipt return)))
+                          (tidy-let-values
+                           `(let-values ((,output-names ,the-body))
+                              ,(tidy-values
+                                `(values
+                                  ,@(select-masked
+                                     needed-outputs output-names))))))))))))
      defns)))
 
 (define (rewrite-call-sites type-map dependency-map liveness-map form)
@@ -733,20 +732,20 @@
                   `(,operator ,@(select-masked needed-inputs operands))))
               (if all-outs-needed?
                   the-call
-                  (let ((output-names
-                         (invent-names-for-parts
-                          'receipt (return-type (type-map operator)))))
-                    (let ((needed-names
-                           (select-masked needed-outputs output-names)))
-                      (tidy-let-values
-                       `(let-values ((,needed-names ,the-call))
-                          ,(tidy-values
-                            `(values ,@(map (lambda (live? name)
-                                              (if live?
-                                                  name
-                                                  (make-tombstone)))
-                                            needed-outputs
-                                            output-names))))))))))))
+                  (let* ((output-names
+                          (invent-names-for-parts
+                           'receipt (return-type (type-map operator))))
+                         (needed-names
+                          (select-masked needed-outputs output-names)))
+                    (tidy-let-values
+                     `(let-values ((,needed-names ,the-call))
+                        ,(tidy-values
+                          `(values ,@(map (lambda (live? name)
+                                            (if live?
+                                                name
+                                                (make-tombstone)))
+                                          needed-outputs
+                                          output-names)))))))))))
    form))
 
 (define (find-needed-inputs needed-outputs i/o-map)
