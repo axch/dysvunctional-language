@@ -691,11 +691,9 @@
                (? body))
             (let* ((needed-outputs (hash-table/get liveness-map name #f))
                    (i/o-map (hash-table/get dependency-map name #f))
-                   (needed-input-indexes (var-set-union*
-                                          (map (lambda (live? in-set)
-                                                 (if live? in-set (no-used-vars)))
-                                               needed-outputs i/o-map)))
-                   (all-ins-needed? (= (var-set-size needed-input-indexes) (length args)))
+                   (needed-input-indexes (needed-inputs needed-outputs i/o-map))
+                   (all-ins-needed? (= (var-set-size needed-input-indexes)
+                                       (length args)))
                    (all-outs-needed? (every (lambda (x) x) needed-outputs)))
               (define new-return-type
                 (if (or all-outs-needed? (not (values-form? return)))
@@ -731,10 +729,7 @@
     (rule `((? operator ,procedure?) (?? operands))
           (let* ((needed-outputs (hash-table/get liveness-map operator #f))
                  (i/o-map (hash-table/get dependency-map operator #f))
-                 (needed-input-indexes (var-set-union*
-                                        (map (lambda (live? in-set)
-                                               (if live? in-set (no-used-vars)))
-                                             needed-outputs i/o-map)))
+                 (needed-input-indexes (needed-inputs needed-outputs i/o-map))
                  (all-outs-needed? (every (lambda (x) x) needed-outputs)))
             (let ((the-call
                   ;; TODO One could, actually, eliminate even more
@@ -768,6 +763,12 @@
                                             output-names
                                             needed-outputs))))))))))))
    form))
+
+(define (needed-inputs needed-outputs i/o-map)
+  (var-set-union*
+   (map (lambda (live? in-set)
+          (if live? in-set (no-used-vars)))
+        needed-outputs i/o-map)))
 
 (define (needed-items items needed-indexes)
   (filter-map
