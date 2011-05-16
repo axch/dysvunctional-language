@@ -680,16 +680,12 @@
     (rule `(define ((? name) (?? args))
              (argument-types (?? stuff) (? return))
              (? body))
-          ;; This is redundant because the dependency-map of this
-          ;; operator also allows one to deduce which inputs the
-          ;; operator needs, given which of the operator's outputs are
-          ;; needed.
-          #;
-          (inputs-needed! liveness-map operator
-                          (set-map (lambda (var)
-                                     (list-index (lambda (arg) (eq? arg var)) args))
-                                   (loop body body-live-out)))
           (let ((body-live-out (hash-table/get liveness-map name #f)))
+            ;; The loop does return information on which inputs are
+            ;; needed, but I can safely throw it away because the
+            ;; dependency-map of this operator already allows one to
+            ;; deduce which inputs the operator needs, given which of
+            ;; the operator's outputs are needed.
             (loop body body-live-out))))
   (define (output-needed! liveness-map name index)
     (let ((needed-outputs (hash-table/get liveness-map name #f)))
