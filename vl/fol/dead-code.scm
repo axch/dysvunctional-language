@@ -699,27 +699,31 @@
                 (if (or all-outs-needed? (not (values-form? return)))
                     return
                     (tidy-values
-                     `(values ,@(filter-map (lambda (live? item)
-                                              (and live? item))
-                                            needed-outputs (cdr return))))))
+                     `(values ,@(needed-items-parallel
+                                 needed-outputs (cdr return))))))
               `(define (,name ,@(needed-items args needed-input-indexes))
-                 (argument-types ,@(needed-items stuff needed-input-indexes) ,new-return-type)
-                 ,(let ((body (rewrite-call-sites type-map dependency-map liveness-map body)))
-                    (let ((the-body (if all-ins-needed?
-                                        body
-                                        `(let (,(map (lambda (name)
-                                                       `(,name ,(make-tombstone)))
-                                                     (unneeded-items args needed-input-indexes)))
-                                           ,body))))
+                 (argument-types ,@(needed-items stuff needed-input-indexes)
+                                 ,new-return-type)
+                 ,(let ((body (rewrite-call-sites
+                               type-map dependency-map liveness-map body)))
+                    (let ((the-body
+                           (if all-ins-needed?
+                               body
+                               `(let (,(map (lambda (name)
+                                              `(,name ,(make-tombstone)))
+                                            (unneeded-items
+                                             args needed-input-indexes)))
+                                  ,body))))
                       (if all-outs-needed?
                           the-body ; All the outs of the entry point will always be needed
-                          (let ((output-names (invent-names-for-parts 'receipt return)))
+                          (let ((output-names
+                                 (invent-names-for-parts 'receipt return)))
                             (tidy-let-values
                              `(let-values ((,output-names ,the-body))
                                 ,(tidy-values
-                                  `(values ,@(filter-map (lambda (item live?)
-                                                           (and live? item))
-                                                         output-names needed-outputs)))))))))))))
+                                  `(values
+                                    ,@(needed-items-parallel
+                                       needed-outputs output-names)))))))))))))
      defns)))
 
 (define (rewrite-call-sites type-map dependency-map liveness-map form)
@@ -769,6 +773,11 @@
    (map (lambda (live? in-set)
           (if live? in-set (no-used-vars)))
         needed-outputs i/o-map)))
+
+(define (needed-items-parallel liveness items)
+  (filter-map (lambda (live? item)
+                (and live? item))
+              liveness items))
 
 (define (needed-items items needed-indexes)
   (filter-map
