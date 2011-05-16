@@ -118,67 +118,67 @@
           (consequent (caddr expr))
           (alternate (cadddr expr)))
       (loop predicate #t
-       (lambda (new-predicate pred-used)
+       (lambda (new-predicate pred-needs)
          (loop consequent live-out
-          (lambda (new-consequent cons-used)
+          (lambda (new-consequent cons-needs)
             (loop alternate live-out
-             (lambda (new-alternate alt-used)
+             (lambda (new-alternate alt-needs)
                (win `(if ,new-predicate
                          ,new-consequent
                          ,new-alternate)
                     (var-set-union
-                     pred-used (var-set-union cons-used alt-used)))))))))))
+                     pred-needs (var-set-union cons-needs alt-needs)))))))))))
   (define (eliminate-in-let expr live-out win)
     (let ((bindings (cadr expr))
           (body (caddr expr)))
       (loop body live-out
-       (lambda (new-body body-used)
+       (lambda (new-body body-needs)
          (let ((new-bindings
                 (filter (lambda (binding)
-                          (var-used? (car binding) body-used))
+                          (var-used? (car binding) body-needs))
                         bindings)))
            (loop* (map cadr new-bindings)
-            (lambda (new-exprs exprs-used)
-              (let ((used (var-set-union* exprs-used)))
+            (lambda (new-exprs exprs-need)
+              (let ((used (var-set-union* exprs-need)))
                 (win (empty-let-rule
                       `(let ,(map list (map car new-bindings)
                                   new-exprs)
                          ,new-body))
                      (var-set-union
                       used (var-set-difference
-                            body-used (map car bindings))))))))))))
+                            body-needs (map car bindings))))))))))))
   (define (eliminate-in-let-values expr live-out win)
     (let ((binding (caadr expr))
           (body (caddr expr)))
       (let ((names (car binding))
             (sub-expr (cadr binding)))
         (loop body live-out
-         (lambda (new-body body-used)
+         (lambda (new-body body-needs)
            (define (slot-used? name)
              (or (ignore? name)
-                 (and (var-used? name body-used)
+                 (and (var-used? name body-needs)
                       #t)))
            (let ((sub-expr-live-out (map slot-used? names)))
              (if (any (lambda (x) x) sub-expr-live-out)
                  (loop sub-expr sub-expr-live-out
-                  (lambda (new-sub-expr sub-expr-used)
+                  (lambda (new-sub-expr sub-expr-needs)
                     (win (tidy-let-values
                           `(let-values ((,(filter slot-used? names)
                                          ,new-sub-expr))
                              ,new-body))
                          (var-set-union
-                          sub-expr-used
-                          (var-set-difference body-used names)))))
-                 (win new-body body-used))))))))
+                          sub-expr-needs
+                          (var-set-difference body-needs names)))))
+                 (win new-body body-needs))))))))
   ;; Given that I decided not to do proper elimination of dead
   ;; structure slots, I will say that if a structure is needed then
   ;; all of its slots are needed, and any access to any slot of a
   ;; structure causes the entire structure to be needed.
   (define (eliminate-in-construction expr live-out win)
     (loop* (cdr expr)
-     (lambda (new-args args-used)
+     (lambda (new-args args-need)
        (win `(,(car expr) ,@new-args)
-            (var-set-union* args-used)))))
+            (var-set-union* args-need)))))
   (define (eliminate-in-access expr live-out win)
     (loop (cadr expr) #t
      (lambda (new-accessee accessee-uses)
@@ -191,14 +191,14 @@
                                    live-out
                                    (cdr expr))))
       (loop* wanted-elts
-       (lambda (new-elts elts-used)
+       (lambda (new-elts elts-need)
          (win (if (= 1 (length new-elts))
                   (car new-elts)
                   `(values ,@new-elts))
-              (var-set-union* elts-used))))))
+              (var-set-union* elts-need))))))
   (define (eliminate-in-application expr live-out win)
     (loop* (cdr expr)
-     (lambda (new-args args-used)
+     (lambda (new-args args-need)
        (define (all-wanted? live-out)
          (or (equal? live-out #t)
              (every (lambda (x) x) live-out)))
@@ -217,16 +217,16 @@
                          ,(if (> (length useful-names) 1)
                               `(values ,@useful-names)
                               (car useful-names)))))))
-           (win new-call (var-set-union* args-used)))))))
+           (win new-call (var-set-union* args-need)))))))
   (define (loop* exprs win)
     (if (null? exprs)
         (win '() '())
         (loop (car exprs) #t
-         (lambda (new-expr expr-used)
+         (lambda (new-expr expr-needs)
            (loop* (cdr exprs)
-            (lambda (new-exprs exprs-used)
+            (lambda (new-exprs exprs-need)
               (win (cons new-expr new-exprs)
-                   (cons expr-used exprs-used))))))))
+                   (cons expr-needs exprs-need))))))))
   (loop expr live-out (lambda (new-expr used-vars) new-expr)))
 
 (define (no-used-vars) '())
@@ -577,6 +577,12 @@
 
 ;;; TODO This file now contains *three* very similar recursive traversals!
 (define ((improve-liveness-map! dependency-map) defn liveness-map)
+  ;; This loop is identical with the one in ELIMINATE-IN-EXPRESSION,
+  ;; except that
+  ;; 1) It doesn't rewrite the expression (so can be in direct style)
+  ;; 2) It refers to the given DEPENDENCY-MAP for what callees need
+  ;; 3) When it encounters a procedure call, it updates the
+  ;;    LIVENESS-MAP with a side effect.
   (define (loop expr live-out)
     (cond ((fol-var? expr)
            (single-used-var expr))
