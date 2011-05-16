@@ -439,16 +439,7 @@
                                   (cons (car binding)
                                         (car (loop (cadr binding)))))
                                 bindings)))
-        (map
-         (lambda (needs)
-           (var-set-union-map
-            (lambda (needed-var)
-              (let ((xxx (assq needed-var bindings-need)))
-                (if xxx
-                    (cdr xxx)
-                    (single-used-var needed-var))))
-            needs))
-         body-needs))))
+        (map (interpolate-let-bindings bindings-need) body-needs))))
   (define (study-let-values expr)
     (let* ((binding (caadr expr))
            (names (car binding))
@@ -456,16 +447,16 @@
            (body (caddr expr)))
       (let ((body-needs (loop body))
             (bindings-need (map cons names (loop sub-expr))))
-        (map
-         (lambda (needs)
-           (var-set-union-map
-            (lambda (needed-var)
-              (let ((xxx (assq needed-var bindings-need)))
-                (if xxx
-                    (cdr xxx)
-                    (single-used-var needed-var))))
-            needs))
-         body-needs))))
+        (map (interpolate-let-bindings bindings-need) body-needs))))
+  (define (interpolate-let-bindings bindings-need)
+    (lambda (need-set)
+      (var-set-union-map
+       (lambda (needed-var)
+         (let ((binding.need (assq needed-var bindings-need)))
+           (if binding.need
+               (cdr binding.need)
+               (single-used-var needed-var))))
+       need-set)))
   (define (study-construction expr)
     (list
      (var-set-union*
