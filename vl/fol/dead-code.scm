@@ -352,7 +352,7 @@
 (define (interprocedural-dead-code-elimination program)
   (let* ((defns (program->procedure-definitions program))
          (dependency-map (compute-dependency-map defns))
-         (liveness-map ((compute-liveness-map dependency-map) defns))
+         (liveness-map (compute-liveness-map dependency-map defns))
          (rewritten (rewrite-definitions dependency-map liveness-map defns)))
     (eliminate-intraprocedural-dead-variables ;; TODO Check absence of tombstones
      (procedure-definitions->program
@@ -524,13 +524,13 @@
 ;;; booleans).  The needed inputs can be inferred from this given the
 ;;; dependency-map.
 
-(define ((compute-liveness-map dependency-map) defns)
+(define (compute-liveness-map dependency-map defns)
   (let ((liveness-map (initial-liveness-map defns)))
     (let loop ()
       (clear-changed! liveness-map)
       (for-each
        (lambda (defn)
-         ((improve-liveness-map! dependency-map) defn liveness-map))
+         (improve-liveness-map! dependency-map liveness-map defn))
        defns)
       (if (changed? liveness-map)
           (loop)
@@ -557,7 +557,7 @@
     (hash-table/put! answer (definiendum (last defns)) (list #t))
     answer))
 
-(define ((improve-liveness-map! dependency-map) defn liveness-map)
+(define (improve-liveness-map! dependency-map liveness-map defn)
   ;; This loop is identical with the one in ELIMINATE-IN-EXPRESSION,
   ;; except that
   ;; 1) It doesn't rewrite the expression (so can be in direct style)
