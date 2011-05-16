@@ -753,9 +753,7 @@
   (define (parallel-list-and lists)
     (reduce (lambda (input answer)
               (map boolean/and input answer))
-            '() ; Relying on this being needed only if there are no
-                ; lists, because to do the initialization properly I
-                ; need to know how long the lists are.
+            (map (lambda (x) #f) (car i/o-map))
             lists))
   (parallel-list-and
    (select-masked needed-outputs i/o-map)))
