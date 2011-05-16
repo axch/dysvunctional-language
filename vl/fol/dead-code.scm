@@ -529,10 +529,11 @@
 (define compute-dependency-map
   (iterate-defn-map initial-dependency-map improve-dependency-map))
 
-;;; The liveness map is the structure constructed during steps 4-6 above.
-;;; It maps every procedure name to the set of its outputs that are
-;;; actually needed.  The needed inputs can be inferred from this
-;;; given the dependency-map.
+;;; The liveness map is the structure constructed during steps 4-6
+;;; above.  It maps every procedure name to the set of its outputs
+;;; that are actually needed (represented as a parallel list of
+;;; booleans).  The needed inputs can be inferred from this given the
+;;; dependency-map.
 
 (define ((compute-liveness-map dependency-map) defns)
   (let ((liveness-map (initial-liveness-map defns)))
@@ -567,7 +568,6 @@
     (hash-table/put! answer (definiendum (last defns)) (list #t))
     answer))
 
-;;; TODO This file now contains *three* very similar recursive traversals!
 (define ((improve-liveness-map! dependency-map) defn liveness-map)
   ;; This loop is identical with the one in ELIMINATE-IN-EXPRESSION,
   ;; except that
