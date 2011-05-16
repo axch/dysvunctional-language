@@ -365,6 +365,22 @@
 ;;; answers the question of whether that input is needed for the
 ;;; procedure to compute that output.
 
+(define (compute-dependency-map defns)
+  (let loop ((overall-map (initial-dependency-map defns))
+             (maybe-done? #t))
+    (for-each
+     (lambda (defn)
+       (let ((local-map (improve-dependency-map defn overall-map)))
+         (if (every equal? local-map (hash-table/get overall-map (definiendum defn) #f))
+             'ok
+             (begin
+               (hash-table/put! overall-map (definiendum defn) local-map)
+               (set! maybe-done? #f)))))
+     defns)
+    (if (not maybe-done?)
+        (loop overall-map #t)
+        overall-map)))
+
 (define (initial-dependency-map defns)
   (define (primitive-dependency-map)
    (define (nullary name)
@@ -501,25 +517,6 @@
   (if (values-form? shape)
       (cdr shape)
       (list shape)))
-
-(define ((iterate-defn-map initialize improve-locally) defns)
-  (let loop ((overall-map (initialize defns))
-             (maybe-done? #t))
-    (for-each
-     (lambda (defn)
-       (let ((local-map (improve-locally defn overall-map)))
-         (if (every equal? local-map (hash-table/get overall-map (definiendum defn) #f))
-             'ok
-             (begin
-               (hash-table/put! overall-map (definiendum defn) local-map)
-               (set! maybe-done? #f)))))
-     defns)
-    (if (not maybe-done?)
-        (loop overall-map #t)
-        overall-map)))
-
-(define compute-dependency-map
-  (iterate-defn-map initial-dependency-map improve-dependency-map))
 
 ;;; The liveness map is the structure constructed during steps 4-6
 ;;; above.  It maps every procedure name to the set of its outputs
