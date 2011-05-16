@@ -390,116 +390,108 @@
     answer))
 
 (define (improve-dependency-map defn dependency-map)
-  (define (loop expr live-out)
+  ;; This loop is like the one in ELIMINATE-IN-EXPRESSION, except that
+  ;; 1) It accumulates a more detailed answer structure (namely one
+  ;;    mapping all the possible outputs to which variables are needed
+  ;;    to compute each one).
+  ;; 2) It does not rewrite the expression, so it can be written in
+  ;;    direct style.
+  ;; 3) It is always interested in all return values, so it needn't
+  ;;    pass down a LIVE-OUT list.
+  (define (loop expr)
     (cond ((fol-var? expr)
            (list (single-used-var expr)))
           ((fol-const? expr)
            (list (no-used-vars)))
           ((if-form? expr)
-           (study-if expr live-out))
+           (study-if expr))
           ((let-form? expr)
-           (study-let expr live-out))
+           (study-let expr))
           ((let-values-form? expr)
-           (study-let-values expr live-out))
+           (study-let-values expr))
           ;; If used post SRA, there may be constructions to build the
           ;; answer for the outside world, but there should be no
           ;; accesses.
           ((construction? expr)
-           (study-construction expr live-out))
+           (study-construction expr))
           ((access? expr)
-           (study-access expr live-out))
+           (study-access expr))
           ((values-form? expr)
-           (study-values expr live-out))
+           (study-values expr))
           (else ; general application
-           (study-application expr live-out))))
-  (define (study-if expr live-out)
+           (study-application expr))))
+  (define (study-if expr)
     (let ((predicate (cadr expr))
           (consequent (caddr expr))
           (alternate (cadddr expr)))
-      (let ((pred-needs (car (loop predicate (list #t))))
-            (cons-needs (loop consequent live-out))
-            (alt-needs (loop alternate live-out)))
+      (let ((pred-needs (car (loop predicate)))
+            (cons-needs (loop consequent))
+            (alt-needs (loop alternate)))
         (map
-         (lambda (live? needed-in)
-           (if live?
-               (var-set-union pred-needs needed-in)
-               (no-used-vars)))
-         live-out
+         (lambda (needed-in)
+           (var-set-union pred-needs needed-in))
          (map var-set-union cons-needs alt-needs)))))
-  (define (study-let expr live-out)
+  (define (study-let expr)
     (let ((bindings (cadr expr))
           (body (caddr expr)))
-      (let ((body-needs (loop body live-out))
+      (let ((body-needs (loop body))
             (bindings-need (map (lambda (binding)
                                   (cons (car binding)
-                                        (car (loop (cadr binding) (list #t)))))
+                                        (car (loop (cadr binding)))))
                                 bindings)))
         (map
-         (lambda (live? needs)
-           (if live?
-               (var-set-union-map
-                (lambda (needed-var)
-                  (let ((xxx (assq needed-var bindings-need)))
-                    (if xxx
-                        (cdr xxx)
-                        (single-used-var needed-var))))
-                needs)
-               (no-used-vars)))
-         live-out
+         (lambda (needs)
+           (var-set-union-map
+            (lambda (needed-var)
+              (let ((xxx (assq needed-var bindings-need)))
+                (if xxx
+                    (cdr xxx)
+                    (single-used-var needed-var))))
+            needs))
          body-needs))))
-  (define (study-let-values expr live-out)
+  (define (study-let-values expr)
     (let* ((binding (caadr expr))
            (names (car binding))
            (sub-expr (cadr binding))
            (body (caddr expr)))
-      (let ((body-needs (loop body live-out))
-            (bindings-need
-             (map cons names (loop sub-expr (map (lambda (x) #t) names)))))
+      (let ((body-needs (loop body))
+            (bindings-need (map cons names (loop sub-expr))))
         (map
-         (lambda (live? needs)
-           (if live?
-               (var-set-union-map
-                (lambda (needed-var)
-                  (let ((xxx (assq needed-var bindings-need)))
-                    (if xxx
-                        (cdr xxx)
-                        (single-used-var needed-var))))
-                needs)
-               (no-used-vars)))
-         live-out
+         (lambda (needs)
+           (var-set-union-map
+            (lambda (needed-var)
+              (let ((xxx (assq needed-var bindings-need)))
+                (if xxx
+                    (cdr xxx)
+                    (single-used-var needed-var))))
+            needs))
          body-needs))))
-  (define (study-construction expr live-out)
+  (define (study-construction expr)
     (list
      (var-set-union*
       (map (lambda (arg)
-             (car (loop arg (list #t))))
+             (car (loop arg)))
            (cdr expr)))))
-  (define (study-access expr live-out)
-    (loop (cadr expr) (list #t)))
-  (define (study-values expr live-out)
+  (define (study-access expr)
+    (loop (cadr expr)))
+  (define (study-values expr)
     (map
-     (lambda (live? sub-expr)
-       (if live?
-           (car (loop sub-expr (list #t)))
-           (no-used-vars)))
-     live-out
+     (lambda (sub-expr)
+       (car (loop sub-expr)))
      (cdr expr)))
-  (define (study-application expr live-out)
+  (define (study-application expr)
     (let ((operator (car expr))
           (operands (cdr expr)))
       (let ((operator-dependency-map (hash-table/get dependency-map operator #f))
             (operands-need (map (lambda (operand)
-                                  (car (loop operand (list #t))))
+                                  (car (loop operand)))
                                 operands)))
         (map
-         (lambda (live? operator-dependency)
-           (if live?
-               (var-set-union-map
-                (lambda (needed-index)
-                  (list-ref operands-need needed-index))
-                operator-dependency)
-               (no-used-vars)))
-         live-out
+         (lambda (operator-dependency)
+           (var-set-union-map
+            (lambda (needed-index)
+              (list-ref operands-need needed-index))
+            operator-dependency))
          operator-dependency-map))))
   (define improve-dependency-map
     (rule `(define ((? name) (?? args))
@@ -510,7 +502,7 @@
              (var-set-map (lambda (var)
                             (list-index (lambda (arg) (eq? var arg)) args))
                           out-needs))
-           (loop body (map (lambda (x) #t) (desirable-slot-list return))))))
+           (loop body))))
   (improve-dependency-map defn))
 
 (define (desirable-slot-list shape)
