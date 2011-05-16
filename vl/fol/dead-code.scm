@@ -351,21 +351,21 @@
 
 (define (interprocedural-dead-code-elimination program)
   (let* ((defns (program->procedure-definitions program))
-         (i/o-need-map (compute-i/o-need-map defns))
-         (needed-var-map ((compute-need-map i/o-need-map) defns))
-         (rewritten (rewrite-definitions i/o-need-map needed-var-map defns)))
+         (dependency-map (compute-dependency-map defns))
+         (liveness-map ((compute-liveness-map dependency-map) defns))
+         (rewritten (rewrite-definitions dependency-map liveness-map defns)))
     (eliminate-intraprocedural-dead-variables ;; TODO Check absence of tombstones
      (procedure-definitions->program
       rewritten))))
 
-;;; The i/o-need-map is the structure built by steps 1-3 above.  It
+;;; The dependency-map is the structure built by steps 1-3 above.  It
 ;;; maps every procedure name to a list of sets of numbers.  The list
 ;;; is parallel to the values that the procedure returns, and each set
-;;; of numbers indicates which of the procedure's inputs are needed
-;;; for it to compute that output.
+;;; of numbers is the indices of those of the procedure's inputs that
+;;; are needed for it to compute that output.
 
-(define (initial-i/o-need-map defns)
-  (define (primitive-i/o-need-map)
+(define (initial-dependency-map defns)
+  (define (primitive-dependency-map)
    (define (nullary name)
      (cons name (list (no-used-vars))))
    (define (unary name)
@@ -378,7 +378,7 @@
       ,@(map unary '(abs exp log sin cos tan asin acos sqrt write-real real
                          zero? positive? negative?))
       ,@(map binary '(+ - * / atan expt < <= > >= = gensym=)))))
-  (let ((answer (primitive-i/o-need-map)))
+  (let ((answer (primitive-dependency-map)))
     (for-each
      (rule `(define ((? name) (?? args))
               (argument-types (?? stuff) (? return))
@@ -389,7 +389,7 @@
      defns)
     answer))
 
-(define (improve-i/o-need-map defn i/o-need-map)
+(define (improve-dependency-map defn dependency-map)
   (define (loop expr live-out)
     (cond ((fol-var? expr)
            (list (single-used-var expr)))
@@ -487,21 +487,21 @@
   (define (study-application expr live-out)
     (let ((operator (car expr))
           (operands (cdr expr)))
-      (let ((operator-i/o-need-map (hash-table/get i/o-need-map operator #f))
+      (let ((operator-dependency-map (hash-table/get dependency-map operator #f))
             (operands-need (map (lambda (operand)
                                   (car (loop operand (list #t))))
                                 operands)))
         (map
-         (lambda (live? operator-i/o-need)
+         (lambda (live? operator-dependency)
            (if live?
                (var-set-union-map
                 (lambda (needed-index)
                   (list-ref operands-need needed-index))
-                operator-i/o-need)
+                operator-dependency)
                (no-used-vars)))
          live-out
-         operator-i/o-need-map))))
-  (define improve-i/o-need-map
+         operator-dependency-map))))
+  (define improve-dependency-map
     (rule `(define ((? name) (?? args))
              (argument-types (?? stuff) (? return))
              (? body))
@@ -511,7 +511,7 @@
                             (list-index (lambda (arg) (eq? var arg)) args))
                           out-needs))
            (loop body (map (lambda (x) #t) (desirable-slot-list return))))))
-  (improve-i/o-need-map defn))
+  (improve-dependency-map defn))
 
 (define (desirable-slot-list shape)
   (if (values-form? shape)
@@ -534,25 +534,25 @@
         (loop overall-map #t)
         overall-map)))
 
-(define compute-i/o-need-map
-  (iterate-defn-map initial-i/o-need-map improve-i/o-need-map))
+(define compute-dependency-map
+  (iterate-defn-map initial-dependency-map improve-dependency-map))
 
-;;; The need map is the structure constructed during steps 4-6 above.
+;;; The liveness map is the structure constructed during steps 4-6 above.
 ;;; It maps every procedure name to the set of its outputs that are
 ;;; actually needed.  The needed inputs can be inferred from this
-;;; given the i/o-need-map.
+;;; given the dependency-map.
 
-(define ((compute-need-map i/o-need-map) defns)
-  (let ((need-map (initial-need-map defns)))
+(define ((compute-liveness-map dependency-map) defns)
+  (let ((liveness-map (initial-liveness-map defns)))
     (let loop ()
-      (clear-changed! need-map)
+      (clear-changed! liveness-map)
       (for-each
        (lambda (defn)
-         ((improve-need-map! i/o-need-map) defn need-map))
+         ((improve-liveness-map! dependency-map) defn liveness-map))
        defns)
-      (if (changed? need-map)
+      (if (changed? liveness-map)
           (loop)
-          need-map))))
+          liveness-map))))
 
 (define (clear-changed! thing)
   (eq-put! thing 'changed #f))
@@ -563,7 +563,7 @@
 (define (changed! thing)
   (eq-put! thing 'changed #t))
 
-(define (initial-need-map defns)
+(define (initial-liveness-map defns)
   (let ((answer
          (alist->eq-hash-table
           (map (rule `(define ((? name) (?? args))
@@ -576,7 +576,7 @@
     answer))
 
 ;;; TODO This file now contains *three* very similar recursive traversals!
-(define ((improve-need-map! i/o-need-map) defn need-map)
+(define ((improve-liveness-map! dependency-map) defn liveness-map)
   (define (loop expr live-out)
     (cond ((fol-var? expr)
            (single-used-var expr))
@@ -655,19 +655,19 @@
   (define (study-application expr live-out)
     (let ((operator (car expr))
           (operands (cdr expr)))
-      (let* ((operator-i/o-need-map (hash-table/get i/o-need-map operator #f))
+      (let* ((operator-dependency-map (hash-table/get dependency-map operator #f))
              (operand-indecies-needed
               (var-set-union*
                (map
                 (lambda (live? index operator-needs)
                   (if live?
                       (begin
-                        (output-needed! need-map operator index)
+                        (output-needed! liveness-map operator index)
                         operator-needs)
                       (no-used-vars)))
                 live-out
                 (iota (length live-out))
-                operator-i/o-need-map)))
+                operator-dependency-map)))
              (operands-needed
               (var-set-map
                (lambda (arg-index)
@@ -677,42 +677,42 @@
          (lambda (operand)
            (loop operand (list #t)))
          operands-needed))))
-  (define improve-need-map
+  (define improve-liveness-map
     (rule `(define ((? name) (?? args))
              (argument-types (?? stuff) (? return))
              (? body))
-          ;; This is redundant because the i/o-need-map of this
+          ;; This is redundant because the dependency-map of this
           ;; operator also allows one to deduce which inputs the
           ;; operator needs, given which of the operator's outputs are
           ;; needed.
           #;
-          (inputs-needed! need-map operator
+          (inputs-needed! liveness-map operator
                           (set-map (lambda (var)
                                      (list-index (lambda (arg) (eq? arg var)) args))
                                    (loop body body-live-out)))
-          (let ((body-live-out (hash-table/get need-map name #f)))
+          (let ((body-live-out (hash-table/get liveness-map name #f)))
             (loop body body-live-out))))
-  (define (output-needed! need-map name index)
-    (let ((needed-outputs (hash-table/get need-map name #f)))
+  (define (output-needed! liveness-map name index)
+    (let ((needed-outputs (hash-table/get liveness-map name #f)))
       (if needed-outputs
           (let ((relevant-pair (drop needed-outputs index)))
             (if (car relevant-pair)
                 'ok
                 (begin
                   (set-car! relevant-pair #t)
-                  (changed! need-map))))
+                  (changed! liveness-map))))
           ;; I don't care which inputs of primitives are needed.
           'ok)))
-  (improve-need-map defn))
+  (improve-liveness-map defn))
 
-(define (rewrite-definitions i/o-need-map needed-var-map defns)
+(define (rewrite-definitions dependency-map liveness-map defns)
   (let ((type-map (type-map `(begin ,@defns 'bogon)))) ; This bogon has to do with the entry point being a definition now
     ((on-subexpressions
       (rule `(define ((? name) (?? args))
                (argument-types (?? stuff) (? return))
                (? body))
-            (let* ((needed-outputs (hash-table/get needed-var-map name #f))
-                   (i/o-map (hash-table/get i/o-need-map name #f))
+            (let* ((needed-outputs (hash-table/get liveness-map name #f))
+                   (i/o-map (hash-table/get dependency-map name #f))
                    (needed-input-indexes (var-set-union*
                                           (map (lambda (live? in-set)
                                                  (if live? in-set (no-used-vars)))
@@ -728,7 +728,7 @@
                                             (cdr return) needed-outputs)))))
               `(define (,name ,@(needed-items args needed-input-indexes))
                  (argument-types ,@(needed-items stuff needed-input-indexes) ,new-return-type)
-                 ,(let ((body (rewrite-call-sites type-map i/o-need-map needed-var-map body)))
+                 ,(let ((body (rewrite-call-sites type-map dependency-map liveness-map body)))
                     (let ((the-body (if all-ins-needed?
                                         body
                                         `(let (,(map (lambda (name)
@@ -746,13 +746,13 @@
                                                          output-names needed-outputs)))))))))))))
      defns)))
 
-(define (rewrite-call-sites type-map i/o-need-map needed-var-map form)
+(define (rewrite-call-sites type-map dependency-map liveness-map form)
   (define (procedure? name)
-    (hash-table/get needed-var-map name #f))
+    (hash-table/get liveness-map name #f))
   ((on-subexpressions
     (rule `((? operator ,procedure?) (?? operands))
-          (let* ((needed-outputs (hash-table/get needed-var-map operator #f))
-                 (i/o-map (hash-table/get i/o-need-map operator #f))
+          (let* ((needed-outputs (hash-table/get liveness-map operator #f))
+                 (i/o-map (hash-table/get dependency-map operator #f))
                  (needed-input-indexes (var-set-union*
                                         (map (lambda (live? in-set)
                                                (if live? in-set (no-used-vars)))
