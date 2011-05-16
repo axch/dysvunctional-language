@@ -636,13 +636,8 @@
     (loop (cadr expr) (list #t)))
   (define (study-values expr live-out)
     (var-set-union*
-     (map
-      (lambda (live? sub-expr)
-        (if live?
-            (loop sub-expr (list #t))
-            (no-used-vars)))
-      live-out
-      (cdr expr))))
+     (map (lambda (sub-expr) (loop sub-expr (list #t)))
+          (select-masked live-out (cdr expr)))))
   (define (study-application expr live-out)
     (let ((operator (car expr))
           (operands (cdr expr)))
@@ -660,12 +655,8 @@
                 (iota (length live-out))
                 operator-dependency-map))))
         (var-set-union*
-         (map (lambda (live? operand)
-                (if live?
-                    (loop operand (list #t))
-                    (no-used-vars)))
-              operands-live
-              operands)))))
+         (map (lambda (operand) (loop operand (list #t)))
+              (select-masked operands-live operands))))))
   (define improve-liveness-map
     (rule `(define ((? name) (?? args))
              (argument-types (?? stuff) (? return))
