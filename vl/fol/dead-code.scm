@@ -670,7 +670,7 @@
 (define (rewrite-definitions dependency-map liveness-map defns)
   ;; This bogon has to do with the entry point being a definition now
   (define the-type-map (type-map `(begin ,@defns 'bogon)))
-  (define (rewrite-definition name args stuff return body)
+  (define (rewrite-definition name args arg-types return body)
     (let* ((needed-outputs (hash-table/get liveness-map name #f))
            (i/o-map (hash-table/get dependency-map name #f))
            (needed-inputs (find-needed-inputs needed-outputs i/o-map))
@@ -682,7 +682,7 @@
             (tidy-values
              `(values ,@(select-masked needed-outputs (cdr return))))))
       `(define (,name ,@(select-masked needed-inputs args))
-         (argument-types ,@(select-masked needed-inputs stuff)
+         (argument-types ,@(select-masked needed-inputs arg-types)
                          ,new-return-type)
          ,(let* ((body (rewrite-call-sites
                         the-type-map dependency-map liveness-map body))
@@ -706,9 +706,9 @@
                              needed-outputs output-names)))))))))))
   ((on-subexpressions
     (rule `(define ((? name) (?? args))
-             (argument-types (?? stuff) (? return))
+             (argument-types (?? arg-types) (? return))
              (? body))
-          (rewrite-definition name args stuff return body)))
+          (rewrite-definition name args arg-types return body)))
    defns))
 
 (define (rewrite-call-sites type-map dependency-map liveness-map form)
