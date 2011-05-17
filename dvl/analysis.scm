@@ -4,56 +4,47 @@
 ;;; An analysis binding is a statement about the current state of
 ;;; knowledge of the analysis, with regard to the evaluation of a
 ;;; given expression in a given (abstract) environment and in a given
-;;; world.  The world contains two pieces of information: the i/o
-;;; version (which is an opaque token, with the implication that
-;;; distinct such tokens are separated by i/o events but eq? tokens
-;;; are not) and the gensym number.  
+;;; world.  The world represents all accessible information that may
+;;; change dynamically during a run of the program (namely, that which
+;;; is not encapsulated in the expression to evaluate and its abstract
+;;; environment).  As such, the world contains one piece of
+;;; information: the gensym number.  Everything known about the
+;;; evaluation of an expression is the (abstract) value it returns and
+;;; the effect it has on the world (namely, whether or not it creates
+;;; new gensyms).
 
-;;; How can the behavior of expressions depend on the world?  Nothing
-;;; in DVL can detect changes in the i/o version over the course of an
-;;; analysis --- input from the outside world is already assumed to be
-;;; unpredictable.  The only interesting feature of the i/o version is
-;;; the knowledge of whether some expression changes it (to wit,
-;;; reserves the right to perform i/o).
+(define-structure (binding safe-accessors)
+  exp
+  env
+  world
+  value
+  new-world
+  ;; This notify slot helps update the analysis with a work list
+  ;; instead of round-robin.
+  notify)
 
-;;; There is only one DVL primitive whose value can be affected by the
-;;; gensym number: GENSYM.  (No DVL means of combination or
-;;; abstraction can be directly affected by the gensym number).  The
-;;; value of an expression may depend on the gensym number if that
-;;; expression generates some gensym and captures it in a data
-;;; structure that it returns.  The only DVL primitives that are
-;;; affected by the values of gensyms are the gensym comparison
-;;; primitives.  Since fresh gensyms by definition compare larger than
-;;; all existing gensyms, the incoming gensym number (as opposed to
-;;; the modifications to the gensym number that occur in the
-;;; evaluation of subexpressions) cannot affect the return value of a
-;;; gensym comparison primitive, and therefore cannot affect the
+;;; How can the behavior of expressions depend on the world?  There is
+;;; only one DVL primitive whose value can be affected by the gensym
+;;; number: GENSYM.  (No DVL means of combination or abstraction can
+;;; be directly affected by the gensym number).  The value of an
+;;; expression may depend on the gensym number if that expression
+;;; generates some gensym and captures it in a data structure that it
+;;; returns.  The only DVL primitive that is affected by the values of
+;;; gensyms is GENSYM=.  Since fresh gensyms by definition compare
+;;; larger than all existing gensyms, the incoming gensym number (as
+;;; opposed to the modifications to the gensym number that occur in
+;;; the evaluation of subexpressions) cannot affect the return value
+;;; of a gensym comparison primitive, and therefore cannot affect the
 ;;; control flow of any expression.
 
-;;; Therefore, whether a returned value does or does not depend on the
-;;; incoming gensym number is simply a matter of whether or not it
-;;; contains any gensym objects inside.  There is a wrinkle to this:
-;;; closures may contain closed-over gensym objects, and yet may have
-;;; the property that which gensym they contain cannot be ascertained
-;;; operationally.  For example, the closure returned by forward-mode
-;;; DERIVATIVE will have this property.  It is not clear offhand how
-;;; and whether to detect such cases.
-
-;;; In any case, if the returned value does not depend on the gensym
-;;; number, then, by definition, the same value will be returned
-;;; regardless of the gensym number obtaining on any subsequent calls.
-;;; Therefore, a binding may either key off of the gensym number or
-;;; leave that portion as an "any world" placeholder.
-
-;;; The effect an expression has on the world only depends on the
-;;; control flow of the expression, and therefore does not depend on
-;;; the incoming world.  Furthermore, the only interesting information
-;;; about the effect on the world is whether any i/o was done, and the
-;;; invariant that the outgoing gensym number must be larger than the
-;;; numbers of any gensyms stored in the return value.  This means, in
-;;; particular, that if the return value does not depend on the
-;;; incoming world, then the expression only has i/o effects (if any)
-;;; on the world.
+;;; Consequently, assuming the consistency condition that the incoming
+;;; gensym number is always larger than all gensyms stored in the
+;;; environment, the return value will always have the same shape,
+;;; contain the same gensyms that are less than the gensym number, and
+;;; contain gensyms with the same positive offsets from the gensym
+;;; number, regardless of what the incoming gensym number actually is.
+;;; Likewise, the new world produced on evaluation of the expression
+;;; will be offset from the incoming gensym number by a fixed amount.
 
 (define (world-update-binding binding new-world win)
   (win (world-update-value

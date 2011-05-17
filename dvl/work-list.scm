@@ -1,12 +1,5 @@
 (declare (usual-integrations))
 
-(define-structure (binding safe-accessors)
-  exp
-  env
-  world
-  value
-  new-world
-  notify)
 
 (define (register-notification! binding notifee)
   (if (memq notifee (binding-notify binding))
