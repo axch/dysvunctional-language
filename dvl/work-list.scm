@@ -1,46 +1,6 @@
 (declare (usual-integrations))
 
 
-(define (register-notification! binding notifee)
-  (if (memq notifee (binding-notify binding))
-      'ok
-      (set-binding-notify! binding (cons notifee (binding-notify binding)))))
-
-(define-structure (analysis safe-accessors (constructor %make-analysis))
-  map
-  queue)
-
-(define (make-analysis bindings)
-  (let* ((binding-map (make-abstract-hash-table))
-         (answer (%make-analysis binding-map '())))
-    (for-each (lambda (binding)
-                (analysis-new-binding! answer binding)) bindings)
-    answer))
-
-(define (analysis-bindings analysis)
-  (hash-table/datum-list (analysis-map analysis)))
-
-(define (analysis-search exp env analysis win lose)
-  (hash-table/lookup (analysis-map analysis) (cons exp env) win lose))
-
-(define (analysis-new-binding! analysis binding)
-  (hash-table/put! (analysis-map analysis)
-                   (cons (binding-exp binding) (binding-env binding))
-                   binding)
-  (analysis-notify! analysis binding))
-
-(define (analysis-notify! analysis binding)
-  (if (memq binding (analysis-queue analysis))
-      'ok
-      (set-analysis-queue! analysis (cons binding (analysis-queue analysis)))))
-
-(define (analysis-queue-pop! analysis)
-  (if (null? (analysis-queue analysis))
-      (error "Popping an empty queue")
-      (let ((answer (car (analysis-queue analysis))))
-        (set-analysis-queue! analysis (cdr (analysis-queue analysis)))
-        answer)))
-
 ;; This one is for use during abstract evaluation; it is always "on
 ;; behalf of" some binding that is therefore assumed to depend on the
 ;; answer.

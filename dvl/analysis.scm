@@ -19,9 +19,14 @@
   world
   value
   new-world
-  ;; This notify slot helps update the analysis with a work list
-  ;; instead of round-robin.
+  ;; This notify slot is a list of bindings used to keep the analysis
+  ;; work queue up to date.
   notify)
+
+(define (register-notification! binding notifee)
+  (if (memq notifee (binding-notify binding))
+      'ok
+      (set-binding-notify! binding (cons notifee (binding-notify binding)))))
 
 ;;; How can the behavior of expressions depend on the world?  There is
 ;;; only one DVL primitive whose value can be affected by the gensym
@@ -62,6 +67,50 @@
        (world-equal? (binding-world binding1) (binding-world binding2))
        (abstract-equal? (binding-value binding1) (binding-value binding2))
        (world-equal? (binding-new-world binding1) (binding-new-world binding2))))
+
+;;; An analysis is a collection bindings representing all current
+;;; knowledge and a queue of those bindings that may be refinable.
+;;; The bindings are indexed by the expression-environment pair they
+;;; refer to.  The notify slot of an individual binding is the list of
+;;; bindings that may be further refined if it happens that this
+;;; binding is successfully refined.
+
+(define-structure (analysis safe-accessors (constructor %make-analysis))
+  map
+  queue)
+
+(define (make-analysis bindings)
+  (let* ((binding-map (make-abstract-hash-table))
+         (answer (%make-analysis binding-map '())))
+    (for-each (lambda (binding)
+                (analysis-new-binding! answer binding)) bindings)
+    answer))
+
+(define (analysis-bindings analysis)
+  (hash-table/datum-list (analysis-map analysis)))
+
+(define (analysis-search exp env analysis win lose)
+  (hash-table/lookup (analysis-map analysis) (cons exp env) win lose))
+
+(define (analysis-new-binding! analysis binding)
+  (hash-table/put! (analysis-map analysis)
+                   (cons (binding-exp binding) (binding-env binding))
+                   binding)
+  (analysis-notify! analysis binding))
+
+(define (analysis-notify! analysis binding)
+  (if (memq binding (analysis-queue analysis))
+      'ok
+      (set-analysis-queue! analysis (cons binding (analysis-queue analysis)))))
+
+(define (analysis-queue-pop! analysis)
+  (if (null? (analysis-queue analysis))
+      (error "Popping an empty queue")
+      (let ((answer (car (analysis-queue analysis))))
+        (set-analysis-queue! analysis (cdr (analysis-queue analysis)))
+        answer)))
+
+
 ;;; EXPAND-ANALYSIS is \bar E_1' from [1].
 ;;; It registers interest in the evaluation of EXP in ENV by producing
 ;;; a binding to be added to the new incarnation of ANALYSIS, should
