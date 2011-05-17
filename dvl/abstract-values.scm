@@ -176,8 +176,10 @@
       (let loop ((thing thing))
         (cond ((abstract-gensym? thing)
                (make-abstract-gensym
-                (world-update-gensym-number (abstract-gensym-min thing) old-world new-world)
-                (world-update-gensym-number (abstract-gensym-max thing) old-world new-world)))
+                (world-update-gensym-number
+                 (abstract-gensym-min thing) old-world new-world)
+                (world-update-gensym-number
+                 (abstract-gensym-max thing) old-world new-world)))
               (else (object-map loop thing))))))
 
 (define (world-update-world updatee old-world new-world)
