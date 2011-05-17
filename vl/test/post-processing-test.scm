@@ -302,6 +302,30 @@
           (let ((y (+ x 1)))
             (* something (+ y x+1)))))))
 
+   (equal?
+    '(let ((x (read-real))
+           (y (read-real)))
+       (+ x y))
+    (intraprocedural-cse
+     '(let ((x (read-real))
+            (y (read-real)))
+        (+ x y))))
+
+   (equal?
+    '(begin
+       (define (my-read)
+         (read-real))
+       (let ((x (my-read))
+             (y (my-read)))
+         (+ x y)))
+    (intraprocedural-cse
+     '(begin
+        (define (my-read)
+          (read-real))
+        (let ((x (my-read))
+              (y (my-read)))
+          (+ x y)))))
+
    ;; TODO An example for intreprocedural CSE
    #;
    (begin
