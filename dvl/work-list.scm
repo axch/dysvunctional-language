@@ -15,7 +15,7 @@
    (lambda ()
      (if (impossible-world? world)
          (win abstract-none impossible-world)
-         (let ((binding (make-binding exp env world abstract-none impossible-world '())))
+         (let ((binding (make-binding exp env world abstract-none impossible-world)))
            (analysis-new-binding! analysis binding)
            (search-win binding))))))
 
@@ -34,8 +34,7 @@
      (initial-user-env)
      (initial-world)
      abstract-none
-     impossible-world
-     '()))))
+     impossible-world))))
 
 (define (step-analysis! analysis)
   (if (null? (analysis-queue analysis))

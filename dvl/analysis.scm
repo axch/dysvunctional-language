@@ -13,7 +13,7 @@
 ;;; the effect it has on the world (namely, whether or not it creates
 ;;; new gensyms).
 
-(define-structure (binding safe-accessors)
+(define-structure (binding safe-accessors (constructor %make-binding))
   exp
   env
   world
@@ -22,6 +22,9 @@
   ;; This notify slot is a list of bindings used to keep the analysis
   ;; work queue up to date.
   notify)
+
+(define (make-binding exp env world value new-world)
+  (%make-binding exp env world value new-world '()))
 
 (define (register-notification! binding notifee)
   (if (memq notifee (binding-notify binding))
