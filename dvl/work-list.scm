@@ -116,6 +116,8 @@
   (map pp (analysis-bindings analysis))
   (pp (analysis-queue analysis)))
 
+(define *analyze-wallp* #f)
+
 (define (analyze program)
   (let ((analysis (initial-analysis (macroexpand program))))
     (let loop ((continue? #t)
