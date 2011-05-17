@@ -1,0 +1,93 @@
+A DVL interpreter and an aggressively optmizing DVL->Scheme compiler
+
+Author: Alexey Radul
+
+
+Why do you care?
+----------------------------------------------------------------------
+
+This compiler supports a standard library that implements forward mode
+AD, using gensyms to avoid perturbation confusion.  This compiler
+performs union-free flow analysis augmented to understand the gensyms.
+It is good enough that it migrates all the tagging, dispatching, and
+other scaffolding of the AD implementation to compile time, leaving
+efficient, unconfused code.
+
+
+What is DVL?
+----------------------------------------------------------------------
+
+DysVunctional Language (DVL) is a variant of VL that adds support for
+gensyms, a slight impurity (hence the name).  Gensyms are unique,
+dynamically created objects each of which is guaranteed to be
+distinguishable from all other objects.  This is interesting because
+the gensym impurity is sufficent to implement forward mode AD in user
+space without perturbation confusion, and yet is not so compilcated as
+to be un-analyzable.
+
+As a language, DVL differs from VL only in supporting one additional
+data type, the gensym.  DVL also offers the following additional
+procedures:
+
+gensym      -- Creates and returns a fresh object
+  This object is guaranteed to be distinct from all other objects.
+
+gensym?     -- Tells whether an object was created by GENSYM.
+
+gensym=     -- Tests whether two objects were created by the same
+  dynamic call to GENSYM.
+
+See also the DVL standard library.
+
+
+So how does it work?
+----------------------------------------------------------------------
+
+DVL is a copy of the VL compiler (in fact, they share a respectable
+quantity of code), except that it has been modified to process gensyms
+properly.  Only the flow analysis and supporting structures needed
+modification; in particular, the overall architecture, the syntax
+phase, the code generator, and the post-processor are all the same.
+
+DVL also comes with a nontrivial standard library.  Said library
+implements forward mode AD by the generic operations method, with
+explicit tagging of and dispatching on distinct perturbations.  It
+relies on the flow analysis to specialize all that machinery to each
+particular use case to produce efficient code.
+
+
+I'm psyched!  Where do I start?
+----------------------------------------------------------------------
+
+Have an idea of VL first.
+
+TODO what's a good example program?
+
+Here are the files where DVL differs from VL
+
+TODO clean these up and make them presentable
+
+abstract-eval
+abstract-values
+analysis
+data
+eval
+primitives
+work-list
+
+The DVL standard library is in
+stdlib.dvl
+
+See also load.scm for interface hackery
+
+These are the files that DVL shares with VL:
+
+macro.scm
+letrec.scm
+syntax.scm
+read.scm
+env.scm
+nomenclature.scm
+code-generator.scm
+
+DVL, like VL, also relies on the FOL compiler in ../vl/fol/, which see.

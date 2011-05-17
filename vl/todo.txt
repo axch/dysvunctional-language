@@ -1,5 +1,8 @@
 Rewrite examples using internal definitions?
 
+Describe what exactly you can and can't do with LETREC and DEFINE, and
+contrast with standard Scheme.
+
 Eliminate tests VL cannot pass (e.g. by searching for *j in the test
 program in tool/test-driver-scm.scm)
 
