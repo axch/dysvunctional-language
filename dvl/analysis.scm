@@ -56,6 +56,12 @@
         (binding-world binding)
         new-world)))
 
+(define (same-analysis-binding? binding1 binding2)
+  (and (equal? (binding-exp binding1) (binding-exp binding2))
+       (abstract-equal? (binding-env binding1) (binding-env binding2))
+       (world-equal? (binding-world binding1) (binding-world binding2))
+       (abstract-equal? (binding-value binding1) (binding-value binding2))
+       (world-equal? (binding-new-world binding1) (binding-new-world binding2))))
 ;;; EXPAND-ANALYSIS is \bar E_1' from [1].
 ;;; It registers interest in the evaluation of EXP in ENV by producing
 ;;; a binding to be added to the new incarnation of ANALYSIS, should
@@ -70,9 +76,3 @@
    (lambda ()
      (list (make-binding exp env world abstract-none impossible-world)))))
 
-(define (same-analysis-binding? binding1 binding2)
-  (and (equal? (binding-exp binding1) (binding-exp binding2))
-       (abstract-equal? (binding-env binding1) (binding-env binding2))
-       (world-equal? (binding-world binding1) (binding-world binding2))
-       (abstract-equal? (binding-value binding1) (binding-value binding2))
-       (world-equal? (binding-new-world binding1) (binding-new-world binding2))))
