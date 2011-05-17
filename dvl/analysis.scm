@@ -111,3 +111,8 @@
   (newline)
   (map pp (analysis-bindings analysis))
   (pp (analysis-queue analysis)))
+
+;; This one is just for querying the analysis, for example during code
+;; generation.  Compare ANALYSIS-GET-IN-WORLD.
+(define (analysis-get exp env analysis)
+  (analysis-search exp env analysis binding-value (lambda () abstract-none)))
