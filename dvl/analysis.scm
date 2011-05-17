@@ -61,13 +61,6 @@
         (binding-world binding)
         new-world)))
 
-(define (same-analysis-binding? binding1 binding2)
-  (and (equal? (binding-exp binding1) (binding-exp binding2))
-       (abstract-equal? (binding-env binding1) (binding-env binding2))
-       (world-equal? (binding-world binding1) (binding-world binding2))
-       (abstract-equal? (binding-value binding1) (binding-value binding2))
-       (world-equal? (binding-new-world binding1) (binding-new-world binding2))))
-
 ;;; An analysis is a collection bindings representing all current
 ;;; knowledge and a queue of those bindings that may be refinable.
 ;;; The bindings are indexed by the expression-environment pair they
@@ -109,19 +102,3 @@
       (let ((answer (car (analysis-queue analysis))))
         (set-analysis-queue! analysis (cdr (analysis-queue analysis)))
         answer)))
-
-
-;;; EXPAND-ANALYSIS is \bar E_1' from [1].
-;;; It registers interest in the evaluation of EXP in ENV by producing
-;;; a binding to be added to the new incarnation of ANALYSIS, should
-;;; the current incarnation lack any binding already covering that
-;;; question.
-(define (analysis-expand exp env world analysis win)
-  (analysis-search exp env analysis
-   (lambda (binding)
-     (if (abstract-none? (binding-value binding))
-         '()
-         (world-update-binding binding world win)))
-   (lambda ()
-     (list (make-binding exp env world abstract-none impossible-world)))))
-
