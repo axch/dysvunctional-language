@@ -326,7 +326,7 @@
               (y (my-read)))
           (+ x y)))))
 
-   ;; TODO An example for intreprocedural CSE
+   ;; TODO An example for interprocedural CSE
    #;
    (begin
      (define (double-fact n1 n2)
