@@ -105,3 +105,9 @@
       (let ((answer (car (analysis-queue analysis))))
         (set-analysis-queue! analysis (cdr (analysis-queue analysis)))
         answer)))
+
+(define (show-analysis analysis)
+  (display analysis)
+  (newline)
+  (map pp (analysis-bindings analysis))
+  (pp (analysis-queue analysis)))

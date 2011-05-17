@@ -62,12 +62,6 @@
                               #t)))))))
               answer))))))
 
-(define (show-analysis analysis)
-  (display analysis)
-  (newline)
-  (map pp (analysis-bindings analysis))
-  (pp (analysis-queue analysis)))
-
 (define *analyze-wallp* #f)
 
 (define (analyze program)
