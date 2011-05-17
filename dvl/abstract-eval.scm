@@ -131,7 +131,7 @@
                 (show-analysis analysis))
             analysis)
           (begin
-            (investigate-binding! analysis (analysis-queue-pop! analysis))
+            (refine-next-binding! analysis)
             (loop (+ count 1)))))))
 
 (define *analyze-wallp* #f)
@@ -146,21 +146,22 @@
      abstract-none
      impossible-world))))
 
-(define (investigate-binding! analysis binding)
-  (fluid-let ((*on-behalf-of* binding))
-    (let ((exp (binding-exp binding))
-          (env (binding-env binding))
-          (world (binding-world binding))
-          (value (binding-value binding)))
-      (refine-eval
-       exp env world analysis
-       (lambda (new-value new-world)
-         (let ((new-value (abstract-union value new-value)))
-           (if (abstract-equal? value new-value)
-               'ok
-               (begin
-                 (set-binding-value! binding new-value)
-                 (set-binding-new-world! binding new-world)
-                 (for-each (lambda (dependency)
-                             (analysis-notify! analysis dependency))
-                           (binding-notify binding))))))))))
+(define (refine-next-binding! analysis)
+  (let ((binding (analysis-queue-pop! analysis)))
+    (fluid-let ((*on-behalf-of* binding))
+      (let ((exp (binding-exp binding))
+            (env (binding-env binding))
+            (world (binding-world binding))
+            (value (binding-value binding)))
+        (refine-eval
+         exp env world analysis
+         (lambda (new-value new-world)
+           (let ((new-value (abstract-union value new-value)))
+             (if (abstract-equal? value new-value)
+                 'ok
+                 (begin
+                   (set-binding-value! binding new-value)
+                   (set-binding-new-world! binding new-world)
+                   (for-each (lambda (dependency)
+                               (analysis-notify! analysis dependency))
+                             (binding-notify binding)))))))))))
