@@ -55,25 +55,6 @@
 ;;; incoming world, then the expression only has i/o effects (if any)
 ;;; on the world.
 
-(define-structure (binding safe-accessors)
-  exp
-  env
-  world
-  value
-  new-world)
-
-(define-structure (analysis safe-accessors)
-  bindings)
-
-(define (analysis-search exp env analysis win lose)
-  (let loop ((bindings (analysis-bindings analysis)))
-    (if (null? bindings)
-        (lose)
-        (if (and (equal? exp (binding-exp (car bindings)))
-                 (abstract-equal? env (binding-env (car bindings))))
-            (win (car bindings))
-            (loop (cdr bindings))))))
-
 (define (world-update-binding binding new-world win)
   (win (world-update-value
         (binding-value binding)
@@ -83,17 +64,6 @@
         (binding-new-world binding)
         (binding-world binding)
         new-world)))
-
-;;; ANALYSIS-GET is \bar E_1 from [1].
-(define (analysis-get exp env analysis)
-  (analysis-search exp env analysis binding-value (lambda () abstract-none)))
-
-(define (analysis-get-in-world exp env world analysis win)
-  (analysis-search exp env analysis
-   (lambda (binding)
-     (world-update-binding binding world win))
-   (lambda ()
-     (win abstract-none impossible-world))))
 
 ;;; EXPAND-ANALYSIS is \bar E_1' from [1].
 ;;; It registers interest in the evaluation of EXP in ENV by producing

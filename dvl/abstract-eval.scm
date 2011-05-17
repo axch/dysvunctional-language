@@ -186,25 +186,3 @@
 
 (define *analyze-wallp* #f)
 
-(define (analyze program)
-  (let ((initial-analysis
-         (make-analysis
-          (list (make-binding
-                 (macroexpand program)
-                 (initial-user-env)
-                 (initial-world)
-                 abstract-none
-                 impossible-world)))))
-    (let loop ((old-analysis initial-analysis)
-               (new-analysis (step-analysis initial-analysis))
-               (count 0))
-      (if (and (number? *analyze-wallp*)
-               (= 0 (modulo count *analyze-wallp*)))
-          (begin (display new-analysis)
-                 (newline)
-                 (map pp (analysis-bindings new-analysis))))
-      (if (step-changed-analysis? old-analysis new-analysis)
-          (loop new-analysis (step-analysis new-analysis) (+ count 1))
-          (begin (if *analyze-wallp*
-                     (pp new-analysis))
-                 new-analysis)))))
