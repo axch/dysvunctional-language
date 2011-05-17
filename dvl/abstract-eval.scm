@@ -121,17 +121,18 @@
 
 (define (analyze program)
   (let ((analysis (initial-analysis (macroexpand program))))
-    (let loop ((continue? #t)
-               (count 0))
+    (let loop ((count 0))
       (if (and (number? *analyze-wallp*)
                (= 0 (modulo count *analyze-wallp*)))
           (show-analysis analysis))
-      (if continue?
-          (loop (step-analysis! analysis) (+ count 1))
+      (if (null? (analysis-queue analysis))
           (begin
             (if *analyze-wallp*
                 (show-analysis analysis))
-            analysis)))))
+            analysis)
+          (begin
+            (investigate-binding! analysis (analysis-queue-pop! analysis))
+            (loop (+ count 1)))))))
 
 (define *analyze-wallp* #f)
 
@@ -144,13 +145,6 @@
      (initial-world)
      abstract-none
      impossible-world))))
-
-(define (step-analysis! analysis)
-  (if (null? (analysis-queue analysis))
-      #f
-      (begin
-        (investigate-binding! analysis (analysis-queue-pop! analysis))
-        #t)))
 
 (define (investigate-binding! analysis binding)
   (fluid-let ((*on-behalf-of* binding))
