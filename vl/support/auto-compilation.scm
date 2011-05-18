@@ -26,17 +26,17 @@
 (define (cf-seems-necessary? filename)
   (not (file-processed? filename "bin" (compiled-code-type))))
 
-(define (load-compiled filename)
+(define (load-compiled filename #!optional environment)
   (if (compiler-available?)
       (begin (cf-conditionally filename)
-	     (load filename))
+	     (load filename environment))
       (if (compilation-seems-necessary? filename)
 	  (begin (warn "The compiler does not seem to be loaded")
 		 (warn "Are you running Scheme with --compiler?")
 		 (warn "Skipping compilation; loading source interpreted")
-		 (load (pathname-default-type filename "scm")))
-	  (load filename))))
+		 (load (pathname-default-type filename "scm") environment))
+	  (load filename environment))))
 
-(define (load-relative-compiled filename)
-  (self-relatively (lambda () (load-compiled filename))))
+(define (load-relative-compiled filename #!optional environment)
+  (self-relatively (lambda () (load-compiled filename environment))))
 
