@@ -1,6 +1,10 @@
 (declare (usual-integrations))
 ;;;; Syntax and manipulations of the output language
 
+(define ((tagged-list? tag) thing)
+  (and (pair? thing)
+       (eq? (car thing) tag)))
+
 (define (simple-form? thing)
   (or (fol-var? thing) (number? thing) (boolean? thing) (null? thing)))
 
