@@ -168,13 +168,6 @@
                     (interesting-environment-values thing))))
         (else (error "shape->type-declaration loses!" thing))))
 
-(define (depends-on-world? thing)
-  (cond ((abstract-gensym? thing) #t)
-        (else
-         (object-reduce
-          (lambda (lst) (any depends-on-world? lst))
-          thing))))
-
 (define (world-update-value thing old-world new-world)
   (if (or (impossible-world? new-world)
           (impossible-world? old-world)
@@ -183,8 +176,10 @@
       (let loop ((thing thing))
         (cond ((abstract-gensym? thing)
                (make-abstract-gensym
-                (world-update-gensym-number (abstract-gensym-min thing) old-world new-world)
-                (world-update-gensym-number (abstract-gensym-max thing) old-world new-world)))
+                (world-update-gensym-number
+                 (abstract-gensym-min thing) old-world new-world)
+                (world-update-gensym-number
+                 (abstract-gensym-max thing) old-world new-world)))
               (else (object-map loop thing))))))
 
 (define (world-update-world updatee old-world new-world)

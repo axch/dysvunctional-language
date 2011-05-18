@@ -78,18 +78,18 @@
         ((lambda-form? exp)
          (win (make-closure exp env) world))
         ((pair-form? exp)
-         (analysis-get-in-world (car-subform exp) env world analysis
+         (get-during-flow-analysis (car-subform exp) env world analysis
           (lambda (car-value car-world)
-            (analysis-get-in-world (cdr-subform exp) env car-world analysis
+            (get-during-flow-analysis (cdr-subform exp) env car-world analysis
              (lambda (cdr-value cdr-world)
                (if (and (not (abstract-none? car-value))
                         (not (abstract-none? cdr-value)))
                    (win (cons car-value cdr-value) cdr-world)
                    (win abstract-none impossible-world)))))))
         ((application? exp)
-         (analysis-get-in-world (operator-subform exp) env world analysis
+         (get-during-flow-analysis (operator-subform exp) env world analysis
           (lambda (operator operator-world)
-            (analysis-get-in-world (operand-subform exp) env operator-world analysis
+            (get-during-flow-analysis (operand-subform exp) env operator-world analysis
              (lambda (operand operand-world)
                (refine-apply operator operand operand-world analysis win))))))
         (else
@@ -103,7 +103,7 @@
         ((primitive? proc)
          ((primitive-abstract-implementation proc) arg world analysis win))
         ((closure? proc)
-         (analysis-get-in-world
+         (get-during-flow-analysis
           (closure-body proc)
           (extend-env (closure-formal proc) arg (closure-env proc))
           world
@@ -113,98 +113,89 @@
          (error "Refining an application of a known non-procedure"
                 proc arg analysis))))
 
-(define (refine-analysis analysis)
-  (map (lambda (binding)
-         (let ((exp (binding-exp binding))
-               (env (binding-env binding))
-               (world (binding-world binding)))
-           (refine-eval exp env world analysis
-            (lambda (value new-world)
-              (make-binding exp env world value new-world)))))
-       (analysis-bindings analysis)))
-
-;;;; Expansion
-
-;;; EXPAND-EVAL is \bar E' from [1].
-(define (expand-eval exp env world analysis)
-  (cond ((variable? exp) '())
-        ((null? exp) '())
-        ((constant? exp) '())
-        ((lambda-form? exp) '())
-        ((pair-form? exp)
-         (analysis-expand (car-subform exp) env world analysis
-          (lambda (car-value car-world)
-            (analysis-expand (cdr-subform exp) env car-world analysis
-             (lambda (cdr-value cdr-world) '())))))
-        ((application? exp)
-         (analysis-expand (operator-subform exp) env world analysis
-          (lambda (operator operator-world)
-            (analysis-expand (operand-subform exp) env operator-world analysis
-             (lambda (operand operand-world)
-               (expand-apply operator operand operand-world analysis))))))
-        (else
-         (error "Invalid expression in abstract expander"
-                exp env analysis))))
-
-;;; EXPAND-APPLY is \bar A' from [1].
-(define (expand-apply proc arg world analysis)
-  (cond ((abstract-none? arg) '())
-        ((abstract-none? proc) '())
-        ((primitive? proc)
-         ((primitive-expand-implementation proc) arg world analysis))
-        ((closure? proc)
-         (analysis-expand
-          (closure-body proc)
-          (extend-env (closure-formal proc) arg (closure-env proc))
-          world
-          analysis
-          (lambda (value world) '())))
-        (else
-         (error "Expanding an application of a known non-procedure"
-                proc arg analysis))))
-
-(define (analysis-expand-binding binding analysis)
-  (let ((exp (binding-exp binding))
-        (env (binding-env binding))
-        (world (binding-world binding)))
-    (expand-eval exp env world analysis)))
-
-(define (expand-analysis analysis)
-  (apply lset-union same-analysis-binding?
-         (map (lambda (binding)
-                (analysis-expand-binding binding analysis))
-              (analysis-bindings analysis))))
-
 ;;;; Flow analysis
 
-;;; STEP-ANALYSIS is U from [1].
-(define (step-analysis analysis)
-  (make-analysis
-   (lset-union same-analysis-binding?
-    (append (refine-analysis analysis)
-            (expand-analysis analysis)))))
+;;; The flow analysis proper starts with a one-binding analysis
+;;; representing the whole program and incrementally improves
+;;; it until done.
+
+(define (analyze program)
+  (let ((analysis (initial-analysis (macroexpand program))))
+    (let loop ((count 0))
+      (if (and (number? *analyze-wallp*)
+               (= 0 (modulo count *analyze-wallp*)))
+          (show-analysis analysis))
+      (if (null? (analysis-queue analysis))
+          (begin
+            (if *analyze-wallp*
+                (show-analysis analysis))
+            analysis)
+          (begin
+            (refine-next-binding! analysis)
+            (loop (+ count 1)))))))
 
 (define *analyze-wallp* #f)
 
-(define (analyze program)
-  (let ((initial-analysis
-         (make-analysis
-          (list (make-binding
-                 (macroexpand program)
-                 (initial-user-env)
-                 (initial-world)
-                 abstract-none
-                 impossible-world)))))
-    (let loop ((old-analysis initial-analysis)
-               (new-analysis (step-analysis initial-analysis))
-               (count 0))
-      (if (and (number? *analyze-wallp*)
-               (= 0 (modulo count *analyze-wallp*)))
-          (begin (display new-analysis)
-                 (newline)
-                 (map pp (analysis-bindings new-analysis))))
-      (if (step-changed-analysis? old-analysis new-analysis)
-          (loop new-analysis (step-analysis new-analysis) (+ count 1))
-          (begin (if *analyze-wallp*
-                     (pp new-analysis))
-                 new-analysis)))))
+(define (initial-analysis program)
+  (make-analysis
+   (list
+    (make-binding
+     program
+     (initial-user-env)
+     (initial-world)
+     abstract-none
+     impossible-world))))
+
+(define (refine-next-binding! analysis)
+  (let ((binding (analysis-queue-pop! analysis)))
+    (fluid-let ((*on-behalf-of* binding))
+      (let ((exp (binding-exp binding))
+            (env (binding-env binding))
+            (world (binding-world binding))
+            (value (binding-value binding)))
+        (refine-eval
+         exp env world analysis
+         (lambda (new-value new-world)
+           (let ((new-value (abstract-union value new-value)))
+             (if (abstract-equal? value new-value)
+                 'ok
+                 (begin
+                   (set-binding-value! binding new-value)
+                   (set-binding-new-world! binding new-world)
+                   (for-each (lambda (dependency)
+                               (analysis-notify! analysis dependency))
+                             (binding-notify binding)))))))))))
+
+(define *on-behalf-of* #f)
+
+;; If you want to look up the value that some exp-env pair evaluates
+;; to during flow analysis, it must be because you are trying to
+;; refine some other binding.  Therefore, if you would later learn
+;; something new about what this exp-env pair evaluates to, then you
+;; may need to re-refine said other binding.  Therefore, the lookup
+;; should record the bindings on whose behalf exp-env pairs were
+;; looked up.  The global variable *on-behalf-of* is the channel for
+;; this communication.
+
+;; Also, if you are looking up what some exp-env pair evaluates to
+;; during flow analysis, you must have a consistent world in your
+;; hand.  If the binding you are looking for already exists, it
+;; contains enough information to tell you what that expression and
+;; environment will evaluate to in your world.  If not, the world
+;; should be recorded in the new binding that is created.
+
+;; Contrast this complexity with ANALYSIS-GET.
+(define (get-during-flow-analysis exp env world analysis win)
+  (if (not *on-behalf-of*)
+      (error "get-during-flow-analysis must always be done on behalf of some binding"))
+  (define (search-win binding)
+    (register-notification! binding *on-behalf-of*)
+    (world-update-binding binding world win))
+  (analysis-search exp env analysis
+   search-win
+   (lambda ()
+     (if (impossible-world? world)
+         (win abstract-none impossible-world)
+         (let ((binding (make-binding exp env world abstract-none impossible-world)))
+           (analysis-new-binding! analysis binding)
+           (search-win binding))))))

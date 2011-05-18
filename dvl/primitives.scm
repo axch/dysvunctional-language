@@ -1,17 +1,18 @@
 (declare (usual-integrations))
-;;;; VL primitive procedures
+;;;; DVL primitive procedures
 
-;;; A VL primitive procedure needs to tell the concrete evaluator how
+;;; A DVL primitive procedure needs to tell the concrete evaluator how
 ;;; to execute it, the analyzer how to think about calls to it, and
 ;;; the code generator how to emit calls to it.  These are the
-;;; implementation, abstract-implementation and expand-implementation,
-;;; and name and arity slots, respectively.
+;;; implementation, abstract-implementation and generate slots,
+;;; respectively.  Every primitive also has a name, which is also the
+;;; symbol in the initial environment in the source language to which
+;;; it is bound.
 
 (define-structure (primitive (safe-accessors #t))
   name                                  ; source language
   implementation                        ; concrete eval
   abstract-implementation               ; abstract eval
-  expand-implementation                 ; abstract eval
   generate)                             ; code generator
 
 (define *primitives* '())
@@ -25,8 +26,6 @@
      (win (implementation arg) world))
    (lambda (arg world analysis win)
      (win (abstract-implementation arg) world))
-   (lambda (arg world analysis)
-     '())
    (simple-primitive-application name arity)))
 
 ;;; Most primitives fall into a few natural classes:
@@ -194,30 +193,12 @@
                (lambda (second-value second-world)
                  (win (abstract-union first-value second-value)
                       (union-world first-world second-world)))))))))
-   (lambda (arg world analysis)
-     (let ((predicate (car arg))
-           (consequent (cadr arg))
-           (alternate (cddr arg)))
-       (define (expand-thunk-application thunk)
-         (analysis-expand
-          `(,(closure-exp thunk) ())
-          (closure-env thunk)
-          world
-          analysis
-          (lambda (value world) '())))
-       (if (not (abstract-boolean? predicate))
-           (if predicate
-               (expand-thunk-application consequent)
-               (expand-thunk-application alternate))
-           (lset-union same-analysis-binding?
-                       (expand-thunk-application consequent)
-                       (expand-thunk-application alternate)))))
    generate-if-statement))
 (add-primitive! primitive-if)
 
 (define (abstract-result-in-world thunk-shape world analysis win)
   ;; N.B. ABSTRACT-RESULT-IN-WORLD only exists because of the way I'm doing IF.
-  (analysis-get-in-world
+  (get-during-flow-analysis
    `(,(closure-exp thunk-shape) ())
    (closure-env thunk-shape)
    world
@@ -241,7 +222,6 @@
     (win (trivial-abstract-gensym
           (current-gensym world))
          (do-gensym world)))
-  (lambda (arg world analysis) '())
   (simple-primitive-application 'gensym 0)))
 
 (add-primitive!

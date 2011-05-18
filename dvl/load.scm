@@ -28,7 +28,6 @@
    "analysis"
    "abstract-values"
    "abstract-eval"
-   "work-list"
    "../vl/nomenclature"
    "../vl/fol/load"
    "../vl/code-generator"
