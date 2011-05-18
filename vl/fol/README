@@ -252,21 +252,23 @@ construction = (cons <expression> <expression>)
 
 FOL distinguishes two types of variables, one for holding procedures
 and one for holding data; both are represented as Scheme symbols.  The
-procedure variables have global scope, must be globally unique, and
-may only be bound by DEFINE forms.  The data variables are lexically
-scoped with shadowing, and may be bound by LET forms and the formal
-parameter positions of DEFINE forms.  Procedures may only be defined
-at the top level.  Applications may only apply procedures directly by
-name.  This serves to make FOL a first-order language.
+procedure variables have global scope, must be globally unique, may
+only be bound by DEFINE forms, and may not shadow primitive
+procedures.  The data variables are lexically scoped with shadowing,
+and may be bound by LET forms and the formal parameter positions of
+DEFINE forms.  Procedures may only be defined at the top level.
+Applications may only apply procedures directly by name.  This serves
+to make FOL a first-order language.
 
-FOL being first-order was the point.  The purpose of hairy flow
-analysis is to transform a computation concisely expressed in a
-higher-order language, in this case with AD operators, into an
-equivalent computation in a first-order language.  The job of the FOL
-optimizer is to give the flow analysis freedom to generate an
-arbitrarily ugly FOL program; on the other hand the FOL optimizer can
-use the restrictions on FOL, notably its first-order nature, to
-optimize it using standard, well-understood techniques.
+FOL being first-order was the point.  The restrictions on FOL make the
+targets of all control transfers (except procedure returns) statically
+apparent.  The purpose of hairy flow analysis is to transform a
+computation concisely expressed in a higher-order language, in this
+case with AD operators, into an equivalent computation whose control
+structure is as clear as possible.  The job of the FOL optimizer is to
+give the flow analysis freedom to generate an arbitrarily ugly FOL
+program; on the other hand the FOL optimizer can use the restrictions
+on FOL to optimize it using standard, well-understood techniques.
 
 FOL procedure definitions must be annotated with the types of the
 arguments expected and the type of the result.  The annotation is
@@ -288,11 +290,14 @@ via the SRFI-11 LET-VALUES construct.  All VALUES expressions must be
 in tail position with respect to a matching LET-VALUES expression.
 You will note that because multiple value returns via the VALUES
 construct cannot be stored in data structures or bound as variables
-without destructuring them, they do not need to be represented in the
-runtime as heap-allocated objects, but can instead be implemented by
-just placing the values to be returned on the stack.  The VL and DVL
-code generator does not emit VALUES or LET-VALUES expressions; FOL
-supports them as targets for the scalar replacement of aggregates
+without destructuring them, they cannot be copied or aliased, and are
+therefore much easier for the optimizer to reason about than general
+aggregates.  They also do not need to be represented in the runtime as
+heap-allocated objects, but can instead be implemented by just placing
+the values to be returned on the stack.  The VL and DVL code generator
+does not emit VALUES or LET-VALUES expressions; the FOL optimizer
+generates them as replacements for returning general aggregates where
+possible, as determined by the scalar replacement of aggregates
 optimization.
 
 For implementation convenience, LET-VALUES is restricted to binding
@@ -334,8 +339,6 @@ compilation may rearrange the order of evaluation of various
 subexpressions, even across procedure boundaries.  TODO is the dead
 variable elimination good enough to make the same termination
 guarantees that laziness does?
-
-TODO Discuss define-structure forms
 
 
 Implementing FOL

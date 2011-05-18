@@ -1,6 +1,5 @@
-A DVL interpreter and an aggressively optmizing DVL->Scheme compiler
-
-Author: Alexey Radul
+ A DVL interpreter and an aggressively optmizing DVL->Scheme compiler
+                             Alexey Radul
 
 
 Why do you care?
