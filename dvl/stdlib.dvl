@@ -183,3 +183,8 @@
 (define (g:positive? args) ((lift-real->boolean positive?) args))
 (define (g:negative? args) ((lift-real->boolean negative?) args))
 (define (g:real? args) ((lift-real->boolean real?) args))
+
+(define (abs x)
+  (if (g:negative? x)
+      (g:- 0 x)
+      x))
