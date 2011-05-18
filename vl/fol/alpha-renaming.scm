@@ -28,7 +28,12 @@
           (cons name name))
         (delete-duplicates
          `(cons car cdr if define let vector vector-ref let-values values
-                ,@(append-map needed-names *primitives*))))
+                ;; TODO I really need a clear understanding of what
+                ;; the FOL primitives are.
+                gensym? gensym= gensym real write-real read-real
+                negative? positive? zero? = >= > <= < procedure?
+                real? pair? null? expt atan / * - +
+                sqrt acos asin tan cos sin log exp abs)))
    '()
    (lambda (new-program new-env) new-program)))
 
