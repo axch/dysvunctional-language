@@ -63,22 +63,30 @@ Have an idea of VL first.
 
 TODO what's a good example program?
 
-Here are the files where DVL differs from VL
+DVL differs implementationally from VL in two ways.  First, of course,
+DVL supports gensyms.  This has consequences for the fundamental
+abstract evaluation, and some of the supporting data structures.
+Also, gensyms arrange refinement interdependencies in such a way that
+using a round-robin strategy for incremental refinement is intolerably
+slow, so the DVL abstract analysis loop is organized around a work
+queue of expressions to abstractly evaluate in various environments.
+This changes the supporting code around the essential abstract
+evaluator, and the abstract analysis data structure.
 
-TODO clean these up and make them presentable
+Here are the files and ways where DVL differs materially from VL:
 
-abstract-eval
-abstract-values
-analysis
-data
-eval
-primitives
-work-list
+abstract-eval.scm     New abstract evaluator; work-queue analysis loop
+stdlib.dvl            Standard library implementing forward AD [*]
+primitives.scm        New gensym primitives; abstract evaluation support
+analysis.scm          Support for the work queue
+abstract-values.scm   Support for gensyms
+eval.scm              Concrete evaluator with gensym support
+data.scm              Support for gensyms
 
-The DVL standard library is in
-stdlib.dvl
+If you run diff you will also discover some small incidental
+discrepancies.  TODO Remove these?
 
-See also load.scm for interface hackery
+[*] TODO See also load.scm for interface hackery
 
 These are the files that DVL shares with VL:
 
