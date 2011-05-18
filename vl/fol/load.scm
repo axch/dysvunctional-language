@@ -13,7 +13,8 @@
 
 (for-each
  load-relative-compiled
- '("syntax"
+ '("nomenclature"
+   "syntax"
    "runtime"
    "alpha-renaming"
    "structs"
