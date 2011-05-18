@@ -127,4 +127,4 @@
 ;;;; "Runtime system"
 
 (define (fol-eval code)
-  (eval (prepare-for-scheme code) (nearest-repl/environment)))
+  (eval (prepare-for-scheme code) fol-environment))

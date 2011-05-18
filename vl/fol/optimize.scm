@@ -353,13 +353,13 @@
         (for-each (lambda (form)
                     (pp form)
                     (newline)) output)))
-    (fluid-let ((sf/default-syntax-table (nearest-repl/environment)))
+    (fluid-let ((sf/default-syntax-table fol-environment))
       (cf output-base))))
 
 (define (run-mit-scheme #!optional output-base)
   (if (default-object? output-base)
       (set! output-base "frobnozzle"))
-  (load output-base))
+  (load output-base fol-environment))
 
 (define (flonumize program)
   (define floating-versions
