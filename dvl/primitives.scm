@@ -198,7 +198,7 @@
 
 (define (abstract-result-in-world thunk-shape world analysis win)
   ;; N.B. ABSTRACT-RESULT-IN-WORLD only exists because of the way I'm doing IF.
-  (analysis-get-in-world
+  (get-during-flow-analysis
    `(,(closure-exp thunk-shape) ())
    (closure-env thunk-shape)
    world

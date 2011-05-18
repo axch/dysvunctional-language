@@ -78,18 +78,18 @@
         ((lambda-form? exp)
          (win (make-closure exp env) world))
         ((pair-form? exp)
-         (analysis-get-in-world (car-subform exp) env world analysis
+         (get-during-flow-analysis (car-subform exp) env world analysis
           (lambda (car-value car-world)
-            (analysis-get-in-world (cdr-subform exp) env car-world analysis
+            (get-during-flow-analysis (cdr-subform exp) env car-world analysis
              (lambda (cdr-value cdr-world)
                (if (and (not (abstract-none? car-value))
                         (not (abstract-none? cdr-value)))
                    (win (cons car-value cdr-value) cdr-world)
                    (win abstract-none impossible-world)))))))
         ((application? exp)
-         (analysis-get-in-world (operator-subform exp) env world analysis
+         (get-during-flow-analysis (operator-subform exp) env world analysis
           (lambda (operator operator-world)
-            (analysis-get-in-world (operand-subform exp) env operator-world analysis
+            (get-during-flow-analysis (operand-subform exp) env operator-world analysis
              (lambda (operand operand-world)
                (refine-apply operator operand operand-world analysis win))))))
         (else
@@ -103,7 +103,7 @@
         ((primitive? proc)
          ((primitive-abstract-implementation proc) arg world analysis win))
         ((closure? proc)
-         (analysis-get-in-world
+         (get-during-flow-analysis
           (closure-body proc)
           (extend-env (closure-formal proc) arg (closure-env proc))
           world
@@ -168,12 +168,26 @@
 
 (define *on-behalf-of* #f)
 
-;; This one is for use during abstract evaluation; it is always "on
-;; behalf of" some binding that is therefore assumed to depend on the
-;; answer.  Compare ANALYSIS-GET.
-(define (analysis-get-in-world exp env world analysis win)
+;; If you want to look up the value that some exp-env pair evaluates
+;; to during flow analysis, it must be because you are trying to
+;; refine some other binding.  Therefore, if you would later learn
+;; something new about what this exp-env pair evaluates to, then you
+;; may need to re-refine said other binding.  Therefore, the lookup
+;; should record the bindings on whose behalf exp-env pairs were
+;; looked up.  The global variable *on-behalf-of* is the channel for
+;; this communication.
+
+;; Also, if you are looking up what some exp-env pair evaluates to
+;; during flow analysis, you must have a consistent world in your
+;; hand.  If the binding you are looking for already exists, it
+;; contains enough information to tell you what that expression and
+;; environment will evaluate to in your world.  If not, the world
+;; should be recorded in the new binding that is created.
+
+;; Contrast this complexity with ANALYSIS-GET.
+(define (get-during-flow-analysis exp env world analysis win)
   (if (not *on-behalf-of*)
-      (error "analysis-get-in-world must always be done on behalf of some binding"))
+      (error "get-during-flow-analysis must always be done on behalf of some binding"))
   (define (search-win binding)
     (register-notification! binding *on-behalf-of*)
     (world-update-binding binding world win))
