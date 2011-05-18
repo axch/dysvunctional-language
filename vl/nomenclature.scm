@@ -52,4 +52,4 @@
 (define (initialize-name-caches!)
   (set! *closure-names* (make-abstract-hash-table))
   (set! *call-site-names* (make-abstract-hash-table))
-  (set! *symbol-count* 0))
+  (reset-fol-names!))

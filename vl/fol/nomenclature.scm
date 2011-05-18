@@ -40,3 +40,5 @@
    (list
     (rule `(? name ,fol-name?) (name->symbol name)))))
 
+(define (reset-fol-names!)
+  (set! *symbol-count* 0))
