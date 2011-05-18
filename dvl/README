@@ -75,13 +75,13 @@ evaluator, and the abstract analysis data structure.
 
 Here are the files and ways where DVL differs materially from VL:
 
-abstract-eval.scm     New abstract evaluator; work-queue analysis loop
-stdlib.dvl            Standard library implementing forward AD [*]
-primitives.scm        New gensym primitives; abstract evaluation support
-analysis.scm          Support for the work queue
-abstract-values.scm   Support for gensyms
-eval.scm              Concrete evaluator with gensym support
-data.scm              Support for gensyms
+abstract-eval.scm    New abstract evaluator; work-queue analysis loop
+stdlib.dvl           Standard library implementing forward AD [*]
+primitives.scm       New gensym primitives; abstract evaluation support
+analysis.scm         Support for the work queue
+abstract-values.scm  Support for gensyms
+eval.scm             Concrete evaluator with gensym support
+data.scm             Support for gensyms
 
 If you run diff you will also discover some small incidental
 discrepancies.  TODO Remove these?
