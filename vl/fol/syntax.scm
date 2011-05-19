@@ -7,6 +7,24 @@
 
 (define begin-form? (tagged-list? 'begin))
 
+(define definition? (tagged-list? 'define))
+
+(define (normalize-definition definition)
+  (cond ((not (definition? definition))
+         (error "Trying to normalize a non-definition" definition))
+        ((pair? (cadr definition))
+         (normalize-definition
+          `(define ,(caadr definition)
+             (lambda ,(cdadr definition)
+               ,@(cddr definition)))))
+        (else definition)))
+
+(define (definiendum definition)
+  (cadr (normalize-definition definition)))
+
+(define (definiens definition)
+  (caddr (normalize-definition definition)))
+
 (define reconstitute-definition
   (iterated
    (rule `(define (? name)
@@ -29,6 +47,7 @@
 
 (define let-form? (tagged-list? 'let))
 (define let-values-form? (tagged-list? 'let-values))
+(define lambda-form? (tagged-list? 'lambda))
 
 (define ->lambda
   (rule-list
