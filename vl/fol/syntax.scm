@@ -99,22 +99,6 @@
 
 (define fol-reserved '(cons car cdr vector vector-ref begin define if let let-values values))
 
-(define (occurs-in-tree? thing tree)
-  (cond ((equal? thing tree) #t)
-        ((pair? tree)
-         (or (occurs-in-tree? thing (car tree))
-             (occurs-in-tree? thing (cdr tree))))
-        (else #f)))
-
-(define (filter-map-tree proc tree)
-  (let walk ((tree tree) (answer '()))
-    (if (pair? tree)
-        (walk (car tree) (walk (cdr tree) answer))
-        (let ((elt (proc tree)))
-          (if elt
-              (cons elt answer)
-              answer)))))
-
 (define (count-free-occurrences name exp)
   (cond ((eq? exp name) 1)
         ((lambda-form? exp)
@@ -127,7 +111,7 @@
          (+ (count-free-occurrences name (car exp))
             (count-free-occurrences name (cdr exp))))
         (else 0)))
-
+
 (define (replace-free-occurrences name new exp)
   (cond ((eq? exp name) new)
         ((lambda-form? exp)
