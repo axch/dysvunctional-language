@@ -38,6 +38,5 @@
   (let* ((forms (read-source filename))
          (program `(let () ,@forms))
          (compiled-program (compile-to-scheme program))
-         (compiled-answer
-          (eval compiled-program (nearest-repl/environment))))
+         (compiled-answer (fol-eval compiled-program)))
     (pp compiled-answer)))

@@ -156,4 +156,12 @@
 
  (for-each-example "../examples.scm" define-union-free-example-test)
  (for-each-example "test-vl-programs.scm" define-union-free-example-test)
+
+ (define-test (executable-entry-point)
+   (check
+    (equal?
+     "(-9.223456610994083e-3 . 1.0078886869645214)\n"
+     (with-output-to-string
+       (lambda ()
+         (vl-run-file "euler-integral.scm"))))))
  )
