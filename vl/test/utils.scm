@@ -165,13 +165,6 @@
              (binding-value (car bindings)))
             (else (loop (cdr bindings)))))))
 
-(define (tidy-non-soundness program)
-  (cond ((not (equal? (fol-eval program)
-		      (fol-eval (tidy (alpha-rename program)))))
-	 `(not (equal? ,(fol-eval program)
-		       (after-tidy ,(fol-eval (tidy (alpha-rename program)))))))
-	(else #f)))
-
 (define (for-each-example filename proc)
   (with-input-from-file filename
     (lambda ()
