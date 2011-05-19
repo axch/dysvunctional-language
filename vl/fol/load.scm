@@ -20,7 +20,6 @@
  (lambda (file)
    (load-relative-compiled file fol-environment))
  '("../support/utils"
-   "../syntax" ;; TODO Grrr!
    "nomenclature"
    "syntax"
    "runtime"
