@@ -138,4 +138,12 @@
   (lambda (program #!optional value)
     (define-fast-union-free-example-test
       (dvl-prepare (vlad->dvl program)) value)))
+
+ (define-test (executable-entry-point)
+   (check
+    (equal?
+     ".2500002594080783\n"
+     (with-output-to-string
+       (lambda ()
+         (dvl-run-file "sqrt.scm"))))))
  )
