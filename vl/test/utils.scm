@@ -146,9 +146,9 @@
     (if wallpaper? (pp tidied))
     ;; In the union-free case, SRA is successful at removing all
     ;; internal consing.
-    (check (= 0 (count-free-occurrences 'car tidied)))
-    (check (= 0 (count-free-occurrences 'cdr tidied)))
-    (check (= 0 (count-free-occurrences 'vector-ref tidied)))
+    (check (not (occurs-in-tree? 'car tidied)))
+    (check (not (occurs-in-tree? 'cdr tidied)))
+    (check (not (occurs-in-tree? 'vector-ref tidied)))
 
     (fol-eval tidied)))
 

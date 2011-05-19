@@ -67,8 +67,4 @@
 
      ;; The FOL names subsystem is also used by VL and DVL; TODO document
      make-name name->symbol reset-fol-names!
-
-     ;; TODO Figure out what this is doing here; separate syntax sensibly
-     count-free-occurrences
-
      )))
