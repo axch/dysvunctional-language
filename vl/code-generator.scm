@@ -240,10 +240,10 @@
          call-site)
   (define (destructuring-let-bindings formal-tree arg-tree)
     (define (xxx part1 part2)
-      (append (replace-free-occurrences
+      (append (replace-in-tree
                'the-formals '(car the-formals)
                (destructuring-let-bindings part1 (car arg-tree)))
-              (replace-free-occurrences
+              (replace-in-tree
                'the-formals '(cdr the-formals)
                (destructuring-let-bindings part2 (cdr arg-tree)))))
     (cond ((null? formal-tree)

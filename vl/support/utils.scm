@@ -25,6 +25,13 @@
              (occurs-in-tree? thing (cdr tree))))
         (else #f)))
 
+(define (replace-in-tree thing new tree)
+  (cond ((equal? thing tree) new)
+        ((pair? tree)
+         (cons (replace-in-tree thing new (car tree))
+               (replace-in-tree thing new (cdr tree))))
+        (else tree)))
+
 ;; filter-map-tree :: (a -> b) x (cons-tree a) -> [b]
 ;; filter-map-tree does not preserve the tree structure of the input.
  (define (filter-map-tree proc tree)
