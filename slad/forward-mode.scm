@@ -142,3 +142,44 @@
 
 (set-forward-transform! #t #t)
 (set-forward-transform! #f #f)
+
+#|
+;;; Thoughts about interleaving.  Here is how Stalingrad transforms
+;;; the procedures BUNDLE and PRIMAL, and what the corresponding noops
+;;; would look like:
+
+;;; Bundle:
+;; Stalingrad:
+(lambda (pair-bundles-b)
+  (let (((cons primal-a-primal-b  tangent-a-primal-b)  (primal  pair-bundles-b))
+        ((cons primal-a-tangent-b tangent-a-tangent-b) (tangent pair-bundles-b)))
+    (bundle
+     (bundle primal-a-primal-b  tangent-a-primal-b)
+     (bundle primal-a-tangent-b tangent-a-tangent-b))))
+
+;; Noop:
+(lambda (pair-bundles-b)
+  (let (((cons primal-a-primal-b  tangent-a-primal-b)  (primal  pair-bundles-b))
+        ((cons primal-a-tangent-b tangent-a-tangent-b) (tangent pair-bundles-b)))
+    (bundle
+     (bundle primal-a-primal-b  primal-a-tangent-b)
+     (bundle tangent-a-primal-b tangent-a-tangent-b))))
+
+
+;;; Primal:
+;; Stalingrad:
+(lambda (bundle-a-bundle-b)
+  (let ((primal-a-bundle-b (primal bundle-a-bundle-b))
+        (tangent-a-bundle-b (tangent bundle-a-bundle-b)))
+    (bundle (primal primal-a-bundle-b)
+            (primal tangent-a-bundle-b))))
+
+;; Noop:
+(lambda (bundle-a-bundle-b)
+  (let ((primal-a-bundle-b (primal bundle-a-bundle-b))
+        (tangent-a-bundle-b (tangent bundle-a-bundle-b)))
+    (bundle (primal  primal-a-bundle-b)
+            (tangent primal-a-bundle-b))))
+
+
+|#
