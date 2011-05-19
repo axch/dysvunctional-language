@@ -5,13 +5,26 @@
   (and (pair? thing)
        (eq? (car thing) tag)))
 
+(define begin-form? (tagged-list? 'begin))
+
+(define reconstitute-definition
+  (iterated
+   (rule `(define (? name)
+            (lambda (? names)
+              (?? body)))
+         `(define (,name ,@names)
+            ,@body))))
+
+(define (fol-const? thing)
+  (or (number? thing) (boolean? thing) (null? thing)))
+
 (define (simple-form? thing)
   (or (fol-var? thing) (number? thing) (boolean? thing) (null? thing)))
 
-(define begin-form? (tagged-list? 'begin))
+(define if-form? (tagged-list? 'if))
 
 (define let-form? (tagged-list? 'let))
-(define if-form? (tagged-list? 'if))
+(define let-values-form? (tagged-list? 'let-values))
 
 (define ->lambda
   (rule-list
@@ -35,30 +48,6 @@
         `(let-values ((,names ,exp))
            ,@body)))
 
-(define reconstitute-definition
-  (iterated
-   (rule `(define (? name)
-            (lambda (? names)
-              (?? body)))
-         `(define (,name ,@names)
-            ,@body))))
-
-(define remove-defn-argument-types
-  (rule `(define (? formals)
-           (argument-types (?? etc))
-           (?? body))
-        `(define ,formals
-           ,@body)))
-
-(define strip-argument-types
-  (rule-simplifier (list remove-defn-argument-types)))
-
-(define (fol-const? thing)
-  (or (number? thing) (boolean? thing) (null? thing)))
-
-(define values-form? (tagged-list? 'values))
-(define let-values-form? (tagged-list? 'let-values))
-
 (define (accessor? expr)
   (or (cons-ref? expr)
       (vector-ref? expr)))
@@ -72,6 +61,18 @@
 (define (construction? expr)
   (and (pair? expr)
        (memq (car expr) '(cons vector))))
+
+(define values-form? (tagged-list? 'values))
+
+(define remove-defn-argument-types
+  (rule `(define (? formals)
+           (argument-types (?? etc))
+           (?? body))
+        `(define ,formals
+           ,@body)))
+
+(define strip-argument-types
+  (rule-simplifier (list remove-defn-argument-types)))
 
 (define fol-reserved '(cons car cdr vector vector-ref begin define if let let-values values))
 
