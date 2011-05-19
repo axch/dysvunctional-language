@@ -18,12 +18,8 @@
 (define *closure-names* (make-abstract-hash-table))
 
 (define (abstract-closure->scheme-structure-name closure)
-  (hash-table/lookup *closure-names* closure
-   (lambda (value) value)
-   (lambda ()
-     (let ((answer (name->symbol (make-name 'closure))))
-       (hash-table/put! *closure-names* closure answer)
-       answer))))
+  (hash-table/intern! *closure-names* closure
+   (lambda () (name->symbol (make-name 'closure)))))
 
 (define (abstract-closure->scheme-constructor-name closure)
   (symbol 'make- (abstract-closure->scheme-structure-name closure)))
@@ -31,13 +27,8 @@
 (define *call-site-names* (make-abstract-hash-table))
 
 (define (call-site->scheme-function-name closure abstract-arg)
-  (hash-table/lookup *call-site-names* (cons closure abstract-arg)
-   (lambda (value) value)
-   (lambda ()
-     (let ((answer (name->symbol (make-name 'operation))))
-       (hash-table/put! *call-site-names*
-        (cons closure abstract-arg) answer)
-       answer))))
+  (hash-table/intern! *call-site-names* (cons closure abstract-arg)
+   (lambda () (name->symbol (make-name 'operation)))))
 
 (define (clear-name-caches!)
   (set! *closure-names* (make-abstract-hash-table))
