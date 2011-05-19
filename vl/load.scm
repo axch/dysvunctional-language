@@ -16,8 +16,7 @@
 
 (for-each
  load-relative-compiled
- '("support/mit-profile"
-   "support/utils"
+ '("support/utils"
    "data"
    "env"
    "syntax"
