@@ -20,7 +20,7 @@
  (lambda (file)
    (load-relative-compiled file fol-environment))
  '("../support/utils"
-   "../syntax" ;; Grr!
+   "../syntax" ;; TODO Grrr!
    "nomenclature"
    "syntax"
    "runtime"
@@ -72,7 +72,4 @@
      ;; TODO Figure out what this is doing here; separate syntax sensibly
      replace-free-occurrences count-free-occurrences
 
-     ;; TODO These are only needed because the tests are still outside
-     ;; the environment.
-     feedback-vertex-set program->procedure-definitions procedure-definitions->program
      )))
