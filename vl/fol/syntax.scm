@@ -118,7 +118,7 @@
 (define (count-free-occurrences name exp)
   (cond ((eq? exp name) 1)
         ((lambda-form? exp)
-         (if (occurs-in-tree? name (lambda-formal exp))
+         (if (occurs-in-tree? name (cadr exp))
              0
              (count-free-occurrences name (cddr exp))))
         ((or (let-values-form? exp) (let-form? exp))
@@ -131,9 +131,9 @@
 (define (replace-free-occurrences name new exp)
   (cond ((eq? exp name) new)
         ((lambda-form? exp)
-         (if (occurs-in-tree? name (lambda-formal exp))
+         (if (occurs-in-tree? name (cadr exp))
              exp
-             `(lambda ,(lambda-formal exp)
+             `(lambda ,(cadr exp)
                 ,@(replace-free-occurrences name new (cddr exp)))))
         ((let-form? exp)
          (->let (replace-free-occurrences name new (->lambda exp))))
