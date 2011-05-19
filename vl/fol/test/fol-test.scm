@@ -164,6 +164,8 @@
           (let ((z (+ x 0)))
             (+ y z))))))
 
+   ;; TODO Abstract the test pattern "CSE didn't eliminate this thing
+   ;; it shouldn't have eliminated"?
    (equal?
     '(let ((x (real 5)))
        (let ((y (+ x 3)))
