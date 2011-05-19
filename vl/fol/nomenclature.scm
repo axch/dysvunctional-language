@@ -25,10 +25,6 @@
   (set! *symbol-count* (+ *symbol-count* 1))
   (make-fol-name (name-base template) *symbol-count*))
 
-(define (fol-var? thing)
-  (or (symbol? thing)
-      (fol-name? thing)))
-
 (define (name->symbol thing)
   (cond ((fol-name? thing)
          (symbol (fol-name-base thing) '- (fol-name-count thing)))

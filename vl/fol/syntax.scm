@@ -15,6 +15,10 @@
          `(define (,name ,@names)
             ,@body))))
 
+(define (fol-var? thing)
+  (or (symbol? thing)
+      (fol-name? thing)))
+
 (define (fol-const? thing)
   (or (number? thing) (boolean? thing) (null? thing)))
 
