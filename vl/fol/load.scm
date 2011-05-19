@@ -69,6 +69,6 @@
      make-name name->symbol reset-fol-names!
 
      ;; TODO Figure out what this is doing here; separate syntax sensibly
-     replace-free-occurrences count-free-occurrences
+     count-free-occurrences
 
      )))

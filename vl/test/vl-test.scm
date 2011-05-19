@@ -2,14 +2,6 @@
  vl
 
  (define-each-check
-   (equal? '(cons 1 2) (replace-free-occurrences 'foo 'bar '(cons 1 2)))
-   (equal? '(let ((x y)) 1) (replace-free-occurrences 'foo 'bar '(let ((x y)) 1)))
-   (equal? '(let ((x bar)) 1) (replace-free-occurrences 'foo 'bar '(let ((x foo)) 1)))
-   (equal? '((cons 1 2)) (replace-free-occurrences 'foo 'bar '((cons 1 2))))
-   (equal? '(lambda () (cons 1 2)) (replace-free-occurrences 'foo 'bar '(lambda () (cons 1 2))))
-   )
-
- (define-each-check
    (equal? '((lambda (x) 1) 3)
 	   (macroexpand '((lambda (x) 1) 3)))
    (equal? '(lambda ((cons x y)) x)
