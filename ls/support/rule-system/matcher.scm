@@ -51,7 +51,7 @@
 
 ;;; Segments
 
-(define-structure (segment (constructor make-segment (head tail)))
+(define-structure (segment (constructor make-segment (head tail)) safe-accessors)
   head
   tail
   (body-cache #f))
