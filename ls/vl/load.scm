@@ -12,11 +12,11 @@
 (define (load-relative filename)
   (self-relatively (lambda () (load filename))))
 
-(load-relative "support/auto-compilation")
+(load-relative "../support/auto-compilation")
 
 (for-each
  load-relative-compiled
- '("support/utils"
+ '("../support/utils"
    "data"
    "env"
    "syntax"

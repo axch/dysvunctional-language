@@ -12,12 +12,12 @@
 (define (load-relative filename)
   (self-relatively (lambda () (load filename))))
 
-(load-relative "../vl/support/auto-compilation")
-(load-relative "../vl/support/rule-system/load")
+(load-relative "../support/auto-compilation")
+(load-relative "../support/rule-system/load")
 
 (for-each
  load-relative-compiled
- '("../vl/support/utils"
+ '("../support/utils"
    "data"
    "../vl/env"
    "syntax"
