@@ -276,7 +276,7 @@
             (error "Looking up unknown name" name))))
     lookup-type))
 
-(define-structure (function-type (constructor function-type))
+(define-structure (function-type (constructor function-type) safe-accessors)
   args
   return)
 
