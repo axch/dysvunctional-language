@@ -32,19 +32,19 @@
 
 ;;; Unique abstract objects
 
-(define-structure abstract-boolean)
+(define-structure (abstract-boolean safe-accessors))
 (define abstract-boolean (make-abstract-boolean))
 (define (some-boolean? thing)
   (or (boolean? thing)
       (abstract-boolean? thing)))
 
-(define-structure abstract-real)
+(define-structure (abstract-real safe-accessors))
 (define abstract-real (make-abstract-real))
 (define (some-real? thing)
   (or (real? thing)
       (abstract-real? thing)))
 
-(define-structure abstract-none)
+(define-structure (abstract-none safe-accessors))
 (define abstract-none (make-abstract-none))
 
 (define-structure

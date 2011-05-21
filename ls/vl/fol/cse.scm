@@ -268,7 +268,7 @@
                           (cdr cons) (cdr alt)))
           `(if ,pred ,cons ,alt))))
 
-(define-structure unique-expression)
+(define-structure (unique-expression safe-accessors))
 (define unique-expression (make-unique-expression))
 
 (define (cse-canonical env symbolic)
