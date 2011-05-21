@@ -7,8 +7,10 @@
       "com"
       (compiler:compiled-code-pathname-type)))
 
-(define (cf-conditionally filename)
-  (fluid-let ((sf/default-syntax-table (nearest-repl/environment)))
+(define (cf-conditionally filename #!optional environment)
+  (if (default-object? environment)
+      (set! environment (nearest-repl/environment)))
+  (fluid-let ((sf/default-syntax-table environment))
     (sf-conditionally filename))
   (if (cf-seems-necessary? filename)
       (compile-bin-file filename)))
@@ -28,7 +30,7 @@
 
 (define (load-compiled filename #!optional environment)
   (if (compiler-available?)
-      (begin (cf-conditionally filename)
+      (begin (cf-conditionally filename environment)
 	     (load filename environment))
       (if (compilation-seems-necessary? filename)
 	  (begin (warn "The compiler does not seem to be loaded")
