@@ -75,24 +75,66 @@
                thing2
                (lambda () #f)))))
 
+;;; It turns out that I want this hash function to be GC-invariant
+;;; (see the commit log) instead of relying on address hashing in
+;;; eqv-hash.  While I'm at it, I think I can do a better job of
+;;; spreading the love than equal-hash would.
 (define abstract-hash
   (memoize (make-eq-hash-table)
-   (lambda (thing)
-     (cond ((abstract-gensym? thing)
-            (+ (eqv-hash (abstract-gensym-min thing))
-               (eqv-hash (abstract-gensym-max thing))))
-           ((or (closure? thing) (pair? thing) (env? thing))
-            (object-reduce
-             (lambda (lst)
-               (equal-hash (map abstract-hash lst)))
-             thing))
-           (else (eqv-hash thing))))))
+   (let ((factor 37)
+         (modulus 33554393))
+     ;; The factor is a not-too-big prime.  The modulus is the largest
+     ;; prime fixnum.  If you can figure out the provenance of the
+     ;; remaining magic numbers in this function, I (axch) owe you a
+     ;; proverbial beer.  In light of my aversion to alcoholic
+     ;; beverages, however, a prize of equal value will have to be
+     ;; substituted.
+     (define (munch elt total)
+       (modulo (+ (* factor total) elt) modulus))
+     (lambda (thing)
+       (cond ((real? thing)
+              ;; EQV-HASH appears, experimentally, to be GC-invariant
+              ;; for fixnums and flonums.
+              (eqv-hash thing))
+             ((null? thing)
+              17417)
+             ((eq? #t thing)
+              17431)
+             ((eq? #f thing)
+              17443)
+             ((abstract-none? thing)
+              17471)
+             ((abstract-boolean? thing)
+              17477)
+             ((abstract-real? thing)
+              17489)
+             ((abstract-gensym? thing)
+              (munch (abstract-gensym-min thing)
+                     (abstract-gensym-max thing)))
+             ((symbol? thing)
+              (string-hash (symbol->string thing)))
+             ((primitive? thing)
+              (string-hash (symbol->string (primitive-name thing))))
+             ((or (pair? thing) (closure? thing) (env? thing))
+              (object-reduce
+               (lambda (lst)
+                 (reduce munch
+                         0
+                         (cons (cond ((pair? thing)
+                                      17509)
+                                     ((closure? thing)
+                                      17519)
+                                     ((env? thing)
+                                      17569))
+                               (map abstract-hash lst))))
+               thing))
+             (else (error "Do not know how to hash" thing)))))))
 
 (define (abstract-hash-mod thing modulus)
   (modulo (abstract-hash thing) modulus))
 
 (define make-abstract-hash-table
-  (strong-hash-table/constructor abstract-hash-mod abstract-equal? #t))
+  (strong-hash-table/constructor abstract-hash-mod abstract-equal? #f))
 
 ;;; Union of shapes --- can be either this or that.  ABSTRACT-UNION is
 ;;; only used on the return values of IF statements.

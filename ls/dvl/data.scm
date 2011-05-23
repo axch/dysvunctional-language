@@ -101,8 +101,14 @@
 
 (define (memoize cache f)
   (lambda (x)
-    (hash-table/intern! cache x
-     (lambda () (f x)))))
+    ;; Not hash-table/intern! because f may modify the cache (for
+    ;; instance, by recurring through the memoization).
+    (hash-table/lookup cache x
+     (lambda (datum) datum)
+     (lambda ()
+       (let ((answer (f x)))
+         (hash-table/put! cache x answer)
+         answer)))))
 
 (define free-variables
   (memoize (make-eq-hash-table)
