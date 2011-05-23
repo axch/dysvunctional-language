@@ -1,0 +1,155 @@
+                              BCL-AD/ls/
+            A collection of AD and compilation prototypes
+
+This README is an orientation to the structure and interrelations
+between the various attempts at automatic differentiation and
+interesting compilation present hereunder.  The target audience is
+hackers who want to evolve the prototypes: each individual one is
+meant to stand alone as a readable document, and as a usable system
+(to the extent that any of them are usable).  I assume that you are
+familiar with automatic differentiation.
+
+The objective of all these experiments is to understand the nature of
+AD, the nature of compilation, and how we might produce a usable
+programming system that compiles numeric codes (that may use AD) into
+efficient code (match or exceed handwritten C).
+
+The experiments all take the form of interpreters and compilers for
+various Scheme-like languages.  The nomenclature is inspired by VLAD,
+for Vunctional Language for Automatic Differentiation, the language
+implemented by the Stalingrad prototype (available elsewhere).  The
+languages in this directory are:
+
+  VL    Vunctional Language      VLAD without the AD
+  DVL   DysVunctional Language   VL with gensym support
+  FOL   First Order Language     Compilation target for VL and DVL
+  SLAD  Scheme Language for AD   Abandoned interpreter with AD
+  eval1                          Abandoned AD-transformed interpreter
+
+The point of comparison for all these experiments is Stalingrad, the
+compiler for VLAD.  VLAD is a (mostly) pure Scheme-like language with
+first-class automatic differentiation operators.  Stalingrad performs
+polyvariant, whole-program, almost-union-free flow analysis to
+understand the control flow in a VLAD program.  AD, both forward mode
+and reverse mode, is implemented by source-to-source transformations
+performed during flow analysis.  The output of the flow analysis
+process is a program represented in a first-order internal
+representation language, which then undergoes procedure inlining and
+scalar replacement of aggregates; the result is translated to C and
+compiled to machine code with gcc.
+
+The objective of the experimentation here is a Stalingrad-guided full
+reimplementation of aggressive compiler optimization and support for
+AD, with extensions as opportune, in as expository a manner as
+possible.
+
+1) FOL takes the place of Stalingrad's internal first-order language.
+Instead of being entirely internal, FOL is a standalone compiler for a
+statically typed first-order language with Scheme syntax (which makes
+it easy to generate programmatically).  The FOL compiler is dominated
+by a FOL to FOL optimizer, which performs inlining, scalar replacement
+of aggregates, dead code elimination, common subexpression
+elimination, and some algebraic simplification.  Optimized FOL can
+then be compiled to machine code via the MIT Scheme compiler.
+
+2) VL is a compiler implementing union-free (not even almost-, in
+Stalingrad's technical sense) polyvariant flow analysis.  It generates
+FOL, and therefore does not itself contain any post-analysis
+optimization.
+
+3) DVL is a variation on VL extended to be able to reason about
+gensyms; DVL the language adds the primitives GENSYM and GENSYM= to
+VL.  Gensyms are sufficient to implement forward mode AD correctly by
+operator overloading; the flow analysis suffices to migrate all the
+boxing, tagging, dispatching, and unboxing that this normally entails
+to compile time.  DVL still falls short of Stalingrad's feature set
+because is not union-free (not almost-), and because it does not
+support reverse-mode AD.
+
+4) SLAD was an attempt to implement an interpter for a language with
+AD by performing Stalingrad-like source-to-source transformations at
+runtime in the interpreter.  It is currently stalled in a
+perturbation-confused state and not actively developed.
+
+5) eval1 was an even earlier attempt to write an interpreter that was
+itself AD-transformed just to see what that would look like and
+whether it would make AD easier.  It was abandoned (in favor of
+writing VL) long ago, without getting anywhere interesting.
+
+
+Hacking
+
+All of these experiments are written in MIT Scheme.  An introduction
+to MIT Scheme is outside the scope of the present document.
+
+Every experiment (except eval1 and SLAD) has a test suite, which you
+can run with `./run-tests' in the appropriate directory.  The toplevel
+`./run-tests' runs all three.  It is a bug if they do not all pass.
+
+The test suites are implemented in a separate unit testing framework
+(see http://web.mit.edu/~axch/www/test_manager.html), which is
+installed in source form in testing/.
+
+VL, DVL, and SLAD are also incomplete implementations of the VLAD
+programming language, and as such are also tested by the Stalingrad
+test suite.  If you check Stalingrad out as a sister directory to
+BCL-AD and make the appropriate modification to
+tool/test-driver-scm.scm in Stalingrad, you can run the Stalingrad
+tests against VL, DVL, and/or SLAD with `make test' and `make
+test-full'.  Some of these are known to fail.  The entry points for
+those tests are the executables vl/vl, dvl/dvl, and slad/slad.  Those
+tests are parsed from the annotated example VLAD programs in
+examples/automatic/ in the Stalingrad tree.
+
+To play with VL, DVL, FOL, SLAD, or eval1 at the Scheme REPL, just
+(load "load") in the appropriate directory.  See their individual
+README files, comments, and source for their respective documentation.
+
+VL and DVL, and to a lesser extent SLAD, are similar enough to share
+some implementations of supporting structures (notably picking apart
+their surface language).  This sharing is accomplished with symbolic
+links, and cross-directory loads in their load files.
+
+To avoid naming problems, FOL is separated from VL and DVL (which load
+it) with an ad-hoc module boundary.  Study the FOL load.scm file to
+see what's going on, and be advised of the existence of the MIT Scheme
+procedure `ge' (ge stands for Go to Environment).
+
+All of VL, DVL, FOL, and SLAD use some none-too-interesting common
+utility stuff that can be found in the support/ directory.  There is
+also a rule-based term-rewriting system in support/rule-system, which
+FOL uses extensively (and DVL uses lightly) to manipulate source code.
+
+
+Cheat Sheet
+
+Directories
+ fol/         Implementation of FOL
+ vl/          Implementation of VL (uses fol/)
+ dvl/         Implementation of DVL (some refers to vl/; uses fol/)
+ slad/        Implementation of SLAD (some refers to vl/)
+ eval1/       Old crufty experiment
+ support/     General libraries
+ support/rule-system/   Rule-based term-rewriting system
+ testing/     Unit test framework (external library in source form)
+ */test/      Unit tests for *
+
+Important Files
+ ./run-tests  Run all the test suites from the command line
+ */run-tests  Run the test suite for * from the command line
+ */load.scm   Scheme entry point for *
+ ./README     This document
+ */README     Entry point for * documentation
+ vl/vl        Commandline entry point for VL
+ dvl/dvl      Commandline entry point for DVL
+ slad/slad    Commandline entry point for SLAD
+
+In ../../stalingrad/
+ examples/automatic/
+   Stalingrad tests
+ tool/test-driver-scm.scm
+   Controls what VLAD implementation(s) to test, and with what tests
+ make test
+   Run the "fast" Stalingrad tests against Stalingrad, VL, DVL, and/or SLAD
+ make test-full
+   Run all the Stalingrad tests against Stalingrad, VL, DVL, and/or SLAD
