@@ -8,18 +8,18 @@
 (define (load-relative filename #!optional environment)
   (self-relatively (lambda () (load filename environment))))
 
-(load-relative "../../support/auto-compilation")
+(load-relative "../support/auto-compilation")
 
 (define fol-environment (make-top-level-environment))
 
 (environment-define fol-environment 'fol-environment fol-environment)
 
-(load-relative "../../support/rule-system/load" fol-environment)
+(load-relative "../support/rule-system/load" fol-environment)
 
 (for-each
  (lambda (file)
    (load-relative-compiled file fol-environment))
- '("../../support/utils"
+ '("../support/utils"
    "nomenclature"
    "syntax"
    "runtime"

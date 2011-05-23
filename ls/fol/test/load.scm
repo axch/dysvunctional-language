@@ -1,5 +1,5 @@
 (for-each
  (lambda (file)
    (load-relative file fol-environment))
- '("../../../testing/load"
+ '("../../testing/load"
    "fol-test"))

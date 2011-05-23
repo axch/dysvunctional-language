@@ -27,7 +27,7 @@
    "abstract-values"
    "abstract-eval"
    "nomenclature"
-   "fol/load"
+   "../fol/load"
    "code-generator"
    "primitives"
    "read"))
