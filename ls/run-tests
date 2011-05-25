@@ -1,0 +1,16 @@
+#!/bin/sh
+
+echo "Testing FOL"
+cd fol
+./run-tests
+
+echo
+echo "Testing VL"
+cd ../vl
+./run-tests
+
+echo
+echo "Testing DVL"
+cd ../dvl
+./run-tests
+

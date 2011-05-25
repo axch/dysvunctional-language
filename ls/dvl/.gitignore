@@ -1,0 +1,6 @@
+*.bci
+*.bin
+*.com
+*.ext
+frobnozzle*
+sqrt.scm
