@@ -4,3 +4,5 @@
 (define f-hat ((derivative f) 3.))
 
 ((f-hat (f-hat exp)) 1.)
+
+;; N.B. This tickles a non-idempotence in fol-optimize.
