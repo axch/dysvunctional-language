@@ -122,19 +122,31 @@
 (define (analyze program)
   (let ((analysis (initial-analysis (macroexpand program))))
     (let loop ((count 0))
-      (if (and (number? *analyze-wallp*)
-               (= 0 (modulo count *analyze-wallp*)))
-          (show-analysis analysis))
+      (do-wallpaper count analysis *analyze-wallp*)
       (if (null? (analysis-queue analysis))
           (begin
-            (if *analyze-wallp*
-                (show-analysis analysis))
+            ;; 0 always triggers any wallpaper.
+            (do-wallpaper 0 analysis *analyze-wallp*)
             analysis)
           (begin
             (refine-next-binding! analysis)
             (loop (+ count 1)))))))
 
+;; If this is a number n, show the analysis every n steps.
+;; If this is a procedure, call it (for effect) on each new analysis.
+;; If this is a pair of a number n and a procedure, call that procedure
+;;   every n steps (and once more for the last analysis).
 (define *analyze-wallp* #f)
+
+(define (do-wallpaper count analysis wallp-spec)
+  (cond ((and (pair? wallp-spec)
+              (= 0 (modulo count (car wallp-spec))))
+         ((cdr wallp-spec) analysis))
+        ((number? wallp-spec)
+         (do-wallpaper count analysis (cons wallp-spec show-analysis)))
+        ((procedure? wallp-spec)
+         (do-wallpaper count analysis (cons 1 wallp-spec)))
+        (else 'ok)))
 
 (define (initial-analysis program)
   (make-analysis
