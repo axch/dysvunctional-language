@@ -1,0 +1,18 @@
+;;; The same as amazing-bug-3.dvl, but supplies the arguments to f in
+;;; the opposite order.  It is clear that the answers should be
+;;; identical, and makes it easier to check the correctness of the
+;;; answer.
+
+(define (f recipient)
+  (lambda (x)
+    (recipient
+     (lambda (y) (sin (* x y)))
+     (lambda (g)
+       (lambda (z)
+         (g (+ x z)))))))
+
+(define recip (lambda (g-hat f-hat)
+                ((f-hat g-hat) 3.14159)))
+
+((derivative (f recip)) 3)
+===> 8.32914929893078

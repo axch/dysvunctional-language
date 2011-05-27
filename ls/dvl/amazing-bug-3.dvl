@@ -1,0 +1,35 @@
+;;; Here we have the same program as in amazing-bug-2.dvl, but using a
+;;; Church-encoded pair rather than a normal one.  Should the answer
+;;; be the same?
+
+(define (f x)
+  (lambda (recipient)
+    (recipient
+     (lambda (y) (sin (* x y)))
+     (lambda (g)
+       (lambda (z)
+         (g (+ x z)))))))
+
+(((derivative f) 3)
+ (lambda (g-hat f-hat)
+   ((f-hat g-hat) 3.14159)))
+
+===> 8.32914929893078
+
+; ((lambda (y) (* (cos (* 3 y)) (+ 3 y))) (+ 3 3.14159))
+
+;;; Arguably not.  Consider that under the normal definition of
+;;; addition on functions and pairs, Church-encoded pairs add
+;;; differently from normal ones:
+;;; (lambda (cont) (cont x1 y1)) + (lambda (cont) (cont x2 y2)) =
+;;; (lambda (cont) (+ (cont x1 y1) (cont x2 y2))) !=
+;;; (lambda (cont) (cont (+ x1 x2) (+ y1 y2)))
+
+;;; These are only different if the CONT procedure is non-linear.  The
+;;; interpretation is that in the Church-encoded case, the encoding
+;;; respects the non-linearity in the CONT procedure, whereas in the
+;;; pair case, adding pairs does not respect the non-linearity of the
+;;; result.  (In fact, the same is true of ordinary addition of
+;;; numbers).  Since differentiation is supposed to expose linear
+;;; structure, it makes sense that it would expose different things in
+;;; these two cases.

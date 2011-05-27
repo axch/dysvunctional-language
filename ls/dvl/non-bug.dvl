@@ -1,0 +1,42 @@
+;;; Trying just plain old directional differentiation of a function
+;;; from R^2 to R^2, using Chruch-encoded pairs.
+
+; f R^2 -> R^2
+; f(x,y) = (x+y,x*y)
+; Church encoded
+
+(define (c-cons a d)
+  (lambda (recipient)
+    (recipient a d)))
+
+(define (c-car c)
+  (c (lambda (a d) a)))
+
+(define (c-cdr c)
+  (c (lambda (a d) d)))
+
+(define (c-+ v1 v2)
+  (let ((x1 (c-car v1))
+        (y1 (c-cdr v1))
+        (x2 (c-car v2))
+        (y2 (c-cdr v2)))
+    (c-cons (+ x1 x2) (+ y1 y2))))
+
+(define (c-* r v)
+  (let ((x (c-car v))
+        (y (c-cdr v)))
+    (c-cons (* r x) (* r y))))
+
+(define (c-directional-derivative f x dir)
+  (let ((line (lambda (dist)
+                (f (c-+ x (c-* dist dir))))))
+    ((derivative line) 0)))
+
+(define (f pt)
+  (let ((x (c-car pt))
+        (y (c-cdr pt)))
+    (c-cons (+ x y) (* x y))))
+
+((c-directional-derivative f (c-cons 7. 11.) (c-cons 2. 3.))
+ (lambda (a d) (cons a d)))
+===> (5. . 43.)
