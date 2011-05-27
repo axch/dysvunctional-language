@@ -1,0 +1,6 @@
+(define (((f x) g) y)
+  (g (+ x y)))
+
+(define f-hat ((derivative f) 3.))
+
+((f-hat (f-hat exp)) 1.)
