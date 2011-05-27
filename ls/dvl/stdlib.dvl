@@ -66,7 +66,7 @@
 (define (derivative f)
   (let ((epsilon (gensym)))
     (lambda (x)
-      (tangent epsilon (f (make-bundle epsilon x (real 1)))))))
+      (tangent epsilon (f (make-bundle epsilon x 1))))))
 
 (define (derivative-f f)
   (derivative f))
