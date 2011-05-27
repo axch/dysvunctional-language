@@ -3,6 +3,6 @@
 
 (define f-hat ((derivative f) 3.))
 
-((f-hat (f-hat exp)) 1.)
+((f-hat (f-hat exp)) 1.) ===> 1096.6331584284585 ; (exp 7)
 
 ;; N.B. This tickles a non-idempotence in fol-optimize.
