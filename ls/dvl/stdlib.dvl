@@ -56,6 +56,14 @@
      (cond ((real? thing)
             0)
            ((procedure? thing)
+            ;; Note that this will have a different effect from the
+            ;; bundle? case if thing intends to accept a procedural
+            ;; argument and pass a closed-over bundle to it.  This
+            ;; clause will have the effect of differentiating that
+            ;; procedural argument, whereas taking the tangent of such
+            ;; a bundle and passing it in to such a procedure will
+            ;; not.  This is arguably correct.  See discussion in
+            ;; church-encoding.tex.
             (hide-gensym-in-procedure epsilon
              (lambda (x)
                (tangent epsilon (thing x)))))
@@ -101,6 +109,16 @@
   (cond ((procedure? object)
          (hide-gensym-in-procedure symbol object))
         ((pair? object)
+         ;; Observe that if OBJECT contains functions, this clause
+         ;; will do something different from what the previous clause
+         ;; would have effected on a Church-encoded version of the
+         ;; same OBJECT.  Why?  Because when the recursive calls
+         ;; proceed to hide their procedures, they will make different
+         ;; gensyms, and those procedures will not see each other's
+         ;; perturbations; whereas if the continuation given to a
+         ;; Church-encoded version were to recombine the procedures,
+         ;; they *would* see each other's perturbations.  This is
+         ;; arguably correct.  See the note in church-encoding.tex.
          (cons (hide-gensym-in-object symbol (car object))
                (hide-gensym-in-object symbol (cdr object))))
         ;; Can I rely on the object never *being* the symbol I am hiding?
