@@ -1,0 +1,30 @@
+(define (church-output f)
+  (lambda (x)
+    (lambda (recipient)
+      (recipient (f x)))))
+
+(define (continue x)
+  (* x x))
+
+(continue ((derivative sin) 1.))
+===> .2919265817264289
+; (* (cos 1) (cos 1))
+
+(((derivative (church-output sin)) 1.) continue)
+===> .9092974268256818
+
+(define (flip f)
+  (lambda (x)
+    (lambda (y)
+      ((f y) x))))
+
+; (((derivative f) x) y) === ((derivative ((flip f) y)) x)
+
+((derivative ((flip (church-output sin)) continue)) 1.)
+===> .9092974268256818
+
+; ((flip (church-output sin)) continue) = (lambda (x) (* (sin x) (sin x)))
+
+((derivative (lambda (x) (* (sin x) (sin x)))) 1.)
+===> .9092974268256818
+; (* 2 (sin 1) (cos 1))
