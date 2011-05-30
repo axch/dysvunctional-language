@@ -14,6 +14,7 @@
 
 (load-relative "../support/auto-compilation")
 (load-relative "../support/rule-system/load")
+(load-relative "../fol/load")
 
 (for-each
  load-relative-compiled
@@ -28,7 +29,6 @@
    "abstract-values"
    "abstract-eval"
    "../vl/nomenclature"
-   "../fol/load"
    "../vl/code-generator"
    "primitives"
    "read"))

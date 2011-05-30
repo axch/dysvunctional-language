@@ -13,6 +13,7 @@
   (self-relatively (lambda () (load filename))))
 
 (load-relative "../support/auto-compilation")
+(load-relative "../fol/load")
 
 (for-each
  load-relative-compiled
@@ -27,7 +28,6 @@
    "abstract-values"
    "abstract-eval"
    "nomenclature"
-   "../fol/load"
    "code-generator"
    "primitives"
    "read"))
