@@ -1,6 +1,31 @@
 (declare (usual-integrations))
 ;;;; Compilation with MIT Scheme
 
+(define (fol->mit-scheme program #!optional output-base)
+  (if (default-object? output-base)
+      (set! output-base "frobnozzle"))
+  (let* ((output `((declare (usual-integrations))
+                   ,(internalize-definitions program)))
+         (output-file (pathname-new-type output-base "fol-scm")))
+    (with-output-to-file output-file
+      (lambda ()
+        (for-each (lambda (form)
+                    (pp form)
+                    (newline)) output)))
+    (fluid-let ((sf/default-syntax-table fol-environment))
+      (cf output-file))))
+
+;;; Note: The semantics of a flonumized FOL program are different than
+;;; those of one executed straight, because of differences in the
+;;; interpretation of numbers.
+(define (fol->floating-mit-scheme program #!optional output-base)
+  (fol->mit-scheme (flonumize program) output-base))
+
+(define (run-mit-scheme #!optional output-base)
+  (if (default-object? output-base)
+      (set! output-base "frobnozzle"))
+  (load output-base fol-environment))
+
 (define (fol->standalone-mit-scheme program #!optional output-base)
   (if (default-object? output-base)
       (set! output-base "frobnozzle"))
@@ -27,25 +52,10 @@
       `(let () ,@(cdr program))
       program))
 
-(define (fol->mit-scheme program #!optional output-base)
-  (if (default-object? output-base)
-      (set! output-base "frobnozzle"))
-  (let* ((output `((declare (usual-integrations))
-                   ,(internalize-definitions program)))
-         (output-file (pathname-new-type output-base "fol-scm")))
-    (with-output-to-file output-file
-      (lambda ()
-        (for-each (lambda (form)
-                    (pp form)
-                    (newline)) output)))
-    (fluid-let ((sf/default-syntax-table fol-environment))
-      (cf output-file))))
-
-(define (run-mit-scheme #!optional output-base)
-  (if (default-object? output-base)
-      (set! output-base "frobnozzle"))
-  (load output-base fol-environment))
-
+;;; Convert all numeric operations to MIT Scheme primitives that
+;;; assume floating point arguments, instead of the generic
+;;; operations.  This saves on dispatches, but arguably changes the
+;;; semantics (in particular, exact arithmetic disappears).
 (define (flonumize program)
   (define floating-versions
     (cons (cons 'atan 'flo:atan2)
@@ -101,9 +111,3 @@
             `(let (,@bindings1
                    ,@bindings2)
                ,@(replace-free-occurrences name exp body)))))))
-
-;;; Note: The semantics of a flonumized FOL program are different than
-;;; those of one executed straight, because of differences in the
-;;; interpretation of numbers.
-(define (fol->floating-mit-scheme program #!optional output-base)
-  (fol->mit-scheme (flonumize program) output-base))
