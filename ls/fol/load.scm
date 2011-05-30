@@ -42,6 +42,11 @@
      (environment-define
       client-environment export (environment-lookup fol-environment export)))
    '(fol-eval
+     fol->mit-scheme
+     fol->floating-mit-scheme
+     fol->standalone-mit-scheme
+     run-mit-scheme
+
      check-program-types
      fol-optimize
      alpha-rename
@@ -59,8 +64,6 @@
      structure-definitions->vectors
      ;; TODO Document this:
      compile-visibly
-     fol->floating-mit-scheme
-     run-mit-scheme
 
      ;; TODO The FOL runtime system is part of the implementation of
      ;; VL and DVL (the concrete implementations of some primitives)

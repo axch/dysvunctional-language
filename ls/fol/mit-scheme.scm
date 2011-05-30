@@ -26,26 +26,24 @@
       (set! output-base "frobnozzle"))
   (load output-base fol-environment))
 
+(define my-path (->namestring (self-relatively current-load-pathname)))
+
 (define (fol->standalone-mit-scheme program #!optional output-base)
   (if (default-object? output-base)
       (set! output-base "frobnozzle"))
-  (let* ((srfi-11 (read-source "../vl/fol/srfi-11.scm"))
-         (runtime (read-source "../vl/fol/runtime.scm"))
+  (let* ((srfi-11 (read-source (string-append my-path "srfi-11.scm")))
+         (runtime (read-source (string-append my-path "runtime.scm")))
          (output
           `(,@srfi-11                   ; includes usual-integrations
             ,@(cdr runtime)             ; remove usual-integrations
-            ,@(cdr program)             ; remove begin
-            ))
+            ,(internalize-definitions program)))
          (output-file (pathname-new-type output-base "fol-scm")))
     (with-output-to-file output-file
       (lambda ()
         (for-each (lambda (form)
                     (pp form)
                     (newline)) output)))
-    (cf output-file)
-    ;; TODO Actually loading this into the currently running Scheme
-    ;; redefines the gensym structure, leading to trouble.
-    (load output-base)))
+    (cf output-file)))
 
 (define (internalize-definitions program)
   (if (begin-form? program)

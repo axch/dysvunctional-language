@@ -214,6 +214,34 @@ The simpler-to-use COMPILE-TO-FOL could be defined as
 ANALYZE-AND-GENERATE followed by STRUCTURE-DEFINITIONS->VECTORS.
 
 
+Machine code from FOL
+
+FOL includes a compiler to machine code via the MIT Scheme compiler.
+
+(fol->mit-scheme <program> [<basename>])
+  Dumps the given FOL program into <basename>.fol-scm and compile that
+  with MIT Scheme.  The result can be executed by loading it into an
+  environment that already contains the FOL runtime.  The basename
+  defaults to `frobnozzle', local to the current directory.
+
+(fol->floating-mit-scheme <program> [<basename>])
+  Like `fol->mit-scheme', but replaces all of MIT Scheme's generic
+  numeric procedures with specialized floating point versions.  This
+  is faster, but only safe if you did not indend to do any exact
+  arithmetic in your program.  (Vector indexing is not broken).
+
+(run-mit-scheme [<basename>])
+  Executes a program previously compiled with `fol->mit-scheme' or
+  `fol->floating-mit-scheme'.
+
+(fol->standalone-mit-scheme <program> [<basename>])
+  Akin to `fol->mit-scheme', but includes the FOL runtime in the
+  dumped file.  The resulting <basename>.com can be executed by
+  loading it into a fresh MIT Scheme.  Do not use `run-mit-scheme' on
+  the output of this; the redefinition of the runtime will cause
+  problems.
+
+
 Writing FOL
 
 A FOL program is a Scheme data structure.  This may have been parsed
