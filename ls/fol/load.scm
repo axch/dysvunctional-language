@@ -23,6 +23,7 @@
    "nomenclature"
    "syntax"
    "runtime"
+   "primitives"
    "alpha-renaming"
    "structs"
    "type-check"
