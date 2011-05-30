@@ -327,13 +327,14 @@
           `(,@srfi-11                   ; includes usual-integrations
             ,@(cdr runtime)             ; remove usual-integrations
             ,@(cdr program)             ; remove begin
-            )))
-    (with-output-to-file (string-append output-base ".scm")
+            ))
+         (output-file (pathname-new-type output-base "fol-scm")))
+    (with-output-to-file output-file
       (lambda ()
         (for-each (lambda (form)
                     (pp form)
                     (newline)) output)))
-    (cf output-base)
+    (cf output-file)
     ;; TODO Actually loading this into the currently running Scheme
     ;; redefines the gensym structure, leading to trouble.
     (load output-base)))
@@ -346,15 +347,16 @@
 (define (fol->mit-scheme program #!optional output-base)
   (if (default-object? output-base)
       (set! output-base "frobnozzle"))
-  (let ((output `((declare (usual-integrations))
-                  ,(internalize-definitions program))))
-    (with-output-to-file (string-append output-base ".scm")
+  (let* ((output `((declare (usual-integrations))
+                   ,(internalize-definitions program)))
+         (output-file (pathname-new-type output-base "fol-scm")))
+    (with-output-to-file output-file
       (lambda ()
         (for-each (lambda (form)
                     (pp form)
                     (newline)) output)))
     (fluid-let ((sf/default-syntax-table fol-environment))
-      (cf output-base))))
+      (cf output-file))))
 
 (define (run-mit-scheme #!optional output-base)
   (if (default-object? output-base)
