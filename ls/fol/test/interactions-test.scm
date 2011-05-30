@@ -42,4 +42,20 @@
             (interprocedural-dead-code-elimination
              (scalar-replace-aggregates program))))))
 
+ (define-test (dead-code-then-inline)
+   ;; Eliminating dead code may open inlining opportunities by
+   ;; deleting edges in the call graph.
+   (define program
+     '(begin
+        (define (nominally-recursive x)
+          (argument-types real real)
+          (let ((foo (if (< x 0)
+                         x
+                         (nominally-recursive (- x 1)))))
+            x))
+        (nominally-recursive (real 5))))
+   (check (equal? program (inline program)))
+   (check (equal? '(let ((x (real 5))) x)
+           (inline (interprocedural-dead-code-elimination program)))))
+
  )
