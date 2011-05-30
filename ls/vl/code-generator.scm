@@ -298,3 +298,11 @@
 
 (define (compile-to-scheme program)
   (fol-optimize (compile-to-fol program)))
+
+(define (compile-visibly program)
+  (optimize-visibly
+   ((visible-stage structure-definitions->vectors)
+    (let ((raw-fol ((visible-stage analyze-and-generate)
+                    program)))
+      (clear-name-caches!)
+      raw-fol))))

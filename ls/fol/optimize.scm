@@ -278,7 +278,7 @@
 
 ;;; Watching the behavior of the optimizer
 
-(define (compile-visibly program)
+(define (optimize-visibly program)
   (report-size ; This makes the last stage show up in the stack sampler
    ((visible-stage tidy)
     ((visible-stage interprocedural-dead-code-elimination)
@@ -286,8 +286,4 @@
       ((visible-stage intraprocedural-cse)
        ((visible-stage scalar-replace-aggregates)
         ((visible-stage inline)             ; includes ALPHA-RENAME
-         ((visible-stage structure-definitions->vectors)
-          (let ((raw-fol ((visible-stage analyze-and-generate)
-                          program)))
-            (clear-name-caches!)
-            raw-fol))))))))))
+         program))))))))

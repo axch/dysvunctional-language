@@ -63,7 +63,7 @@
      strip-argument-types
      structure-definitions->vectors
      ;; TODO Document this:
-     compile-visibly
+     optimize-visibly
 
      ;; TODO The FOL runtime system is part of the implementation of
      ;; VL and DVL (the concrete implementations of some primitives)
