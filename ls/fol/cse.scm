@@ -243,11 +243,10 @@
       (rule `(* (? thing) 1) thing)
       (rule `(/ (? thing) 1) thing))))
   (define (user-procedure? operator)
-    (not (memq operator '(abs exp log sin cos tan asin acos sqrt write-real
-                              zero? positive? negative? + - * /
-                              atan expt < <= > >= = gensym=))))
+    (not (memq operator (map primitive-name *primitives*))))
   (simplify
-   (cond ((memq operator '(read-real real gensym))
+   (cond ((memq operator (map primitive-name
+                              (filter primitive-impure? *primitives*)))
           unique-expression)
          ((user-procedure? operator)    ; TODO This is painful.
           unique-expression)

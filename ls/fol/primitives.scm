@@ -3,8 +3,11 @@
 
 (define-structure (primitive safe-accessors)
   name
-  type)
+  type
+  pure?)
 
+(define (primitive-impure? primitive)
+  (not (primitive-pure? primitive)))
 
 (define-structure (function-type (constructor function-type) safe-accessors)
   args
@@ -14,23 +17,24 @@
 (define arg-types function-type-args)
 
 (define (real->real thing)
-  (make-primitive thing (function-type '(real) 'real)))
+  (make-primitive thing (function-type '(real) 'real) #t))
 (define (real*real->real thing)
-  (make-primitive thing (function-type '(real real) 'real)))
+  (make-primitive thing (function-type '(real real) 'real) #t))
 (define (real->bool thing)
-  (make-primitive thing (function-type '(real) 'bool)))
+  (make-primitive thing (function-type '(real) 'bool) #t))
 (define (real*real->bool thing)
-  (make-primitive thing (function-type '(real real) 'bool)))
+  (make-primitive thing (function-type '(real real) 'bool) #t))
 
 ;; Type testers real? gensym? null? pair? procedure? have other types, but
 ;; should never be emitted by VL or DVL on union-free inputs.
 
 (define *primitives*
-  `(,(make-primitive 'read-real (function-type '() 'real))
+  `(,(make-primitive 'read-real (function-type '() 'real) #f)
+    ,(make-primitive 'write-real (function-type '(real) 'real) #f)
     ,@(map real->real
-           '(abs exp log sin cos tan asin acos sqrt write-real real))
+           '(abs exp log sin cos tan asin acos sqrt real))
     ,@(map real*real->real '(+ - * / atan expt))
     ,@(map real->bool '(zero? positive? negative?))
     ,@(map real*real->bool '(< <= > >= =))
-    ,(make-primitive 'gensym (function-type '() 'gensym))
-    ,(make-primitive 'gensym= (function-type '(gensym gensym) 'bool))))
+    ,(make-primitive 'gensym (function-type '() 'gensym) #f)
+    ,(make-primitive 'gensym= (function-type '(gensym gensym) 'bool) #t)))
