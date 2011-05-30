@@ -157,7 +157,9 @@
 ;;; by removing intervening arithmetic.  For example, in (let ((x (* 0
 ;;; y))) ...), x would not register as in common with 0 until after
 ;;; tidying (* 0 y) to 0.  More such algebra might be migratable into
-;;; the CSE program itself, if desired.
+;;; the CSE program itself, if desired.  Tidying may also expose more
+;;; elimination opportunities for common subexpressions by increasing
+;;; the scopes of variables.
 ;;;
 ;;; Tidy then eliminate: Tidying may expose dead variables by
 ;;; collapsing (* 0 foo) to 0 or by collapsing (if foo bar bar) to
