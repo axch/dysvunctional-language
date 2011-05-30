@@ -278,12 +278,12 @@
 
 ;;; Watching the behavior of the optimizer
 
-(define-syntax fol-stage
+(define-syntax visible-stage
   (syntax-rules ()
     ((_ name)
-     (fol-named-stage name 'name))))
+     (visible-named-stage name 'name))))
 
-(define (fol-named-stage stage name)
+(define (visible-named-stage stage name)
   (lambda (input)
     (display "Stage ")
     (display name)
@@ -304,14 +304,14 @@
 
 (define (compile-visibly program)
   (report-size ; This makes the last stage show up in the stack sampler
-   ((fol-stage tidy)
-    ((fol-stage interprocedural-dead-code-elimination)
-     ((fol-stage eliminate-intraprocedural-dead-variables)
-      ((fol-stage intraprocedural-cse)
-       ((fol-stage scalar-replace-aggregates)
-        ((fol-stage inline)             ; includes ALPHA-RENAME
-         ((fol-stage structure-definitions->vectors)
-          (let ((raw-fol ((fol-stage analyze-and-generate)
+   ((visible-stage tidy)
+    ((visible-stage interprocedural-dead-code-elimination)
+     ((visible-stage eliminate-intraprocedural-dead-variables)
+      ((visible-stage intraprocedural-cse)
+       ((visible-stage scalar-replace-aggregates)
+        ((visible-stage inline)             ; includes ALPHA-RENAME
+         ((visible-stage structure-definitions->vectors)
+          (let ((raw-fol ((visible-stage analyze-and-generate)
                           program)))
             (clear-name-caches!)
             raw-fol))))))))))
