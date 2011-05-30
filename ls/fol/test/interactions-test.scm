@@ -58,4 +58,19 @@
    (check (equal? '(let ((x (real 5))) x)
            (inline (interprocedural-dead-code-elimination program)))))
 
+ (define-test (lift-lets-then-cse)
+   (define program
+     '(let ((x (real 5)))
+        (let ((w (let ((y (+ x 3))) y)))
+          ;; y = (+ x 3) goes out of scope
+          (let ((z (+ x 3)))
+            (+ w z)))))
+   (define lift-lets (rule-simplifier (list let-let-lifting-rule)))
+   (check (equal? program (intraprocedural-cse program)))
+   (check (equal?
+           '(let ((x (real 5)))
+              (let ((y (+ x 3)))
+                (+ y y)))
+           (intraprocedural-cse (lift-lets program)))))
+
  )
