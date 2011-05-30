@@ -79,7 +79,7 @@
 
 #|
 On khazad-dum, Apr 4, 2011:
-(define tidied (compile-visibly (dvl-read-file "planets.scm")))
+(define tidied (compile-visibly (dvl-read-file "examples/planets.scm")))
 Stage analyze-and-generate on 2731 pairs
 ;process time: 45890 (22480 RUN + 23410 GC); real time: 48822
 Stage structure-definitions->vectors on 801317 pairs
@@ -99,7 +99,7 @@ Stage tidy on 8489 pairs
 
 #|
 On arrakis, Apr 8, 2011
-(define tidied (compile-visibly (dvl-read-file "planets.scm")))
+(define tidied (compile-visibly (dvl-read-file "examples/planets.scm")))
 Stage analyze-and-generate on 2731 pairs
 ;process time: 10550 (9310 RUN + 1240 GC); real time: 10557
 Stage structure-definitions->vectors on 801317 pairs
@@ -119,7 +119,7 @@ Stage tidy on 7190 pairs
 
 #|
 On arrakis, Apr 11, 2011
-(define tidied (compile-visibly (dvl-read-file "planets.scm")))
+(define tidied (compile-visibly (dvl-read-file "examples/planets.scm")))
 Stage analyze-and-generate on 2731 pairs
 ;process time: 9060 (8030 RUN + 1030 GC); real time: 9074
 Stage structure-definitions->vectors on 801317 pairs
@@ -140,7 +140,7 @@ Stage tidy on 8489 pairs
 #|
 On arrakis, in the same Scheme as before,
 Apr 15, 2011
-(define tidied (compile-visibly (dvl-read-file "planets.scm")))
+(define tidied (compile-visibly (dvl-read-file "examples/planets.scm")))
 Stage analyze-and-generate on 2731 pairs
 ;process time: 7790 (6810 RUN + 980 GC); real time: 7798
 Stage structure-definitions->vectors on 801317 pairs

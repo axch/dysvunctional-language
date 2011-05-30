@@ -145,5 +145,5 @@
      ".2500002594080783\n"
      (with-output-to-string
        (lambda ()
-         (dvl-run-file "sqrt.dvl"))))))
+         (dvl-run-file "examples/sqrt.dvl"))))))
  )
