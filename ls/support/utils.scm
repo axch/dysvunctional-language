@@ -46,3 +46,27 @@
 (define (assert pred)
   (if (not pred)
       (error "Assertion failed")))
+
+(define-syntax visible-stage
+  (syntax-rules ()
+    ((_ name)
+     (visible-named-stage name 'name))))
+
+(define (visible-named-stage stage name)
+  (lambda (input)
+    (display "Stage ")
+    (display name)
+    (display " on ")
+    (display (count-pairs input))
+    (display " pairs")
+    (newline)
+    (let ((answer (show-time (lambda () (stage input)))))
+      (newline)
+      answer)))
+
+(define (report-size program)
+  (display "Final output has ")
+  (display (count-pairs program))
+  (display " pairs")
+  (newline)
+  program)

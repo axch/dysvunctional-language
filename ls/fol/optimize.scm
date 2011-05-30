@@ -278,30 +278,6 @@
 
 ;;; Watching the behavior of the optimizer
 
-(define-syntax visible-stage
-  (syntax-rules ()
-    ((_ name)
-     (visible-named-stage name 'name))))
-
-(define (visible-named-stage stage name)
-  (lambda (input)
-    (display "Stage ")
-    (display name)
-    (display " on ")
-    (display (count-pairs input))
-    (display " pairs")
-    (newline)
-    (let ((answer (show-time (lambda () (stage input)))))
-      (newline)
-      answer)))
-
-(define (report-size program)
-  (display "Final output has ")
-  (display (count-pairs program))
-  (display " pairs")
-  (newline)
-  program)
-
 (define (compile-visibly program)
   (report-size ; This makes the last stage show up in the stack sampler
    ((visible-stage tidy)
