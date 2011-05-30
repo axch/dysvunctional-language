@@ -80,6 +80,9 @@
 ;;; Inline then others: Inlining exposes some interprocedural aliases,
 ;;; common subexpressions, dead code, and tidying opportunities to
 ;;; intraprocedural methods by collapsing some procedure boundaries.
+;;; I do not know whether interprocedural-dead-code-elimination is
+;;; good enough to get away without this aid in principle, but in
+;;; practice inlining first greatly accelerates it.
 ;;;
 ;;; SRA then Inline: Inlining gives explicit names (former formal
 ;;; parameters) to the argument expressions of the procedure calls
