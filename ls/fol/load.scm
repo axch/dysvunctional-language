@@ -33,7 +33,8 @@
    "cse"
    "dead-code"
    "sra"
-   "optimize"))
+   "optimize"
+   "mit-scheme"))
 
 (let ((client-environment (the-environment)))
   (for-each
