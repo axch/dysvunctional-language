@@ -22,7 +22,7 @@
 (define (real*real->bool thing)
   (make-primitive thing (function-type '(real real) 'bool)))
 
-;; Type testers real? gensym? null? pair? have other types, but
+;; Type testers real? gensym? null? pair? procedure? have other types, but
 ;; should never be emitted by VL or DVL on union-free inputs.
 
 (define *primitives*
