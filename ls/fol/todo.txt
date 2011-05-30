@@ -38,19 +38,10 @@ NB: INTERPROCEDURAL-DEAD-CODE-ELIMINATION is solving the following
 
 ----------------------------------------------------------------------
 
-Compilation with MIT Scheme
-- Interprocedural must-alias analysis?
-  - Can this collapse identical perturbations and recover tower mode on
-    (D (D (lambda (x) ...)))?
-  - Can this collapse primals and recover stack tangent mode?
-- Solved gensyms?  Is this actually possible?
-
-The next step both for good output and fast compilation is:
-
-Try to break gensym handling
-- Try to make solved gensyms actually solved
-  - Good output on dvl-sqrt-5
-  - Fast enough to put dvl-sqrt-5 into the test suite?
+Interprocedural must-alias analysis?
+- Can this collapse identical perturbations and recover tower mode on
+  (D (D (lambda (x) ...)))?
+- Can this collapse primals and recover stack tangent mode?
 
 Write inlining of used-once bindings (post-SRA); undoes ANF
 - This is the intraprocedural analog of inlining procedures (I think)
