@@ -3,4 +3,5 @@
    (load-relative file fol-environment))
  '("../../testing/load"
    "fol-test"
-   "cse-test"))
+   "cse-test"
+   "interactions-test"))
