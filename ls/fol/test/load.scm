@@ -2,4 +2,5 @@
  (lambda (file)
    (load-relative file fol-environment))
  '("../../testing/load"
-   "fol-test"))
+   "fol-test"
+   "cse-test"))
