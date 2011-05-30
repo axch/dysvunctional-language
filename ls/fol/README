@@ -380,6 +380,7 @@ The implementation of FOL is, of course, the matter at hand in the
 rest of this program.  Here is the table of contents:
 
 optimize.scm        Toplevel; architecture overview; tidier
+
 type-check.scm      Type checker
 structs.scm         structure-definitions->vectors
 inline.scm          Inliner
@@ -389,8 +390,14 @@ a-normal-form.scm   A-normal form converter
 sra.scm             Scalar replacement of aggregates
 cse.scm             Common subexpression elimination
 dead-code.scm       Dead variable elimination
+
+nomenclature.scm    Representation of FOL names
 syntax.scm          Low-level support; FOL syntax
 srfi-11.scm         Reference implementation of SRFI 11
+runtime.scm         FOL runtime system
+primitives.scm      Primitives available to FOL programs
+mit-scheme.scm      Compilation to machine code with MIT Scheme
+load.scm            Entry point; namespace management
 
 The FOL compiler makes extensive use of a pattern matching and
 replacement system.  TODO Explain enough of it.

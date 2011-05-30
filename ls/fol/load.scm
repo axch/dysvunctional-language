@@ -22,6 +22,7 @@
  '("../support/utils"
    "nomenclature"
    "syntax"
+   "srfi-11"
    "runtime"
    "primitives"
    "alpha-renaming"
@@ -30,10 +31,9 @@
    "feedback-vertex-set"
    "inline"
    "a-normal-form"
-   "srfi-11"
+   "sra"
    "cse"
    "dead-code"
-   "sra"
    "optimize"
    "mit-scheme"))
 
