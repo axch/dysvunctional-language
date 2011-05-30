@@ -107,7 +107,7 @@
           ;; accesses.
           ((construction? expr)
            (eliminate-in-construction expr live-out win))
-          ((access? expr)
+          ((accessor? expr)
            (eliminate-in-access expr live-out win))
           ((values-form? expr)
            (eliminate-in-values expr live-out win))
@@ -426,11 +426,11 @@
           ;; accesses.
           ((construction? expr)
            (study-construction expr))
-          ((access? expr)
+          ((accessor? expr)
            (study-access expr))
           ((values-form? expr)
            (study-values expr))
-          (else ; general application
+          (else                         ; general application
            (study-application expr))))
   (define (study-if expr)
     (let ((predicate (cadr expr))
@@ -575,7 +575,7 @@
           ;; accesses.
           ((construction? expr)
            (study-construction expr live-out))
-          ((access? expr)
+          ((accessor? expr)
            (study-access expr live-out))
           ((values-form? expr)
            (study-values expr live-out))

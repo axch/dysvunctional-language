@@ -2,6 +2,8 @@
  interactions
 
  (define-test (sra-then-inline)
+   ;; SRA does ANF conversion, which can create aliases that inlining
+   ;; first would have avoided.
    (define program
      '(begin
         (define (inlinee x)
@@ -18,4 +20,26 @@
      '(let ((anf-42 (real 1)))
         (let ((x anf-42))
           (* x x)))
-     (inline (scalar-replace-aggregates program))))))
+     (inline (scalar-replace-aggregates program))))
+   (check
+    (alpha-rename?
+     '(let ((x (real 1)))
+        (* x x))
+     (intraprocedural-cse
+      (inline
+       (scalar-replace-aggregates program))))))
+
+ (define-test (sra-then-dead-code)
+   (define program
+     '(let ((x (* (real 2) 2)))
+        (car (cons (real 1) x))))
+   ;; Dead code cannot kill structure slots
+   (check (equal? program
+           (interprocedural-dead-code-elimination program)))
+   ;; unless they are exposed to it by SRA
+   (check (equal? '(real 1)
+           (tidy
+            (interprocedural-dead-code-elimination
+             (scalar-replace-aggregates program))))))
+
+ )
