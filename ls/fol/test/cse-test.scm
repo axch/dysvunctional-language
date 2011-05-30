@@ -1,7 +1,8 @@
 (in-test-group
  cse
- 
+
  (define-each-check
+   ;; Eliminate common (+ x 2)
    (equal?
     '(let ((x (real 5)))
        (let ((y (+ x 2)))
@@ -12,6 +13,7 @@
           (let ((z (+ x 2)))
             (+ y z))))))
 
+   ;; Eliminate common (+ x 2) in parallel let
    (equal?
     '(let ((x (real 5)))
        ;; I could improve this by hacking intraprocedural-cse more,
@@ -23,6 +25,7 @@
         (let ((y (+ x 2)) (z (+ x 2)))
           (+ y z)))))
 
+   ;; See through (+ x 0)
    (equal?
     '(let ((x (real 5)))
        (+ x x))
@@ -34,6 +37,8 @@
 
    ;; TODO Abstract the test pattern "CSE didn't eliminate this thing
    ;; it shouldn't have eliminated"?
+
+   ;; Leave non-common things be
    (equal?
     '(let ((x (real 5)))
        (let ((y (+ x 3)))
@@ -43,6 +48,7 @@
         (let ((y (+ x 3)))
           y))))
 
+   ;; Respect variable scope
    (equal?
     '(let ((x (real 5)))
        (let ((w (let ((y (+ x 3))) y)))
@@ -52,6 +58,7 @@
         (let ((w (let ((y (+ x 3))) y)))
           w))))
 
+   ;; Continue respecting variable scope
    (equal?
     '(let ((x (real 5)))
        (let ((w (let ((y (+ x 3))) y)))
@@ -63,6 +70,8 @@
           (let ((z (+ x 3)))
             (+ w z))))))
 
+   ;; But don't let variable scope interfere with finding other common
+   ;; expressions
    (equal?
     '(let ((x (real 5)))
        (let ((w (let ((y (+ x 3))) y)))
@@ -75,6 +84,7 @@
             (let ((u (+ x 3)))
               (+ w (* z u))))))))
 
+   ;; This CSE is intraprocedural
    (equal?
     '(begin
        (define (op a b)
@@ -90,6 +100,7 @@
         (let-values (((x y) (op 1 2)))
           (+ x y)))))
 
+   ;; I know that x+1 is (+ x 1) in both branches of the IF
    (equal?
     '(let ((x (real 3)))
        (let-values
@@ -107,6 +118,7 @@
           (let ((y (+ x 1)))
             (* something (+ y x+1)))))))
 
+   ;; Do not collapse procedures that have side effects
    (equal?
     '(let ((x (read-real))
            (y (read-real)))
@@ -116,6 +128,7 @@
             (y (read-real)))
         (+ x y))))
 
+   ;; Do not collapse user procedures that have side effects
    (equal?
     '(begin
        (define (my-read)
