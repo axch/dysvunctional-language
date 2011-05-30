@@ -39,6 +39,7 @@
 				  (x (vector 4)))
 			      (cons x (cons x (vector-ref (vector-ref y 1) 1)))))))))
 
+   ;; Some fooling around with SRA and conditionals
    (alpha-rename?
     '(if (< (real 1) (real 2))
          (real 0)
@@ -103,6 +104,8 @@
    (equal? #f (procedure-definitions->program
                (program->procedure-definitions #f)))
 
+   ;; Interprocedural-dead-code-elimination should catch loops that
+   ;; carry but do not use variables.
    (equal?
     '(begin
        (define (fact n)
@@ -120,6 +123,8 @@
               (* n (fact dead (- n 1)))))
         (fact (real 1) (real 5)))))
 
+   ;; Interprocedural-dead-code-elimination should catch loops that
+   ;; carry but do not use returns.
    (equal?
     '(begin
        (define (fact n)
