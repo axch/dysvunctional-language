@@ -12,8 +12,9 @@
 ;;; feedback-vertex-set.scm for discussion and implementation.
 
 (define (inline program)
-  (alpha-rename ; Duplicating code bodies may break binding uniqueness
-   (%inline program)))
+  (tidy-begin
+   (alpha-rename ; Duplicating code bodies may break binding uniqueness
+    (%inline program))))
 
 (define (%inline program)
   (if (begin-form? program)
