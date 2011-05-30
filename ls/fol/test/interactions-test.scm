@@ -59,6 +59,8 @@
            (inline (interprocedural-dead-code-elimination program)))))
 
  (define-test (lift-lets-then-cse)
+   ;; Lifting lets helps CSE because variables spend more time in
+   ;; scope.
    (define program
      '(let ((x (real 5)))
         (let ((w (let ((y (+ x 3))) y)))
@@ -67,10 +69,31 @@
             (+ w z)))))
    (define lift-lets (rule-simplifier (list let-let-lifting-rule)))
    (check (equal? program (intraprocedural-cse program)))
-   (check (equal?
-           '(let ((x (real 5)))
-              (let ((y (+ x 3)))
-                (+ y y)))
-           (intraprocedural-cse (lift-lets program)))))
+   (check
+    (equal?
+     '(let ((x (real 5)))
+        (let ((y (+ x 3)))
+          (+ y y)))
+     (intraprocedural-cse (lift-lets program)))))
+
+ (define-test (anf-then-cse)
+   ;; ANF helps CSE because more subexpressions get names.
+   (define program '(let ((x (real 4)))
+                      (+ (+ x 1) (+ x 1))))
+   (check (equal? program (intraprocedural-cse program)))
+   (check
+    (alpha-rename?
+     '(let ((x (real 4)))
+        (let ((y (+ x 1))
+              (z (+ x 1))) ; Leaving some dead code here
+          (+ y y)))
+     (intraprocedural-cse (approximate-anf program))))
+   (check
+    (alpha-rename?
+     '(let ((x (real 4)))
+        (let ((y (+ x 1))) ; Gone
+          (+ y y)))
+     (interprocedural-dead-code-elimination
+      (intraprocedural-cse (approximate-anf program))))))
 
  )
