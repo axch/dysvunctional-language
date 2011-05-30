@@ -383,18 +383,13 @@
 
 (define (initial-dependency-map defns)
   (define (primitive-dependency-map)
-   (define (nullary name)
-     (cons name (list '())))
-   (define (unary name)
-     (cons name (list '(#t))))
-   (define (binary name)
-     (cons name (list '(#t #t))))
-   (alist->eq-hash-table
-    `(,@(map nullary '(read-real gensym))
-      ;; Type testers real? gensym? null? pair? should never be emitted
-      ,@(map unary '(abs exp log sin cos tan asin acos sqrt write-real real
-                         zero? positive? negative?))
-      ,@(map binary '(+ - * / atan expt < <= > >= = gensym=)))))
+    (define (needs-all primitive)
+      (cons (primitive-name primitive)
+            (list ;; TODO Assumes all primitives return only one value
+             (map (lambda (arg) #t)
+                  (arg-types (primitive-type primitive))))))
+    (alist->eq-hash-table
+     (map needs-all *primitives*)))
   (let ((answer (primitive-dependency-map)))
     (for-each
      (rule `(define ((? name) (?? args))
