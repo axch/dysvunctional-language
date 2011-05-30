@@ -56,17 +56,16 @@ macro that expands into nothing.  As to the primitives, FOL comes
 with the following procedures predefined:
 
   CONS, CAR, CDR, VECTOR, VECTOR-REF, ABS, EXP, LOG, SIN, COS, TAN,
-  ASIN, ACOS, SQRT, +, -, *, /, ATAN, EXPT, PAIR?, NULL?, REAL?, <,
-  <=, >, >=, =, ZERO?, POSITIVE?, NEGATIVE?, READ-REAL, WRITE-REAL,
-  REAL, GENSYM, GENSYM?, and GENSYM=.
+  ASIN, ACOS, SQRT, +, -, *, /, ATAN, EXPT, <, <=, >, >=, =, ZERO?,
+  POSITIVE?, NEGATIVE?, READ-REAL, WRITE-REAL, REAL, GENSYM, and
+  GENSYM=.
 
 Those with Scheme equivalents have the same semantics.  REAL is the
 identity function, but instructs the compiler to treat its argument as
 an unknown real number.  READ-REAL and WRITE-REAL do i/o; WRITE-REAL
 returns the number written.  GENSYM synthesizes a fresh object that is
-guaranteed to be distinct from all other objects.  GENSYM? tests
-whether an object was created by GENSYM.  GENSYM= tests whether two
-objects were created by the same dynamic call to GENSYM.
+guaranteed to be distinct from all other objects.  GENSYM= tests
+whether two objects were created by the same dynamic call to GENSYM.
 
 FOL is specified to be tail-recursive and memory-managed.  Order of
 evaluation of procedure arguments is unspecified.  As of the present
@@ -350,9 +349,8 @@ These all behave as in Scheme.  In addition, FOL predefines the
 following procedures:
 
   ABS, EXP, LOG, SIN, COS, TAN, ASIN, ACOS, SQRT, +, -, *, /, ATAN,
-  EXPT, PAIR?, NULL?, REAL?, <, <=, >, >=, =, ZERO?, POSITIVE?,
-  NEGATIVE?, READ-REAL, WRITE-REAL, REAL, GENSYM, GENSYM?, and
-  GENSYM=.
+  EXPT, <, <=, >, >=, =, ZERO?, POSITIVE?, NEGATIVE?, READ-REAL,
+  WRITE-REAL, REAL, GENSYM, and GENSYM=.
 
 TODO Do I really need to duplicate these two paragraphs here?
 
@@ -360,9 +358,8 @@ Those with Scheme equivalents have the same semantics.  REAL is the
 identity function, but instructs the compiler to treat its argument as
 an unknown real number.  READ-REAL and WRITE-REAL do i/o; WRITE-REAL
 returns the number written.  GENSYM synthesizes a fresh object that is
-guaranteed to be distinct from all other objects.  GENSYM? tests
-whether an object was created by GENSYM.  GENSYM= tests whether two
-objects were created by the same dynamic call to GENSYM.
+guaranteed to be distinct from all other objects.  GENSYM= tests
+whether two objects were created by the same dynamic call to GENSYM.
 
 FOL is specified to be tail-recursive and memory-managed.  Order of
 evaluation of procedure arguments is unspecified.  As of the present
