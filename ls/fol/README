@@ -179,6 +179,11 @@ remaining stages as much as you like, in any order.
   and (* 0 foo) -> 0.  The last of these is not floating-safe, because
   foo might have been a NaN, say, but I'll leave it in for now.
 
+(optimize-visibly <program>)
+  Like `fol-optimize' but prints progress messages as it moves from
+  stage to stage, so you can see how much work each stage does and how
+  much time it takes.
+
 In addition to the optimizer and its individual stages, FOL also
 provides some legibility aids.  On one side, there is a utility to
 remove the argument type declarations if desired.  The result will no

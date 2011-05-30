@@ -49,6 +49,7 @@
 
      check-program-types
      fol-optimize
+     optimize-visibly
      alpha-rename
      unique-names?
      alpha-rename?
@@ -62,8 +63,6 @@
      tidy
      strip-argument-types
      structure-definitions->vectors
-     ;; TODO Document this:
-     optimize-visibly
 
      ;; TODO The FOL runtime system is part of the implementation of
      ;; VL and DVL (the concrete implementations of some primitives)
