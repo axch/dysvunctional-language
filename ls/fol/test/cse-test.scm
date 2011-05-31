@@ -144,6 +144,17 @@
               (y (my-read)))
           (+ x y)))))
 
+   ;; Do not collapse calls to REAL -- we're not supposed to know what
+   ;; the constant inside is.
+   (equal?
+    '(let ((x (real 1)))
+       (let ((y (real 1)))
+         (+ x y)))
+    (intraprocedural-cse
+     '(let ((x (real 1)))
+        (let ((y (real 1)))
+          (+ x y)))))
+
    ;; TODO An example for interprocedural CSE
    #;
    (begin

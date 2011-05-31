@@ -245,8 +245,10 @@
   (define (user-procedure? operator)
     (not (memq operator (map primitive-name *primitives*))))
   (simplify
-   (cond ((memq operator (map primitive-name
-                              (filter primitive-impure? *primitives*)))
+   (cond ((memq operator
+                (cons 'real ; REAL is "statically" but not "dynamically" impure
+                      (map primitive-name
+                           (filter primitive-impure? *primitives*))))
           unique-expression)
          ((user-procedure? operator)    ; TODO This is painful.
           unique-expression)
