@@ -245,6 +245,13 @@
            (let-values ((,names ,exp))
              ,@body))))
 
+;;; TODO Would rewriting this as a pass accelerate things
+;;; significantly?
+;;; TODO Can/Should I lift lets out of IF predicates?  Procedure
+;;; calls?  CAR/CDR/CONS?
+(define lift-lets
+  (rule-simplifier (list let-lifting-rule let-values-lifting-rule)))
+
 ;; This is safe assuming the program has been alpha renamed
 (define singleton-inlining-rule
   (rule `(let ((?? bindings1)
@@ -281,7 +288,6 @@
     empty-let-rule
     trivial-let-values-rule
 
-    let-values-lifting-rule
     singleton-inlining-rule)))
 
 ;;; Watching the behavior of the optimizer

@@ -82,6 +82,12 @@
 ;;; computed subexpressions will spend more time in scope.
 
 (define (intraprocedural-cse program)
+  (%intraprocedural-cse
+   (lift-lets ; <-- this is slow, so shrink its input first
+    (%intraprocedural-cse
+     program))))
+
+(define (%intraprocedural-cse program)
   (define (cse-entry-point expression)
     (cse-expression expression (empty-cse-env)))
   (define cse-definition

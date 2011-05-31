@@ -68,13 +68,13 @@
           (let ((z (+ x 3)))
             (+ w z)))))
    (define lift-lets (rule-simplifier (list let-lifting-rule)))
-   (check (equal? program (intraprocedural-cse program)))
+   (check (equal? program (%intraprocedural-cse program)))
    (check
     (equal?
      '(let ((x (real 5)))
         (let ((y (+ x 3)))
           (+ y y)))
-     (intraprocedural-cse (lift-lets program)))))
+     (%intraprocedural-cse (lift-lets program)))))
 
  (define-test (anf-then-cse)
    ;; ANF helps CSE because more subexpressions get names.

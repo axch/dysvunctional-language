@@ -21,13 +21,12 @@
         (fact (real 5)))))
 
    (alpha-rename?
-    '(cons
-      (let ((z (real 2)))
-        (let ((x (* z z)))
-          (+ x x)))
-      (let ((z (real 2)))
-        (let ((x (+ z z)))
-          (* x x))))
+    '(let ((z1 (real 2)))
+       (let ((x1 (* z1 z1)))
+         (let ((z2 (real 2)))
+           (let ((x2 (+ z2 z2)))
+             (cons (+ x1 x1)
+                   (* x2 x2))))))
     (compile-to-scheme
      '(let ((double (lambda (x) (+ x x)))
             (square (lambda (x) (* x x)))
@@ -51,10 +50,10 @@
               the-closure-53
               the-formals-57
               (/ (+ the-formals-57 (/ the-closure-41 the-formals-57)) 2))))
-       (cons
-        1.4142135623730951
-        (let ((the-formals-125 (real 2)))
-          (let ((the-formals-133 (real 1.)))
+       (let ((the-formals-125 (real 2)))
+         (let ((the-formals-133 (real 1.)))
+           (cons
+            1.4142135623730951
             (operation-9
              the-formals-125
              the-formals-125

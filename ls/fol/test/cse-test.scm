@@ -53,7 +53,7 @@
     '(let ((x (real 5)))
        (let ((w (let ((y (+ x 3))) y)))
          w))
-    (intraprocedural-cse
+    (%intraprocedural-cse
      '(let ((x (real 5)))
         (let ((w (let ((y (+ x 3))) y)))
           w))))
@@ -64,7 +64,7 @@
        (let ((w (let ((y (+ x 3))) y)))
          (let ((z (+ x 3)))
            (+ w z))))
-    (intraprocedural-cse
+    (%intraprocedural-cse
      '(let ((x (real 5)))
         (let ((w (let ((y (+ x 3))) y)))
           (let ((z (+ x 3)))
@@ -77,7 +77,7 @@
        (let ((w (let ((y (+ x 3))) y)))
          (let ((z (+ x 3)))
            (+ w (* z z)))))
-    (intraprocedural-cse
+    (%intraprocedural-cse
      '(let ((x (real 5)))
         (let ((w (let ((y (+ x 3))) y)))
           (let ((z (+ x 3)))
