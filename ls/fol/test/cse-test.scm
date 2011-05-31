@@ -128,6 +128,15 @@
             (y (read-real)))
         (+ x y))))
 
+   ;; But do collapse their outputs, once bound
+   (equal?
+    '(let ((x (read-real)))
+       (+ x x))
+    (intraprocedural-cse
+     '(let ((x (read-real)))
+        (let ((y x))
+          (+ x y)))))
+
    ;; Do not collapse user procedures that have side effects
    (equal?
     '(begin
