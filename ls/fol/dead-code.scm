@@ -140,7 +140,7 @@
            (loop* (map cadr new-bindings)
             (lambda (new-exprs exprs-need)
               (let ((used (var-set-union* exprs-need)))
-                (win (empty-let-rule
+                (win (tidy-empty-let
                       `(let ,(map list (map car new-bindings)
                                   new-exprs)
                          ,new-body))

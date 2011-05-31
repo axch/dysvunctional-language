@@ -101,7 +101,7 @@
             (else #f)))
     (rule-simplifier
      (list
-      empty-let-rule
+      tidy-empty-let
       (rule `(let ((?? bindings1)
                    ((? name ,fol-var?) (? exp ,all-arithmetic?))
                    (?? bindings2))

@@ -196,7 +196,7 @@
 
 ;;;; Term-rewriting tidier
 
-(define empty-let-rule (rule `(let () (? body)) body))
+(define tidy-empty-let (rule `(let () (? body)) body))
 
 (define trivial-let-values-rule
   (rule `(let-values (((? names) (values (?? stuff))))
@@ -257,7 +257,7 @@
 (define tidy
   (rule-simplifier
    (list
-    empty-let-rule
+    tidy-empty-let
     trivial-let-values-rule
     singleton-inlining-rule)))
 

@@ -161,7 +161,7 @@
             (loop body env
              (lambda (new-body body-symbolic)
                (degment-cse-env! env (map car bindings))
-               (win (empty-let-rule
+               (win (tidy-empty-let
                      `(let ,(filter-map
                              (lambda (name dead? expr)
                                (and (not dead?)
