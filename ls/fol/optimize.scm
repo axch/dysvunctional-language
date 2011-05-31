@@ -205,7 +205,14 @@
   (if (and (begin-form? form) (null? (cddr form)))
       (cadr form)
       form))
+
 (define empty-let-rule (rule `(let () (? body)) body))
+
+(define trivial-let-values-rule
+  (rule `(let-values (((? names) (values (?? stuff))))
+           (?? body))
+        `(let ,(map list names stuff)
+           ,@body)))
 
 ;; This is safe assuming the program has unique bound names; if not,
 ;; can break because of
@@ -271,12 +278,8 @@
     (rule `(if (? predicate) (? exp) (? exp))
           exp)
 
-    (rule `(let-values (((? names) (values (?? stuff))))
-             (?? body))
-          `(let ,(map list names stuff)
-             ,@body))
-
     empty-let-rule
+    trivial-let-values-rule
 
     values-let-lifting-rule
     singleton-inlining-rule)))
