@@ -110,35 +110,6 @@
   (rule-simplifier (list remove-defn-argument-types)))
 
 (define fol-reserved '(cons car cdr vector vector-ref begin define if let let-values values))
-
-(define (count-free-occurrences name exp)
-  (cond ((eq? exp name) 1)
-        ((lambda-form? exp)
-         (if (occurs-in-tree? name (cadr exp))
-             0
-             (count-free-occurrences name (cddr exp))))
-        ((or (let-values-form? exp) (let-form? exp))
-         (count-free-occurrences name (->lambda exp)))
-        ((pair? exp)
-         (+ (count-free-occurrences name (car exp))
-            (count-free-occurrences name (cdr exp))))
-        (else 0)))
-
-(define (replace-free-occurrences name new exp)
-  (cond ((eq? exp name) new)
-        ((lambda-form? exp)
-         (if (occurs-in-tree? name (cadr exp))
-             exp
-             `(lambda ,(cadr exp)
-                ,@(replace-free-occurrences name new (cddr exp)))))
-        ((let-form? exp)
-         (->let (replace-free-occurrences name new (->lambda exp))))
-        ((let-values-form? exp)
-         (->let-values (replace-free-occurrences name new (->lambda exp))))
-        ((pair? exp)
-         (cons (replace-free-occurrences name new (car exp))
-               (replace-free-occurrences name new (cdr exp))))
-        (else exp)))
 
 ;;;; "Runtime system"
 
