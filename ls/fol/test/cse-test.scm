@@ -164,6 +164,18 @@
         (let ((y (real 1)))
           (+ x y)))))
 
+   ;; Algebraic simplification can expose CSE opportunities,
+   ;; even from nice simplifications like (* foo 1) -> foo
+   (equal?
+    '(let ((foo (real 2)))
+       (let ((bar (+ foo 1)))
+         bar))
+    (intraprocedural-cse
+     '(let ((foo (real 2)))
+        (let ((bar (+ foo 1)))
+          (let ((x (* foo 1)))
+            (+ x 1))))))
+
    ;; TODO An example for interprocedural CSE
    #;
    (begin
