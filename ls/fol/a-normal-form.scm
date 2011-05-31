@@ -146,11 +146,13 @@
 ;;; that are used only once.
 
 ;;; This is safe assuming the program has been alpha renamed
-;;; Otherwise it breaks because of
+;;; Otherwise it would break because of
 ;;; (let ((x 1))
 ;;;   (let ((y (+ x 1)))
 ;;;     (let ((x 3))
 ;;;       (+ x y))))
+;;; even if I were careful to duck rebindings of the name being
+;;; replaced.
 
 (define reverse-anf
   (rule-simplifier
@@ -159,9 +161,20 @@
                  ((? name ,fol-var?) (? exp))
                  (?? bindings2))
              (?? body))
-          (let ((occurrence-count (count-free-occurrences name body)))
-            (and (= 1 occurrence-count)
-                 (tidy-empty-let
-                  `(let (,@bindings1
-                         ,@bindings2)
-                     ,@(replace-free-occurrences name exp body)))))))))
+          (and (unique-in-tree? name body)
+               (tidy-empty-let
+                `(let (,@bindings1
+                       ,@bindings2)
+                   ,@(replace-in-tree name exp body))))))))
+
+(define (unique-in-tree? thing tree)
+  (define (walk tree count)
+    (cond ((equal? thing tree)
+           (+ count 1))
+          ((pair? tree)
+           (let ((left-count (walk (car tree) count)))
+             (if (<= left-count 1)
+                 (walk (cdr tree) left-count)
+                 left-count)))
+          (else (+ count 0))))
+  (= 1 (walk tree 0)))
