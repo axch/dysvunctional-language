@@ -38,7 +38,7 @@
            (interprocedural-dead-code-elimination program)))
    ;; unless they are exposed to it by SRA
    (check (equal? '(real 1)
-           (tidy
+           (reverse-anf
             (interprocedural-dead-code-elimination
              (scalar-replace-aggregates program))))))
 

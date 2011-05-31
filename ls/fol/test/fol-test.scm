@@ -119,7 +119,7 @@
              1
              (* n (fact (- n 1)))))
        (fact (real 5)))
-    (tidy
+    (reverse-anf
      (interprocedural-dead-code-elimination
       '(begin
          (define (fact n)

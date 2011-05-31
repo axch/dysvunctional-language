@@ -22,7 +22,7 @@
 
 (define (fol-optimize program)
   ((lambda (x) x) ; This makes the last stage show up in the stack sampler
-   (tidy
+   (reverse-anf
     (interprocedural-dead-code-elimination
      (eliminate-intraprocedural-dead-variables
       (intraprocedural-cse
@@ -253,12 +253,13 @@
                    ,@(replace-free-occurrences name exp body)))))))
 
 (define tidy (rule-simplifier (list singleton-inlining-rule)))
+(define reverse-anf tidy)
 
 ;;; Watching the behavior of the optimizer
 
 (define (optimize-visibly program)
   (report-size ; This makes the last stage show up in the stack sampler
-   ((visible-stage tidy)
+   ((visible-stage reverse-anf)
     ((visible-stage interprocedural-dead-code-elimination)
      ((visible-stage eliminate-intraprocedural-dead-variables)
       ((visible-stage intraprocedural-cse)
