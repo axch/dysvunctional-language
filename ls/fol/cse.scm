@@ -247,7 +247,13 @@
 
       (rule `(* 1 (? thing)) thing)
       (rule `(* (? thing) 1) thing)
-      (rule `(/ (? thing) 1) thing))))
+      (rule `(/ (? thing) 1) thing)
+
+      ;; Warning: these may replace a runtime NaN answer with 0.
+      (rule `(* 0 (? thing)) 0)
+      (rule `(* (? thing) 0) 0)
+      (rule `(/ 0 (? thing)) 0)
+      )))
   (define (user-procedure? operator)
     (not (memq operator (map primitive-name *primitives*))))
   (simplify
