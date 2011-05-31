@@ -44,13 +44,13 @@
 ;;; each other any excess work.  The following table summarizes these
 ;;; relationships.
 #|
-|          | Inline        | SRA         | CSE       | dead var | tidy   |
-|----------+---------------+-------------+-----------+----------+--------|
-| Inline   | almost idem   | no effect   | expose    | expose   | expose |
-| SRA      | extra aliases | almost idem | expose    | expose   | expose |
-| CSE      | no effect     | no effect   | idem      | expose   | expose |
-| dead var | ~ expose      | no effect   | no effect | idem     | expose |
-| tidy     | ~ expose      | form fight  | ~ expose  | ~ expose | idem   |
+|          | Inline        | SRA         | CSE       | dead var  | tidy   |
+|----------+---------------+-------------+-----------+-----------+--------|
+| Inline   | almost idem   | no effect   | expose    | expose    | expose |
+| SRA      | extra aliases | almost idem | expose    | expose    | expose |
+| CSE      | ~ expose      | no effect   | idem      | expose    | expose |
+| dead var | ~ expose      | no effect   | no effect | idem      | expose |
+| tidy     | no effect     | form fight  | no effect | no effect | idem   |
 |#
 ;;; Each cell in the table says what effect doing the stage on the
 ;;; left first has on subsequently doing the stage above.  "Expose"
@@ -104,8 +104,15 @@
 ;;; tidying opportunities over those structure slots to the other
 ;;; stages, which focus exclusively on variables.
 ;;;
-;;; CSE then others: CSE is idempotent, does not create inlining
-;;; opportunities, and does not create SRA opportunities.
+;;; CSE then inline: CSE may delete edges in the call graph by
+;;; collapsing (* 0 (some-proc foo bar baz)) to 0 or by collapsing
+;;; (if (some-proc foo) bar bar) into bar.
+;;;
+;;; CSE then SRA: CSE does not introduce SRA opportunities, though
+;;; because it does algebraic simplifications it could in the
+;;; non-union-free case.
+;;;
+;;; CSE then CSE: CSE is idempotent.
 ;;;
 ;;; CSE then eliminate: Formally, the job of common subexpression
 ;;; elimination is just to rename groups of references to some
@@ -116,7 +123,9 @@
 ;;; those dead bindings itself, but it does leave a few around to be
 ;;; cleaned up by dead variable elimination, in the case where some
 ;;; names bound by a multiple value binding form are dead but others
-;;; are not.
+;;; are not.  CSE also exposes dead code opportunities by doing
+;;; algebraic simplifications, including (* 0 foo) -> 0 and (if foo
+;;; bar bar) -> bar.
 ;;;
 ;;; CSE then tidy: CSE exposes tidying opportunities, for example by
 ;;; constant propagation.
@@ -142,31 +151,17 @@
 ;;; opportunities, for example by collapsing intervening LETs or by
 ;;; making bindings singletons.
 ;;;
-;;; Tidy then inline: Tidying may delete edges in the call graph by
-;;; collapsing (* 0 (some-proc foo bar baz)) to 0 or by collapsing
-;;; (if (some-proc foo) bar bar) into bar.
-;;;
-;;; Tidy then SRA: Tidying does not create SRA opportunities (though
-;;; it could in the non-union-free case).  It does, however, do some
-;;; reverse ANF-conversion, in the form of inlining variables that are
-;;; only used once.  Consequently, SRA and tidying could fight
-;;; indefinitely over the "normal form" of a program, each appearing
-;;; to change it while neither doing anything useful.
-;;;
-;;; Tidy then CSE: Tidying may in general expose common subexpressions
-;;; by removing intervening arithmetic.  For example, in (let ((x (* 0
-;;; y))) ...), x would not register as in common with 0 until after
-;;; tidying (* 0 y) to 0.  More such algebra might be migratable into
-;;; the CSE program itself, if desired.  Tidying may also expose more
-;;; elimination opportunities for common subexpressions by increasing
-;;; the scopes of variables.
-;;;
-;;; Tidy then eliminate: Tidying may expose dead variables by
-;;; collapsing (* 0 foo) to 0 or by collapsing (if foo bar bar) to
-;;; bar.
+;;; Tidy then SRA: Tidying does not create SRA opportunities.  It
+;;; does, however, do some reverse ANF-conversion, in the form of
+;;; inlining variables that are only used once.  Consequently, SRA and
+;;; tidying could fight indefinitely over the "normal form" of a
+;;; program, each appearing to change it while neither doing anything
+;;; useful.
 ;;;
 ;;; Tidy then tidy: Tidying is idempotent (because it is run to
 ;;; convergence).
+;;;
+;;; Tidy then others: No effect.
 
 ;;; Don't worry about the rule-based term-rewriting system that powers
 ;;; this.  That is its own pile of stuff, good for a few lectures of

@@ -82,7 +82,7 @@
     (check (unique-names? tidied))
 
     ;; The state of being maximally inlined is preserved (until
-    ;; possibly dead code elimination and tidying)
+    ;; possibly dead code elimination)
     (check (equal? anf (inline anf)))
     (check (equal? scalars (inline scalars)))
     (check (equal? cse (inline cse)))
