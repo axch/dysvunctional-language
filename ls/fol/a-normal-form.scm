@@ -137,3 +137,31 @@
 ;;; the advantage that the reconstruction of structured shapes
 ;;; expected by the outside world would not break that more lenient
 ;;; approximate ANF.
+
+;;;; Reverse A-normal form conversion
+
+;;; When we want to read code (as opposed to compile it), all the
+;;; extra names introduced by A-normal form just get in the way.  The
+;;; following little snippet inlines the bindings of variable names
+;;; that are used only once.
+
+;;; This is safe assuming the program has been alpha renamed
+;;; Otherwise it breaks because of
+;;; (let ((x 1))
+;;;   (let ((y (+ x 1)))
+;;;     (let ((x 3))
+;;;       (+ x y))))
+
+(define reverse-anf
+  (rule-simplifier
+   (list
+    (rule `(let ((?? bindings1)
+                 ((? name ,fol-var?) (? exp))
+                 (?? bindings2))
+             (?? body))
+          (let ((occurrence-count (count-free-occurrences name body)))
+            (and (= 1 occurrence-count)
+                 (tidy-empty-let
+                  `(let (,@bindings1
+                         ,@bindings2)
+                     ,@(replace-free-occurrences name exp body)))))))))

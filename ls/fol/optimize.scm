@@ -236,26 +236,6 @@
 ;;; calls?  CAR/CDR/CONS?
 (define lift-lets
   (rule-simplifier (list let-lifting-rule let-values-lifting-rule)))
-
-;; This is safe assuming the program has been alpha renamed
-;; Otherwise it breaks because of
-;; (let ((x 1))
-;;   (let ((y (+ x 1)))
-;;     (let ((x 3))
-;;       (+ x y))))
-(define singleton-inlining-rule
-  (rule `(let ((?? bindings1)
-               ((? name ,fol-var?) (? exp))
-               (?? bindings2))
-           (?? body))
-        (let ((occurrence-count (count-free-occurrences name body)))
-          (and (= 1 occurrence-count)
-               (tidy-empty-let
-                `(let (,@bindings1
-                       ,@bindings2)
-                   ,@(replace-free-occurrences name exp body)))))))
-
-(define reverse-anf (rule-simplifier (list singleton-inlining-rule)))
 
 ;;; Watching the behavior of the optimizer
 

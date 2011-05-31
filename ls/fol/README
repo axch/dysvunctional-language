@@ -377,14 +377,14 @@ Implementing FOL
 The implementation of FOL is, of course, the matter at hand in the
 rest of this program.  Here is the table of contents:
 
-optimize.scm        Toplevel; architecture overview; reverse-anf
+optimize.scm        Toplevel; architecture overview
 
 type-check.scm      Type checker
 structs.scm         structure-definitions->vectors
 inline.scm          Inliner
   feedback-vertex-set.scm  Graph algorithm supporting inlining
 alpha-remaing.scm   Uniquifying bound names
-a-normal-form.scm   A-normal form converter
+a-normal-form.scm   Conversion to and from A-normal form
 sra.scm             Scalar replacement of aggregates
 cse.scm             Common subexpression elimination
 dead-code.scm       Dead variable elimination
