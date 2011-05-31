@@ -11,14 +11,14 @@
 ;;; - INTRAPROCEDURAL-CSE
 ;;;   Eliminate common subexpressions (including redundant variables
 ;;;   that are just aliases of other variables or constants).
+;;;   Perform some algebraic simplification during CSE.
 ;;; - ELIMINATE-INTRAPROCEDURAL-DEAD-VARIABLES
 ;;;   Eliminate dead code.
 ;;; - INTERPROCEDURAL-DEAD-VARIABLE-ELIMINATION
 ;;;   Eliminate dead code across procedure boundaries.
-;;; - TIDY
-;;;   Clean up and optimize locally by term-rewriting.  This includes
-;;;   a simple-minded reverse-anf which inlines bindings of variables
-;;;   that are only used once, to make the output easier to read.
+;;; - REVERSE-ANF
+;;;   Inline bindings of variables that are only used once, to make
+;;;   the output easier to read.
 
 (define (fol-optimize program)
   ((lambda (x) x) ; This makes the last stage show up in the stack sampler
@@ -32,7 +32,7 @@
 
 ;;; The stages have the following structure and interrelationships:
 ;;;
-;;; Almost all other stages (notably except INLINE) depend
+;;; Almost all stages, with the notable exception of INLINE, depend
 ;;; on but also preserve uniqueness of variable names, so ALPHA-RENAME
 ;;; should be done first.  The definition of FOL-OPTIMIZE above bums
 ;;; this by noting that INLINE is called first anyway and relying on
@@ -44,13 +44,13 @@
 ;;; each other any excess work.  The following table summarizes these
 ;;; relationships.
 #|
-|          | Inline        | SRA         | CSE       | dead var  | tidy   |
+|          | Inline        | SRA         | CSE       | dead var  | un-anf |
 |----------+---------------+-------------+-----------+-----------+--------|
 | Inline   | almost idem   | no effect   | expose    | expose    | expose |
-| SRA      | extra aliases | almost idem | expose    | expose    | expose |
-| CSE      | ~ expose      | no effect   | idem      | expose    | expose |
+| SRA      | extra aliases | almost idem | expose    | expose    | fight  |
+| CSE      | ~ expose      | no effect   | idem      | expose    | mixed  |
 | dead var | ~ expose      | no effect   | no effect | idem      | expose |
-| tidy     | no effect     | form fight  | no effect | no effect | idem   |
+| un-anf   | no effect     | form fight  | no effect | no effect | idem   |
 |#
 ;;; Each cell in the table says what effect doing the stage on the
 ;;; left first has on subsequently doing the stage above.  "Expose"
@@ -78,7 +78,7 @@
 ;;; procedure boundaries.
 ;;;
 ;;; Inline then others: Inlining exposes some interprocedural aliases,
-;;; common subexpressions, dead code, and tidying opportunities to
+;;; common subexpressions, dead code, and one-use variables to
 ;;; intraprocedural methods by collapsing some procedure boundaries.
 ;;; I do not know whether interprocedural-dead-code-elimination is
 ;;; good enough to get away without this aid in principle, but in
@@ -101,7 +101,7 @@
 ;;; 
 ;;; SRA then others: SRA converts structure slots to variables,
 ;;; thereby exposing any aliases, common subexpressions, dead code, or
-;;; tidying opportunities over those structure slots to the other
+;;; instances of single use over those structure slots to the other
 ;;; stages, which focus exclusively on variables.
 ;;;
 ;;; CSE then inline: CSE may delete edges in the call graph by
@@ -127,8 +127,13 @@
 ;;; algebraic simplifications, including (* 0 foo) -> 0 and (if foo
 ;;; bar bar) -> bar.
 ;;;
-;;; CSE then tidy: CSE exposes tidying opportunities, for example by
-;;; constant propagation.
+;;; CSE then undo ANF: CSE does some of the work of reverse ANF by
+;;; eliminating variables that are used only once and are also
+;;; aliases.  By doing algebraic simplifications, CSE may also remove
+;;; some uses of some variables, causing them to be inlinable.  On the
+;;; other hand, CSE may increase the number of use sites of variables
+;;; that are chosen as the canonical representatives of some computed
+;;; expression, thereby preventing them from being inlined.
 ;;;
 ;;; Eliminate then inline: Dead variable elimination may delete edges
 ;;; in the call graph (if the result of a called procedure turned out
@@ -147,21 +152,19 @@
 ;;; reduces the amount of work the interprocedural version would do
 ;;; while deciding what's dead and what isn't.
 ;;;
-;;; Eliminate then tidy: Dead variable elimination exposes tidying
-;;; opportunities, for example by collapsing intervening LETs or by
-;;; making bindings singletons.
+;;; Eliminate then undo ANF: Dead variable elimination reduces the
+;;; number of use sites of variables that are used to compute things
+;;; that are not needed, thus possibly making them singletons.
 ;;;
-;;; Tidy then SRA: Tidying does not create SRA opportunities.  It
-;;; does, however, do some reverse ANF-conversion, in the form of
-;;; inlining variables that are only used once.  Consequently, SRA and
-;;; tidying could fight indefinitely over the "normal form" of a
-;;; program, each appearing to change it while neither doing anything
-;;; useful.
+;;; Reverse-ANF then SRA: Reverse-ANF does not create SRA
+;;; opportunities.  It does, however, undo some of the work of ANF
+;;; conversion.  Consequently, SRA and REVERSE-ANF could fight
+;;; indefinitely over the "normal form" of a program, each appearing
+;;; to change it while neither doing anything useful.
 ;;;
-;;; Tidy then tidy: Tidying is idempotent (because it is run to
-;;; convergence).
+;;; Reverse-ANF then reverse-ANF: Reverse-ANF is idempotent.
 ;;;
-;;; Tidy then others: No effect.
+;;; Reverse-ANF then others: No effect.
 
 ;;; Don't worry about the rule-based term-rewriting system that powers
 ;;; this.  That is its own pile of stuff, good for a few lectures of
