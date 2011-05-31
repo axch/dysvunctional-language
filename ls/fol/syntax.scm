@@ -7,6 +7,11 @@
 
 (define begin-form? (tagged-list? 'begin))
 
+(define (tidy-begin form)
+  (if (and (begin-form? form) (null? (cddr form)))
+      (cadr form)
+      form))
+
 (define definition? (tagged-list? 'define))
 
 (define (normalize-definition definition)

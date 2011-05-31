@@ -196,11 +196,6 @@
 
 ;;;; Term-rewriting tidier
 
-(define (tidy-begin form)
-  (if (and (begin-form? form) (null? (cddr form)))
-      (cadr form)
-      form))
-
 (define empty-let-rule (rule `(let () (? body)) body))
 
 (define trivial-let-values-rule
@@ -262,7 +257,6 @@
 (define tidy
   (rule-simplifier
    (list
-    tidy-begin
     empty-let-rule
     trivial-let-values-rule
     singleton-inlining-rule)))
