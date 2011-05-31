@@ -211,31 +211,29 @@
  (let ((x (let ((y 3)) y)))
    (let ((y 4))
      y))
-(define let-lifting-rule
-  (rule `(let ((?? bindings1)
-               ((? name ,fol-var?) ((? bind ,binder-tag?) (? inner-bindings) (? exp)))
-               (?? bindings2))
-           (?? body))
-        `(,bind ,inner-bindings
-           (let (,@bindings1
-                 (,name ,exp)
-                 ,@bindings2)
-             ,@body))))
-
-;; This is safe assuming the program has been alpha renamed
-(define let-values-lifting-rule
-  (rule `(let-values (((? names) ((? bind ,binder-tag?) (? inner-bindings) (? exp))))
-           (?? body))
-        `(,bind ,inner-bindings
-           (let-values ((,names ,exp))
-             ,@body))))
 
 ;;; TODO Would rewriting this as a pass accelerate things
 ;;; significantly?
 ;;; TODO Can/Should I lift lets out of IF predicates?  Procedure
 ;;; calls?  CAR/CDR/CONS?
 (define lift-lets
-  (rule-simplifier (list let-lifting-rule let-values-lifting-rule)))
+  (rule-simplifier
+   (list
+    (rule `(let ((?? bindings1)
+                 ((? name ,fol-var?) ((? bind ,binder-tag?) (? inner-bindings) (? exp)))
+                 (?? bindings2))
+             (?? body))
+          `(,bind ,inner-bindings
+             (let (,@bindings1
+                   (,name ,exp)
+                   ,@bindings2)
+               ,@body)))
+
+    (rule `(let-values (((? names) ((? bind ,binder-tag?) (? inner-bindings) (? exp))))
+             (?? body))
+          `(,bind ,inner-bindings
+             (let-values ((,names ,exp))
+               ,@body))))))
 
 ;;; Watching the behavior of the optimizer
 
