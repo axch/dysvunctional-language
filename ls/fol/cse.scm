@@ -266,7 +266,9 @@
   (if (equal? cons alt)
       ;; This is somewhat dangerous, if evaluating the predicate might
       ;; have had some interesting effect like signaling a divide by
-      ;; zero error.
+      ;; zero error.  If the input is in ANF wrt if predicates,
+      ;; however, then that side effect is the dead variable
+      ;; eliminator's problem, not mine.
       cons
       (if (and (values-form? cons)
                (values-form? alt))
