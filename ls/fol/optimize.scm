@@ -235,6 +235,11 @@
   (rule-simplifier (list let-lifting-rule let-values-lifting-rule)))
 
 ;; This is safe assuming the program has been alpha renamed
+;; Otherwise it breaks because of
+;; (let ((x 1))
+;;   (let ((y (+ x 1)))
+;;     (let ((x 3))
+;;       (+ x y))))
 (define singleton-inlining-rule
   (rule `(let ((?? bindings1)
                ((? name ,fol-var?) (? exp))

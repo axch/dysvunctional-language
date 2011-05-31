@@ -1,10 +1,3 @@
-(define (tidy-non-soundness program)
-  (cond ((not (equal? (fol-eval program)
-		      (fol-eval (tidy (alpha-rename program)))))
-	 `(not (equal? ,(fol-eval program)
-		       (after-tidy ,(fol-eval (tidy (alpha-rename program)))))))
-	(else #f)))
-
 (in-test-group
  fol
 
@@ -31,13 +24,6 @@
     (feedback-vertex-set
      ;; This is G from the comments in feedback-vertex-set.scm
      '((a b) (b a c) (c a e) (d c e) (e d))))
-
-   (not (tidy-non-soundness
-	 ;; Carelessly inlining y will change the scope of x
-	 '(let ((x (vector 1 2)))
-	    (cons x (cons x (let ((y (vector 3 x))
-				  (x (vector 4)))
-			      (cons x (cons x (vector-ref (vector-ref y 1) 1)))))))))
 
    ;; Some fooling around with SRA and conditionals
    (alpha-rename?
