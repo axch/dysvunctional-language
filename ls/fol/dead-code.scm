@@ -155,7 +155,15 @@
         (loop body live-out
          (lambda (new-body body-needs)
            (define (slot-used? name)
-             (or (ignore? name)
+             (or (and (ignore? name)
+                      ;; Ignored names are a hack for when the source
+                      ;; of the values is a procedure call.
+                      ;; Interprocedural dead code elimination may
+                      ;; replace such a call with a further let or
+                      ;; let-values, in which case the ignore
+                      ;; instruction is out of date.
+                      (not (or (let-form? sub-expr)
+                               (let-values-form? sub-expr))))
                  (and (var-used? name body-needs)
                       #t)))
            (let ((sub-expr-live-out (map slot-used? names)))
