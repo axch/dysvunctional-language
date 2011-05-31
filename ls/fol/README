@@ -158,6 +158,12 @@ remaining stages as much as you like, in any order.
   some formal parameters to some procedure are reliably always given
   the same value.
 
+  Also performs some algebraic simplifications to discover
+  semantically identical subexpressions.  Specifically, collapses IFs
+  with identical branches, and converts (+ 0 foo) to foo, (* 1 foo) to
+  foo, and (* 0 foo) to 0.  The last of these is not floating-safe,
+  because foo might have been a NaN or an infinity.
+
 (eliminate-intraprocedural-dead-variables <program>)
   Eliminates dead code inside procedure bodies and returns the result.
   As suggested by the name, this does not detect circumstances where
@@ -169,14 +175,9 @@ remaining stages as much as you like, in any order.
   procedure to another but never used, and flushes the computation and
   storage of those values.
 
-(tidy <program>)
-  Performs other optimizations that do not have dedicated stages and
-  returns the result.  The most important of them for legibility is to
-  inline the definitions of variables that are used only once.
-  Besides that, TIDY collapses IFs with identical branches and
-  simplifies arithmetic, namely (+ 0 foo) -> foo, (* 1 foo) -> foo,
-  and (* 0 foo) -> 0.  The last of these is not floating-safe, because
-  foo might have been a NaN, say, but I'll leave it in for now.
+(reverse-anf <program>)
+  Inlines the definitions of variables that are used only once.  This
+  is useless to the compiler, but clarifies the output.
 
 (optimize-visibly <program>)
   Like `fol-optimize' but prints progress messages as it moves from
@@ -376,7 +377,7 @@ Implementing FOL
 The implementation of FOL is, of course, the matter at hand in the
 rest of this program.  Here is the table of contents:
 
-optimize.scm        Toplevel; architecture overview; tidier
+optimize.scm        Toplevel; architecture overview; reverse-anf
 
 type-check.scm      Type checker
 structs.scm         structure-definitions->vectors
