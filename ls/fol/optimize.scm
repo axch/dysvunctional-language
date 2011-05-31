@@ -196,8 +196,6 @@
 
 ;;;; Term-rewriting tidier
 
-(define tidy-empty-let (rule `(let () (? body)) body))
-
 (define trivial-let-values-rule
   (rule `(let-values (((? names) (values (?? stuff))))
            (?? body))
@@ -250,14 +248,14 @@
            (?? body))
         (let ((occurrence-count (count-free-occurrences name body)))
           (and (= 1 occurrence-count)
-               `(let (,@bindings1
-                      ,@bindings2)
-                  ,@(replace-free-occurrences name exp body))))))
+               (tidy-empty-let
+                `(let (,@bindings1
+                       ,@bindings2)
+                   ,@(replace-free-occurrences name exp body)))))))
 
 (define tidy
   (rule-simplifier
    (list
-    tidy-empty-let
     trivial-let-values-rule
     singleton-inlining-rule)))
 

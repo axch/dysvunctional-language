@@ -80,6 +80,9 @@
         `(let-values ((,names ,exp))
            ,@body)))
 
+(define tidy-empty-let
+  (rule `(let () (? body)) body))
+
 (define (accessor? expr)
   (or (cons-ref? expr)
       (vector-ref? expr)))
