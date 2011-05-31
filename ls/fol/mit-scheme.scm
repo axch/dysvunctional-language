@@ -99,6 +99,8 @@
             ((number? expr) #t)
             ((fol-var? expr) #t)
             (else #f)))
+    ;; This relies on unique names for the same reason that
+    ;; REVERSE-ANF does.
     (rule-simplifier
      (list
       tidy-empty-let
@@ -108,4 +110,4 @@
                (?? body))
             `(let (,@bindings1
                    ,@bindings2)
-               ,@(replace-free-occurrences name exp body)))))))
+               ,@(replace-in-tree name exp body)))))))
