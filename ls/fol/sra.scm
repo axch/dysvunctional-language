@@ -179,10 +179,18 @@
                        env (map car bindings)
                        new-name-sets bind-shapes)
             (lambda (new-body body-shape)
-              (win (tidy-let-values
-                    `(let-values ,(map list new-name-sets
-                                       new-bind-expressions)
-                       ,new-body))
+              (win (if (every (lambda (set)
+                                (= 1 (length set)))
+                              new-name-sets)
+                       ;; Opportunistically preserve parallel LET with
+                       ;; non-structured expressions.
+                       `(let ,(map list (map car new-name-sets)
+                                   new-bind-expressions)
+                          ,new-body)
+                       (tidy-let-values
+                        `(let-values ,(map list new-name-sets
+                                           new-bind-expressions)
+                           ,new-body)))
                    body-shape))))))))
   (define (sra-let-values expr env win)
     (let* ((binding (caadr expr))
@@ -239,6 +247,12 @@
 ;;; LET-VALUES forms only bind the results of one expression; this
 ;;; requires that the forms it operates on be alpha renamed.
 
+(define trivial-let-values-rule
+  (rule `(let-values (((? names) (values (?? stuff))))
+           (?? body))
+        `(let ,(map list names stuff)
+           ,@body)))
+
 (define tidy-let-values
   (iterated
    (rule-list
@@ -264,8 +278,10 @@
               (?? body))
            `(let-values (,@bindings
                          ,binding1)
-              (let-values (,binding2)
-                ,@body)))))))
+              ,(trivial-let-values-rule
+                `(let-values (,binding2)
+                   ,@body))))
+     trivial-let-values-rule))))
 
 (define tidy-values
   (rule-simplifier

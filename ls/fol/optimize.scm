@@ -196,12 +196,6 @@
 
 ;;;; Term-rewriting tidier
 
-(define trivial-let-values-rule
-  (rule `(let-values (((? names) (values (?? stuff))))
-           (?? body))
-        `(let ,(map list names stuff)
-           ,@body)))
-
 ;; This is safe assuming the program has unique bound names; if not,
 ;; can break because of
 #;
@@ -256,7 +250,6 @@
 (define tidy
   (rule-simplifier
    (list
-    trivial-let-values-rule
     singleton-inlining-rule)))
 
 ;;; Watching the behavior of the optimizer
