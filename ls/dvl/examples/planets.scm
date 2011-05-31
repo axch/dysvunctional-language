@@ -79,7 +79,7 @@
 
 #|
 On khazad-dum, Apr 4, 2011:
-(define tidied (compile-visibly (dvl-read-file "examples/planets.scm")))
+(define opt-fol (compile-visibly (dvl-read-file "examples/planets.scm")))
 Stage analyze-and-generate on 2731 pairs
 ;process time: 45890 (22480 RUN + 23410 GC); real time: 48822
 Stage structure-definitions->vectors on 801317 pairs
@@ -94,12 +94,12 @@ Stage eliminate-intraprocedural-dead-variables on 14650 pairs
 ;process time: 12370 (12280 RUN + 90 GC); real time: 20852
 Stage reverse-anf on 8489 pairs
 ;process time: 680 (440 RUN + 240 GC); real time: 689
-;Value: tidied
+;Value: opt-fol
 |#
 
 #|
 On arrakis, Apr 8, 2011
-(define tidied (compile-visibly (dvl-read-file "examples/planets.scm")))
+(define opt-fol (compile-visibly (dvl-read-file "examples/planets.scm")))
 Stage analyze-and-generate on 2731 pairs
 ;process time: 10550 (9310 RUN + 1240 GC); real time: 10557
 Stage structure-definitions->vectors on 801317 pairs
@@ -114,12 +114,12 @@ Stage eliminate-intraprocedural-dead-variables on 16502 pairs
 ;process time: 1130 (1130 RUN + 0 GC); real time: 1134
 Stage reverse-anf on 7190 pairs
 ;process time: 380 (240 RUN + 140 GC); real time: 388
-;Value: tidied
+;Value: opt-fol
 |#
 
 #|
 On arrakis, Apr 11, 2011
-(define tidied (compile-visibly (dvl-read-file "examples/planets.scm")))
+(define opt-fol (compile-visibly (dvl-read-file "examples/planets.scm")))
 Stage analyze-and-generate on 2731 pairs
 ;process time: 9060 (8030 RUN + 1030 GC); real time: 9074
 Stage structure-definitions->vectors on 801317 pairs
@@ -134,13 +134,13 @@ Stage eliminate-intraprocedural-dead-variables on 14650 pairs
 ;process time: 4380 (4380 RUN + 0 GC); real time: 4383
 Stage reverse-anf on 8489 pairs
 ;process time: 220 (220 RUN + 0 GC); real time: 228
-;Value: tidied
+;Value: opt-fol
 |#
 
 #|
 On arrakis, in the same Scheme as before,
 Apr 15, 2011
-(define tidied (compile-visibly (dvl-read-file "examples/planets.scm")))
+(define opt-fol (compile-visibly (dvl-read-file "examples/planets.scm")))
 Stage analyze-and-generate on 2731 pairs
 ;process time: 7790 (6810 RUN + 980 GC); real time: 7798
 Stage structure-definitions->vectors on 801317 pairs
@@ -155,5 +155,5 @@ Stage eliminate-intraprocedural-dead-variables on 16502 pairs
 ;process time: 1170 (1170 RUN + 0 GC); real time: 1176
 Stage reverse-anf on 7190 pairs
 ;process time: 410 (270 RUN + 140 GC); real time: 413
-;Value: tidied
+;Value: opt-fol
 |#

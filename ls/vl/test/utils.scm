@@ -67,7 +67,7 @@
                      cse answer))
          (more-variables ((fol-carefully interprocedural-dead-code-elimination)
                           variables answer))
-         (tidied ((fol-carefully reverse-anf) more-variables answer)))
+         (opt-fol ((fol-carefully reverse-anf) more-variables answer)))
     ;; SRA emits sane code
     (check-program-types scalars)
     (check (equal? answer (fol-eval scalars)))
@@ -79,7 +79,7 @@
     (check (unique-names? cse))
     (check (unique-names? variables))
     (check (unique-names? more-variables))
-    (check (unique-names? tidied))
+    (check (unique-names? opt-fol))
 
     ;; The state of being maximally inlined is preserved (until
     ;; possibly dead code elimination)
@@ -132,7 +132,7 @@
     (check (equal? variables (intraprocedural-cse variables)))
     (check (equal? more-variables (intraprocedural-cse more-variables)))
 
-    tidied))
+    opt-fol))
 
 (define ((union-free-answerer compile) program #!optional wallpaper?)
   (if (default-object? wallpaper?)
@@ -142,15 +142,15 @@
         (display "***NEW PROGRAM ***")
         (newline)
         (pp program)))
-  (let ((tidied (compile program)))
-    (if wallpaper? (pp tidied))
+  (let ((opt-fol (compile program)))
+    (if wallpaper? (pp opt-fol))
     ;; In the union-free case, SRA is successful at removing all
     ;; internal consing.
-    (check (not (occurs-in-tree? 'car tidied)))
-    (check (not (occurs-in-tree? 'cdr tidied)))
-    (check (not (occurs-in-tree? 'vector-ref tidied)))
+    (check (not (occurs-in-tree? 'car opt-fol)))
+    (check (not (occurs-in-tree? 'cdr opt-fol)))
+    (check (not (occurs-in-tree? 'vector-ref opt-fol)))
 
-    (fol-eval tidied)))
+    (fol-eval opt-fol)))
 
 (define union-free-answer (union-free-answerer compile-carefully))
 (define fast-union-free-answer (union-free-answerer compile-to-scheme))
