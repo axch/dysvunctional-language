@@ -92,7 +92,7 @@ Stage intraprocedural-de-alias on 1264796 pairs
 ;process time: 12940 (1590 RUN + 11350 GC); real time: 15904
 Stage eliminate-intraprocedural-dead-variables on 14650 pairs
 ;process time: 12370 (12280 RUN + 90 GC); real time: 20852
-Stage tidy on 8489 pairs
+Stage reverse-anf on 8489 pairs
 ;process time: 680 (440 RUN + 240 GC); real time: 689
 ;Value: tidied
 |#
@@ -112,7 +112,7 @@ Stage intraprocedural-de-alias on 2345105 pairs
 ;process time: 1520 (1240 RUN + 280 GC); real time: 1525
 Stage eliminate-intraprocedural-dead-variables on 16502 pairs
 ;process time: 1130 (1130 RUN + 0 GC); real time: 1134
-Stage tidy on 7190 pairs
+Stage reverse-anf on 7190 pairs
 ;process time: 380 (240 RUN + 140 GC); real time: 388
 ;Value: tidied
 |#
@@ -132,7 +132,7 @@ Stage intraprocedural-de-alias on 1264796 pairs
 ;process time: 920 (680 RUN + 240 GC); real time: 922
 Stage eliminate-intraprocedural-dead-variables on 14650 pairs
 ;process time: 4380 (4380 RUN + 0 GC); real time: 4383
-Stage tidy on 8489 pairs
+Stage reverse-anf on 8489 pairs
 ;process time: 220 (220 RUN + 0 GC); real time: 228
 ;Value: tidied
 |#
@@ -153,7 +153,7 @@ Stage intraprocedural-de-alias on 2345105 pairs
 ;process time: 1620 (1320 RUN + 300 GC); real time: 1624
 Stage eliminate-intraprocedural-dead-variables on 16502 pairs
 ;process time: 1170 (1170 RUN + 0 GC); real time: 1176
-Stage tidy on 7190 pairs
+Stage reverse-anf on 7190 pairs
 ;process time: 410 (270 RUN + 140 GC); real time: 413
 ;Value: tidied
 |#

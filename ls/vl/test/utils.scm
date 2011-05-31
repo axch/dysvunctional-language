@@ -67,7 +67,7 @@
                      cse answer))
          (more-variables ((fol-carefully interprocedural-dead-code-elimination)
                           variables answer))
-         (tidied ((fol-carefully tidy) more-variables answer)))
+         (tidied ((fol-carefully reverse-anf) more-variables answer)))
     ;; SRA emits sane code
     (check-program-types scalars)
     (check (equal? answer (fol-eval scalars)))
@@ -88,7 +88,7 @@
     (check (equal? cse (inline cse)))
 
     ;; Except for reconstruction of the structure that the outside
-    ;; world expects, SRA and subsequent stages (except tidying)
+    ;; world expects, SRA and subsequent stages (except REVERSE-ANF)
     ;; preserve ANF.
     (if (not (pair? answer))
         (begin

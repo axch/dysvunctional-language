@@ -61,7 +61,6 @@
      intraprocedural-cse
      eliminate-intraprocedural-dead-variables
      interprocedural-dead-code-elimination
-     tidy
      reverse-anf
      strip-argument-types
      structure-definitions->vectors
