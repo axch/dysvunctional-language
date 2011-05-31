@@ -5,12 +5,16 @@
   (and (pair? thing)
        (eq? (car thing) tag)))
 
+;;; Begin
+
 (define begin-form? (tagged-list? 'begin))
 
 (define (tidy-begin form)
   (if (and (begin-form? form) (null? (cddr form)))
       (cadr form)
       form))
+
+;;; Define
 
 (define definition? (tagged-list? 'define))
 
@@ -38,6 +42,8 @@
          `(define (,name ,@names)
             ,@body))))
 
+;;; Simple forms
+
 (define (fol-var? thing)
   (or (symbol? thing)
       (fol-name? thing)))
@@ -48,7 +54,11 @@
 (define (simple-form? thing)
   (or (fol-var? thing) (number? thing) (boolean? thing) (null? thing)))
 
+;;; If
+
 (define if-form? (tagged-list? 'if))
+
+;;; Binders
 
 (define let-form? (tagged-list? 'let))
 (define let-values-form? (tagged-list? 'let-values))
@@ -83,6 +93,44 @@
 (define tidy-empty-let
   (rule `(let () (? body)) body))
 
+;; Lifting lets is safe assuming the program has unique bound names; if not,
+;; can break because of
+#;
+ (let ((x 3))
+   (let ((y (let ((x 4)) x)))
+     x))
+;; Unfortunately, mere lack of shadowing is not enough, as this can
+;; introduce shadowing because of
+#;
+ (let ((x (let ((y 3)) y)))
+   (let ((y 4))
+     y))
+
+;; TODO Would rewriting this as a pass accelerate things
+;; significantly?
+;; TODO Can/Should I lift lets out of IF predicates?  Procedure
+;; calls?  CAR/CDR/CONS?
+(define lift-lets
+  (rule-simplifier
+   (list
+    (rule `(let ((?? bindings1)
+                 ((? name ,fol-var?) ((? bind ,binder-tag?) (? inner-bindings) (? exp)))
+                 (?? bindings2))
+             (?? body))
+          `(,bind ,inner-bindings
+             (let (,@bindings1
+                   (,name ,exp)
+                   ,@bindings2)
+               ,@body)))
+
+    (rule `(let-values (((? names) ((? bind ,binder-tag?) (? inner-bindings) (? exp))))
+             (?? body))
+          `(,bind ,inner-bindings
+             (let-values ((,names ,exp))
+               ,@body))))))
+
+;;; Structures
+
 (define (accessor? expr)
   (or (cons-ref? expr)
       (vector-ref? expr)))
@@ -99,6 +147,8 @@
 
 (define values-form? (tagged-list? 'values))
 
+;;; Type signatures
+
 (define remove-defn-argument-types
   (rule `(define (? formals)
            (argument-types (?? etc))
@@ -108,6 +158,8 @@
 
 (define strip-argument-types
   (rule-simplifier (list remove-defn-argument-types)))
+
+;;; Reserved words
 
 (define fol-reserved '(cons car cdr vector vector-ref begin define if let let-values values))
 

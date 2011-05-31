@@ -197,44 +197,6 @@
 ;;; subexpression of the input expression repeatedly until the result
 ;;; settles down.
 
-;;;; Term-rewriting tidier
-
-;; This is safe assuming the program has unique bound names; if not,
-;; can break because of
-#;
- (let ((x 3))
-   (let ((y (let ((x 4)) x)))
-     x))
-;; Unfortunately, mere lack of shadowing is not enough, as this can
-;; introduce shadowing because of
-#;
- (let ((x (let ((y 3)) y)))
-   (let ((y 4))
-     y))
-
-;;; TODO Would rewriting this as a pass accelerate things
-;;; significantly?
-;;; TODO Can/Should I lift lets out of IF predicates?  Procedure
-;;; calls?  CAR/CDR/CONS?
-(define lift-lets
-  (rule-simplifier
-   (list
-    (rule `(let ((?? bindings1)
-                 ((? name ,fol-var?) ((? bind ,binder-tag?) (? inner-bindings) (? exp)))
-                 (?? bindings2))
-             (?? body))
-          `(,bind ,inner-bindings
-             (let (,@bindings1
-                   (,name ,exp)
-                   ,@bindings2)
-               ,@body)))
-
-    (rule `(let-values (((? names) ((? bind ,binder-tag?) (? inner-bindings) (? exp))))
-             (?? body))
-          `(,bind ,inner-bindings
-             (let-values ((,names ,exp))
-               ,@body))))))
-
 ;;; Watching the behavior of the optimizer
 
 (define (optimize-visibly program)
