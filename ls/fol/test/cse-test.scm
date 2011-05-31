@@ -169,12 +169,12 @@
    (equal?
     '(let ((foo (real 2)))
        (let ((bar (+ foo 1)))
-         bar))
+         (+ bar bar)))
     (intraprocedural-cse
      '(let ((foo (real 2)))
         (let ((bar (+ foo 1)))
           (let ((x (* foo 1)))
-            (+ x 1))))))
+            (+ bar (+ x 1)))))))
 
    ;; TODO An example for interprocedural CSE
    #;
