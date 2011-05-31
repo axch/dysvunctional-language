@@ -218,6 +218,13 @@ rid of them before invoking any of the stages.
 The simpler-to-use COMPILE-TO-FOL could be defined as
 ANALYZE-AND-GENERATE followed by STRUCTURE-DEFINITIONS->VECTORS.
 
+Finally, you can also compress staircases of LETs into LET* forms,
+if that helps you read them.
+
+(let->let* <program>)
+  Changes all strings of one-binding LETs into LET* blocks and returns
+  the result (which can no longer be properly called a FOL program).
+
 
 Machine code from FOL
 

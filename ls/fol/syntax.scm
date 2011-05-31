@@ -129,6 +129,24 @@
              (let-values ((,names ,exp))
                ,@body))))))
 
+;; Converting LET to LET* is only useful for viewing a program, as the
+;; result is not valid FOL any more.
+(define let->let*
+  (rule-simplifier
+   (list
+    (rule `(let ((? binding))
+             (let ((? binding2))
+               (?? body)))
+          `(let* (,binding
+                  ,binding2)
+             ,@body))
+    (rule `(let ((? binding))
+             (let* ((?? bindings))
+               (?? body)))
+          `(let* (,binding
+                  ,@bindings)
+             ,@body)))))
+
 ;;; Structures
 
 (define (accessor? expr)
@@ -147,7 +165,10 @@
 
 (define values-form? (tagged-list? 'values))
 
-;;; Type signatures
+;;; Flushing type signatures
+
+;; Flushing type signatures is only useful for viewing a program, as
+;; the result is not valid FOL any more.
 
 (define remove-defn-argument-types
   (rule `(define (? formals)

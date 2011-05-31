@@ -63,6 +63,7 @@
      interprocedural-dead-code-elimination
      reverse-anf
      strip-argument-types
+     let->let*
      structure-definitions->vectors
 
      ;; TODO The FOL runtime system is part of the implementation of
