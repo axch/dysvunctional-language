@@ -247,10 +247,7 @@
                        ,@bindings2)
                    ,@(replace-free-occurrences name exp body)))))))
 
-(define tidy
-  (rule-simplifier
-   (list
-    singleton-inlining-rule)))
+(define tidy (rule-simplifier (list singleton-inlining-rule)))
 
 ;;; Watching the behavior of the optimizer
 
