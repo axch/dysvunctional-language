@@ -226,22 +226,22 @@
  (let ((x (let ((y 3)) y)))
    (let ((y 4))
      y))
-(define let-let-lifting-rule
+(define let-lifting-rule
   (rule `(let ((?? bindings1)
-               ((? name ,fol-var?) (let (? in-bindings) (? exp)))
+               ((? name ,fol-var?) ((? bind ,binder-tag?) (? inner-bindings) (? exp)))
                (?? bindings2))
            (?? body))
-        `(let ,in-bindings
+        `(,bind ,inner-bindings
            (let (,@bindings1
                  (,name ,exp)
                  ,@bindings2)
              ,@body))))
 
 ;; This is safe assuming the program has been alpha renamed
-(define values-let-lifting-rule
-  (rule `(let-values (((? names) (let (? in-bindings) (? exp))))
+(define let-values-lifting-rule
+  (rule `(let-values (((? names) ((? bind ,binder-tag?) (? inner-bindings) (? exp))))
            (?? body))
-        `(let ,in-bindings
+        `(,bind ,inner-bindings
            (let-values ((,names ,exp))
              ,@body))))
 
@@ -281,7 +281,7 @@
     empty-let-rule
     trivial-let-values-rule
 
-    values-let-lifting-rule
+    let-values-lifting-rule
     singleton-inlining-rule)))
 
 ;;; Watching the behavior of the optimizer

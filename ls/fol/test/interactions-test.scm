@@ -67,7 +67,7 @@
           ;; y = (+ x 3) goes out of scope
           (let ((z (+ x 3)))
             (+ w z)))))
-   (define lift-lets (rule-simplifier (list let-let-lifting-rule)))
+   (define lift-lets (rule-simplifier (list let-lifting-rule)))
    (check (equal? program (intraprocedural-cse program)))
    (check
     (equal?

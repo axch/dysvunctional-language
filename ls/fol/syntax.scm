@@ -49,6 +49,10 @@
 (define let-values-form? (tagged-list? 'let-values))
 (define lambda-form? (tagged-list? 'lambda))
 
+(define (binder-tag? thing)
+  (or (eq? thing 'let)
+      (eq? thing 'let-values)))
+
 (define ->lambda
   (rule-list
    (list
