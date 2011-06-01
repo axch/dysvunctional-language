@@ -32,31 +32,60 @@
 
 (let ((my-* (lambda (x y) (* x y))))
   (letrec ((fact (lambda (n)
-		   (if (= n 1)
-		       1
-		       (my-* n (fact (- n 1)))))))
+                   (if (= n 1)
+                       1
+                       (my-* n (fact (- n 1)))))))
     (fact (real 5)))) ===> 120
 
 (let ((my-* (lambda (x y) (* x y))))
   (letrec ((fact (lambda (n)
-		   (if (= n 1)
-		       1
-		       (my-* n (fact (- n 1)))))))
+                   (if (= n 1)
+                       1
+                       (my-* n (fact (- n 1)))))))
     (fact 5))) ===> 120
 
 ;;; Factorial, with letrec manually macro expanded
 
 (let ((Z (lambda (f)
-	   ((lambda (x)
-	      (f (lambda (y) ((x x) y))))
-	    (lambda (x)
-	      (f (lambda (y) ((x x) y))))))))
+           ((lambda (x)
+              (f (lambda (y) ((x x) y))))
+            (lambda (x)
+              (f (lambda (y) ((x x) y))))))))
   (let ((fact (Z (lambda (fact)
-		   (lambda (n)
-		     (if (= n 1)
-			 1
-			 (* n (fact (- n 1)))))))))
+                   (lambda (n)
+                     (if (= n 1)
+                         1
+                         (* n (fact (- n 1)))))))))
     (fact (real 5)))) ===> 120
+
+;;; Mutual recursion with non-primitives
+
+(let ()
+  (define (my-- x y)
+    (- x y))
+  (define (even? n)
+    (if (= n 0)
+        #t
+        (odd? (my-- n 1))))
+  (define (odd? n)
+    (if (= n 0)
+        #f
+        (even? (my-- n 1))))
+  (even? (real 5))) ===> #f
+
+(let ()
+  (define (my-* x y)
+    (* x y))
+  (define (fact-1 n)
+    (if (= n 0)
+        1
+        (my-* n (fact-2 (- n 1)))))
+  (define (fact-2 n)
+    (if (= n 0)
+        1
+        (my-* n (fact-1 (- n 1)))))
+  (fact-1 (real 6))) ===> 720
+
 
 (let ()
   (define (car (cons x y)) x)
