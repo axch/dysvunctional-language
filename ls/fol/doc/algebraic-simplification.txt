@@ -1,0 +1,82 @@
+                       Algebraic Simplification
+
+The FOL common subexpression eliminator performs some algebraic
+simplification of the program to expose additional common
+subexpressions.  For example,
+
+  (+ x 1) == (+ (+ x 0) 1)
+
+only if you know that (+ x 0) is the same as x.  So collapsing (+ x 0)
+to x saves not only the redundant add of 0, it also allows one to
+recognize a potentially large pile of consequent common-subexpression
+optimizations.
+
+There are two things to ask about every algebraic simplificiation:
+- Does it preserve the semantics of the program?
+- What part of the compilation process should do it?
+
+The eliminator performs the following simplifications:
+
+  (+ x 0) --> x
+  (+ 0 x) --> x
+  (- x 0) --> x
+
+  (* x 1) --> x
+  (* 1 x) --> x
+  (/ x 1) --> x
+
+  (* x 0) --> 0
+  (* 0 x) --> 0
+  (/ 0 x) --> 0
+
+  (if foo bar bar) --> bar
+
+The first six of these perserve the semantics of FOL programs, even
+for floating point numbers.  CSE is also the best place in the
+software stack for them, because they would have no effect on flow
+analysis (because if x were known at compile time they would get done
+by constant folding, and if x were an abstract-real at compile time,
+the output would still be an abstract-real), so might as well not
+clutter it with them.
+
+The next three are considerably more complicated.  First of all, they
+do not conform to the floating point standard:
+
+  (* 0 Inf) = NaN, not 0
+  (* 0 NaN) = NaN, not 0
+  (/ 0 NaN) = NaN, not 0
+  (/ 0 0)   = NaN, not 0
+
+Second, transforming (* 0 x) to 0 changes the strictness properties of
+*, namely allows it to be lazy in the non-zero argument.  This may be
+an issue if evaluating x would have produced some interesting
+behavior.  If the program is in A-normal form, that problem can be
+punted to the dead code eliminator, but if it is not, some care should
+be taken about the subexpression that would produce x.
+
+On the other hand, (* 0 x) --> x is worth thinking about despite these
+problems, because it chains and can therefore eliminate lots of excess
+code by itself.  In particular, taking tangents of things that are not
+bundles and asking for sensitivities of things that get dropped will
+generate lots of zeros which will constantly get multiplied by things,
+and eliminating all that work can probably lead to much acceleration.
+TODO Is there a really compelling example of this?
+
+On the third hand, the importance of (* 0 x) --> x also complicates
+its position in the software stack.  It would be effective directly in
+flow analysis, because it would allow x not to be analyzed at all, and
+would yield a nice constant to propagate through its return value.  On
+the other hand, that would involve putting at least some
+simplification machinery into the flow analysis, which would be
+redundant with the simplification machinery that CSE needs anyway.
+Finally, simplifying (* 0 x) to 0 kills that use of x, which may
+expose more dead code (and, if the input program were not in A-normal
+form, the consequences of removing that dead code, like more procedure
+inlining).  This is both a great benefit of doing this optimization,
+and also puts more constraints on the ordering of FOL compilation
+stages.
+
+The last simplification, (if foo bar bar) --> bar, is intermediate in
+complexity.  It changes the strictness of IF, allowing it to be lazy
+in the predicate when the consequent and alternate are the same
+expression, but it doesn't cause any other trouble.
