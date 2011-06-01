@@ -166,37 +166,6 @@
 ;;;
 ;;; Reverse-ANF then others: No effect.
 
-;;; Don't worry about the rule-based term-rewriting system that powers
-;;; this.  That is its own pile of stuff, good for a few lectures of
-;;; Sussman's MIT class Adventures in Advanced Symbolic Programming.
-;;; It works, and it's very good for peephole manipulations of
-;;; structured expressions (like the output of the VL code generator).
-;;; If you really want to see it, though, it's included in
-;;; support/rule-system.
-
-;;; Rules for the term-rewriting system consist of a pattern to try to
-;;; match and an expression to evaluate to compute a replacement for
-;;; that match should a match be found.  Patterns match themselves;
-;;; the construct (? name) introduces a pattern variable named name;
-;;; the construct (? name ,predicate) is a restricted pattern variable
-;;; which only matches things the predicate accepts; the construct (??
-;;; name) introduces a sublist pattern variable.  The pattern matcher
-;;; will search through possible lengths of sublists to find a match.
-;;; Repeated pattern variables must match equal structures in all the
-;;; corresponding places.
-
-;;; A rule by itself is a one-argument procedure that tries to match
-;;; its pattern.  If the match succeeds, the rule will evaluate the
-;;; the replacement expression in an environment where the pattern
-;;; variables are bound to the things they matched and return the
-;;; result.  If the replacement expression returns #f, that tells the
-;;; matcher to backtrack and look for another match.  If the match
-;;; fails, the rule will return #f.
-
-;;; A rule simplifier has a set of rules, and applies them to every
-;;; subexpression of the input expression repeatedly until the result
-;;; settles down.
-
 ;;; Watching the behavior of the optimizer
 
 (define (optimize-visibly program)

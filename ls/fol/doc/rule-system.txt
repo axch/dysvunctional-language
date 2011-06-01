@@ -1,0 +1,39 @@
+FOL makes extensive use of a rule-based term-rewriting system
+to manipulate the data structures representing FOL programs.
+Every time you see the RULE macro, that's what's going on.
+
+Don't worry about understanding this rule system; it is its own
+pile of stuff, good for a few lectures of
+Sussman's MIT class Adventures in Advanced Symbolic Programming.
+It works, and it's very good for peephole manipulations of
+structured expressions (like the output of the VL code generator).
+If you really want to see it, though, it's included in
+support/rule-system.
+
+Rules for the term-rewriting system consist of a pattern to try to
+match and an expression to evaluate to compute a replacement for
+that match should a match be found.  Patterns match themselves;
+the construct (? name) introduces a pattern variable named NAME;
+the construct (? name ,predicate) is a restricted pattern variable
+which only matches things the predicate accepts; the construct (??
+name) introduces a sublist pattern variable.  The pattern matcher
+will search through possible lengths of sublists to find a match.
+Repeated pattern variables must match equal structures in all the
+corresponding places.
+
+A rule by itself is a one-argument procedure that tries to match
+its pattern.  If the match succeeds, the rule will evaluate the
+the replacement expression in an environment where the pattern
+variables are bound to the things they matched and return the
+result.  If the replacement expression returns #f, that tells the
+matcher to backtrack and look for another match.  If the match
+fails, the rule will return the original argument unchanged.
+
+A rule simplifier has a set of rules, and applies them to every
+subexpression of the input expression repeatedly until the result
+settles down.  The rule system also offers the ON-SUBEXPRESSIONS
+combinator, which will try its rule on every subexpression of its
+argument once each (bottom up), but will not rerun the rules to
+convergence.  Finally, there is the ITERATED combinator, which
+iterates its rule on its argument until convergence, but does not
+descend into subexpressions.
