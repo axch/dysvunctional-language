@@ -405,7 +405,8 @@ mit-scheme.scm      Compilation to machine code with MIT Scheme
 load.scm            Entry point; namespace management
 
 The FOL compiler makes extensive use of a pattern matching and
-replacement system.  TODO Explain enough of it.
+replacement system.  It's pretty intuitive, but a brief additional
+description can be found in doc/rule-system.txt.
 
 
 Future of FOL
