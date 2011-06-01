@@ -99,3 +99,13 @@ those are the ones I know.
   most common bounded-space computations, it is typical for CFG
   compilers to drop tail recursion optimization of CFG procedures (for
   better or for worse).
+
+TODO Reread Appel Chapters 15, 18, and 19 with an eye to improving
+FOL.  Remember the equivalence with the form described in 19.7.  With
+something analagous to internal definitions, I should be able to
+express (some) constant-space loops in FOL, and do all manner of loop
+optimizations.  Or I can leave all that to GCC.
+
+
+[1] Appel, Andrew W.  "Modern Compiler Implementation in ML".
+Cambridge University Press, 2004.  Chapter 17.
