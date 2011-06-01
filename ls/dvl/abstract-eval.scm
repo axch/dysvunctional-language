@@ -168,7 +168,33 @@
         (refine-eval
          exp env world analysis
          (lambda (new-value new-world)
+           ;; The following requires an explanation.  Why are we
+           ;; taking the union of the old value of the binding with
+           ;; the new, refined value?  The thing is, REFINE-EVAL is
+           ;; not monotonous; i.e., it can return ABSTRACT-NONE even
+           ;; for a binding that is already known to evaluate to a
+           ;; non-bottom; see an example below.  Although this also
+           ;; happens in the concrete evaluator, accidentally this
+           ;; does not bite us because every time the analysis is
+           ;; refined each of its bindings is refined; whereas here
+           ;; new bindings are pushed onto the front of the work
+           ;; queue, and may potentially never be refined because the
+           ;; analyzer is too busy refining other bindings on the
+           ;; front of the queue.  This can probably be solved by
+           ;; changing the order in which bindings are refined (e.g.,
+           ;; by pushing new bindings on the rear of the queue and
+           ;; popping bindings to work on from the front of the
+           ;; queue).  However, the proper way to fix it is to ensure
+           ;; that no information is lost, which can be achieved
+           ;; e.g. by taking the union of the old value with the new
+           ;; value.
+
+           ;; TODO Make VL not depend on the way analysis is refined
+           ;; by adding ABSTRACT-UNION in an appropriate place.
            (let ((new-value (abstract-union value new-value)))
+             ;; The following check is necessary, because if we
+             ;; blindly execute the BEGIN block, it will restore the
+             ;; binding in the queue, thus creating an infinite loop.
              (if (abstract-equal? value new-value)
                  'ok
                  (begin
@@ -177,6 +203,16 @@
                    (for-each (lambda (dependency)
                                (analysis-notify! analysis dependency))
                              (binding-notify binding)))))))))))
+
+;; Example that shows that REFINE-EVAL is not monotonous:
+#|
+(let ((my-* (lambda (x y) (* x y))))
+  (letrec ((fact (lambda (n)
+                   (if (= n 1)
+                       1
+                       (my-* n (fact (- n 1)))))))
+    (fact (real 5))))
+|#
 
 (define *on-behalf-of* #f)
 
