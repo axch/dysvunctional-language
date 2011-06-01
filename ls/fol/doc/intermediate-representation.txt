@@ -1,0 +1,101 @@
+                FOL as an Intermediate Representation
+
+FOL is not really a programming language; it's an intermediate
+representation for the insides of a compiler.  It happens to print out
+like Scheme code, which makes it much easier to read; and it happens
+to ship with a direct interpreter, which gives it a semantics that can
+be used to verify correctness of transformations; but how else is it
+different from any other intermediate representation?
+
+FOL occupies a slot in the architecture of VL and DVL that is parallel
+to the place where control flow graphs (CFGs) usually sit in other
+compilers.  Like a CFG, FOL source statically exposes as much
+information about the dynamic control flow of the program it
+represents as it possibly can.  Like a CFG, FOL is therefore amenable
+to flow-based optimizations, like elimination of dead variables and
+common subexpressions.
+
+Given that fundamental similarity, however, there are a number of
+substantial differences.  I compare here to the CFGs in [1], since
+those are the ones I know.
+
+- FOL is oriented around expressions, whereas CFGs are oriented around
+  instructions.  Expressions have substructure, and the substructures
+  have implicit returns, whereas CFG instructions just read stored
+  data for their arguments.  Sufficiently aggressive conversion to
+  A-normal form erases this difference.
+
+- A complete FOL program is "bigger" than a CFG from [1], because
+  those CFGs are all intraprocedural.  FOL procedures are more
+  involved than CFG labels because they accept arguments which are
+  kept on an implicit stack; the procedure call conventions are not
+  represented in FOL.
+
+- A FOL procedure is "smaller" than a CFG from [1] because those CFGs
+  contain labels and jumps, and can express (constant-space) loops
+  directly in the CFG, whereas a FOL procedure execution always takes
+  a bounded number of instructions (except for the effects of calling
+  other procedures).
+
+- A FOL procedure is "bigger" than a basic block from [1] because a
+  FOL procedure may contain IFs.  So control flow within a FOL
+  procedure is not entirely linear, but may contain branches.  Those
+  branches, however, must always converge (except, again, for the
+  effect for calling other procedures).
+
+- All variables in a CFG are in scope in the entire graph, whereas FOL
+  bindings have scope.  This is not an essential difference.
+
+- The CFGs from [1] allow assignments to their variables, whereas FOL
+  does not.  This is not an essential difference.
+
+- Except for reading and writing the store, and calls to procedures
+  outside the CFG, any CFG from [1] can be executed in constant space
+  (but not necessarily constant time).  In contrast, any FOL procedure
+  can be executed in constant space and time (except for calls to
+  other procedures).
+
+- The CFGs in [1] have access to a read-write, indexable store (which
+  is shared with procedures external to the CFG).  FOL procedures do
+  not; instead, they may allocate objects in a memory-managed heap,
+  pass them to each other, and access their slots.  I don't think this
+  is an essential difference; just that the understanding of the
+  behavior of control is done with respect to a different level of
+  abstraction of the memory system.
+
+- FOL represents constant-space loops implicitly, via tail recursion
+  across FOL procedure boundaries.  CFGs represent constant-space
+  loops explicitly, by encoding them with branches inside a single
+  CFG.  Therefore, restricting an analysis to intraprocedural in FOL
+  is a stronger restriction (because it moves loops out of the
+  purview), and does more to make the analysis easier to write.
+
+- FOL procedures are amenable to cascading intra-FOL-procedural
+  analysis-and-transformation passes.  Traverse the structure of the
+  source recursively, carrying down any information you may need from
+  the context.  Return the rewritten expression and any information
+  about it that you need.  At a LET, analyze either the
+  binding-expression or the body first, depending on whether you going
+  in the same or the reverse direction as execution will,
+  respectively.  At an IF, recur on the predicate and both branches
+  and then merge.  CFG basic blocks are also amenable to such passes,
+  but are smaller, so the passes are less useful.
+
+- Intra-CFG-procedural analyses require actual graph dataflows,
+  because they can express complicated loops.  In this,
+  inter-FOL-procedural analyses are similar.  I suspect the latter are
+  more complex, however, because of the implicit stack across
+  procedure boundaries, and the consequence that any loops do not run
+  in constant space.  I have never seen any descriptions of
+  inter-CFG-procedural analyses, so I don't know what interesting
+  properties they have in common with either intra-CFG-procedural
+  analyses or inter-FOL-procedural analyses.
+
+- The FOL representation has the weakness, relative to CFGs, that
+  there is no way for a variable to be in scope over a time-unbounded
+  extent.  FOL therefore does not capture loop-invariant data, and
+  cannot express loop hoisting transformations.  On the other hand, my
+  understanding is that since CFGs can already directly express the
+  most common bounded-space computations, it is typical for CFG
+  compilers to drop tail recursion optimization of CFG procedures (for
+  better or for worse).
