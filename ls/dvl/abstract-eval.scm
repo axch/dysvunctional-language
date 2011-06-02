@@ -205,14 +205,12 @@
                              (binding-notify binding)))))))))))
 
 ;; Example that shows that REFINE-EVAL is not monotonous:
-#|
-(let ((my-* (lambda (x y) (* x y))))
-  (letrec ((fact (lambda (n)
-                   (if (= n 1)
-                       1
-                       (my-* n (fact (- n 1)))))))
-    (fact (real 5))))
-|#
+;; (let ((my-* (lambda (x y) (* x y))))
+;;   (letrec ((fact (lambda (n)
+;;                    (if (= n 1)
+;;                        1
+;;                        (my-* n (fact (- n 1)))))))
+;;     (fact (real 5))))
 
 (define *on-behalf-of* #f)
 
