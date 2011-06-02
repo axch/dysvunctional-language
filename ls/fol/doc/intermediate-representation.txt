@@ -109,3 +109,70 @@ optimizations.  Or I can leave all that to GCC.
 
 [1] Appel, Andrew W.  "Modern Compiler Implementation in ML".
 Cambridge University Press, 2004.  Chapter 17.
+
+
+Appel's book talks about CFGs, SSA form, and "a functional
+representation".  If you restrict the latter to tail-calls only and to
+not passing functions around as arguments, then it has exactly the
+same expressive power as CFGs or SSA form.  FOL intraprocedural is
+just that same form, but without those local procedure definitions.
+
+I could match CFGs by introducing an expression for local (recursive)
+function definitions with the restriction that such functions may
+only be called in tail position.
+
+This restriction would have the effect that anything that looks like a
+return either flies into a statically known let binding, or flies out
+of the entire FOL-procedure.
+
+The thing that's unique about interprocedural stuff is that control
+flows out of a procedure call into a place that's determined by the
+place where it flowed in, and we care about tracing the correspondence
+(whether it's implemented by watching the control flow explicitly or
+by doing some data flow on some token (or continuation function) that
+says where to go is immaterial).
+
+The tail-calls-only restriction also means that you can only model
+processes that take a bounded amount of modeled storage to execute (to
+wit, the number of static variable bindings in the structure).  What I
+mean by "modeled" is that the program is still free to accumulate
+stuff either by hitting successive locations in the main memory or by
+building itself a nice linked functional data structure; but
+presumably analyzing what's going on in places that are not
+temporaries is beyond the scope of the model (FOL or CFG).
+
+By not providing such local definition facilities, FOL conflates
+tail-call-only procedures with full procedures, and pushes them out of
+the scope of FOL's intraprocedural analyses.
+
+One of the consequences of this decision is that FOL cannot express loops
+and loop optimizations.
+
+
+FOL intraprocedural: Dataflows on an acyclic control flow graph.  This
+implies a bounded execution time and therefore a finite number of
+modeled memory bits.  These are easy to do by following a topological
+sort of the control flow graph (FOL source happens to store these
+graphs in topologically sorted form).  Break the full program into
+pieces with acyclic control (FOL procedures) and don't model flows of
+control or data across the introduced boundaries.
+
+Appel intraprocedural: Dataflows with a finite number of modeled bits
+of data but an arbitrary control flow graph.  Break the whole program
+into pieces (procedures) that each only use a finite number of modeled
+bits of memory (temporaries), and don't model flows of control or data
+across the boundaries of these pieces.
+
+Interprocedural: Dataflows with unbounded modeled locations (because
+of the procedure stack) and an arbitrary control flow graph.  Since
+this is Turing complete, you can't ever get this "right".  You have to
+forget somewhere.
+
+
+The latter but also tracking context: control will flow out of a
+procedure call into a place that is determined by where it flowed into
+that procedure call.
+- Also, if control flowed from here, then I know this about the data
+  that flowed in, which I don't know in general.
+- I think you can go quite wild wrt the fineness of the context you
+  track.
