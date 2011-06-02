@@ -205,13 +205,14 @@
                              (binding-notify binding)))))))))))
 
 ;; Example that shows that REFINE-EVAL is not monotonic:
-;; (let ((my-* (lambda (x y) (* x y))))
-;;   (letrec ((fact (lambda (n)
-;;                    (if (= n 1)
-;;                        1
-;;                        (my-* n (fact (- n 1)))))))
-;;     (fact (real 5))))
-
+#|
+ (let ((my-* (lambda (x y) (* x y))))
+   (letrec ((fact (lambda (n)
+                    (if (= n 1)
+                        1
+                        (my-* n (fact (- n 1)))))))
+     (fact (real 5))))
+|#
 ;; TODO Rather than sprinkling ABSTRACT-UNION in the places where
 ;; REFINE-EVAL is used, the definition of REFINE-EVAL needs to be
 ;; changed in order to make REFINE-EVAL monotonic.
