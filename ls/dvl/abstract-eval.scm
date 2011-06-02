@@ -174,7 +174,7 @@
            ;; not monotonic; i.e., it can return ABSTRACT-NONE even
            ;; for a binding that is already known to evaluate to a
            ;; non-bottom; see an example below.  Although this also
-           ;; happens in the concrete evaluator, accidentally this
+           ;; happens in the gensym-free VL, accidentally this
            ;; does not bite us because every time the analysis is
            ;; refined each of its bindings is refined; whereas here
            ;; new bindings are pushed onto the front of the work
