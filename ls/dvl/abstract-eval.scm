@@ -212,6 +212,10 @@
 ;;                        (my-* n (fact (- n 1)))))))
 ;;     (fact (real 5))))
 
+;; TODO Rather than sprinkling ABSTRACT-UNION in the places where
+;; REFINE-EVAL is used, the definition of REFINE-EVAL needs to be
+;; changed in order to make REFINE-EVAL monotonic.
+
 (define *on-behalf-of* #f)
 
 ;; If you want to look up the value that some exp-env pair evaluates
