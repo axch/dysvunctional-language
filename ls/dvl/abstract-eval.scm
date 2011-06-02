@@ -171,7 +171,7 @@
            ;; The following requires an explanation.  Why are we
            ;; taking the union of the old value of the binding with
            ;; the new, refined value?  The thing is, REFINE-EVAL is
-           ;; not monotonous; i.e., it can return ABSTRACT-NONE even
+           ;; not monotonic; i.e., it can return ABSTRACT-NONE even
            ;; for a binding that is already known to evaluate to a
            ;; non-bottom; see an example below.  Although this also
            ;; happens in the concrete evaluator, accidentally this
@@ -204,7 +204,7 @@
                                (analysis-notify! analysis dependency))
                              (binding-notify binding)))))))))))
 
-;; Example that shows that REFINE-EVAL is not monotonous:
+;; Example that shows that REFINE-EVAL is not monotonic:
 ;; (let ((my-* (lambda (x y) (* x y))))
 ;;   (letrec ((fact (lambda (n)
 ;;                    (if (= n 1)
