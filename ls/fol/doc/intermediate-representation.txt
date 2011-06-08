@@ -130,5 +130,29 @@ mention the others at need.
   graph of the procedures is no longer the approximation you want for
   the control flow of a program implemented with those procedures.
 
+The fact that FOL as a representation is restricted, relative to CFGs,
+is acceptable.  FOL's purpose is not to be an excellent compiler in
+itself; it is just to clean up the messes made by the VL and DVL code
+generators, so that the output can be read by a person, and reasonably
+handed off to an external compiler.  The latter is actually
+nontrivially similar to the former, because end-to-end compilers tend
+to have implicit assumptions about the "reasonableness" of their input
+programs, and don't take care to run fast or do a good job with
+"unreasonable" programs.
+
+In fact, the historical inspiration for the analogue of FOL that
+appears in Stalingrad was that gcc ran out of memory on programs that
+demanded the inlining of thousands of tiny procedures; and the
+historical inspiration for FOL itself, besides wanting to read the
+output of VL, was that the MIT Scheme compiler choked on a procedure
+that had 700 formal parameters (almost all of which were passing, to
+recursive calls of the same procedure, pointers to the same object,
+that it never even read.  They were all removable either by
+interprocedural dead variable elimination or by (as-yet-unimplemented)
+interprocedural alias elimination).  Both cases were instances of a
+program emitting a valid program that any sane compiler writer would
+(correctly!) assume no sane programmer would write.
+
+
 [1] Appel, Andrew W.  "Modern Compiler Implementation in ML".
 Cambridge University Press, 2004.
