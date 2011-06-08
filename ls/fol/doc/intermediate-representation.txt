@@ -12,16 +12,16 @@ to the place where control flow graphs (CFGs) usually sit in other
 compilers.  Like a CFG, FOL source statically exposes as much
 information about the dynamic control flow of the program it
 represents as it possibly can.  Like a CFG, FOL is therefore amenable
-to flow-based optimizations, like elimination of dead variables and
-common subexpressions.
+to dataflow-based optimizations, like elimination of dead variables
+and common subexpressions.
 
 Given that fundamental similarity, however, there are a number of
-substantial differences.  I compare here to the representations in
-Appel [1], since those are the ones I know.  In particular, I compare
-to Control Flow Graphs (Chapters 17 and 18), Static Single Assignment
-Form (Chapter 19), and the otherwise nameless Functional
-Representation (19.7).  CFGs and SSA are equivalent, so I will only
-remark on them separately at need.
+substantial differences.  I compare here to the CFGs in Appel [1],
+since those are the ones I know.  Appel discusses three variants:
+plain vanilla CFGs (Chapters 17 and 18), Static Single Assignment Form
+(Chapter 19), and the otherwise nameless "functional representation"
+(19.7).  Since they are all equivalent, I will compare to CFGs, and
+mention the others at need.
 
 - FOL is oriented around expressions, whereas CFGs are oriented around
   instructions.  Expressions have substructure, and the substructures
@@ -30,12 +30,13 @@ remark on them separately at need.
   A-normal form erases this difference.
 
 - All variables in a CFG are in scope in the entire graph, whereas FOL
-  bindings have scope.  This is not an essential difference.
+  bindings have scope.  This is not an essential difference; and
+  bindings in the functional representation have scope too.
 
-- The CFGs from [1] allow assignments to their variables, whereas FOL
-  does not.  This is not an essential difference; conversion to SSA
-  mitigates it and conversion to the functional representation eliminates
-  it entirely.
+- CFGs allow assignments to their variables, whereas FOL does not.
+  This is not an essential difference; conversion to SSA mitigates it
+  and conversion to the functional representation eliminates it
+  entirely.
 
 - The model of un-analyzed memory is different: All three of Appel's
   intermediate representations have primitives that read or write a
@@ -55,7 +56,7 @@ remark on them separately at need.
     (except for calling other procedures, but those are intentionally
     outside the scope of the analyses he discusses).
 
-  - A FOL procedure cannot have loops.  Viewed as a CFG it is
+  - A FOL procedure cannot even have loops.  Viewed as a CFG it is
     additionally restricted to be acyclic.
 
 - These subdivisions have different effects on ease of analysis:
@@ -72,11 +73,13 @@ remark on them separately at need.
   FOL procedures, being more restricted, are easier to analyze: since
   the control flow graph is acyclic, you can do a data flow analysis
   on it in one sweep, provided you sweep in the topological sort order
-  (or in reverse).
+  (or in reverse).  This is both simpler to code and faster to
+  execute.
 
-  In fact, representing FOL procedures as Scheme source code has the
-  effect of storing them in a tree whose in-order traversal is a
-  topological sort traversal of the control flow graph they represent.
+  In fact, the representation of FOL procedures as Scheme source code
+  has the effect of storing them in a tree whose in-order traversal is
+  a topological sort traversal of the control flow graph they
+  represent.
 
   FOL procedures are not, however, Appel's basic blocks: those are CFG
   subgraphs all but one of whose vertices has out-degree one and all
@@ -107,7 +110,7 @@ remark on them separately at need.
   and) may be called only in tail position.  The names of these
   functions would then behave like the labels of a standard CFG.  In
   fact, I believe this is exactly what Appel had in mind when he
-  defined the "functional representation" in section 19.7 of [1],
+  defined the "functional representation" in Section 19.7 of [1],
   except that he didn't say that the local functions may be called
   only in tail position.
 
@@ -118,47 +121,18 @@ remark on them separately at need.
   is known, and in the other it is not modeled by an intraprocedural
   analysis.
 
+- Inter-FOL-procedural analyses share some elements in common with
+  intra-CFG-analyses, namely that they have to iterate some dataflow
+  crunch to convergence; but there is more hair, for two reasons: The
+  implicit stack means that you may be modeling an unbounded number of
+  memory locations; and you may also wish to model the fact that a
+  procedure will return to its caller.  The latter means that the call
+  graph of the procedures is no longer the approximation you want for
+  the control flow of a program implemented with those procedures.
+
 
 [1] Appel, Andrew W.  "Modern Compiler Implementation in ML".
 Cambridge University Press, 2004.
-
-----------------------------------------------------------------------
-
-The thing that's unique about interprocedural stuff is that control
-flows out of a procedure call into a place that's determined by the
-place where it flowed in, and we care about tracing the correspondence
-(whether it's implemented by watching the control flow explicitly or
-by doing some data flow on some token (or continuation function) that
-says where to go is immaterial).
-
-----------------------------------------------------------------------
-
-FOL intraprocedural: Dataflows on an acyclic control flow graph.  This
-implies a bounded execution time and therefore a finite number of
-modeled memory bits.  These are easy to do by following a topological
-sort of the control flow graph (FOL source happens to store these
-graphs in topologically sorted form).  Break the full program into
-pieces with acyclic control (FOL procedures) and don't model flows of
-control or data across the introduced boundaries.
-
-Appel intraprocedural: Dataflows with a finite number of modeled bits
-of data but an arbitrary control flow graph.  Break the whole program
-into pieces (procedures) that each only use a finite number of modeled
-bits of memory (temporaries), and don't model flows of control or data
-across the boundaries of these pieces.
-
-Interprocedural: Dataflows with unbounded modeled locations (because
-of the procedure stack) and an arbitrary control flow graph.  Since
-this is Turing complete, you can't ever get this "right".  You have to
-forget somewhere.
-
-The latter but also tracking context: control will flow out of a
-procedure call into a place that is determined by where it flowed into
-that procedure call.
-- Also, if control flowed from here, then I know this about the data
-  that flowed in, which I don't know in general.
-- I think you can go quite wild wrt the fineness of the context you
-  track.
 
 ----------------------------------------------------------------------
 
