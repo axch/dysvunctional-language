@@ -16,8 +16,12 @@ to flow-based optimizations, like elimination of dead variables and
 common subexpressions.
 
 Given that fundamental similarity, however, there are a number of
-substantial differences.  I compare here to the CFGs in [1], since
-those are the ones I know.
+substantial differences.  I compare here to the representations in
+Appel [1], since those are the ones I know.  In particular, I compare
+to Control Flow Graphs (Chapters 17 and 18), Static Single Assignment
+Form (Chapter 19), and the otherwise nameless Functional
+Representation (19.7).  CFGs and SSA are equivalent, so I will only
+remark on them separately at need.
 
 - FOL is oriented around expressions, whereas CFGs are oriented around
   instructions.  Expressions have substructure, and the substructures
@@ -25,105 +29,100 @@ those are the ones I know.
   data for their arguments.  Sufficiently aggressive conversion to
   A-normal form erases this difference.
 
-- A complete FOL program is "bigger" than a CFG from [1], because
-  those CFGs are all intraprocedural.  FOL procedures are more
-  involved than CFG labels because they accept arguments which are
-  kept on an implicit stack; the procedure call conventions are not
-  represented in FOL.
-
-- A FOL procedure is "smaller" than a CFG from [1] because those CFGs
-  contain labels and jumps, and can express (constant-space) loops
-  directly in the CFG, whereas a FOL procedure execution always takes
-  a bounded number of instructions (except for the effects of calling
-  other procedures).
-
-- A FOL procedure is "bigger" than a basic block from [1] because a
-  FOL procedure may contain IFs.  So control flow within a FOL
-  procedure is not entirely linear, but may contain branches.  Those
-  branches, however, must always converge (except, again, for the
-  effect for calling other procedures).
-
 - All variables in a CFG are in scope in the entire graph, whereas FOL
   bindings have scope.  This is not an essential difference.
 
 - The CFGs from [1] allow assignments to their variables, whereas FOL
-  does not.  This is not an essential difference.
+  does not.  This is not an essential difference; conversion to SSA
+  mitigates it and conversion to the functional representation eliminates
+  it entirely.
 
-- Except for reading and writing the store, and calls to procedures
-  outside the CFG, any CFG from [1] can be executed in constant space
-  (but not necessarily constant time).  In contrast, any FOL procedure
-  can be executed in constant space and time (except for calls to
-  other procedures).
+- The model of un-analyzed memory is different: All three of Appel's
+  intermediate representations have primitives that read or write a
+  global store at computed indexes, whereas FOL has primitives that
+  construct and access immutable objects on a garbage-collected heap.
+  I don't think this is an essential difference; just that the
+  understanding of the behavior of control is done with respect to a
+  different level of abstraction of the memory system.
 
-- The CFGs in [1] have access to a read-write, indexable store (which
-  is shared with procedures external to the CFG).  FOL procedures do
-  not; instead, they may allocate objects in a memory-managed heap,
-  pass them to each other, and access their slots.  I don't think this
-  is an essential difference; just that the understanding of the
-  behavior of control is done with respect to a different level of
-  abstraction of the memory system.
+- Appel and FOL make a different subdivision of the entire program
+  into "procedures".  Appel does not discuss how to represent a whole
+  program; presumably a map from procedure names to the CFGs for those
+  procedures would do.
 
-- FOL represents constant-space loops implicitly, via tail recursion
-  across FOL procedure boundaries.  CFGs represent constant-space
-  loops explicitly, by encoding them with branches inside a single
-  CFG.  Therefore, restricting an analysis to intraprocedural in FOL
-  is a stronger restriction (because it moves loops out of the
-  purview), and does more to make the analysis easier to write.
+  - An Appel procedure is a CFG; as such it contains labels and
+    branches, so it may run loops, but does not have access to a stack
+    (except for calling other procedures, but those are intentionally
+    outside the scope of the analyses he discusses).
 
-- FOL procedures are amenable to cascading intra-FOL-procedural
-  analysis-and-transformation passes.  Traverse the structure of the
-  source recursively, carrying down any information you may need from
-  the context.  Return the rewritten expression and any information
-  about it that you need.  At a LET, analyze either the
-  binding-expression or the body first, depending on whether you going
-  in the same or the reverse direction as execution will,
-  respectively.  At an IF, recur on the predicate and both branches
-  and then merge.  CFG basic blocks are also amenable to such passes,
-  but are smaller, so the passes are less useful.
+  - A FOL procedure cannot have loops.  Viewed as a CFG it is
+    additionally restricted to be acyclic.
 
-- Intra-CFG-procedural analyses require actual graph dataflows,
-  because they can express complicated loops.  In this,
-  inter-FOL-procedural analyses are similar.  I suspect the latter are
-  more complex, however, because of the implicit stack across
-  procedure boundaries, and the consequence that any loops do not run
-  in constant space.  I have never seen any descriptions of
-  inter-CFG-procedural analyses, so I don't know what interesting
-  properties they have in common with either intra-CFG-procedural
-  analyses or inter-FOL-procedural analyses.
+- These subdivisions have different effects on ease of analysis:
 
-- The FOL representation has the weakness, relative to CFGs, that
-  there is no way for a variable to be in scope over a time-unbounded
-  extent.  FOL therefore does not capture loop-invariant data, and
-  cannot express loop hoisting transformations.  On the other hand, my
-  understanding is that since CFGs can already directly express the
-  most common bounded-space computations, it is typical for CFG
-  compilers to drop tail recursion optimization of CFG procedures (for
-  better or for worse).
+  If we are no longer analyzing any data that flows through the
+  backing memory (Appel's store or FOL's data structure slots), then
+  CFGs are restricted to unbounded-time but bounded-space
+  computations.  If we further do not work too hard on discerning the
+  different data values that may grace a CFG's variables, they become
+  finite-state (except for the non-determinism of multiple possible
+  continuations of a branch), and can therefore be analyzed by
+  iterating some dataflow crunch to convergence.
 
-TODO Reread Appel Chapters 15, 18, and 19 with an eye to improving
-FOL.  Remember the equivalence with the form described in 19.7.  With
-something analagous to internal definitions, I should be able to
-express (some) constant-space loops in FOL, and do all manner of loop
-optimizations.  Or I can leave all that to GCC.
+  FOL procedures, being more restricted, are easier to analyze: since
+  the control flow graph is acyclic, you can do a data flow analysis
+  on it in one sweep, provided you sweep in the topological sort order
+  (or in reverse).
+
+  In fact, representing FOL procedures as Scheme source code has the
+  effect of storing them in a tree whose in-order traversal is a
+  topological sort traversal of the control flow graph they represent.
+
+  FOL procedures are not, however, Appel's basic blocks: those are CFG
+  subgraphs all but one of whose vertices has out-degree one and all
+  but (a different) one of whose vertices has in-degree one.  Basic
+  blocks are even easier to analyze, because you don't have to worry
+  about branch-points or join-points.
+
+- These subdivisions also have different effects on how whole programs
+  are broken up:
+
+  A CFG can represent a larger class of computations (bounded space
+  but unbounded time) directly, so a whole program can be broken up
+  into fewer CFG procedures; and less information is lost by
+  forgetting information across procedure boundaries.
+
+  Conversely, a FOL procedure can only represent a smaller class of
+  computations (bounded space and time), so a FOL program may need to
+  have more procedures, and lose more information across procedure
+  boundaries.  In particular, FOL has no mechanism of allowing a
+  single variable to remain in scope over a loop (indeed, all FOL
+  variables are in scope over a bounded number of dynamic operations),
+  so FOL cannot express the loop optimizations that are the subject of
+  Appel's Chapter 18.
+
+- FOL could be extended to match the expressive power of Appel's CFGs
+  by adding a construct for locally defining (potentially
+  mutually-recursive) functions that (may not be passed around as data
+  and) may be called only in tail position.  The names of these
+  functions would then behave like the labels of a standard CFG.  In
+  fact, I believe this is exactly what Appel had in mind when he
+  defined the "functional representation" in section 19.7 of [1],
+  except that he didn't say that the local functions may be called
+  only in tail position.
+
+  The restriction to call these local functions only in tail position
+  would have the effect that anything that looks like a return either
+  flies into a statically known let binding, or flies out of the
+  entire FOL-procedure; in one case the control transfer from a return
+  is known, and in the other it is not modeled by an intraprocedural
+  analysis.
 
 
 [1] Appel, Andrew W.  "Modern Compiler Implementation in ML".
-Cambridge University Press, 2004.  Chapter 17.
+Cambridge University Press, 2004.
 
-
-Appel's book talks about CFGs, SSA form, and "a functional
-representation".  If you restrict the latter to tail-calls only and to
-not passing functions around as arguments, then it has exactly the
-same expressive power as CFGs or SSA form.  FOL intraprocedural is
-just that same form, but without those local procedure definitions.
-
-I could match CFGs by introducing an expression for local (recursive)
-function definitions with the restriction that such functions may
-only be called in tail position.
-
-This restriction would have the effect that anything that looks like a
-return either flies into a statically known let binding, or flies out
-of the entire FOL-procedure.
+----------------------------------------------------------------------
 
 The thing that's unique about interprocedural stuff is that control
 flows out of a procedure call into a place that's determined by the
@@ -132,22 +131,7 @@ place where it flowed in, and we care about tracing the correspondence
 by doing some data flow on some token (or continuation function) that
 says where to go is immaterial).
 
-The tail-calls-only restriction also means that you can only model
-processes that take a bounded amount of modeled storage to execute (to
-wit, the number of static variable bindings in the structure).  What I
-mean by "modeled" is that the program is still free to accumulate
-stuff either by hitting successive locations in the main memory or by
-building itself a nice linked functional data structure; but
-presumably analyzing what's going on in places that are not
-temporaries is beyond the scope of the model (FOL or CFG).
-
-By not providing such local definition facilities, FOL conflates
-tail-call-only procedures with full procedures, and pushes them out of
-the scope of FOL's intraprocedural analyses.
-
-One of the consequences of this decision is that FOL cannot express loops
-and loop optimizations.
-
+----------------------------------------------------------------------
 
 FOL intraprocedural: Dataflows on an acyclic control flow graph.  This
 implies a bounded execution time and therefore a finite number of
@@ -168,7 +152,6 @@ of the procedure stack) and an arbitrary control flow graph.  Since
 this is Turing complete, you can't ever get this "right".  You have to
 forget somewhere.
 
-
 The latter but also tracking context: control will flow out of a
 procedure call into a place that is determined by where it flowed into
 that procedure call.
@@ -177,6 +160,7 @@ that procedure call.
 - I think you can go quite wild wrt the fineness of the context you
   track.
 
+----------------------------------------------------------------------
 
 The art of analyzing programs is the art of forgetting judiciously.
 If you forget nothing at all, your "analysis" will consist exactly of
@@ -296,6 +280,7 @@ flow graphs taught by Appel [1].  That same book also discusses Static
 Single Assignment Form, which is just a normalized form for a control
 flow graph, so I will not discuss the distinction.
 
+----------------------------------------------------------------------
 
 Just as one has choices to make about what aspects of control flow one
 will model, one also has choices about what aspects of data flow one
