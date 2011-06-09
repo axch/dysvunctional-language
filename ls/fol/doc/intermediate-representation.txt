@@ -1,11 +1,14 @@
                 FOL as an Intermediate Representation
 
 FOL is not really a programming language; it's an intermediate
-representation for the insides of a compiler.  It happens to print out
-like Scheme code, which makes it much easier to read; and it happens
-to ship with a direct interpreter, which gives it a semantics that can
-be used to verify correctness of transformations; but how else is it
-different from any other intermediate representation?
+representation for the insides of a compiler.  It happens to be stored
+as a cons-tree with symbols in it, and these symbols happen to have
+the traditional Scheme meanings.  FOL source therefore happens to
+print out like Scheme code, which makes it much easier to read; and it
+also happens to ship with a direct interpreter, which gives it a
+semantics that can be used to verify correctness of transformations.
+But how is FOL source different from any other intermediate
+representation?
 
 FOL occupies a slot in the architecture of VL and DVL that is parallel
 to the place where control flow graphs (CFGs) usually sit in other
@@ -15,23 +18,25 @@ represents as it possibly can.  Like a CFG, FOL is therefore amenable
 to dataflow-based optimizations, like elimination of dead variables
 and common subexpressions.
 
-Given that fundamental similarity, however, there are a number of
-substantial differences.  I compare here to the CFGs in Appel [1],
-since those are the ones I know.  Appel discusses three variants:
-plain vanilla CFGs (Chapters 17 and 18), Static Single Assignment Form
-(Chapter 19), and the otherwise nameless "functional representation"
-(19.7).  Since they are all equivalent, I will compare to CFGs, and
-mention the others at need.
+Masking that fundamental similarity are a bunch of superficial
+differences; there is, however, also one very substantial difference.
+I compare here to the CFGs in Appel [1], since those are the ones I
+know.  Appel discusses three variants: plain vanilla CFGs (Chapters 17
+and 18), Static Single Assignment Form (Chapter 19), and the otherwise
+nameless "functional representation" (Section 19.7).  Since they are
+all equivalent [*], I will compare to CFGs, and mention the others at
+need.
 
-- FOL is oriented around expressions, whereas CFGs are oriented around
-  instructions.  Expressions have substructure, and the substructures
-  have implicit returns, whereas CFG instructions just read stored
-  data for their arguments.  Sufficiently aggressive conversion to
-  A-normal form erases this difference.
+- FOL permits expressions, whereas CFGs permit only instructions.
+  Expressions have substructure, and the substructures have implicit
+  returns, whereas CFG instructions just read stored data for their
+  arguments.  Sufficiently aggressive conversion to A-normal form
+  erases this difference.
 
 - All variables in a CFG are in scope in the entire graph, whereas FOL
-  bindings have scope.  This is not an essential difference; and
-  bindings in the functional representation have scope too.
+  bindings have limmited scope.  This is not an essential difference;
+  and bindings in the functional representation have limited scope
+  too.
 
 - CFGs allow assignments to their variables, whereas FOL does not.
   This is not an essential difference; conversion to SSA mitigates it
@@ -40,16 +45,18 @@ mention the others at need.
 
 - The model of un-analyzed memory is different: All three of Appel's
   intermediate representations have primitives that read or write a
-  global store at computed indexes, whereas FOL has primitives that
+  global store at computed indices, whereas FOL has primitives that
   construct and access immutable objects on a garbage-collected heap.
   I don't think this is an essential difference; just that the
   understanding of the behavior of control is done with respect to a
   different level of abstraction of the memory system.
 
-- Appel and FOL make a different subdivision of the entire program
-  into "procedures".  Appel does not discuss how to represent a whole
-  program; presumably a map from procedure names to the CFGs for those
-  procedures would do.
+- The important difference is that Appel and FOL make a different
+  subdivision of the entire program into "procedures".  Appel does not
+  discuss how to represent a whole program; presumably a map from
+  procedure names to the CFGs for those procedures would do.  The
+  toplevel (begin ...) form in the FOL grammar effectively constitutes
+  such a map, whose entries are the (define (foo ...) ...) forms.
 
   - An Appel procedure is a CFG; as such it contains labels and
     branches, so it may run loops, but does not have access to a stack
@@ -110,9 +117,7 @@ mention the others at need.
   and) may be called only in tail position.  The names of these
   functions would then behave like the labels of a standard CFG.  In
   fact, I believe this is exactly what Appel had in mind when he
-  defined the "functional representation" in Section 19.7 of [1],
-  except that he didn't say that the local functions may be called
-  only in tail position.
+  defined the "functional representation" in Section 19.7.
 
   The restriction to call these local functions only in tail position
   would have the effect that anything that looks like a return either
@@ -122,19 +127,24 @@ mention the others at need.
   analysis.
 
 - Inter-FOL-procedural analyses share some elements in common with
-  intra-CFG-analyses, namely that they have to iterate some dataflow
-  crunch to convergence; but there is more hair, for two reasons: The
-  implicit stack means that you may be modeling an unbounded number of
-  memory locations; and you may also wish to model the fact that a
-  procedure will return to its caller.  The latter means that the call
-  graph of the procedures is no longer the approximation you want for
-  the control flow of a program implemented with those procedures.
+  intra-CFG-analyses, namely that they admit control cycles, and
+  therefore must iterate some dataflow crunch to convergence.  On the
+  other hand, there is more hair, for two reasons: The implicit stack
+  means that you may be modeling an unbounded number of memory
+  locations; and you may also wish to model the fact that a procedure
+  will return to its caller.  The latter means that the call graph of
+  the procedures is no longer the approximation you want for the
+  control flow of a program implemented with those procedures.
+  Finally, if you are not forgetting information across procedure call
+  boundaries, then you must forget it somewhere else.  Presumably the
+  same sort of hair arises for the inter-CFG-procedural analyses that
+  are outside the scope of [1].
 
 The fact that FOL as a representation is restricted, relative to CFGs,
 is acceptable.  FOL's purpose is not to be an excellent compiler in
 itself; it is just to clean up the messes made by the VL and DVL code
 generators, so that the output can be read by a person, and reasonably
-handed off to an external compiler.  The latter is actually
+handed off to an external compiler.  The latter task is actually
 nontrivially similar to the former, because end-to-end compilers tend
 to have implicit assumptions about the "reasonableness" of their input
 programs, and don't take care to run fast or do a good job with
@@ -152,6 +162,21 @@ interprocedural dead variable elimination or by (as-yet-unimplemented)
 interprocedural alias elimination).  Both cases were instances of a
 program emitting a valid program that any sane compiler writer would
 (correctly!) assume no sane programmer would write.
+
+
+[*] I assume that the local functions whose definitions Appel permits
+in the "functional representation" are restricted to be called only in
+tail position.  He did not actually say this; but I will assume it,
+because without that restriction, the "functional representation" is
+actually much more powerful than CFGs, and requires the full hair of
+interprocedural analyses even for the interiors of its "procedures".
+
+I also assume that those same local functions are second-class, and
+may only be called by the names they are given.  Then they are reduced
+to behaving just like (scoped) CFG labels; without this restriction,
+one would need to do dataflow on the function objects to determine
+control flow from call sites that called a function stored in a data
+variable.
 
 
 [1] Appel, Andrew W.  "Modern Compiler Implementation in ML".
