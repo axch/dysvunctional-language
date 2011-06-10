@@ -239,6 +239,8 @@
     ;; especially if I request the environment and look up the
     ;; symbolic expressions that various variables among the arguments
     ;; hold.
+    ;;
+    ;; TODO Do I want to notice that (+ 2 x) is the same as (+ x 2)?
     (rule-simplifier
      (list
       (rule `(+ 0 (? thing)) thing)
