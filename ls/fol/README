@@ -30,7 +30,7 @@ Writing FOL If you want to know the constraints FOL imposes on the VL
 and DVL compilers and how they enable the FOL optimizations.
 
 Implementing FOL If you want to know how the FOL optimizer itself
-works, and how to write analagous programs.
+works.
 
 
 Reading FOL
@@ -79,15 +79,21 @@ guarantees that laziness does?
 
 Optimizing FOL
 
-The FOL optimizer provides a number of services to the VL and DVL
-compilers, in the form of post-optimizing their output so they don't
-have to worry as much.  Specifically, the FOL optimizer aggressively
-inlines procedures, aggressively replaces aggregates with
-corresponding collections of scalars, and aggressively eliminates dead
-and redundant code.  The standard use case of COMPILE-TO-SCHEME emits
-FOL with all these optimizations already performed, but you can also
-get the output from the code generator, examine it, and optimize it
-separately.
+The FOL optimizer cleans up the mess that the VL and DVL compilers
+emit, so that it has some hope of being read by a person, and doesn't
+reach too far outside the expectations of any subsequent compiler to
+whose input language FOL may be translated.
+
+Specifically, VL and DVL produces huge piles of tiny procedures that
+pass each other huge piles of data structures (mostly closure records)
+that contain each other, with many useless layers and redundant paths.
+To clean this up, the FOL optimizer aggressively inlines procedures,
+aggressively replaces aggregates with corresponding collections of
+scalars, and aggressively eliminates dead and redundant code.
+
+The standard use case of COMPILE-TO-SCHEME emits FOL with all these
+optimizations already performed, but you can also get the output from
+the code generator, examine it, and optimize it separately.
 
 (compile-to-fol <vl-or-dvl>)
   Performs flow analysis on the given VL or DVL program (both VL and
