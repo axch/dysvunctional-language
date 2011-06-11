@@ -1,3 +1,5 @@
+                            FOL Cost Model
+
 A precise cost model for FOL is very difficult to specify.  In part,
 this is because because this job is very hard even for the assembly
 languages of modern computers (will this load hit the cache or fall
@@ -10,60 +12,60 @@ offer a good garbage collector, good tail call optimization, and good
 register allocation.  The exact effects of various source constructs
 on these subsystems are hard to predict; therefore the sequel is just
 an informal description of the basic mental model that justifies the
-optimizations implemented in FOL.  I discuss the cost categories
-approximately from most to least expensive.
+optimizations implemented in FOL.
 
-Allocate n-element heap object: Large, affine in n
+I discuss the cost categories roughly from most to least expensive.
 
-This reflects the direct cost of writing to the heap, as well as an
-allowance for the amount of work this object will cause the garbage
-collector.  The latter actually depends on how many times the garbage
-collector will have to traverse it, and how far out of cahce it will
-be during such traversals, which in turn depends on the nature of the
-garbage collector and the lifetime of the object (ephemeral objects
-are always cheaper).
+Allocate n-element heap object: Expensive, affine in n
 
-Access slot of n-element heap object: 1 memory reference
+Allocation cost reflects the direct cost of writing to the heap, as
+well as an allowance for the amount of garbage collection work this
+object will entail.  The latter actually depends on how many times the
+garbage collector will have to traverse the object, and how far out of
+cahce it will be during such traversals, which in turn depends on the
+nature of the garbage collector and the lifetime of the object
+(ephemeral objects are always cheaper).
 
-The exact cost depends on whether the object is cached and the exact
-mapping of pointers vs immediate values into the space of words.
-Since both the slot index and the size of the object are known at
-compile time (at least to FOL), I expect that any relevant bounds
-checks could be eliminated.
+Access slot of n-element heap object: One memory reference
 
-Non-tail call with n arguments and m returned values: affine in n+m
+The exact cost of access depends on whether the object is cached and
+the exact mapping of pointers vs immediate values into the space of
+machine words.  Since both the slot index and the size of the object
+are known at compile time (at least to FOL), I expect that any
+relevant bounds checks could be eliminated.
 
-The exact cost depends on the details of the procedure calling
-conventions, how well the substrate manages to pass arguments in
-registers, etc.  I expect the coefficient of the linear term to be
-considerably less than for heap allocation, because neither parameters
-nor returns pressure the garbage collector; but not necessarily so
-much less that all procedure calls would be cheaper than any
-allocations.
+Non-tail call with n arguments and m returned values: Affine in n+m
+
+The exact cost of procedure calls depends on the details of the
+procedure calling conventions, how well the substrate manages to pass
+arguments in registers, etc.  I expect the coefficient of the linear
+term to be considerably less than for heap allocation, because neither
+parameters nor returns pressure the garbage collector; but not
+necessarily so much less that all procedure calls would be cheaper
+than any allocations.
 
 Note that I am assuming that the substrate will be able to pass
 multiple return values in a sensible way, on the stack perhaps, rather
-than heap-allocating an object to hold them.  While at the language
-level multiple return values are semantically equivalent to creating
-and destructuring a container, operationally the former promises that
-the container will not escape, so should be implementable much more
-efficiently.
+than heap-allocating an object to hold them.  While multiple-value
+returns are semantically equivalent to creating, returning and
+destructuring a container, the former promises that the container will
+not escape, so should be implementable much more efficiently.
 
-Tail call with n arguments and m returned values: smaller affine in n
+Tail call with n arguments and m returned values: Cheaper, affine in n
 
 Tail calls are much cheaper than non-tail calls, on a substrate that
 optimizes them, because no new stack frame needs to be allocated, and
 the return values need not be touched on the way back.  Also, FOL will
-express regular loops with tail calls; a good compiler should be able
+express regular loops with tail calls; a good substrate should be able
 to recognize them as such and should perform loop optimizations.
 
-Primitive operation: small constant (depends on the operation)
+Primitive operation: Small constant (depends on the operation)
 
 sqrt > * > +; but I'm not going to worry about, say, whether some four
 adds are lined up nicely so they can all be packed into a single
 4-vector instruction.  That's too specific for my blood.
 
-Local variable binding or reference: free
+Local variable binding or reference: Free
 
 Reads and writes to registers are too cheap to meter.  I am relying on
 having a good register allocator in my substrate to fit all my
@@ -72,12 +74,12 @@ variables put more pressure on the register allocator, increasing the
 probability of spills into the stack, but FOL does not currently
 trouble itself with this.
 
-Code has n pairs: affine in n
+Code has n pairs: Affine in n
 
 Smaller programs are easier and faster for subsequent consumers to
 process, whether they be later FOL stages or an external compiler.
-There also the question of the size of the final executable, both as
-an object to store and transmit, and in terms of fitting the inner
+There is also the question of the size of the final executable, both
+as an object to store and transmit, and in terms of fitting the inner
 loops into the target machine's instruction cache.  Perhaps most
 important of all, smaller programs are easier for humans to read,
 should they wish to examine the output of the FOL optimizer.  Because
