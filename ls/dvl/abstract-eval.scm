@@ -232,8 +232,10 @@
 ;; during flow analysis, you must have a consistent world in your
 ;; hand.  If the binding you are looking for already exists, it
 ;; contains enough information to tell you what that expression and
-;; environment will evaluate to in your world.  If not, the world
-;; should be recorded in the new binding that is created.
+;; environment will evaluate to in your world (see the discussion in
+;; analysis.scm preceding the definition of WORLD-UPDATE-BINDING).
+;; If not, the world should be recorded in the new binding that is
+;; created.
 
 ;; Contrast this complexity with ANALYSIS-GET.
 (define (get-during-flow-analysis exp env world analysis win)

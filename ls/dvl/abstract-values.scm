@@ -2,16 +2,16 @@
 ;;;; Abstract values
 
 ;;; An abstract value represents the "shape" that a concrete value is
-;;; known to explore over the run of the program.  The following
-;;; shapes are admitted: Known concrete scalars, the "boolean" shape,
-;;; the "real number" shape, pairs of shapes, environments mapping
+;;; known to explore over the run of the program.  VL admits the
+;;; following shapes: Known concrete scalars, the "boolean" shape, the
+;;; "real number" shape, pairs of shapes, environments mapping
 ;;; variables to shapes, and closures with fully-known expressions
 ;;; (and "environment" shapes for their environments).  There is also
 ;;; an additional "no information" abstract value, which represents a
 ;;; thing that is not known to explore any shapes over the run of the
 ;;; program.  It is an invariant of the analysis that the "no
 ;;; information" abstract value does not occur inside any other
-;;; shapes.
+;;; shapes.  DVL extends the list of shapes by the "gensym" shape.
 
 ;;; Shapes that have concrete counterparts (concrete scalars, pairs,
 ;;; environments, and closures) are represented by themselves.  The
@@ -19,16 +19,16 @@
 ;;; For convenience of comparison, abstract environments are kept in a
 ;;; canonical form: flattened, restricted to the variables actually
 ;;; referenced by the closure whose environment it is, and sorted by
-;;; the bound names.  The flattening is ok because the language is
-;;; pure, so no new bindings are ever added to an environment after it
-;;; is first created.
+;;; the bound names.  The flattening is ok because no new bindings are
+;;; ever added to an environment after it is first created.
 
 ;;; The meaning of a thing having a concrete shape is "This thing is
 ;;; known to be exactly this value sometimes."  The meaning of the
-;;; "boolean" and "real" shapes is "This thing is known to be at least
-;;; two distinct such values at some times".  The meaning of the
-;;; ABSTRACT-NONE shape is "This thing is not known to ever have a
-;;; value".  That only happens when the analysis is progressing.
+;;; "boolean", "real", and "gensym" shapes is "This thing is known to
+;;; be at least two distinct such values at some times".  The meaning
+;;; of the ABSTRACT-NONE shape is "This thing is not known to ever
+;;; have a value".  That only happens when the analysis is
+;;; progressing.
 
 ;;; Unique abstract objects
 
@@ -47,6 +47,14 @@
 (define-structure (abstract-none safe-accessors))
 (define abstract-none (make-abstract-none))
 
+;;; The "gensym" shape is represented by a pair of integers MIN and
+;;; MAX, the minimum and maximum values of the gensym number inside
+;;; the "gensym" shape a thing is known to be.  Alternatively, one
+;;; could store inside the "gensym" shape a set of gensym numbers a
+;;; thing is known to be.  Obviously, the former representation is
+;;; more efficient (and is sufficient for the purpose of the dataflow
+;;; analysis).  However, the latter interpretation can sometimes be
+;;; more illuminating.
 (define-structure
   (abstract-gensym
    safe-accessors
@@ -58,6 +66,8 @@
   min
   max)
 
+;;; A trivial abstract gensym is the one corresponding to a singleton
+;;; set of gensym numbers a thing is known to be.
 (define (trivial-abstract-gensym gensym)
   (make-abstract-gensym (gensym-number gensym) (gensym-number gensym)))
 
@@ -137,7 +147,12 @@
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #f))
 
 ;;; Union of shapes --- can be either this or that.  ABSTRACT-UNION is
-;;; only used on the return values of IF statements.
+;;; only used on the return values of IF statements.  If we think of
+;;; "gensym" shapes as of sets of gensym numbers, then the union of
+;;; two "gensym" shapes is given by the union of the underlying sets.
+;;; Because we approximate a set of gensym numbers by the pair of its
+;;; minimal and maximal elements, the union of sets turns into the
+;;; minimum of the minima paired with the maximum of the maxima.
 
 (define (abstract-union thing1 thing2)
   (cond ((abstract-equal? thing1 thing2)
@@ -210,6 +225,9 @@
                     (interesting-environment-values thing))))
         (else (error "shape->type-declaration loses!" thing))))
 
+;;; In order to understand what the following procedures are for, see
+;;; the discussion in analysis.scm preceding the definition of the
+;;; procedure WORLD-UPDATE-VALUE.
 (define (world-update-value thing old-world new-world)
   (if (or (impossible-world? new-world)
           (impossible-world? old-world)

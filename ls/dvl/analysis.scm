@@ -54,6 +54,13 @@
 ;;; Likewise, the new world produced on evaluation of the expression
 ;;; will be offset from the incoming gensym number by a fixed amount.
 
+;;; WORLD-UPDATE-BINDING is only used in GET-DURING-FLOW-ANALYSIS, so
+;;; it may be helpful to look at the definition of the latter to
+;;; understand what WORLD-UPDATE-BINDING does.
+;;;
+;;; TODO: Can we prove that WORLD-UPDATE-BINDING is always going to be
+;;; called with BINDINGS the worlds of which are not greater than
+;;; NEW-WORLD?
 (define (world-update-binding binding new-world win)
   (win (world-update-value
         (binding-value binding)
