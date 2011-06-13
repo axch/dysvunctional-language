@@ -10,6 +10,11 @@
 
 (load-relative "../support/auto-compilation")
 
+;;; FOL is loaded into its own environment to keep the names separate
+;;; from those of its clients.  You can put your REPL into the FOL
+;;; environment with (ge fol-environment), and get back to the usual
+;;; place with (ge user-initial-environment).
+
 (define fol-environment (make-top-level-environment))
 
 (environment-define fol-environment 'fol-environment fol-environment)
@@ -37,20 +42,26 @@
    "optimize"
    "mit-scheme"))
 
+;;; Exports
+
 (let ((client-environment (the-environment)))
   (for-each
    (lambda (export)
      (environment-define
       client-environment export (environment-lookup fol-environment export)))
-   '(fol-eval
+   '(;; Evaluation and further compilation
+     fol-eval
      fol->mit-scheme
      fol->floating-mit-scheme
      fol->standalone-mit-scheme
      run-mit-scheme
 
+     ;; Optimization
      check-program-types
      fol-optimize
      optimize-visibly
+
+     ;; Individual stages
      alpha-rename
      unique-names?
      alpha-rename?
@@ -62,14 +73,17 @@
      eliminate-intraprocedural-dead-variables
      interprocedural-dead-code-elimination
      reverse-anf
+
+     ;; Visualizations
      strip-argument-types
      let->let*
      structure-definitions->vectors
 
-     ;; TODO The FOL runtime system is part of the implementation of
-     ;; VL and DVL (the concrete implementations of some primitives)
+     ;; The FOL runtime system.  It is exported because it is part of
+     ;; the implementation of VL and DVL (the concrete implementations
+     ;; of some primitives).
      real read-real write-real make-gensym gensym-number gensym? gensym=
 
-     ;; The FOL names subsystem is also used by VL and DVL; TODO document
+     ;; The FOL names subsystem (see nomenclature.scm).
      make-name name->symbol reset-fol-names!
      )))
