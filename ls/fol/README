@@ -221,7 +221,7 @@ rid of them before invoking any of the stages.
   and returns the result.  Said result has no DEFINE-STRUCTURE forms,
   and is suitable for optimization.
 
-The simpler-to-use COMPILE-TO-FOL could be defined as
+The simpler-to-use COMPILE-TO-RAW-FOL could be defined as
 ANALYZE-AND-GENERATE followed by STRUCTURE-DEFINITIONS->VECTORS.
 
 Finally, you can also compress staircases of LETs into LET* forms,
