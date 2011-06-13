@@ -388,10 +388,13 @@ guarantees that laziness does?
 Implementing FOL
 
 The implementation of FOL is, of course, the matter at hand in the
-rest of this program.  Here is the table of contents:
+rest of this program.  Besides the present README, there are some more
+specific documents in the doc/ directory, and, of course, the
+extensively commented source.  Here is the table of contents:
 
-optimize.scm        Toplevel; architecture overview
+architecture.txt    Architecture overview
 
+optimize.scm        Toplevel
 type-check.scm      Type checker
 structs.scm         structure-definitions->vectors
 inline.scm          Inliner
