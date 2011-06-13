@@ -4,6 +4,7 @@
 
 ;;; Here is the complement of definitions that needs to be loaded into
 ;;; MIT Scheme in order to execute FOL code (in addition to SRFI 11).
+;;; See also mit-scheme.scm and FOL-EVAL in syntax.scm.
 
 (define-syntax argument-types
   (syntax-rules ()

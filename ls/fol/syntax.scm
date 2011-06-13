@@ -1,5 +1,5 @@
 (declare (usual-integrations))
-;;;; Syntax and manipulations of the output language
+;;;; FOL Syntax
 
 (define ((tagged-list? tag) thing)
   (and (pair? thing)
