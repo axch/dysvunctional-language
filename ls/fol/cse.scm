@@ -240,6 +240,8 @@
     ;; symbolic expressions that various variables among the arguments
     ;; hold.
     ;;
+    ;; For some warnings, see doc/simplification.txt
+    ;;
     ;; TODO Do I want to notice that (+ 2 x) is the same as (+ x 2)?
     (rule-simplifier
      (list
@@ -272,11 +274,7 @@
 
 (define (symbolic-if pred cons alt)
   (if (equal? cons alt)
-      ;; This is somewhat dangerous, if evaluating the predicate might
-      ;; have had some interesting effect like signaling a divide by
-      ;; zero error.  If the input is in ANF wrt if predicates,
-      ;; however, then that side effect is the dead variable
-      ;; eliminator's problem, not mine.
+      ;; This is somewhat dangerous.  See doc/simplification.txt.
       cons
       (if (and (values-form? cons)
                (values-form? alt))

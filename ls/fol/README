@@ -393,6 +393,8 @@ specific documents in the doc/ directory, and, of course, the
 extensively commented source.  Here is the table of contents:
 
 architecture.txt    Architecture overview
+cost-model.txt      About the assumed cost model of FOL execution
+intermediate-representation.txt  FOL compared to other representations
 
 optimize.scm        Toplevel
 type-check.scm      Type checker
@@ -403,6 +405,7 @@ alpha-remaing.scm   Uniquifying bound names
 a-normal-form.scm   Conversion to and from A-normal form
 sra.scm             Scalar replacement of aggregates
 cse.scm             Common subexpression elimination
+  simplification.txt  Issues with simplifying algebra in a compiler
 dead-code.scm       Dead variable elimination
 
 nomenclature.scm    Representation of FOL names
