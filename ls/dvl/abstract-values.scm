@@ -227,7 +227,7 @@
 
 ;;; In order to understand what the following procedures are for, see
 ;;; the discussion in analysis.scm preceding the definition of the
-;;; procedure WORLD-UPDATE-VALUE.
+;;; procedure WORLD-UPDATE-BINDING.
 (define (world-update-value thing old-world new-world)
   (if (or (impossible-world? new-world)
           (impossible-world? old-world)
