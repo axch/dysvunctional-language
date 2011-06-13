@@ -91,14 +91,14 @@ To clean this up, the FOL optimizer aggressively inlines procedures,
 aggressively replaces aggregates with corresponding collections of
 scalars, and aggressively eliminates dead and redundant code.
 
-The standard use case of COMPILE-TO-SCHEME emits FOL with all these
+The standard use case of COMPILE-TO-FOL emits FOL with all these
 optimizations already performed, but you can also get the output from
 the code generator, examine it, and optimize it separately.
 
-(compile-to-fol <vl-or-dvl>)
+(compile-to-raw-fol <vl-or-dvl>)
   Performs flow analysis on the given VL or DVL program (both VL and
-  DVL define compile-to-fol routines) and generates unoptimized FOL
-  that does the same job.
+  DVL define compile-to-raw-fol routines) and generates unoptimized
+  FOL that does the same job.
 
 (check-program-types <program>)
   Verifies that the given FOL program is syntactically correct and

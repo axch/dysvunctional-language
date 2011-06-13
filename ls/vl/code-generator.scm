@@ -292,12 +292,14 @@
 (define (analyze-and-generate program)
   (generate program (analyze program)))
 
-(define (compile-to-fol program)
+(define (compile-to-raw-fol program)
   (structure-definitions->vectors
    (analyze-and-generate program)))
 
-(define (compile-to-scheme program)
-  (fol-optimize (compile-to-fol program)))
+(define (compile-to-fol program)
+  (fol-optimize (compile-to-raw-fol program)))
+
+(define compile-to-scheme compile-to-fol) ; Backward compatibility.  TODO Flush.
 
 (define (compile-visibly program)
   (optimize-visibly
