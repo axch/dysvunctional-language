@@ -135,8 +135,8 @@
 
 ;;; On the other hand, leaving constructor chains in place would have
 ;;; the advantage that the reconstruction of structured shapes
-;;; expected by the outside world would not break that more lenient
-;;; approximate ANF.
+;;; expected by the outside world (see sra.scm) would not break that
+;;; more lenient approximate ANF.
 
 ;;;; Reverse A-normal form conversion
 
@@ -146,13 +146,11 @@
 ;;; that are used only once.
 
 ;;; This is safe assuming the program has been alpha renamed
-;;; Otherwise it would break because of
+;;; Otherwise it would break because of inlining y in
 ;;; (let ((x 1))
 ;;;   (let ((y (+ x 1)))
 ;;;     (let ((x 3))
 ;;;       (+ x y))))
-;;; even if I were careful to duck rebindings of the name being
-;;; replaced.
 
 (define reverse-anf
   (rule-simplifier

@@ -1,6 +1,12 @@
 (declare (usual-integrations))
 ;;;; Turning record structures into vectors
 
+;;; VL and DVL emit code that defines Scheme records to serve as
+;;; VL/DVL closure records.  Instead of teach all the FOL stages how
+;;; to deal with each record type, I convert them all to vectors.
+;;; This decision will need to be revisited before the introduction of
+;;; support for union types.
+
 ;;; Every structure definition of the form
 ;;; (define-structure foo bar baz)
 ;;; entails the constructor MAKE-FOO, accessors FOO-BAR and FOO-BAZ,

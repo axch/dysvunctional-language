@@ -1,4 +1,5 @@
 (declare (usual-integrations))
+;;;; Computing feedback vertex sets
 
 ;;; A feedback vertex set of a directed graph G is a subset of the
 ;;; vertices of G whose removal causes G to become acyclic.  It is
@@ -93,11 +94,11 @@
               (non-feedback! node))
              ((= 0 (in-degree node))
               (non-feedback! node))
-             ((memq node (out-neighbors node))
+             ((memq node (out-neighbors node)) ; Self loop
               (feedback! node))))
      (hash-table/datum-list node-map))
     (let ((nodes-left (hash-table/count node-map)))
-      (cond ((= 0 nodes-left)
+      (cond ((= 0 nodes-left) ; Done
              (map name feedback))
             ((= old-nodes-left nodes-left)
              ;; If pruning stalls, heuristically remove a node

@@ -20,9 +20,6 @@
 ;;; operations may change the scopes of bound names.
 
 (define (alpha-rename program)
-  ;; TODO Fix the bookkeeping of what names the primitives rely on
-  (define (needed-names primitive)
-    (list (primitive-name primitive)))
   (alpha-rename-exp program
    (map (lambda (name)
           (cons name name))

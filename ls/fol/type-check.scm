@@ -236,8 +236,8 @@
 ;;; implement this as a hash table backed procedure that returns that
 ;;; information when given the name in question, or #f if the given
 ;;; name is not the name of a global procedure.  This is useful here
-;;; to type-check FOL, and will also be used to do scalar replacement
-;;; of aggregates.
+;;; to type-check FOL, and will also be used for other FOL stages that
+;;; need to look up type information of FOL procedures.
 
 (define (type-map program)
   (define (make-initial-type-map)
