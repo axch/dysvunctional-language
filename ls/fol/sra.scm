@@ -31,13 +31,17 @@
 ;;; variable used to have before SRA, and b) the set of names that
 ;;; have been assigned to hold its useful pieces.  Return, from each
 ;;; subexpression, the SRA'd subexpression together with the shape of
-;;; the value that subexpression used to return before SRA.
+;;; the value that subexpression used to return before SRA.  When a
+;;; shape being returned hits a binding site, invent names for the
+;;; useful pieces of the shape, and change the binding site to bind
+;;; those names instead of the original shape.
 
 ;;; When union types are added to FOL, the effect will be the addition
 ;;; of types that are "primitive" as far as the SRA process in
 ;;; concerned, while being "compound" in the actual underlying code.
-;;; Which are which will be decided by finding a feedback vertex set
-;;; in the type reference graph.
+;;; Which types to mark primitive and which to expand out will be
+;;; decided by finding a feedback vertex set in the type reference
+;;; graph.
 
 (define (scalar-replace-aggregates program)
   (%scalar-replace-aggregates (approximate-anf program)))
@@ -80,9 +84,9 @@
 ;;; accessed (which I again have because of the ANF); a call becomes
 ;;; applied to the append of the names for each former element in the
 ;;; call (ANF strikes again); a name becomes a multivalue return of
-;;; those assigned names; a constant remains a constant; and a let
+;;; those assigned names; a constant remains a constant; a let
 ;;; becomes a multi-value let (whereupon I invent the names to hold
-;;; the pieces of the that used to be bound here); a definition
+;;; the pieces of the that used to be bound here); and a definition
 ;;; becomes a definition taking the appropriately larger number of
 ;;; arguments, whose internal names I can invent at this point.  The
 ;;; entry point is transformed without any initial name bindings, and
@@ -199,7 +203,8 @@
            (exp (cadr binding)))
       (loop exp env
        (lambda (new-exp exp-shape)
-         (let ((new-name-sets (map invent-names-for-parts names (sra-parts exp-shape))))
+         (let ((new-name-sets
+                (map invent-names-for-parts names (sra-parts exp-shape))))
            ;; The previous line is not idempotent because it renames
            ;; all the bindings, even those that used to hold
            ;; non-structured values.

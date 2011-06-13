@@ -22,8 +22,9 @@
 ;;; - Constants use nothing.
 ;;; - Variables use themselves.
 ;;; - If any of the outputs of an IF form are live, then its predicate
-;;;   and branches are live, and the IF form uses everything its
-;;;   predicate and its branches use.
+;;;   is live.  Both branches' returns inherit the liveness of the
+;;;   entire IF's return.  Every output of the IF form uses everything
+;;;   its predicate uses, and the appropriate things its branches use.
 ;;; - A LET body is processed first; any variables (and their
 ;;;   expressions) the LET binds that its body doesn't use are dead
 ;;;   and can be skipped.  A LET uses all the variables that are used
@@ -270,41 +271,35 @@
 ;;;     procedure calls need all their inputs)
 ;;; 0) Treat the final expression as a nullary procedure definition
 ;;; 1) Initialize a map for each procedure, mapping from output that
-;;;    might be desired (by index) to set of inputs that are known to
-;;;    be needed to compute that output.
+;;;    might be desired to set of inputs that are known to be needed
+;;;    to compute that output.
 ;;;    - I know the answer for primitives
 ;;;    - All compound procedures start mapping every output to the
 ;;;      empty set of inputs known to be needed.
 ;;; 2) I can improve the map by walking the body of a procedure,
-;;;    carrying down the set of desired outputs and bringing up the
-;;;    map saying which outputs require which inputs.  This is exactly
-;;;    analagous to the intraprocedural dead code recursion, except
-;;;    for distinguishing which inputs are needed for which outputs.
-;;;    - Start with all outputs desired.
+;;;    computing a map saying which outputs require which inputs.
+;;;    This is exactly analagous to the intraprocedural dead code
+;;;    recursion, except for distinguishing which inputs are needed
+;;;    for which outputs.
 ;;;    - A constant requires no inputs for one output.
 ;;;    - A variable requires itself for one output.
-;;;    - A VALUES maps the requirements of subexpressions to the
-;;;      desired outputs.
+;;;    - A VALUES maps the requirements of subexpressions to its
+;;;      outputs.
 ;;;    - A LET is processed body first:
-;;;      - Forward the set of desired outputs to the body, and get the
-;;;        map for which of them need what variables from the
-;;;        environment.
-;;;      - Any bound variables that are not needed for any desired
-;;;        output of the body are dead and can be skipped.
-;;;      - Process the expressions generating the bound variables that
-;;;        are needed for something to determine what they need.
+;;;      - Get the map for which of the returned values need what
+;;;        variables from the environment.
+;;;      - Process the expressions generating the bound variables to
+;;;        determine what they need.
 ;;;      - For each of its outputs, the LET form as a whole needs the
 ;;;        variables the body needs for it that the LET didn't bind,
 ;;;        and all the variables needed by the LET's expressions for
 ;;;        the variables the body needed that the LET did bind.
 ;;;    - A LET-VALUES is analagous, except that there is only one
-;;;      expression for all the bound names, so it may be given a
-;;;      mask.
-;;;    - An IF recurs on the predicate desiring its output, and then
-;;;      on the consequent and alternate passing the requests.  When
-;;;      the answers come back, it needs to union the consequent and
-;;;      alternate maps, and then add the predicate requirements as
-;;;      inputs to all desired outputs of the IF.
+;;;      expression for all the bound names.
+;;;    - An IF recurs on the predicate, the consequent and the
+;;;      alternate.  When the answers come back, it needs to union the
+;;;      consequent and alternate maps, and then add the predicate
+;;;      requirements as inputs to all outputs of the IF.
 ;;;    - A procedure call refers to the currently known map for that
 ;;;      procedure.
 ;;;    - Whatever comes out of the top becomes the new map for this
@@ -323,7 +318,7 @@
 ;;;      in the table if I found that I needed them on the walk; then
 ;;;      take back up the set of things that that procedure says it
 ;;;      needs to produce what I needed from it.
-;;;    - Otherwise walk as for intraprocedural (check this!)
+;;;    - Otherwise walk as for intraprocedural (without rewriting)
 ;;; 6) Repeat step 5 until no more improvements are possible.
 ;;; 7) Replace all definitions to
 ;;;    - Accept only those arguments they need (internally LET-bind all
@@ -332,13 +327,12 @@
 ;;;      LET-VALUES everything the body will generate, and VALUES out
 ;;;      that which is wanted)
 ;;; 8) Replace all call sites to
-;;;    - Supply only those arguments that are needed (just drop
-;;;      the rest)
+;;;    - Supply only those arguments that are needed (just drop the
+;;;      rest)
 ;;;    - Solicit only those outputs that are needed (LET-VALUES them,
 ;;;      and VALUES what the body expects, filling in with tombstones).
 ;;; 9) Run a round of intraprocedural dead variable elimination to
-;;;    clean up (all procedure calls now do need all their inputs)
-;;;    - Verify that all the tombstones vanish.
+;;;    clean up (all procedure calls now do need all their inputs).
 
 (define (program->procedure-definitions program)
   (define (expression->procedure-definition entry-point return-type)

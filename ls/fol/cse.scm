@@ -16,9 +16,9 @@
 ;;; more interesting common subexpressions.
 
 ;;; I only do intraprocedural CSE.  Interprocedural CSE is
-;;; substantially hairier.  I will probably need it eventually (to
-;;; eliminate interprocedural aliases, if nothing else), but I can do
-;;; without for now.
+;;; substantially hairier (discussion at the end of this file).  I
+;;; will probably need it eventually (to eliminate interprocedural
+;;; aliases, if nothing else), but I can do without for now.
 
 ;;; Intraprocedural CSE is a structural recursion over the code,
 ;;; walking LET bindings before LET bodies.  The recursion carries
@@ -104,21 +104,21 @@
       (cse-entry-point program)))
 
 (define (cse-expression expr env)
-  ;; A CSE environment is not like a normal environment.  This
-  ;; environment maps every symbolic expression to the name of the
-  ;; canonical variable that holds that expression, if any (notes: an
-  ;; expression whose value is a known constant will be mapped to that
-  ;; constant; a variable may be mapped to itself to indicate that it
-  ;; holds something that no previously computed variable holds).  It
-  ;; is important to know when such an environment does not bind a
-  ;; variable at all; that means that variable in not in scope here
-  ;; (constants are always in scope).
+  ;; A CSE environment maps every symbolic expression to the name of
+  ;; the canonical variable that holds that expression, if any (notes:
+  ;; an expression whose value is a known constant will be mapped to
+  ;; that constant; a variable may be mapped to itself to indicate
+  ;; that it holds something that no previously computed variable
+  ;; holds).  It is important to know when such an environment does
+  ;; not bind a variable at all; that means that variable in not in
+  ;; scope here (constants are always in scope).
   ;;
   ;; This is written in continuation passing style because recursive
   ;; calls must return two things.  The win continuation accepts the
-  ;; new, CSE'd expression, the symbolic expression representing the
-  ;; return value from this expression (using a values form for the
-  ;; symbolic expressions for the elements of a multivalue return).
+  ;; new, CSE'd expression and the symbolic expression representing
+  ;; the return value from this expression (using a values form for
+  ;; the symbolic expressions for the elements of a multivalue
+  ;; return).
   (define (loop expr env win)
     (cond ((fol-var? expr)
            (cse-fol-var expr env win))
