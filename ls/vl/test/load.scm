@@ -1,6 +1,6 @@
+(load-relative "../../testing/load")
 
-(for-each load-relative
-  '("../../testing/load"
-    "utils"
+(for-each load-relative-compiled
+  '("utils"
     "vl-test"
     "post-processing-test"))

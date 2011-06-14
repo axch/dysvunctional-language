@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;;; Invariants:
 ;;;   macroexpand is idempotent
 ;;;   macroexpand produces syntactically correct kernel language
