@@ -195,8 +195,10 @@
 ;;; values.  The slots are ordered by their VL variable names.
 (define (abstract-value->structure-definition value)
   (cond ((closure? value)
-         `(define-structure ,(abstract-closure->scheme-structure-name value)
-            ,@(map vl-variable->scheme-field-name
+         `(define-typed-structure ,(abstract-closure->scheme-structure-name value)
+            ,@(map (lambda (var)
+                     `(,(vl-variable->scheme-field-name var)
+                       ,(shape->type-declaration (lookup var (closure-env value)))))
                    (interesting-variables
                     (closure-free-variables value) (closure-env value)))))
         (else

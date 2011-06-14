@@ -118,11 +118,6 @@
 
 ;;; What type does this shape represent?
 (define (shape->type-declaration thing)
-  (define (interesting-environment-values closure)
-    (let ((vars (closure-free-variables closure))
-          (env (closure-env closure)))
-      (map (lambda (var) (lookup var env))
-           (interesting-variables vars env))))
   (cond ((some-real? thing) 'real)
         ((some-boolean? thing) 'bool)
         ((null? thing) '())
@@ -133,7 +128,5 @@
         ;; Only replace abstractly-solved closures, not other things
         ((solved-abstractly? thing) '(vector))
         ((closure? thing)
-         (cons (abstract-closure->scheme-structure-name thing)
-               (map shape->type-declaration
-                    (interesting-environment-values thing))))
+         (abstract-closure->scheme-structure-name thing))
         (else (error "shape->type-declaration loses!" thing))))
