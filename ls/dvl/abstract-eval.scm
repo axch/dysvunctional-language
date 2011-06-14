@@ -35,22 +35,25 @@
 ;;; procedure results, and bottoming out if some of these shapes are
 ;;; unknown.  Expansion takes these unknown shapes into account by
 ;;; creating new bottom-valued bindings for the expression-environment
-;;; pairs whose values are not know yet to the flow analysis but which
+;;; pairs whose values are not known yet to the flow analysis but which
 ;;; occur during refinement.  The process repeats until the analysis
-;;; contains no bottom-valued bindings.  This approach, despite its
-;;; conceptual simplicity and clarity, is very inefficient: a binding
-;;; can be refined many times even if it doesn't need refinement
-;;; anymore.  In DVL, this inefficiency becomes very noticeable, and
-;;; as a consequence a more efficient work-list algorithm is used.
-;;; Instead of refining at each step every binding of the analysis, we
-;;; maintain a queue of the bindings that may need refinement.
-;;; Furthermore, every binding maintains a list of bindings that
-;;; depend on it, and if it is refined and its value has changed, the
-;;; dependent bindings are put into the queue for possible refinement.
-;;; Expansion then becomes part of the refinement process: when an
-;;; environment-expression pair is not found in the analysis, a new
-;;; bottom-valued binding is immediately created for it and is placed
-;;; into the work queue.
+;;; contains no bottom-valued bindings.
+
+;;; This approach, despite its conceptual simplicity and clarity, is
+;;; very inefficient: a binding can be refined many times even if it
+;;; doesn't need refinement anymore.  In DVL, this inefficiency
+;;; becomes very noticeable, and as a consequence a more efficient
+;;; work-list algorithm is used.  Instead of refining at each step
+;;; every binding of the analysis, we maintain a queue of the bindings
+;;; that may need refinement.  Furthermore, every binding maintains a
+;;; list of bindings that depend on it: if refinement of binding A
+;;; finds that it needs binding B, it adds A to B's list of dependent
+;;; bindings.  Conversely, if some binding is refined and its value
+;;; has changed, the dependent bindings are put into the queue for
+;;; possible refinement.  Expansion then becomes part of the
+;;; refinement process: when an environment-expression pair is not
+;;; found in the analysis, a new bottom-valued binding is immediately
+;;; created for it and is placed into the work queue.
 
 ;;;; Refinement
 
