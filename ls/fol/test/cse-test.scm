@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 (in-test-group
  cse
 

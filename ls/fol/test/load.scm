@@ -1,7 +1,8 @@
+(load-relative "../../testing/load" fol-environment)
+
 (for-each
  (lambda (file)
-   (load-relative file fol-environment))
- '("../../testing/load"
-   "fol-test"
+   (load-relative-compiled file fol-environment))
+ '("fol-test"
    "cse-test"
    "interactions-test"))

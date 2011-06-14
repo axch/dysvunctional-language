@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 (in-test-group
  fol
 
@@ -13,9 +14,9 @@
    (lset= eq? '(c a) (feedback-vertex-set '((a b c d) (b a) (c d) (d c) (e a))))
 
    (lset= eq? '(a c d)
-    (feedback-vertex-set
-     ;; This is G from the comments in feedback-vertex-set.scm
-     '((a b) (b a c) (c a e) (d c e) (e d))))
+          (feedback-vertex-set
+           ;; This is G from the comments in feedback-vertex-set.scm
+           '((a b) (b a c) (c a e) (d c e) (e d))))
 
    ;; Some fooling around with SRA and conditionals
    (alpha-rename?

@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 (in-test-group
  interactions
 
@@ -35,12 +36,12 @@
         (car (cons (real 1) x))))
    ;; Dead code cannot kill structure slots
    (check (equal? program
-           (interprocedural-dead-code-elimination program)))
+                  (interprocedural-dead-code-elimination program)))
    ;; unless they are exposed to it by SRA
    (check (equal? '(real 1)
-           (reverse-anf
-            (interprocedural-dead-code-elimination
-             (scalar-replace-aggregates program))))))
+                  (reverse-anf
+                   (interprocedural-dead-code-elimination
+                    (scalar-replace-aggregates program))))))
 
  (define-test (dead-code-then-inline)
    ;; Eliminating dead code may open inlining opportunities by
@@ -56,7 +57,7 @@
         (nominally-recursive (real 5))))
    (check (equal? program (inline program)))
    (check (equal? '(let ((x (real 5))) x)
-           (inline (interprocedural-dead-code-elimination program)))))
+                  (inline (interprocedural-dead-code-elimination program)))))
 
  (define-test (lift-lets-then-cse)
    ;; Lifting lets helps CSE because variables spend more time in
@@ -84,13 +85,13 @@
     (alpha-rename?
      '(let ((x (real 4)))
         (let ((y (+ x 1))
-              (z (+ x 1))) ; Leaving some dead code here
+              (z (+ x 1)))              ; Leaving some dead code here
           (+ y y)))
      (intraprocedural-cse (approximate-anf program))))
    (check
     (alpha-rename?
      '(let ((x (real 4)))
-        (let ((y (+ x 1))) ; Gone
+        (let ((y (+ x 1)))              ; Gone
           (+ y y)))
      (interprocedural-dead-code-elimination
       (intraprocedural-cse (approximate-anf program))))))
