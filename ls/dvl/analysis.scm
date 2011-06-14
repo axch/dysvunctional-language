@@ -31,46 +31,6 @@
       'ok
       (set-binding-notify! binding (cons notifee (binding-notify binding)))))
 
-;;; How can the behavior of expressions depend on the world?  There is
-;;; only one DVL primitive whose value can be affected by the gensym
-;;; number: GENSYM.  (No DVL means of combination or abstraction can
-;;; be directly affected by the gensym number).  The value of an
-;;; expression may depend on the gensym number if that expression
-;;; generates some gensym and captures it in a data structure that it
-;;; returns.  The only DVL primitive that is affected by the values of
-;;; gensyms is GENSYM=.  Since fresh gensyms by definition compare
-;;; larger than all existing gensyms, the incoming gensym number (as
-;;; opposed to the modifications to the gensym number that occur in
-;;; the evaluation of subexpressions) cannot affect the return value
-;;; of a gensym comparison primitive, and therefore cannot affect the
-;;; control flow of any expression.
-
-;;; Consequently, assuming the consistency condition that the incoming
-;;; gensym number is always larger than all gensyms stored in the
-;;; environment, the return value will always have the same shape,
-;;; contain the same gensyms that are less than the gensym number, and
-;;; contain gensyms with the same positive offsets from the gensym
-;;; number, regardless of what the incoming gensym number actually is.
-;;; Likewise, the new world produced on evaluation of the expression
-;;; will be offset from the incoming gensym number by a fixed amount.
-
-;;; WORLD-UPDATE-BINDING is only used in GET-DURING-FLOW-ANALYSIS, so
-;;; it may be helpful to look at the definition of the latter to
-;;; understand what WORLD-UPDATE-BINDING does.
-;;;
-;;; TODO: Can we prove that WORLD-UPDATE-BINDING is always going to be
-;;; called with BINDINGS the worlds of which are not greater than
-;;; NEW-WORLD?
-(define (world-update-binding binding new-world win)
-  (win (world-update-value
-        (binding-value binding)
-        (binding-world binding)
-        new-world)
-       (world-update-world
-        (binding-new-world binding)
-        (binding-world binding)
-        new-world)))
-
 ;;; An analysis is a collection bindings representing all current
 ;;; knowledge and a queue of those bindings that may be refinable.
 ;;; The bindings are indexed by the expression-environment pair they

@@ -141,6 +141,12 @@
 (define (initial-world)
   (make-world 0))
 
+;; IMPOSSIBLE-WORLD is a token that is always used together with
+;; ABSTRACT-NONE.  If the shape of an expression evaluated in an
+;; abstract environment and in a world is ABSTRACT-NONE (i.e.,
+;; it is effectively unknown), then we also don't know how the
+;; evaluation of this expression in this environment affects the
+;; world, in which case we return IMPOSSIBLE-WORLD.
 (define impossible-world (make-world #f))
 (define (impossible-world? thing)
   (eq? thing impossible-world))

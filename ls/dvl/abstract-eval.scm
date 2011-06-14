@@ -1,76 +1,60 @@
 (declare (usual-integrations))
 ;;;; Polyvariant union-free flow analysis by abstract interpretation
 
-;;; This file implements the resursive equations from page 7 of [1].
-;;; The strategy is just to write those equations down directly as
-;;; code and let it rip.  I'm sure a proper work-list algorithm would
-;;; be much faster, but this program is supposed to be expository.
+;;; The following discussion assumes that the reader is familiar with
+;;; the implementation of VL.  Like in VL, the main data structure
+;;; being manipulated here is called an analysis.  We adopt the
+;;; nomenclature (arguably, somewhat unfortunate) in which "flow
+;;; analysis" is the process, while "analysis" is a particular
+;;; collection of knowledge acquired by that process at a particular
+;;; stage in its progress.  See analysis.scm for representation
+;;; details.
 
-;;; The code extends and completes the presentation in [1] by filling
-;;; out all the details.  In particular, [1] omits discussion of
-;;; primitives, but when I tried to write down the program for doing
-;;; IF it turned out to be somewhat thorny.  IF is the only primitive
-;;; in this program that accepts closures and chooses whether to
-;;; invoke them; the thorns come from the fact that the analysis has
-;;; to be kept from exploring any branch of an IF until that branch is
-;;; known to be live.  This program does not include any additional
-;;; subtleties that may be introduced by the AD basis.
+;;; An analysis is a collection of bindings.  Every binding means two
+;;; things.  It means "This is the minimal shape (abstract value) that
+;;; covers all the values that I know this expression, when evaluated
+;;; in this abstract environment and in this world, may produce during
+;;; the execution of the program."  It also means "I want to know more
+;;; about what this expression may produce if evaluated in this
+;;; abstract environment and in this world."  Although the value of an
+;;; expression in an environment depends on the world in which the
+;;; evaluation takes place, this dependence is actually very simple,
+;;; and in particular, knowing the shape of an expression evaluated in
+;;; some abstract environment and in some world is sufficient to be
+;;; able to tell what that expression will evaluate to in the same
+;;; abstract environment and in any larger world; see the discussion
+;;; below.
 
-;;; The main data structure being manipulated here is called an
-;;; analysis.  (Sorry about the nomenclature -- "flow analysis" is the
-;;; process, but an "analysis" is a particular collection of knowledge
-;;; acquired by that process at a particular stage in its progress).
-;;; Have a look at analysis.scm if you want representation details.
-
-;;; An analysis is a collection of bindings, binding pairs of
-;;; expression and (abstract) environment to abstract values.  Every
-;;; such binding means two things.  It means "This is the minimal
-;;; shape (abstract value) that covers all the values that I know this
-;;; expression, when evalutated in this abstract environment, may
-;;; produce during the execution of the program."  It also means "I
-;;; want to know more about what this expression may produce if
-;;; evaluated in this abstract environment."
-
-;;; The process of abstract interpretation with respect to a
-;;; particular analysis consists of two parts: refinement and
-;;; expansion.  Refinement tries to answer the question implicit in
-;;; every binding by evaluating its expression in its environment for
-;;; one step, referring to the analysis for the shapes of
-;;; subexpressions and procedure results.  Refinement of one binding
-;;; is the definitions of \bar E, \bar A, and \bar E_1 in [1], and
-;;; REFINE-EVAL, REFINE-APPLY, and ANALYSIS-GET, respectively, here.
-
-;;; Expansion asks more questions, by creating uninformative (but
-;;; inquisitive) bindings for expression-environment pairs that it can
-;;; tell would be useful for the refinement of some other, already
-;;; present, binding.  Expansion also proceeds by evaluating the
-;;; expression of every extant binding in the environment of that
-;;; binding for one step, but instead of bottoming out in what the
-;;; analysis knows, it only cares about whether the analysis is
-;;; curious about those expressions that it finds.  Expansion is \bar
-;;; E', \bar A', and \bar E'_1 in [1], and EXPAND-EVAL, EXPAND-APPLY,
-;;; and ANALYSIS-EXPAND, respectively, here.
-
-;;; The polyvariance of this flow analysis comes out of the fact that
-;;; the same expression is allowed to appear paired with different
-;;; abstract environments as the flow analysis proceeds, and the fates
-;;; of such copies are henceforth separate.  The union-free-ness of
-;;; this flow analysis comes out of the particular set of abstract
-;;; values (allowable shapes) used; in particular from the fact that
-;;; two shapes are considered compatible only if they differ just in
-;;; which real numbers or which booleans occupy parallel slots and
-;;; not, notably, if some closures they contain differ as to the
-;;; closure's body.  See abstract-values.scm.
-
-;;; [1] Jeffrey Siskind and Barak Pearlmutter, "Using Polyvariant
-;;; Union-Free Flow Analysis to Compile a Higher-Order Functional
-;;; Programming Language with a First-Class Derivative Operator to
-;;; Efficient Fortran-like Code."  Purdue University ECE Technical
-;;; Report, 2008.  http://docs.lib.purdue.edu/ecetr/367
+;;; The following implementation of abstract interpretation differs
+;;; significantly from that used in VL.  We recall that in VL the
+;;; process of abstract interpretation with respect to a particular
+;;; analysis consists of two parts: refinement and expansion.
+;;; Refinement tries to answer the question implicit in every binding
+;;; by evaluating its expression in its environment in one step,
+;;; referring to the analysis for the shapes of subexpressions and
+;;; procedure results, and bottoming out if some of these shapes are
+;;; unknown.  Expansion takes these unknown shapes into account by
+;;; creating new bottom-valued bindings for the expression-environment
+;;; pairs whose values are not know yet to the flow analysis but which
+;;; occur during refinement.  The process repeats until the analysis
+;;; contains no bottom-valued bindings.  This approach, despite its
+;;; conceptual simplicity and clarity, is very inefficient: a binding
+;;; can be refined many times even if it doesn't need refinement
+;;; anymore.  In DVL, this inefficiency becomes very noticeable, and
+;;; as a consequence a more efficient work-list algorithm is used.
+;;; Instead of refining at each step every binding of the analysis, we
+;;; maintain a queue of the bindings that may need refinement.
+;;; Furthermore, every binding maintains a list of bindings that
+;;; depend on it, and if it is refined and its value has changed, the
+;;; dependent bindings are put into the queue for possible refinement.
+;;; Expansion then becomes part of the refinement process: when an
+;;; environment-expression pair is not found in the analysis, a new
+;;; bottom-valued binding is immediately created for it and is placed
+;;; into the work queue.
 
 ;;;; Refinement
 
-;;; REFINE-EVAL is \bar E from [1].
+;;; REFINE-EVAL is the counterpart of E from [1].
 (define (refine-eval exp env world analysis win)
   (cond ((constant? exp) (win (constant-value exp) world))
         ((variable? exp) (win (lookup exp env) world))
@@ -96,7 +80,7 @@
          (error "Invalid expression in abstract refiner"
                 exp env analysis))))
 
-;;; REFINE-APPLY is \bar A from [1].
+;;; REFINE-APPLY is the counterpart of A from [1].
 (define (refine-apply proc arg world analysis win)
   (cond ((abstract-none? arg) (win abstract-none impossible-world))
         ((abstract-none? proc) (win abstract-none impossible-world))
@@ -198,6 +182,9 @@
              (if (abstract-equal? value new-value)
                  'ok
                  (begin
+                   ;; Alert for the fans of pure FP: both ANALYSIS and
+                   ;; BINDING are mutable objects and the following
+                   ;; will modify these objects in place.
                    (set-binding-value! binding new-value)
                    (set-binding-new-world! binding new-world)
                    (for-each (lambda (dependency)
@@ -217,8 +204,6 @@
 ;; REFINE-EVAL is used, the definition of REFINE-EVAL needs to be
 ;; changed in order to make REFINE-EVAL monotonic.
 
-(define *on-behalf-of* #f)
-
 ;; If you want to look up the value that some exp-env pair evaluates
 ;; to during flow analysis, it must be because you are trying to
 ;; refine some other binding.  Therefore, if you would later learn
@@ -228,14 +213,41 @@
 ;; looked up.  The global variable *on-behalf-of* is the channel for
 ;; this communication.
 
-;; Also, if you are looking up what some exp-env pair evaluates to
-;; during flow analysis, you must have a consistent world in your
-;; hand.  If the binding you are looking for already exists, it
-;; contains enough information to tell you what that expression and
-;; environment will evaluate to in your world (see the discussion in
-;; analysis.scm preceding the definition of WORLD-UPDATE-BINDING).
-;; If not, the world should be recorded in the new binding that is
-;; created.
+(define *on-behalf-of* #f)
+
+;; How can the behavior of expressions depend on the world?  There is
+;; only one DVL primitive whose value can be affected by the gensym
+;; number: GENSYM.  (No DVL means of combination or abstraction can be
+;; directly affected by the gensym number).  The value of an
+;; expression may depend on the gensym number if that expression
+;; generates some gensym and captures it in a data structure that it
+;; returns.  The only DVL primitive that is affected by the values of
+;; gensyms is GENSYM=.  Since fresh gensyms by definition compare
+;; larger than all existing gensyms, the incoming gensym number (as
+;; opposed to the modifications to the gensym number that occur in the
+;; evaluation of subexpressions) cannot affect the return value of a
+;; gensym comparison primitive, and therefore cannot affect the
+;; control flow of any expression.
+
+;; Consequently, assuming the consistency condition that the incoming
+;; gensym number is always larger than all gensyms stored in the
+;; environment, the return value will always have the same shape,
+;; contain the same gensyms that are less than the gensym number, and
+;; contain gensyms with the same positive offsets from the gensym
+;; number, regardless of what the incoming gensym number actually is.
+;; Likewise, the new world produced on evaluation of the expression
+;; will be offset from the incoming gensym number by a fixed amount.
+
+;; If you are looking up what some exp-env pair evaluates to during
+;; flow analysis, then you must have a consistent world in your hand.
+;; If the binding you are looking for already exists, it contains, by
+;; the above discussion, enough information to tell you what that
+;; expression and environment will evaluate to in your world.  Indeed,
+;; you only need to update the gensyms contained in the value of the
+;; binding appropriately.  This functionality is abstracted in the
+;; form of the procedure WORLD-UPDATE-BINDING below.  If no binding
+;; with the given exp-env pair exists, the world should be recorded in
+;; the new binding that is created.
 
 ;; Contrast this complexity with ANALYSIS-GET.
 (define (get-during-flow-analysis exp env world analysis win)
@@ -252,3 +264,49 @@
          (let ((binding (make-binding exp env world abstract-none impossible-world)))
            (analysis-new-binding! analysis binding)
            (search-win binding))))))
+
+;; TODO Can we prove that WORLD-UPDATE-BINDING is always going to be
+;; called with BINDINGs the worlds of which are not greater than
+;; NEW-WORLD?
+(define (world-update-binding binding new-world win)
+  (win (world-update-value
+        (binding-value binding)
+        (binding-world binding)
+        new-world)
+       (world-update-world
+        (binding-new-world binding)
+        (binding-world binding)
+        new-world)))
+
+;; Shift every gensym number contained in THING, except those smaller
+;; than OLD-WORLD, by the difference between NEW-WORLD and OLD-WORLD.
+(define (world-update-value thing old-world new-world)
+  (if (or (impossible-world? new-world)
+          (impossible-world? old-world)
+          (world-equal? old-world new-world))
+      thing
+      (let loop ((thing thing))
+        (cond ((abstract-gensym? thing)
+               (make-abstract-gensym
+                (world-update-gensym-number
+                 (abstract-gensym-min thing) old-world new-world)
+                (world-update-gensym-number
+                 (abstract-gensym-max thing) old-world new-world)))
+              (else (object-map loop thing))))))
+
+(define (world-update-world updatee old-world new-world)
+  (if (or (impossible-world? new-world)
+          (impossible-world? old-world)
+          (impossible-world? updatee))
+      updatee
+      (make-world
+       (+ (world-gensym updatee)
+          (- (world-gensym new-world)
+             (world-gensym old-world))))))
+
+(define (world-update-gensym-number number old-world new-world)
+  (if (< number (world-gensym old-world))
+      ;; Already existed
+      number
+      ;; Newly made
+      (+ number (- (world-gensym new-world) (world-gensym old-world)))))

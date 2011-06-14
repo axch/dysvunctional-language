@@ -224,37 +224,3 @@
                (map shape->type-declaration
                     (interesting-environment-values thing))))
         (else (error "shape->type-declaration loses!" thing))))
-
-;;; In order to understand what the following procedures are for, see
-;;; the discussion in analysis.scm preceding the definition of the
-;;; procedure WORLD-UPDATE-BINDING.
-(define (world-update-value thing old-world new-world)
-  (if (or (impossible-world? new-world)
-          (impossible-world? old-world)
-          (world-equal? old-world new-world))
-      thing
-      (let loop ((thing thing))
-        (cond ((abstract-gensym? thing)
-               (make-abstract-gensym
-                (world-update-gensym-number
-                 (abstract-gensym-min thing) old-world new-world)
-                (world-update-gensym-number
-                 (abstract-gensym-max thing) old-world new-world)))
-              (else (object-map loop thing))))))
-
-(define (world-update-world updatee old-world new-world)
-  (if (or (impossible-world? new-world)
-          (impossible-world? old-world)
-          (impossible-world? updatee))
-      updatee
-      (make-world
-       (+ (world-gensym updatee)
-          (- (world-gensym new-world)
-             (world-gensym old-world))))))
-
-(define (world-update-gensym-number number old-world new-world)
-  (if (< number (world-gensym old-world))
-      ;; Already existed
-      number
-      ;; Newly made
-      (+ number (- (world-gensym new-world) (world-gensym old-world)))))
