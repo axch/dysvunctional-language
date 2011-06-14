@@ -246,7 +246,13 @@
   (lset-union eq? vars1 vars2))
 
 (define (var-set-union* vars-lst)
-  (reduce var-set-union (no-used-vars) vars-lst))
+  ;; Turns out this reduce is *cubic*.
+  #;(reduce var-set-union (no-used-vars) vars-lst)
+  ;; delete-duplicates is a pain because it generates a lot
+  ;; (quadratic?) of long-lived garbage, but the improvement from
+  ;; cubic time to quadratic whatever drops this place back off the
+  ;; profiler's radar.
+  (delete-duplicates (apply append vars-lst) eq?))
 
 (define (var-set-difference vars1 vars2)
   (lset-difference eq? vars1 vars2))
