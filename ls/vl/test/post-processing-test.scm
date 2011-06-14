@@ -39,14 +39,14 @@
    ;; case for interprocedural alias elimination.
    (alpha-rename?
     '(begin
-       (define (operation-9 the-closure-41
+       (define (operation-7 the-closure-41
                             the-closure-53
                             the-formals-56
                             the-formals-57)
          (argument-types real real real real real)
          (if (< (abs (- the-formals-56 the-formals-57)) .00001)
              the-formals-57
-             (operation-9
+             (operation-7
               the-closure-53
               the-closure-53
               the-formals-57
@@ -55,7 +55,7 @@
          (let ((the-formals-133 (real 1.)))
            (cons
             1.4142135623730951
-            (operation-9
+            (operation-7
              the-formals-125
              the-formals-125
              the-formals-133

@@ -8,7 +8,7 @@
        (vector-ref (vector 1 2) 0))
     (structure-definitions->vectors
      '(begin
-        (define-structure foo bar baz)
+        (define-typed-structure foo (bar real) (baz real))
         (foo-bar (make-foo 1 2)))))
 
    (lset= eq? '(c a) (feedback-vertex-set '((a b c d) (b a) (c d) (d c) (e a))))
