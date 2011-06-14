@@ -1,5 +1,8 @@
 #!/bin/sh
 
+SELFDIR=$(dirname $0)
+cd $SELFDIR
+
 echo "Testing FOL"
 cd fol
 ./run-tests
