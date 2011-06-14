@@ -101,6 +101,13 @@
            (loop (->lambda exp1) (->lambda exp2) env))
           ((and (let-values-form? exp1) (let-values-form? exp2))
            (loop (->lambda exp1) (->lambda exp2) env))
+          ;; TODO This is not actually right, because it will forget
+          ;; that name1 is name2 outside the bodies of these
+          ;; definitions.  The right thing is to treat a begin form
+          ;; properly, and pay attention to the fact that definitions
+          ;; are scoped globally over it.  Do I want to mess with the
+          ;; fact that the order of definitions is semantically
+          ;; insignificant?
           ((and (definition? exp1) (definition? exp2))
            (let ((name1 (definiendum exp1))
                  (name2 (definiendum exp2)))
