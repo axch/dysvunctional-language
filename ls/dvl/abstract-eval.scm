@@ -181,7 +181,8 @@
            (let ((new-value (abstract-union value new-value)))
              ;; The following check is necessary, because if we
              ;; blindly execute the BEGIN block, it will restore the
-             ;; binding in the queue, thus creating an infinite loop.
+             ;; binding's dependents in the queue, thus creating an
+             ;; infinite loop.
              (if (abstract-equal? value new-value)
                  'ok
                  (begin
