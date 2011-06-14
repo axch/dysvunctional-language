@@ -131,8 +131,6 @@
                              (g:+ x n)))
                          (((derivative adder) (real 3)) (real 4))))))))
 
- ;; TODO Make compiling the essential examples acceptably fast
- #;
  (for-each-example "../../slad/essential-examples.scm"
   (lambda (program #!optional value)
     (define-fast-union-free-example-test
