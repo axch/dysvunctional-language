@@ -7,11 +7,11 @@
 ;;; "real number" shape, pairs of shapes, environments mapping
 ;;; variables to shapes, and closures with fully-known expressions
 ;;; (and "environment" shapes for their environments).  There is also
-;;; an additional "no information" abstract value, which represents a
-;;; thing that is not known to explore any shapes over the run of the
-;;; program.  It is an invariant of the analysis that the "no
-;;; information" abstract value does not occur inside any other
-;;; shapes.  DVL extends the list of shapes by the "gensym" shape.
+;;; an additional "no value" abstract value, which represents a thing
+;;; that is not known to explore any shapes over the run of the
+;;; program.  It is an invariant of the analysis that the "no value"
+;;; abstract value does not occur inside any other shapes.  DVL
+;;; extends the list of shapes by the "gensym" shape.
 
 ;;; Shapes that have concrete counterparts (concrete scalars, pairs,
 ;;; environments, and closures) are represented by themselves.  The
