@@ -17,35 +17,27 @@
 ;;; along with Test Manager.  If not, see <http://www.gnu.org/licenses/>.
 ;;; ----------------------------------------------------------------------
 
-;; load-relative, broken in Guile, depends on MIT Scheme's pathname
-;; system.
-;; TODO Fix for interactive use?
-(cond-expand
- (guile
-  (if (defined? 'load-relative)
-      'ok
-      (define (load-relative filename)
-	;; Guile's load appears to magically do the right thing...
-	(load (string-concatenate (list filename ".scm"))))))
- (else ;; The MIT Scheme that knows it is 'mit' isn't in Debian Stable yet
-  (define (load-relative filename)
-    (with-working-directory-pathname 
-     (directory-namestring (current-load-pathname))
-     (lambda () (load filename))))))
+;;; Local hackery specific to BCL-AD.
 
-(load-relative "portability")
-(load-relative "ordered-map")
-(load-relative "matching")
-(load-relative "assertions")
-(load-relative "test-runner")
-(load-relative "test-group")
-(load-relative "testing")
-(load-relative "checks")
-(load-relative "interactions")
+(define (self-relatively thunk)
+  (let ((place (ignore-errors current-load-pathname)))
+    (if (pathname? place)
+	(with-working-directory-pathname
+	 (directory-namestring place)
+	 thunk)
+	(thunk))))
 
-;; MIT Scheme specific features
-(cond-expand
- (guile
-  'ok)
- (else
-  'ok))
+(define (load-relative filename)
+  (self-relatively (lambda () (load filename))))
+
+(load-relative "../support/auto-compilation")
+
+(load-relative-compiled "portability")
+(load-relative-compiled "ordered-map")
+(load-relative-compiled "matching")
+(load-relative-compiled "assertions")
+(load-relative-compiled "test-runner")
+(load-relative-compiled "test-group")
+(load-relative-compiled "testing")
+(load-relative-compiled "checks")
+(load-relative-compiled "interactions")
