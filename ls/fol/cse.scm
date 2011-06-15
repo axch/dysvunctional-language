@@ -290,7 +290,7 @@
   ;; Either here or in degment-cse-env!, I have to flush expressions
   ;; whose canonical variables are not in scope any more.
   (let ((candidate (hash-table/get env symbolic symbolic)))
-    (if (find-alias candidate env) ; the candidate is in scope
+    (if (in-scope? candidate env)
         candidate
         symbolic)))
 
@@ -306,7 +306,7 @@
   (define (acceptable-alias? symbolic)
     (or (fol-const? symbolic)
         (and (fol-var? symbolic)
-             (find-alias symbolic env))))
+             (in-scope? symbolic env))))
   (for-each
    (lambda (name symbolic)
      ;; Canonizing here catches places where a parallel let binds the
@@ -322,6 +322,9 @@
            ;; idea is due to Taylor Campbell.
            (hash-table/put! env name symbolic)
            (begin
+             ;; The symbolic expression had no canonical name.
+             ;; Therefore the given name becomes a canonical name for
+             ;; itself, and maybe for the expression.
              (hash-table/put! env name name)
              ;; Don't put variables back because if a variable is not
              ;; an acceptable alias, then it's out of scope, and
@@ -340,6 +343,9 @@
   (for-each (lambda (name)
               (hash-table/remove! env name))
             names))
+
+(define (in-scope? name env)
+  (hash-table/get env name #f))
 
 (define (find-alias name env)
   (hash-table/lookup env name
