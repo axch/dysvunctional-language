@@ -284,12 +284,6 @@
                 `(let-values (,binding2)
                    ,@body))))
      trivial-let-values-rule))))
-
-(define (tidy-values exp)
-  (if (and (values-form? exp)
-           (= 2 (length exp)))
-      (cadr exp)
-      exp))
 
 ;;; Reconstruction of the shape the outside world expects.
 

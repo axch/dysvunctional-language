@@ -165,6 +165,12 @@
 
 (define values-form? (tagged-list? 'values))
 
+(define (tidy-values exp)
+  (if (and (values-form? exp)
+           (= 2 (length exp)))
+      (cadr exp)
+      exp))
+
 ;;; Flushing type signatures
 
 ;; Flushing type signatures is only useful for viewing a program, as
