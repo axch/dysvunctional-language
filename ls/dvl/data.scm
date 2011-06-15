@@ -83,22 +83,6 @@
         (else
          (lose))))
 
-;;; Manually specializing the two-list binary case (since the MIT
-;;; Scheme compiler doesn't do it for me).
-(define every
-  (let ((every (access every (->environment '(runtime srfi-1)))))
-    (lambda (pred lis1 . lists)
-      (if (and (pair? lists) (null? (cdr lists)))
-          (or (null? lis1) (null? (car lists))
-              (let loop ((head1 (car lis1)) (tail1 (cdr lis1))
-                         (head2 (car (car lists))) (tail2 (cdr (car lists))))
-                (if (or (null? tail1) (null? tail2))
-                    (pred head1 head2)
-                    (and (pred head1 head2)
-                         (loop (car tail1) (cdr tail1)
-                               (car tail2) (cdr tail2))))))
-          (apply every pred lis1 lists)))))
-
 (define (memoize cache f)
   (lambda (x)
     ;; Not hash-table/intern! because f may modify the cache (for
