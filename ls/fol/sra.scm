@@ -139,12 +139,12 @@
          (memq (car expr) '(cons vector values))))
   (define (loop expr env win)
     (cond ((fol-var? expr)
-           (win `(values ,@(get-names expr env))
+           (win (tidy-values `(values ,@(get-names expr env)))
                 (get-shape expr env)))
           ((number? expr)
-           (win `(values ,expr) 'real))
+           (win expr 'real))
           ((boolean? expr)
-           (win `(values ,expr) 'bool))
+           (win expr 'bool))
           ((null? expr)
            (win `(values) '()))
           ((if-form? expr)
@@ -217,22 +217,19 @@
   (define (sra-access expr env win)
     (loop (cadr expr) env
      (lambda (new-cadr cadr-shape)
-       (assert (values-form? new-cadr))
        (win (slice-values-by-access new-cadr cadr-shape expr)
             (select-from-shape-by-access cadr-shape expr)))))
   (define (sra-construction expr env win)
     (loop* (cdr expr) env
      (lambda (new-terms terms-shapes)
-       (assert (every values-form? new-terms))
        (win (append-values new-terms)
             (construct-shape terms-shapes expr)))))
   (define (sra-application expr env win)
     (loop* (cdr expr) env
      (lambda (new-args args-shapes)
-       (assert (every values-form? new-args))
        ;; The type checker should have ensured this
        ;(assert (every equal? args-shapes (arg-types (lookup-type (car expr))))
-       (win `(,(car expr) ,@(cdr (append-values new-args)))
+       (win `(,(car expr) ,@(smart-values-subforms (append-values new-args)))
             (return-type (lookup-type (car expr)))))))
   (define (loop* exprs env win)
     (if (null? exprs)
@@ -243,7 +240,7 @@
             (lambda (new-exprs expr-shapes)
               (win (cons new-expr new-exprs)
                    (cons expr-shape expr-shapes))))))))
-  (loop expr env (lambda (new-expr shape) (win (tidy-values new-expr) shape))))
+  (loop expr env (lambda (new-expr shape) (win new-expr shape))))
 
 ;;; The following post-processor is necessary for compatibility with
 ;;; MIT Scheme semantics for multiple value returns (namely that a
@@ -288,15 +285,11 @@
                    ,@body))))
      trivial-let-values-rule))))
 
-(define tidy-values
-  (rule-simplifier
-   (list
-    ;; Grr, sentinel values.
-    (lambda (exp)
-      (if (and (values-form? exp)
-               (= 2 (length exp)))
-          (cadr exp)
-          exp)))))
+(define (tidy-values exp)
+  (if (and (values-form? exp)
+           (= 2 (length exp)))
+      (cadr exp)
+      exp))
 
 ;;; Reconstruction of the shape the outside world expects.
 
@@ -371,36 +364,45 @@
         ((primitive-shape? shape) (list shape))
         (else (append-map primitive-fringe (sra-parts shape)))))
 (define (sra-parts shape)
-  ;; shape better be (cons a b) or (vector a ...)
-  (cdr shape))
+  (cond ((construction? shape)
+         (cdr shape))
+        ((values-form? shape)
+         (cdr shape))
+        (else (list shape))))
 (define (invent-names-for-parts basename shape)
   (let ((count (count-meaningful-parts shape)))
     (if (= 1 count)
         (list basename)
         (map (lambda (i) (make-name basename))
              (iota count)))))
+(define (smart-values-subforms form)
+  (if (values-form? form)
+      (cdr form)
+      (list form)))
 (define (append-values values-forms)
-  `(values ,@(append-map cdr values-forms)))
+  (tidy-values `(values ,@(append-map smart-values-subforms values-forms))))
 (define (construct-shape subshapes template)
   `(,(car template) ,@subshapes))
 (define (slice-values-by-access values-form old-shape access-form)
-  (cond ((eq? (car access-form) 'car)
-         `(values ,@(take (cdr values-form)
-                          (count-meaningful-parts (cadr old-shape)))))
-        ((eq? (car access-form) 'cdr)
-         `(values ,@(drop (cdr values-form)
-                          (count-meaningful-parts (cadr old-shape)))))
-        ((eq? (car access-form) 'vector-ref)
-         (let loop ((index-left (caddr access-form))
-                    (names-left (cdr values-form))
-                    (shape-left (cdr old-shape)))
-           (if (= 0 index-left)
-               `(values ,@(take names-left
-                                (count-meaningful-parts (car shape-left))))
-               (loop (- index-left 1)
-                     (drop names-left
-                           (count-meaningful-parts (car shape-left)))
-                     (cdr shape-left)))))))
+  (let ((the-subforms (smart-values-subforms values-form)))
+    (tidy-values
+     (cond ((eq? (car access-form) 'car)
+            `(values ,@(take the-subforms
+                             (count-meaningful-parts (cadr old-shape)))))
+           ((eq? (car access-form) 'cdr)
+            `(values ,@(drop the-subforms
+                             (count-meaningful-parts (cadr old-shape)))))
+           ((eq? (car access-form) 'vector-ref)
+            (let loop ((index-left (caddr access-form))
+                       (names-left the-subforms)
+                       (shape-left (cdr old-shape)))
+              (if (= 0 index-left)
+                  `(values ,@(take names-left
+                                   (count-meaningful-parts (car shape-left))))
+                  (loop (- index-left 1)
+                        (drop names-left
+                              (count-meaningful-parts (car shape-left)))
+                        (cdr shape-left)))))))))
 (define (select-from-shape-by-access old-shape access-form)
   (cond ((eq? (car access-form) 'car)
          (cadr old-shape))
