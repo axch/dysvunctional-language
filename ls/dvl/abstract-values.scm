@@ -143,6 +143,10 @@
 (define (abstract-hash-mod thing modulus)
   (modulo (abstract-hash thing) modulus))
 
+(define abstract-hash-table-type
+  (make-hash-table-type abstract-hash-mod abstract-equal? #f
+                        hash-table-entry-type:strong))
+
 (define make-abstract-hash-table
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #f))
 

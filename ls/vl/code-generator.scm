@@ -181,10 +181,9 @@
 
 (define (structure-definitions analysis)
   (map abstract-value->structure-definition
-       (delete-duplicates
+       ((unique abstract-hash-table-type)
         (filter needs-structure-definition?
-                (map binding-value (analysis-bindings analysis)))
-        abstract-equal?)))
+                (map binding-value (analysis-bindings analysis))))))
 
 (define (needs-structure-definition? abstract-value)
   (and (closure? abstract-value)
@@ -209,10 +208,9 @@
 
 (define (procedure-definitions analysis)
   (map (procedure-definition analysis)
-       (delete-duplicates
+       ((unique abstract-hash-table-type)
         (filter-map (binding->maybe-call-shape analysis)
-                    (analysis-bindings analysis))
-        abstract-equal?)))
+                    (analysis-bindings analysis)))))
 
 ;;; Every VL application of every compound VL procedure to every
 ;;; argument shape to which it is ever applied (producing a non-solved

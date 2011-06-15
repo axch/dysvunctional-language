@@ -67,6 +67,10 @@
             thing))
           (else (eqv-hash-mod thing modulus)))))
 
+(define abstract-hash-table-type
+  (make-hash-table-type abstract-hash-mod abstract-equal? #t
+                        hash-table-entry-type:strong))
+
 (define make-abstract-hash-table
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #t))
 

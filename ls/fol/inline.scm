@@ -44,11 +44,10 @@
          (call-graph
           (map cons definitions
                (map (lambda (defn)
-                      (delete-duplicates
+                      ((unique strong-eq-hash-table-type)
                        (filter-map-tree (lambda (leaf)
                                           (hash-table/get defn-map leaf #f))
-                                        (definiens defn))
-                       eq?))
+                                        (definiens defn))))
                     definitions)))
          (non-inlinees (feedback-vertex-set call-graph))
          (inlinees (lset-difference eq? definitions non-inlinees))

@@ -246,13 +246,11 @@
   (lset-union eq? vars1 vars2))
 
 (define (var-set-union* vars-lst)
-  ;; Turns out this reduce is *cubic*.
+  ;; This reduce is semantically what I'm doing, but it turns out to
+  ;; be *cubic*.
   #;(reduce var-set-union (no-used-vars) vars-lst)
-  ;; delete-duplicates is a pain because it generates a lot
-  ;; (quadratic?) of long-lived garbage, but the improvement from
-  ;; cubic time to quadratic whatever drops this place back off the
-  ;; profiler's radar.
-  (delete-duplicates (apply append vars-lst) eq?))
+  ;; So I reach under the abstraction barrier.
+  ((unique strong-eq-hash-table-type) (apply append vars-lst)))
 
 (define (var-set-difference vars1 vars2)
   (lset-difference eq? vars1 vars2))

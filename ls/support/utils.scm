@@ -10,6 +10,22 @@
     (hash-table/put-alist! answer alist)
     answer))
 
+(define ((unique hash-table-type) lst)
+  ;; This hash-table-type is really meant to be an ontology of what
+  ;; sorts of operations are available for these objects, but
+  ;; hash-table-types will serve my purpose for now.
+  (let ((table (((access hash-table-constructor (->environment '(runtime hash-table)))
+                 ;; TODO Is there really no exported way to make a
+                 ;; hash table of a given type?
+                 hash-table-type) (length lst))))
+    (define (keep? elt)
+      (if (hash-table/get table elt #f)
+          #f
+          (begin
+            (hash-table/put! table elt #t)
+            #t)))
+    (filter keep? lst)))
+
 ;; This is useful for inspecting the outputs of various compiler
 ;; stages.
 (define (count-pairs thing)
