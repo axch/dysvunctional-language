@@ -14,17 +14,22 @@
   ;; This hash-table-type is really meant to be an ontology of what
   ;; sorts of operations are available for these objects, but
   ;; hash-table-types will serve my purpose for now.
-  (let ((table (((access hash-table-constructor (->environment '(runtime hash-table)))
-                 ;; TODO Is there really no exported way to make a
-                 ;; hash table of a given type?
-                 hash-table-type) (length lst))))
-    (define (keep? elt)
-      (if (hash-table/get table elt #f)
-          #f
-          (begin
-            (hash-table/put! table elt #t)
-            #t)))
-    (filter keep? lst)))
+  (let ((len (length lst)))
+    (if (> len 10) ; How to set this parameter?
+        ;; The hash-table method is linear over delete-duplicates'
+        ;; quadratic, but the constant factors are appreciably worse.
+        (let ((table (((access hash-table-constructor (->environment '(runtime hash-table)))
+                       ;; TODO Is there really no exported way to make a
+                       ;; hash table of a given type?
+                       hash-table-type) len)))
+          (define (keep? elt)
+            (if (hash-table/get table elt #f)
+                #f
+                (begin
+                  (hash-table/put! table elt #t)
+                  #t)))
+          (filter keep? lst))
+        (delete-duplicates lst ((access table-type-key=? (->environment '(runtime hash-table))) hash-table-type)))))
 
 ;; This is useful for inspecting the outputs of various compiler
 ;; stages.
