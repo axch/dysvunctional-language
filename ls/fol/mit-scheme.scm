@@ -35,7 +35,7 @@
       (set! output-base "frobnozzle"))
   (load output-base fol-environment))
 
-(define my-path (->namestring (self-relatively current-load-pathname)))
+(define my-path (directory-namestring (self-relatively current-load-pathname)))
 
 ;;; Compiles a FOL program together with the FOL runtime system, so
 ;;; that it can be executed standalone.
