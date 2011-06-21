@@ -58,3 +58,22 @@
      (strip-begin
       (strip-argument-types
        program))))))
+
+;;; On the subject of getting the results to perform, David says:
+
+;;; Improving Stalin's output is an art unto itself.  Step 1 would be
+;;; to look for anything in the FOL code that can be interpreted with
+;;; any kind of type ambiguity; in particular, I'd bet money on
+;;; exact/inexact issues.
+
+;;; The way you print constants could be introducing artifacts that
+;;; are surprising.
+
+;;; If you had a pair that was sometimes exact and sometimes inexact
+;;; in a list it would lead to a polymorphic type.  There may also be
+;;; compilation flags which affect the analyses needed.  This is black
+;;; magic and one of the things I hate about Stalin.  You should load
+;;; up stalin-mode.el as well, and get the compiler to dump its
+;;; optimization DB about the FOL.  You can browses all the inferred
+;;; types then and see where they arise.  It's on the same order of
+;;; difficulty as reading a hex dump of a kernel panic.
