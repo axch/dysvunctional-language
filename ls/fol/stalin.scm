@@ -22,7 +22,7 @@
                     (pp form)
                     (newline))
                   output)))
-    (run-shell-command (string-append "stalin -On -d -q " (->namestring output-file)))))
+    (run-shell-command (string-append "stalin -On -d -q -copt -O2 " (->namestring output-file)))))
 
 (define replace-let-values
   (rule-simplifier
