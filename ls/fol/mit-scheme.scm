@@ -87,7 +87,7 @@
     (cdr (assq thing floating-versions)))
   (define (loop expr)
     (cond ((number? expr) (exact->inexact expr))
-          ((access? expr) `(,(car expr) ,(loop (cadr expr)) ,@(cddr expr)))
+          ((accessor? expr) `(,(car expr) ,(loop (cadr expr)) ,@(cddr expr)))
           ((arithmetic? expr)
            `(,(replace (car expr)) ,@(map loop (cdr expr))))
           ((real-call? expr)

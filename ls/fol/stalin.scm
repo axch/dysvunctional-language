@@ -53,11 +53,24 @@
 
 (define (prepare-for-stalin program)
   (write-last-value
-   (replace-nulls
-    (replace-let-values
-     (strip-begin
-      (strip-argument-types
-       program))))))
+   (stalinize
+    (replace-nulls
+     (replace-let-values
+      (strip-begin
+       (strip-argument-types
+        program)))))))
+
+;;; TODO This is very similar to flonumize from mit-scheme.scm; abstract commonalities
+(define (stalinize program)
+  (define read-real-call? (tagged-list? 'read-real))
+  (define (loop expr)
+    (cond ((number? expr) (exact->inexact expr))
+          ((accessor? expr) `(,(car expr) ,(loop (cadr expr)) ,@(cddr expr)))
+          ((read-real-call? expr)
+           `(exact->inexact ,expr))
+          ((pair? expr) (map loop expr))
+          (else expr)))
+  (loop program))
 
 ;;; On the subject of getting the results to perform, David says:
 
