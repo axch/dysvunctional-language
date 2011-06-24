@@ -350,6 +350,8 @@
                 'ok)       ; This shouldn't happen, but it's ok anyway
                ((abstract-gensym? val)
                 'ok)
+               ((null? val)
+                'ok)
                ((pair? val)
                 (loop! (car val))
                 (loop! (cdr val)))

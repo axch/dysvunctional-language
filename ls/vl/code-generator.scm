@@ -283,6 +283,8 @@
                  access) ; This shouldn't happen, but not my problem
                 ((abstract-gensym? val)
                  access)
+                ((null? val)
+                 access)
                 ((pair? val)
                  `(cons ,(loop `(car ,access) (car val))
                         ,(loop `(cdr ,access) (cdr val))))
