@@ -119,7 +119,7 @@
 
    ;; Be sure to analyze the interior of the lambda, as the outside
    ;; world may call it.
-   (equal? 9 (length (analysis-bindings (analyze '(lambda (x) (+ x 1))))))
+   (equal? 11 (length (analysis-bindings (analyze '(lambda (x) (+ x 1))))))
 
    )
 
