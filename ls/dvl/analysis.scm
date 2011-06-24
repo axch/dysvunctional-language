@@ -26,6 +26,10 @@
   exp
   env)
 
+(define-structure (apply-state safe-accessors)
+  proc
+  arg)
+
 (define (binding-exp binding)
   (eval-state-exp (binding-state binding)))
 
@@ -34,6 +38,9 @@
 
 (define (make-binding exp env world value new-world)
   (%make-binding (make-eval-state exp env) world value new-world '()))
+
+(define (make-apply-binding proc arg world value new-world)
+  (%make-binding (make-apply-state proc arg) world value new-world '()))
 
 (define (register-notification! binding notifee)
   (if (memq notifee (binding-notify binding))
@@ -61,12 +68,24 @@
 (define (analysis-bindings analysis)
   (hash-table/datum-list (analysis-map analysis)))
 
-(define (analysis-search exp env analysis win lose)
-  (hash-table/lookup (analysis-map analysis) (cons exp env) win lose))
+(define (analysis-search key1 key2 analysis win lose)
+  (hash-table/lookup (analysis-map analysis) (cons key1 key2) win lose))
 
 (define (analysis-new-binding! analysis binding)
+  (define (key1 state)
+    (if (eval-state? state)
+        (eval-state-exp state)
+        (apply-state-proc state)))
+  (define (key2 state)
+    (if (eval-state? state)
+        (eval-state-env state)
+        (apply-state-arg state)))
+  (define (binding-key1 binding)
+    (key1 (binding-state binding)))
+  (define (binding-key2 binding)
+    (key2 (binding-state binding)))
   (hash-table/put! (analysis-map analysis)
-                   (cons (binding-exp binding) (binding-env binding))
+                   (cons (binding-key1 binding) (binding-key2 binding))
                    binding)
   (analysis-notify! analysis binding))
 
@@ -90,5 +109,5 @@
 
 ;; This one is just for querying the analysis, for example during code
 ;; generation.  Compare ANALYSIS-GET-IN-WORLD.
-(define (analysis-get exp env analysis)
-  (analysis-search exp env analysis binding-value (lambda () abstract-none)))
+(define (analysis-get key1 key2 analysis)
+  (analysis-search key1 key2 analysis binding-value (lambda () abstract-none)))
