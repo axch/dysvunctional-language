@@ -349,6 +349,7 @@
                      'ok)
                    (lambda ()
                      (analysis-new-binding!
+                      analysis
                       (make-binding
                        exp
                        env
