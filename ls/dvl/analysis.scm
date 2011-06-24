@@ -25,10 +25,6 @@
   ;; work queue up to date.
   notify)
 
-(define binding-key1 binding-part1)
-
-(define binding-key2 binding-part2)
-
 (define (eval-binding? binding)
   (env? (binding-part2 binding)))
 
@@ -89,7 +85,7 @@
 
 (define (analysis-new-binding! analysis binding)
   (hash-table/put! (analysis-map analysis)
-                   (cons (binding-key1 binding) (binding-key2 binding))
+                   (cons (binding-part1 binding) (binding-part2 binding))
                    binding)
   (analysis-notify! analysis binding))
 
