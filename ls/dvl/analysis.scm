@@ -30,17 +30,43 @@
   proc
   arg)
 
+(define (binding-key1 binding)
+  (define (key1 state)
+    (if (eval-state? state)
+        (eval-state-exp state)
+        (apply-state-proc state)))
+  (key1 (binding-state binding)))
+
+(define (binding-key2 binding)
+  (define (key2 state)
+    (if (eval-state? state)
+        (eval-state-env state)
+        (apply-state-arg state)))
+  (key2 (binding-state binding)))
+
 (define (binding-exp binding)
   (eval-state-exp (binding-state binding)))
 
 (define (binding-env binding)
   (eval-state-env (binding-state binding)))
 
+(define (binding-proc binding)
+  (apply-state-proc (binding-state binding)))
+
+(define (binding-arg binding)
+  (apply-state-arg (binding-state binding)))
+
 (define (make-binding key1 key2 world value new-world)
   ;; Eval bindings always have environments as key2, and apply bindings nevery do
   (if (env? key2)
       (%make-binding (make-eval-state key1 key2) world value new-world '())
       (%make-binding (make-apply-state key1 key2) world value new-world '())))
+
+(define (eval-binding? binding)
+  (eval-state? (binding-state binding)))
+
+(define (apply-binding? binding)
+  (apply-state? (binding-state binding)))
 
 (define (register-notification! binding notifee)
   (if (memq notifee (binding-notify binding))
@@ -72,18 +98,6 @@
   (hash-table/lookup (analysis-map analysis) (cons key1 key2) win lose))
 
 (define (analysis-new-binding! analysis binding)
-  (define (key1 state)
-    (if (eval-state? state)
-        (eval-state-exp state)
-        (apply-state-proc state)))
-  (define (key2 state)
-    (if (eval-state? state)
-        (eval-state-env state)
-        (apply-state-arg state)))
-  (define (binding-key1 binding)
-    (key1 (binding-state binding)))
-  (define (binding-key2 binding)
-    (key2 (binding-state binding)))
   (hash-table/put! (analysis-map analysis)
                    (cons (binding-key1 binding) (binding-key2 binding))
                    binding)

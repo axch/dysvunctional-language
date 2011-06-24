@@ -78,7 +78,7 @@
           (lambda (operator operator-world)
             (get-during-flow-analysis (operand-subform exp) env operator-world analysis
              (lambda (operand operand-world)
-               (refine-apply operator operand operand-world analysis win))))))
+               (get-during-flow-analysis operator operand operand-world analysis win))))))
         (else
          (error "Invalid expression in abstract refiner"
                 exp env analysis))))
@@ -148,12 +148,11 @@
 (define (refine-next-binding! analysis)
   (let ((binding (analysis-queue-pop! analysis)))
     (fluid-let ((*on-behalf-of* binding))
-      (let ((exp (binding-exp binding))
-            (env (binding-env binding))
+      (let ((state (binding-state binding))
             (world (binding-world binding))
             (value (binding-value binding)))
-        (refine-eval
-         exp env world analysis
+        (refine-from-state
+         state world analysis
          (lambda (new-value new-world)
            ;; The following requires an explanation.  Why are we
            ;; taking the union of the old value of the binding with
@@ -194,6 +193,13 @@
                    (for-each (lambda (dependency)
                                (analysis-notify! analysis dependency))
                              (binding-notify binding)))))))))))
+
+(define (refine-from-state state world analysis win)
+  (if (eval-state? state)
+      (refine-eval (eval-state-exp state) (eval-state-env state)
+                   world analysis win)
+      (refine-apply (apply-state-proc state) (apply-state-arg state)
+                    world analysis win)))
 
 ;; Example that shows that REFINE-EVAL is not monotonic:
 #|

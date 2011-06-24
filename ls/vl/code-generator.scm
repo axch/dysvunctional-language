@@ -207,24 +207,16 @@
 ;;;; Procedure definitions
 
 (define (procedure-definitions analysis)
+  ;; Every VL application of a closure, that produces a non-solved
+  ;; value, needs to become a Scheme procedure definition.
+  (define (needs-procedure-definition? binding)
+    (and (apply-binding? binding)
+         (closure? (binding-proc binding))
+         (not (solved-abstractly? (binding-value binding)))))
   (map (procedure-definition analysis)
        ((unique abstract-hash-table-type)
-        (filter-map (binding->maybe-call-shape analysis)
-                    (analysis-bindings analysis)))))
-
-;;; Every VL application of every compound VL procedure to every
-;;; argument shape to which it is ever applied (producing a non-solved
-;;; value) needs to become a Scheme procedure definition.
-(define ((binding->maybe-call-shape analysis) binding)
-  (let ((exp (binding-exp binding))
-        (env (binding-env binding))
-        (value (binding-value binding)))
-    (and (not (solved-abstractly? value))
-         (application? exp)
-         (let ((operator (analysis-get (operator-subform exp) env analysis))
-               (operands (analysis-get (operand-subform exp) env analysis)))
-           (and (closure? operator)
-                (list operator operands value))))))
+        (filter needs-procedure-definition?
+                (analysis-bindings analysis)))))
 
 ;;; Every generated Scheme procedure receives two arguments (either or
 ;;; both of which will be eliminated by the post processing if they
@@ -237,7 +229,7 @@
 ;;; include a declaration of the types of its arguments, to enable
 ;;; scalar replacement of aggregates in the post processing.
 (define ((procedure-definition analysis)
-         call-site)
+         binding)
   (define (destructuring-let-bindings formal-tree arg-tree)
     (define (xxx part1 part2)
       (append (replace-in-tree
@@ -256,9 +248,9 @@
            (if (eq? (car formal-tree) 'cons)
                (xxx (cadr formal-tree) (caddr formal-tree))
                (xxx (car formal-tree) (cdr formal-tree))))))
-  (let ((operator (car call-site))
-        (operands (cadr call-site))
-        (value (caddr call-site)))
+  (let ((operator (binding-proc binding))
+        (operands (binding-arg binding))
+        (value (binding-value binding)))
     (define (type-declaration)
       `(argument-types
         ,(shape->type-declaration operator)

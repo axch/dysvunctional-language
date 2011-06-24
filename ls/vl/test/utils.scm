@@ -23,7 +23,8 @@
       (cond ((null? bindings)
              (error "Analysis makes no binding for the original program"
                     program))
-            ((equal? kernel-program (binding-exp (car bindings)))
+            ((and (eval-binding? (car bindings))
+                  (equal? kernel-program (binding-exp (car bindings))))
              (check (equal? answer (binding-value (car bindings))))
              analysis)
             (else (loop (cdr bindings)))))))
