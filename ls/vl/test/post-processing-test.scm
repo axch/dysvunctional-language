@@ -12,7 +12,10 @@
          (if (= n 1)
              1
              (* n (operation-2 (- n 1)))))
-       (operation-2 (real 5)))
+       (let ((n-25 (real 5)))
+         (if (= n-25 1)
+             1
+             (* n-25 (operation-2 (- n-25 1))))))
     (compile-to-scheme
      '(let ()
         (define (fact n)
@@ -35,31 +38,26 @@
         (cons ((compose double square) (real 2))
               ((compose square double) (real 2))))))
 
-   ;; Note the extra variable the-closure-53, below.  This is a use
-   ;; case for interprocedural alias elimination.
    (alpha-rename?
     '(begin
-       (define (operation-7 the-closure-41
-                            the-closure-53
-                            the-formals-56
-                            the-formals-57)
-         (argument-types real real real real real)
-         (if (< (abs (- the-formals-56 the-formals-57)) .00001)
-             the-formals-57
-             (operation-7
-              the-closure-53
-              the-closure-53
-              the-formals-57
-              (/ (+ the-formals-57 (/ the-closure-41 the-formals-57)) 2))))
-       (let ((the-formals-125 (real 2)))
-         (let ((the-formals-133 (real 1.)))
-           (cons
-            1.4142135623730951
-            (operation-7
-             the-formals-125
-             the-formals-125
-             the-formals-133
-             (/ (+ the-formals-133 (/ the-formals-125 the-formals-133)) 2))))))
+       (define (operation-2 the-closure the-formals-215 the-formals-216)
+         (argument-types real real real real)
+         (if (< (abs (- the-formals-215 the-formals-216)) .00001)
+             the-formals-216
+             (operation-2 the-closure
+                          the-formals-216
+                          (/ (+ the-formals-216 (/ the-closure the-formals-216))
+                             2))))
+       (let ((the-formals-64 (real 2)))
+         (let ((anf-170 (real 1.)))
+           (let ((anf-152 (/ (+ anf-170 (/ the-formals-64 anf-170)) 2)))
+             (cons
+              1.4142135623730951
+              (if (< (abs (- anf-170 anf-152)) .00001)
+                  anf-152
+                  (operation-2 the-formals-64
+                               anf-152
+                               (/ (+ anf-152 (/ the-formals-64 anf-152)) 2))))))))
     (compile-to-scheme
      '(let ()
         (define (heron-step x)
