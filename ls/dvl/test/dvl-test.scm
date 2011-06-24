@@ -135,7 +135,7 @@
   (lambda (program #!optional value)
     (define-fast-union-free-example-test
       (dvl-prepare (vlad->dvl program)) value)))
-
+#;
  (for-each
   (lambda (file)
     (for-each-example file
@@ -149,7 +149,7 @@
     "../examples/amazing-bug-5.dvl"
     "../examples/non-bug.dvl"
     ))
-
+#;
  (define-test (executable-entry-point)
    (check
     (equal?
