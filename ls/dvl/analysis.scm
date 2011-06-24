@@ -14,8 +14,7 @@
 ;;; new gensyms).
 
 (define-structure (binding safe-accessors (constructor %make-binding))
-  exp
-  env
+  state ; Either an eval-state or an apply-state
   world
   value
   new-world
@@ -23,15 +22,25 @@
   ;; work queue up to date.
   notify)
 
+(define-structure (eval-state safe-accessors)
+  exp
+  env)
+
+(define (binding-exp binding)
+  (eval-state-exp (binding-state binding)))
+
+(define (binding-env binding)
+  (eval-state-env (binding-state binding)))
+
 (define (make-binding exp env world value new-world)
-  (%make-binding exp env world value new-world '()))
+  (%make-binding (make-eval-state exp env) world value new-world '()))
 
 (define (register-notification! binding notifee)
   (if (memq notifee (binding-notify binding))
       'ok
       (set-binding-notify! binding (cons notifee (binding-notify binding)))))
 
-;;; An analysis is a collection bindings representing all current
+;;; An analysis is a collection of bindings representing all current
 ;;; knowledge and a queue of those bindings that may be refinable.
 ;;; The bindings are indexed by the expression-environment pair they
 ;;; refer to.  The notify slot of an individual binding is the list of
