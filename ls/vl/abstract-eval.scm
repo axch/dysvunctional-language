@@ -86,7 +86,7 @@
                (cons car-answer cdr-answer)
                abstract-none)))
         ((application? exp)
-         (refine-apply
+         (analysis-get
           (analysis-get (operator-subform exp) env analysis)
           (analysis-get (operand-subform exp) env analysis)
           analysis))
@@ -111,10 +111,13 @@
 
 (define (refine-analysis analysis)
   (map (lambda (binding)
-         (let ((exp (binding-exp binding))
-               (env (binding-env binding))
-               (val (binding-value binding)))
-           (make-binding exp env (refine-eval exp env analysis))))
+         (let ((part1 (binding-part1 binding))
+               (part2 (binding-part2 binding))
+               (value (binding-value binding)))
+           (make-binding part1 part2 ((if (eval-binding? binding)
+                                          refine-eval
+                                          refine-apply)
+                                      part1 part2 analysis))))
        (analysis-bindings analysis)))
 
 ;;;; Expansion
@@ -136,7 +139,7 @@
             same-analysis-binding?
             (analysis-expand operator env analysis)
             (analysis-expand operand env analysis)
-            (expand-apply
+            (analysis-expand
              (analysis-get operator env analysis)
              (analysis-get operand env analysis)
              analysis))))
@@ -160,9 +163,9 @@
                 proc arg analysis))))
 
 (define (analysis-expand-binding binding analysis)
-  (let ((exp (binding-exp binding))
-        (env (binding-env binding)))
-    (expand-eval exp env analysis)))
+  (let ((part1 (binding-part1 binding))
+        (part2 (binding-part2 binding)))
+    ((if (eval-binding? binding) expand-eval expand-apply) part1 part2 analysis)))
 
 (define (expand-analysis analysis)
   (apply lset-union same-analysis-binding?

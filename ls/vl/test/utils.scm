@@ -163,7 +163,8 @@
       (cond ((null? bindings)
              (error "Analysis makes no binding for the original program"
                     program))
-            ((equal? full-prog (binding-exp (car bindings)))
+            ((and (eval-binding? (car bindings))
+                  (equal? full-prog (binding-exp (car bindings))))
              (binding-value (car bindings)))
             (else (loop (cdr bindings)))))))
 

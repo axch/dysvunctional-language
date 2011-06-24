@@ -2,41 +2,70 @@
 ;;;; Analysis data structure
 
 (define-structure (binding safe-accessors)
-  exp
-  env
+  part1
+  part2
   value)
+
+(define (eval-binding? binding)
+  (env? (binding-part2 binding)))
+
+(define (apply-binding? binding)
+  (not (eval-binding? binding)))
+
+(define (binding-exp binding)
+  (if (eval-binding? binding)
+      (binding-part1 binding)
+      (error "Trying to take the exp of an apply binding" binding)))
+
+(define (binding-env binding)
+  (if (eval-binding? binding)
+      (binding-part2 binding)
+      (error "Trying to take the env of an apply binding" binding)))
+
+(define (binding-proc binding)
+  (if (apply-binding? binding)
+      (binding-part1 binding)
+      (error "Trying to take the proc of an eval binding" binding)))
+
+(define (binding-arg binding)
+  (if (apply-binding? binding)
+      (binding-part2 binding)
+      (error "Trying to take the arg of an eval binding" binding)))
 
 (define-structure (analysis safe-accessors)
   bindings)
 
-(define (analysis-search exp env analysis win lose)
+(define (analysis-search key1 key2 analysis win lose)
   (let loop ((bindings (analysis-bindings analysis)))
     (if (null? bindings)
         (lose)
-        (if (and (equal? exp (binding-exp (car bindings)))
-                 (abstract-equal? env (binding-env (car bindings))))
+        (if (and (abstract-equal? key1 (binding-part1 (car bindings)))
+                 (abstract-equal? key2 (binding-part2 (car bindings))))
             (win (car bindings))
             (loop (cdr bindings))))))
 
 ;;; ANALYSIS-GET is \bar E_1 from [1].
-(define (analysis-get exp env analysis)
-  (analysis-search exp env analysis binding-value (lambda () abstract-none)))
+(define (analysis-get key1 key2 analysis)
+  (analysis-search key1 key2 analysis binding-value (lambda () abstract-none)))
 
 ;;; EXPAND-ANALYSIS is \bar E_1' from [1].
 ;;; It registers interest in the evaluation of EXP in ENV by producing
 ;;; a binding to be added to the new incarnation of ANALYSIS, should
 ;;; the current incarnation lack any binding already covering that
 ;;; question.
-(define (analysis-expand exp env analysis)
-  (analysis-search exp env analysis
+(define (analysis-expand key1 key2 analysis)
+  (analysis-search key1 key2 analysis
    (lambda (binding)
      '())
    (lambda ()
-     (list (make-binding exp env abstract-none)))))
+     (if (or (abstract-none? key1)
+             (abstract-none? key2))
+         '()
+         (list (make-binding key1 key2 abstract-none))))))
 
 (define (same-analysis-binding? binding1 binding2)
-  (and (equal? (binding-exp binding1) (binding-exp binding2))
-       (abstract-equal? (binding-env binding1) (binding-env binding2))
+  (and (abstract-equal? (binding-part1 binding1) (binding-part1 binding2))
+       (abstract-equal? (binding-part2 binding1) (binding-part2 binding2))
        (abstract-equal? (binding-value binding1) (binding-value binding2))))
 
 (define (same-analysis? ana1 ana2)
