@@ -25,14 +25,6 @@
   ;; work queue up to date.
   notify)
 
-(define-structure (eval-state safe-accessors)
-  exp
-  env)
-
-(define-structure (apply-state safe-accessors)
-  proc
-  arg)
-
 (define binding-key1 binding-part1)
 
 (define binding-key2 binding-part2)
