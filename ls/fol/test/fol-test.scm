@@ -3,6 +3,23 @@
  fol
 
  (define-each-check
+
+   ;; Alpha renaming needs to respect the scope of procedure
+   ;; definitions properly.
+   (alpha-rename?
+    '(begin
+       (define (fact n)
+         (if (= n 0)
+             1
+             (* n (- (fact n 1)))))
+       (fact 4))
+    '(begin
+       (define (fiction m)
+         (if (= m 0)
+             1
+             (* m (- (fiction m 1)))))
+       (fiction 4)))
+
    (equal?
     '(begin
        (vector-ref (vector 1 2) 0))
