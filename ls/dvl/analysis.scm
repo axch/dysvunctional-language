@@ -61,10 +61,10 @@
 
 ;;; An analysis is a collection of bindings representing all current
 ;;; knowledge and a queue of those bindings that may be refinable.
-;;; The bindings are indexed by the expression-environment pair they
-;;; refer to.  The notify slot of an individual binding is the list of
-;;; bindings that may be further refined if it happens that this
-;;; binding is successfully refined.
+;;; The bindings are indexed by the expression-environment pair or the
+;;; procedure-arguement pair they refer to.  The notify slot of an
+;;; individual binding is the list of bindings that may be further
+;;; refined if it happens that this binding is successfully refined.
 
 (define-structure (analysis safe-accessors (constructor %make-analysis))
   map
