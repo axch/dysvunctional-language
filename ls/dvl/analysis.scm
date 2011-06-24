@@ -23,7 +23,10 @@
   new-world
   ;; This notify slot is a list of bindings used to keep the analysis
   ;; work queue up to date.
-  notify)
+  notify
+  ;; Is the abstract value represented by this ever visible to the
+  ;; outside world?
+  escapes?)
 
 (define (eval-binding? binding)
   (env? (binding-part2 binding)))
@@ -52,7 +55,7 @@
       (error "Trying to take the arg of an eval binding" binding)))
 
 (define (make-binding key1 key2 world value new-world)
-  (%make-binding key1 key2 world value new-world '()))
+  (%make-binding key1 key2 world value new-world '() escapes?))
 
 (define (register-notification! binding notifee)
   (if (memq notifee (binding-notify binding))
