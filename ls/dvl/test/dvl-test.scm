@@ -116,6 +116,11 @@
      (in-frobnicating-loop '(let ((y (gensym)))
                               (let ((z (gensym)))
                                 (gensym= z (frobnicate y)))))))
+
+   ;; Be sure to analyze the interior of the lambda, as the outside
+   ;; world may call it.
+   (equal? 6 (length (analysis-bindings (analyze '(lambda (x) (+ x 1))))))
+
    )
 
  (for-each-example "../../vl/examples.scm" define-union-free-example-test)
