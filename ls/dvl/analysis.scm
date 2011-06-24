@@ -36,11 +36,11 @@
 (define (binding-env binding)
   (eval-state-env (binding-state binding)))
 
-(define (make-binding exp env world value new-world)
-  (%make-binding (make-eval-state exp env) world value new-world '()))
-
-(define (make-apply-binding proc arg world value new-world)
-  (%make-binding (make-apply-state proc arg) world value new-world '()))
+(define (make-binding key1 key2 world value new-world)
+  ;; Eval bindings always have environments as key2, and apply bindings nevery do
+  (if (env? key2)
+      (%make-binding (make-eval-state key1 key2) world value new-world '())
+      (%make-binding (make-apply-state key1 key2) world value new-world '())))
 
 (define (register-notification! binding notifee)
   (if (memq notifee (binding-notify binding))
