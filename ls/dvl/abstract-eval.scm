@@ -254,18 +254,18 @@
 ;; the new binding that is created.
 
 ;; Contrast this complexity with ANALYSIS-GET.
-(define (get-during-flow-analysis exp env world analysis win)
+(define (get-during-flow-analysis key1 key2 world analysis win)
   (if (not *on-behalf-of*)
       (error "get-during-flow-analysis must always be done on behalf of some binding"))
   (define (search-win binding)
     (register-notification! binding *on-behalf-of*)
     (world-update-binding binding world win))
-  (analysis-search exp env analysis
+  (analysis-search key1 key2 analysis
    search-win
    (lambda ()
      (if (impossible-world? world)
          (win abstract-none impossible-world)
-         (let ((binding (make-binding exp env world abstract-none impossible-world)))
+         (let ((binding (make-binding key1 key2 world abstract-none impossible-world)))
            (analysis-new-binding! analysis binding)
            (search-win binding))))))
 
