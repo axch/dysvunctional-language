@@ -229,3 +229,10 @@
         ((closure? thing)
          (abstract-closure->scheme-structure-name thing))
         (else (error "shape->type-declaration loses!" thing))))
+
+(define (needs-translation? thing)
+  (not (or (some-boolean? thing)
+           (some-real? thing)
+           (abstract-none? thing)
+           (abstract-gensym? thing)
+           (null? thing))))

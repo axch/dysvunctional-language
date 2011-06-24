@@ -84,3 +84,7 @@
         (bindings2 (analysis-bindings ana2)))
     (or (not (= (length bindings1) (length bindings2)))
         (not (every same-analysis-binding? bindings1 bindings2)))))
+
+(define (binding-escapes? binding)
+  ;; TODO Add support for allowing things to escape to VL
+  #f)
