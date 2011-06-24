@@ -13,7 +13,7 @@
     the-closure))
 
 (define (fresh-temporary)
-  (make-name 'temp-))
+  (make-name 'temp))
 
 (define *closure-names* (make-abstract-hash-table))
 
