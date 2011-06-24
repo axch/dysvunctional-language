@@ -37,7 +37,7 @@
 (define (careful-solved-generate program analysis answer)
   (let ((raw-fol (strip-argument-types
                   (careful-generate program analysis answer))))
-    (check (equal? `(begin ,answer) raw-fol))
+    (check (equal? `(begin (let ((capture-1 ,answer)) capture-1)) raw-fol))
     raw-fol))
 
 (define ((fol-carefully stage) fol-code answer)
