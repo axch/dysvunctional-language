@@ -250,7 +250,8 @@
                (xxx (car formal-tree) (cdr formal-tree))))))
   (let ((operator (binding-proc binding))
         (operands (binding-arg binding))
-        (value (binding-value binding)))
+        (value (binding-value binding))
+        (escape? (binding-escapes? binding)))
     (define (type-declaration)
       `(argument-types
         ,(shape->type-declaration operator)
@@ -262,13 +263,14 @@
          (let ,(destructuring-let-bindings
                 (car (closure-formal operator))
                 operands)
-           ,(compile (closure-body operator)
-                     (extend-env
-                      (closure-formal operator)
-                      operands
-                      (closure-env operator))
-                     operator
-                     analysis))))))
+           ,((if escape? compile-escaping compile)
+             (closure-body operator)
+             (extend-env
+              (closure-formal operator)
+              operands
+              (closure-env operator))
+             operator
+             analysis))))))
 
 (define (compile-escaping exp env enclosure analysis)
   (let ((capture-name (name->symbol (make-name 'capture))))

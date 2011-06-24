@@ -123,6 +123,11 @@
 
    )
 
+ (define-test (escape-smoke)
+   (let ((proc (fol-eval
+                '(lambda (x) (lambda (y) (+ x y))))))
+     (check (equal? 5 ((proc 4) 1)))))
+
  (for-each-example "../../vl/examples.scm" define-union-free-example-test)
  (for-each-example "../../vl/test/test-vl-programs.scm"
                    define-union-free-example-test)
