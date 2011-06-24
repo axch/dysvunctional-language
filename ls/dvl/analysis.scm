@@ -2,19 +2,22 @@
 ;;;; Analysis data structure
 
 ;;; An analysis binding is a statement about the current state of
-;;; knowledge of the analysis, with regard to the evaluation of a
-;;; given expression in a given (abstract) environment and in a given
+;;; knowledge of the analysis, with regard to what the concrete
+;;; interpreter would do starting from some point.  The point is
+;;; determined by either an expression and an (abstract) environment,
+;;; or two abstract values that are a procedure to apply and an
+;;; argument to apply it to.  Either kind of point is also in a given
 ;;; world.  The world represents all accessible information that may
 ;;; change dynamically during a run of the program (namely, that which
-;;; is not encapsulated in the expression to evaluate and its abstract
-;;; environment).  As such, the world contains one piece of
-;;; information: the gensym number.  Everything known about the
-;;; evaluation of an expression is the (abstract) value it returns and
-;;; the effect it has on the world (namely, whether or not it creates
-;;; new gensyms).
+;;; is not encapsulated in the state).  As such, the world contains
+;;; one piece of information: the gensym number.  Everything known
+;;; about the evaluation is the (abstract) value it returns and the
+;;; effect it has on the world (namely, whether or not it creates new
+;;; gensyms).
 
 (define-structure (binding safe-accessors (constructor %make-binding))
-  state ; Either an eval-state or an apply-state
+  part1
+  part2 ; Always an env for exp-env pairs, never an env for proc-arg pairs
   world
   value
   new-world
@@ -30,43 +33,38 @@
   proc
   arg)
 
-(define (binding-key1 binding)
-  (define (key1 state)
-    (if (eval-state? state)
-        (eval-state-exp state)
-        (apply-state-proc state)))
-  (key1 (binding-state binding)))
+(define binding-key1 binding-part1)
 
-(define (binding-key2 binding)
-  (define (key2 state)
-    (if (eval-state? state)
-        (eval-state-env state)
-        (apply-state-arg state)))
-  (key2 (binding-state binding)))
-
-(define (binding-exp binding)
-  (eval-state-exp (binding-state binding)))
-
-(define (binding-env binding)
-  (eval-state-env (binding-state binding)))
-
-(define (binding-proc binding)
-  (apply-state-proc (binding-state binding)))
-
-(define (binding-arg binding)
-  (apply-state-arg (binding-state binding)))
-
-(define (make-binding key1 key2 world value new-world)
-  ;; Eval bindings always have environments as key2, and apply bindings nevery do
-  (if (env? key2)
-      (%make-binding (make-eval-state key1 key2) world value new-world '())
-      (%make-binding (make-apply-state key1 key2) world value new-world '())))
+(define binding-key2 binding-part2)
 
 (define (eval-binding? binding)
-  (eval-state? (binding-state binding)))
+  (env? (binding-part2 binding)))
 
 (define (apply-binding? binding)
-  (apply-state? (binding-state binding)))
+  (not (eval-binding? binding)))
+
+(define (binding-exp binding)
+  (if (eval-binding? binding)
+      (binding-part1 binding)
+      (error "Trying to take the exp of an apply binding" binding)))
+
+(define (binding-env binding)
+  (if (eval-binding? binding)
+      (binding-part2 binding)
+      (error "Trying to take the env of an apply binding" binding)))
+
+(define (binding-proc binding)
+  (if (apply-binding? binding)
+      (binding-part1 binding)
+      (error "Trying to take the proc of an eval binding" binding)))
+
+(define (binding-arg binding)
+  (if (apply-binding? binding)
+      (binding-part2 binding)
+      (error "Trying to take the arg of an eval binding" binding)))
+
+(define (make-binding key1 key2 world value new-world)
+  (%make-binding key1 key2 world value new-world '()))
 
 (define (register-notification! binding notifee)
   (if (memq notifee (binding-notify binding))

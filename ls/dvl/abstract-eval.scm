@@ -148,11 +148,8 @@
 (define (refine-next-binding! analysis)
   (let ((binding (analysis-queue-pop! analysis)))
     (fluid-let ((*on-behalf-of* binding))
-      (let ((state (binding-state binding))
-            (world (binding-world binding))
-            (value (binding-value binding)))
-        (refine-from-state
-         state world analysis
+      (let ((value (binding-value binding)))
+        (refine-binding binding analysis
          (lambda (new-value new-world)
            ;; The following requires an explanation.  Why are we
            ;; taking the union of the old value of the binding with
@@ -194,12 +191,12 @@
                                (analysis-notify! analysis dependency))
                              (binding-notify binding)))))))))))
 
-(define (refine-from-state state world analysis win)
-  (if (eval-state? state)
-      (refine-eval (eval-state-exp state) (eval-state-env state)
-                   world analysis win)
-      (refine-apply (apply-state-proc state) (apply-state-arg state)
-                    world analysis win)))
+(define (refine-binding binding analysis win)
+  (if (eval-binding? binding)
+      (refine-eval (binding-exp binding) (binding-env binding)
+                   (binding-world binding) analysis win)
+      (refine-apply (binding-proc binding) (binding-arg binding)
+                    (binding-world binding) analysis win)))
 
 ;; Example that shows that REFINE-EVAL is not monotonic:
 #|
