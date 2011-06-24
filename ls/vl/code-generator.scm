@@ -270,16 +270,39 @@
                      operator
                      analysis))))))
 
+(define (compile-escaping exp env enclosure analysis)
+  (let ((capture-name (name->symbol (make-name 'capture))))
+    `(let ((,capture-name ,(compile exp env enclosure analysis)))
+       ,(let loop ((access capture-name)
+                   (val (analysis-get exp env analysis)))
+          (cond ((some-boolean? val)
+                 access)
+                ((some-real? val)
+                 access)
+                ((abstract-none? val)
+                 access) ; This shouldn't happen, but not my problem
+                ((abstract-gensym? val)
+                 access)
+                ((pair? val)
+                 `(cons ,(loop `(car ,access) (car val))
+                        ,(loop `(cdr ,access) (cdr val))))
+                ((closure? val)
+                 `(lambda (external-formal)
+                    ;; TODO Extend to other foreign input types
+                    ,(generate-closure-application val abstract-real access 'external-formal)))
+                (else (error "Unsupported escaping object" val)))))))
+
 ;;;; Code generation
 
 (define (generate program analysis)
   (initialize-name-caches!)
   `(begin ,@(structure-definitions analysis)
           ,@(procedure-definitions analysis)
-          ,(compile (macroexpand program)
-                    (initial-user-env)
-                    #f
-                    analysis)))
+          ,(compile-escaping
+            (macroexpand program)
+            (initial-user-env)
+            #f
+            analysis)))
 
 (define (analyze-and-generate program)
   (generate program (analyze program)))

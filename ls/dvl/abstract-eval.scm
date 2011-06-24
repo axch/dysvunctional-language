@@ -343,6 +343,7 @@
                ((closure? val)
                 ;; What I really want to do here is look up an apply binding
                 (let ((exp (closure-body val))
+                      ;; TODO Extend to other foreign input types
                       (env (extend-env (closure-formal val) abstract-real (closure-env val))))
                   (analysis-search exp env analysis
                    (lambda (found)
@@ -357,5 +358,7 @@
                        abstract-none
                        impossible-world
                        #t ; The result escapes
-                       ))))))))))
+                       ))))))
+               (else
+                (error "Unsupported escaping object" val))))))
    (filter binding-escapes? (analysis-bindings analysis))))
