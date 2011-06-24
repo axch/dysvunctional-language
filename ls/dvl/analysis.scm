@@ -54,7 +54,7 @@
       (binding-part2 binding)
       (error "Trying to take the arg of an eval binding" binding)))
 
-(define (make-binding key1 key2 world value new-world)
+(define (make-binding key1 key2 world value new-world escapes?)
   (%make-binding key1 key2 world value new-world '() escapes?))
 
 (define (register-notification! binding notifee)
