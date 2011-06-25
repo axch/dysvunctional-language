@@ -137,7 +137,13 @@
         (else (error "shape->type-declaration loses!" thing))))
 
 (define (needs-translation? thing)
-  (not (or (some-boolean? thing)
-           (some-real? thing)
-           (abstract-none? thing)
-           (null? thing))))
+  (not (contains-no-closures? thing)))
+
+(define (contains-no-closures? thing)
+  (or (some-boolean? thing)
+      (some-real? thing)
+      (abstract-none? thing)
+      (null? thing)
+      (and (pair? thing)
+           (contains-no-closures? (car thing))
+           (contains-no-closures? (cdr thing)))))
