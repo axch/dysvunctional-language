@@ -325,19 +325,6 @@
       (+ number (- (world-gensym new-world) (world-gensym old-world)))))
 
 (define (ensure-escaping-values-have-bindings! analysis)
-  ;; These two are terrible hacks!
-  ;; TODO Define real apply bindings in the flow analysis structures!
-  (define (make-apply-binding proc arg world escape?)
-    (let ((env (make-env `((%%the-procedure . ,proc)
-                           (%%the-argument . ,arg))))
-          (exp `(%%the-procedure %%the-argument)))
-      (make-binding exp env world abstract-none impossible-world escape?)))
-  (define (search-apply-binding proc arg analysis win lose)
-    (let ((env (make-env `((%%the-procedure . ,proc)
-                           (%%the-argument . ,arg))))
-          (exp `(%%the-procedure %%the-argument)))
-      (analysis-search exp env analysis win lose)))
-
   (for-each
    (lambda (binding)
      (let ((some-acceptable-world (binding-new-world binding)))
@@ -356,7 +343,7 @@
                 (loop! (car val))
                 (loop! (cdr val)))
                ((closure? val)
-                (search-apply-binding
+                (analysis-search
                  ;; TODO Extend to other foreign input types
                  val abstract-real analysis
                  (lambda (found)
@@ -364,11 +351,13 @@
                  (lambda ()
                    (analysis-new-binding!
                     analysis
-                    (make-apply-binding
+                    (make-binding
                      val
                      ;; TODO Extend to other foreign input types
                      abstract-real
                      some-acceptable-world
+                     abstract-none
+                     impossible-world
                      #t                 ; The result escapes
                      )))))
                (else

@@ -119,13 +119,14 @@
 
    ;; Be sure to analyze the interior of the lambda, as the outside
    ;; world may call it.
-   (equal? 11 (length (analysis-bindings (analyze '(lambda (x) (+ x 1))))))
+   (equal? 8 (length (analysis-bindings (analyze '(lambda (x) (+ x 1))))))
 
    )
 
  (define-test (escape-smoke)
    (let ((proc (fol-eval
-                '(lambda (x) (lambda (y) (+ x y))))))
+                (analyze-and-generate
+                 '(lambda (x) (lambda (y) (+ x y)))))))
      (check (equal? 5 ((proc 4) 1)))))
 
  (for-each-example "../../vl/examples.scm" define-union-free-example-test)
