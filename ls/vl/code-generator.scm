@@ -273,20 +273,24 @@
              analysis))))))
 
 (define (compile-escaping exp env enclosure analysis)
-  (let ((capture-name (name->symbol (make-name 'capture))))
-    `(let ((,capture-name ,(compile exp env enclosure analysis)))
-       ,(let loop ((access capture-name)
-                   (val (analysis-get exp env analysis)))
-          (cond ((not (needs-translation? val))
-                 access)
-                ((pair? val)
-                 `(cons ,(loop `(car ,access) (car val))
-                        ,(loop `(cdr ,access) (cdr val))))
-                ((closure? val)
-                 `(lambda (external-formal)
-                    ;; TODO Extend to other foreign input types
-                    ,(generate-closure-application val abstract-real access 'external-formal)))
-                (else (error "Unsupported escaping object" val)))))))
+  (define (prepare-to-escape val code)
+    (let ((capture-name (name->symbol (make-name 'capture))))
+      `(let ((,capture-name ,code))
+         ,(let loop ((access capture-name)
+                     (val val))
+            (cond ((not (needs-translation? val))
+                   access)
+                  ((pair? val)
+                   `(cons ,(loop `(car ,access) (car val))
+                          ,(loop `(cdr ,access) (cdr val))))
+                  ((closure? val)
+                   `(lambda (external-formal)
+                      ;; TODO Extend to other foreign input types
+                      ,(generate-closure-application
+                        val abstract-real access 'external-formal)))
+                  (else (error "Unsupported escaping object" val)))))))
+  (prepare-to-escape (analysis-get exp env analysis)
+                     (compile exp env enclosure analysis)))
 
 ;;;; Code generation
 
