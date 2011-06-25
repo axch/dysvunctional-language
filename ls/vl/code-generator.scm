@@ -263,7 +263,7 @@
          (let ,(destructuring-let-bindings
                 (car (closure-formal operator))
                 operands)
-           ,((if escape? compile-escaping compile)
+           ,(compile
              (closure-body operator)
              (extend-env
               (closure-formal operator)
@@ -288,8 +288,11 @@
                       ((closure? val)
                        `(lambda (external-formal)
                           ;; TODO Extend to other foreign input types
-                          ,(generate-closure-application
-                            val abstract-real access 'external-formal)))
+                          ,(let ((code
+                                  (generate-closure-application
+                                   val abstract-real access 'external-formal))
+                                 (val (analysis-get val abstract-real analysis)))
+                             (prepare-to-escape val code))))
                       (else (error "Unsupported escaping object" val))))))))
   (prepare-to-escape (analysis-get exp env analysis)
                      (compile exp env enclosure analysis)))

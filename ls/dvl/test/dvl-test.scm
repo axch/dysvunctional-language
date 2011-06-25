@@ -129,6 +129,17 @@
                  '(lambda (x) (lambda (y) (+ x y)))))))
      (check (equal? 5 ((proc 4) 1)))))
 
+ (define-test (function-escapes-and-is-called-locally)
+   (let ((proc (fol-eval
+                (analyze-and-generate
+                 '(let ()
+                    (define ((fact dead) n)
+                      (if (= n 0)
+                          1
+                          (* n ((fact dead) (- n 1)))))
+                    fact)))))
+     (check (equal? 5040 ((proc 4) 7)))))
+
  (for-each-example "../../vl/examples.scm" define-union-free-example-test)
  (for-each-example "../../vl/test/test-vl-programs.scm"
                    define-union-free-example-test)
