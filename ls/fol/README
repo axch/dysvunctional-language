@@ -278,6 +278,11 @@ definition = (define (<proc-var> <data-var> ...)
 shape      = real | bool | gensym | ()
            | (cons <shape> <shape>) | (vector <shape> ...) | (values <shape> ...)
 
+escape = <expression>
+       | (let ((<data-var> <expression>))
+           (lambda (<data-var>)
+             <escape>))
+
 expression = <data-var>
            | <number> | <boolean> | ()
            | (if <expression> <expression> <expression>)
@@ -295,11 +300,6 @@ access = (car <expression>)
 
 construction = (cons <expression> <expression>)
              | (vector <expression> ...)
-
-escape = <expression>
-       | (let ((<data-var> <expression>))
-           (lambda (<data-var>)
-             <escape>))
 
 FOL distinguishes two types of variables, one for holding procedures
 and one for holding data; both are represented as Scheme symbols.  The
