@@ -250,8 +250,7 @@
                (xxx (car formal-tree) (cdr formal-tree))))))
   (let ((operator (binding-proc binding))
         (operands (binding-arg binding))
-        (value (binding-value binding))
-        (escape? (binding-escapes? binding)))
+        (value (binding-value binding)))
     (define (type-declaration)
       `(argument-types
         ,(shape->type-declaration operator)
