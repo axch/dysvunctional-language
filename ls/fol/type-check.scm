@@ -71,12 +71,51 @@
                      definition (last types) body-type))
           body-type)))
     (define (check-entry-point-types expression)
-      (check-expression-types expression (empty-type-env) lookup-type))
+      (check-escaping-types expression (empty-type-env) lookup-type))
     (if (begin-form? program)
         (begin
           (for-each check-definition-types (except-last-pair (cdr program)))
           (check-entry-point-types (last program)))
         (check-entry-point-types program))))
+
+(define (check-escaping-types expr env global-type)
+  (cond ((let-form? expr)
+         (if (not (= 3 (length expr)))
+             (error "Malformed LET (excess body forms?)" expr))
+         (let ((bindings (cadr expr))
+               (body (caddr expr)))
+           (if (not (lambda-form? body))
+               (check-expression-types expr env global-type)
+               (begin
+                 (if (not (list? bindings))
+                     (error "Malformed LET (non-list bindings)" expr))
+                 (check-unique-names (map car bindings) "Repeated LET binding")
+                 (if (not (= 3 (length body)))
+                     (error "Malformed LAMBDA (excess body forms?)" body))
+                 (let ((formal (cadr body))
+                       (body-body (caddr body)))
+                   (let ((binding-types
+                          (map (lambda (exp)
+                                 (check-expression-types exp env global-type))
+                               (map cadr bindings))))
+                     (for-each
+                      (lambda (binding-type index)
+                        (if (values-form? binding-type)
+                            (error "LET binds a VALUES shape"
+                                   expr binding-type index)))
+                      binding-types
+                      (iota (length binding-types)))
+                     (function-type
+                      'real
+                      (check-escaping-types
+                       body-body
+                       (augment-type-env
+                        (augment-type-env
+                         env (map car bindings) binding-types)
+                        ;; TODO Extend to checking other foreign types
+                        formal (list 'real))
+                       global-type))))))))
+        (else (check-expression-types expr env global-type))))
 
 (define (check-expression-types expr env global-type)
   ;; A type environment maps every bound local name to its type.  The
