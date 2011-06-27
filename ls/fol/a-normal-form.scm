@@ -57,6 +57,8 @@
            `(if ,(loop (cadr expr))
                 ,(loop (caddr expr))
                 ,(loop (cadddr expr))))
+          ((lambda-form? expr)
+           (approximate-anf-lambda expr))
           ((let-form? expr)
            (approximate-anf-let expr))
           ((let-values-form? expr)
@@ -67,6 +69,9 @@
            (approximate-anf-definition expr))
           (else ; access, construction, application, or multiple value return
            (approximate-anf-application expr))))
+  (define (approximate-anf-lambda expr)
+    `(lambda ,(cadr expr)
+       ,(loop (caddr expr))))
   (define (approximate-anf-let expr)
     `(let ,(map (lambda (binding)
                   `(,(car binding) ,(loop (cadr binding))))
