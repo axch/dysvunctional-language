@@ -40,7 +40,8 @@
    "cse"
    "dead-code"
    "optimize"
-   "mit-scheme"))
+   "mit-scheme"
+   "stalin"))
 
 ;;; Exports
 
@@ -55,6 +56,7 @@
      fol->floating-mit-scheme
      fol->standalone-mit-scheme
      run-mit-scheme
+     fol->stalin
 
      ;; Optimization
      check-program-types

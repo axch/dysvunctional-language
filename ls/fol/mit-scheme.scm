@@ -35,7 +35,7 @@
       (set! output-base "frobnozzle"))
   (load output-base fol-environment))
 
-(define my-path (->namestring (self-relatively current-load-pathname)))
+(define my-path (directory-namestring (self-relatively current-load-pathname)))
 
 ;;; Compiles a FOL program together with the FOL runtime system, so
 ;;; that it can be executed standalone.
@@ -87,7 +87,7 @@
     (cdr (assq thing floating-versions)))
   (define (loop expr)
     (cond ((number? expr) (exact->inexact expr))
-          ((access? expr) `(,(car expr) ,(loop (cadr expr)) ,@(cddr expr)))
+          ((accessor? expr) `(,(car expr) ,(loop (cadr expr)) ,@(cddr expr)))
           ((arithmetic? expr)
            `(,(replace (car expr)) ,@(map loop (cdr expr))))
           ((real-call? expr)

@@ -64,6 +64,9 @@
          (reducer (map cdr (env-bindings object))))
         ((pair? object)
          (reducer (list (car object) (cdr object))))
+        ((binding? object)
+         ;; See note in abstract-values for which this clause is here.
+         (reducer (list (binding-part1 object) (binding-part2 object))))
         (else
          (reducer '()))))
 

@@ -10,12 +10,28 @@
     (hash-table/put-alist! answer alist)
     answer))
 
+;; TODO Backwards compatibility:
+(define hash-table-types-available?
+  (not (lexical-unbound? (the-environment) 'hash-table-entry-type:strong)))
+
+(define make-ontology
+  (if hash-table-types-available?
+      make-hash-table-type
+      list))
+
+(define (ontology-key=? ontology)
+  ((if ((access hash-table-type? (->environment '(runtime hash-table))) ontology)
+       (access table-type-key=? (->environment '(runtime hash-table)))
+       cadr) ontology))
+
 (define ((unique hash-table-type) lst)
   ;; This hash-table-type is really meant to be an ontology of what
   ;; sorts of operations are available for these objects, but
   ;; hash-table-types will serve my purpose for now.
   (let ((len (length lst)))
-    (if (> len 10) ; How to set this parameter?
+    (if (and (> len 10)                    ; How to set this parameter?
+             ((access hash-table-type? (->environment '(runtime hash-table)))
+              hash-table-type))
         ;; The hash-table method is linear over delete-duplicates'
         ;; quadratic, but the constant factors are appreciably worse.
         (let ((table (((access hash-table-constructor (->environment '(runtime hash-table)))
@@ -29,7 +45,7 @@
                   (hash-table/put! table elt #t)
                   #t)))
           (filter keep? lst))
-        (delete-duplicates lst ((access table-type-key=? (->environment '(runtime hash-table))) hash-table-type)))))
+        (delete-duplicates lst (ontology-key=? hash-table-type)))))
 
 ;;; Manually specializing the two-list binary case (since the MIT
 ;;; Scheme compiler doesn't do it for me).

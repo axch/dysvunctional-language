@@ -78,7 +78,7 @@
           (lambda (operator operator-world)
             (get-during-flow-analysis (operand-subform exp) env operator-world analysis
              (lambda (operand operand-world)
-               (refine-apply operator operand operand-world analysis win))))))
+               (get-during-flow-analysis operator operand operand-world analysis win))))))
         (else
          (error "Invalid expression in abstract refiner"
                 exp env analysis))))
@@ -148,12 +148,8 @@
 (define (refine-next-binding! analysis)
   (let ((binding (analysis-queue-pop! analysis)))
     (fluid-let ((*on-behalf-of* binding))
-      (let ((exp (binding-exp binding))
-            (env (binding-env binding))
-            (world (binding-world binding))
-            (value (binding-value binding)))
-        (refine-eval
-         exp env world analysis
+      (let ((value (binding-value binding)))
+        (refine-binding binding analysis
          (lambda (new-value new-world)
            ;; The following requires an explanation.  Why are we
            ;; taking the union of the old value of the binding with
@@ -195,6 +191,13 @@
                                (analysis-notify! analysis dependency))
                              (binding-notify binding)))))))))))
 
+(define (refine-binding binding analysis win)
+  (if (eval-binding? binding)
+      (refine-eval (binding-exp binding) (binding-env binding)
+                   (binding-world binding) analysis win)
+      (refine-apply (binding-proc binding) (binding-arg binding)
+                    (binding-world binding) analysis win)))
+
 ;; Example that shows that REFINE-EVAL is not monotonic:
 #|
  (let ((my-* (lambda (x y) (* x y))))
@@ -208,14 +211,14 @@
 ;; REFINE-EVAL is used, the definition of REFINE-EVAL needs to be
 ;; changed in order to make REFINE-EVAL monotonic.
 
-;; If you want to look up the value that some exp-env pair evaluates
-;; to during flow analysis, it must be because you are trying to
-;; refine some other binding.  Therefore, if you would later learn
-;; something new about what this exp-env pair evaluates to, then you
-;; may need to re-refine said other binding.  Therefore, the lookup
-;; should record the bindings on whose behalf exp-env pairs were
-;; looked up.  The global variable *on-behalf-of* is the channel for
-;; this communication.
+;; If you want to look up the value that some exp-env pair or some
+;; proc-arg pair evaluates to during flow analysis, it must be because
+;; you are trying to refine some other binding.  Therefore, if you
+;; would later learn something new about what this exp-env pair or
+;; proc-arg pair evaluates to, then you may need to re-refine said
+;; other binding.  Therefore, the lookup should record the bindings on
+;; whose behalf exp-env pairs were looked up.  The global variable
+;; *on-behalf-of* is the channel for this communication.
 
 (define *on-behalf-of* #f)
 
@@ -242,30 +245,30 @@
 ;; Likewise, the new world produced on evaluation of the expression
 ;; will be offset from the incoming gensym number by a fixed amount.
 
-;; If you are looking up what some exp-env pair evaluates to during
-;; flow analysis, then you must have a consistent world in your hand.
-;; If the binding you are looking for already exists, it contains, by
-;; the above discussion, enough information to tell you what that
-;; expression and environment will evaluate to in your world.  Indeed,
-;; you only need to update the gensyms contained in the value of the
-;; binding appropriately.  This functionality is abstracted in the
-;; form of the procedure WORLD-UPDATE-BINDING below.  If no binding
-;; with the given exp-env pair exists, the world should be recorded in
-;; the new binding that is created.
+;; If you are looking up what some exp-env pair or proc-arg pair
+;; evaluates to during flow analysis, then you must have a consistent
+;; world in your hand.  If the binding you are looking for already
+;; exists, it contains, by the above discussion, enough information to
+;; tell you what that expression and environment will evaluate to in
+;; your world.  Indeed, you only need to update the gensyms contained
+;; in the value of the binding appropriately.  This functionality is
+;; abstracted in the form of the procedure WORLD-UPDATE-BINDING below.
+;; If no binding with the given exp-env pair or proc-arg pair exists,
+;; the world should be recorded in the new binding that is created.
 
 ;; Contrast this complexity with ANALYSIS-GET.
-(define (get-during-flow-analysis exp env world analysis win)
+(define (get-during-flow-analysis key1 key2 world analysis win)
   (if (not *on-behalf-of*)
       (error "get-during-flow-analysis must always be done on behalf of some binding"))
   (define (search-win binding)
     (register-notification! binding *on-behalf-of*)
     (world-update-binding binding world win))
-  (analysis-search exp env analysis
+  (analysis-search key1 key2 analysis
    search-win
    (lambda ()
      (if (impossible-world? world)
          (win abstract-none impossible-world)
-         (let ((binding (make-binding exp env world abstract-none impossible-world)))
+         (let ((binding (make-binding key1 key2 world abstract-none impossible-world)))
            (analysis-new-binding! analysis binding)
            (search-win binding))))))
 

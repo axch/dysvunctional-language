@@ -125,7 +125,12 @@
               (string-hash (symbol->string thing)))
              ((primitive? thing)
               (string-hash (symbol->string (primitive-name thing))))
-             ((or (pair? thing) (closure? thing) (env? thing))
+             ((or (pair? thing) (closure? thing) (env? thing)
+                  (binding? thing)) ; A binding isn't really an
+                                    ; abstract value, but it contains
+                                    ; such, and I want to be able to
+                                    ; unique them with an abstract
+                                    ; table.
               (object-reduce
                (lambda (lst)
                  (reduce munch
@@ -135,7 +140,9 @@
                                      ((closure? thing)
                                       17519)
                                      ((env? thing)
-                                      17569))
+                                      17569)
+                                     ((binding? thing)
+                                      17579))
                                (map abstract-hash lst))))
                thing))
              (else (error "Do not know how to hash" thing)))))))
@@ -144,8 +151,9 @@
   (modulo (abstract-hash thing) modulus))
 
 (define abstract-hash-table-type
-  (make-hash-table-type abstract-hash-mod abstract-equal? #f
-                        hash-table-entry-type:strong))
+  (make-ontology abstract-hash-mod abstract-equal? #f
+                 (and hash-table-types-available?
+                      hash-table-entry-type:strong)))
 
 (define make-abstract-hash-table
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #f))
