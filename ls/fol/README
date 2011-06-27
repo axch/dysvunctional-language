@@ -268,8 +268,8 @@ application.
 
 FOL follows the following grammar:
 
-program    = <expression>
-           | (begin <definition> ... <expression>)
+program    = <escape>
+           | (begin <definition> ... <escape>)
 
 definition = (define (<proc-var> <data-var> ...)
                (argument-types <shape> ...)
@@ -295,6 +295,11 @@ access = (car <expression>)
 
 construction = (cons <expression> <expression>)
              | (vector <expression> ...)
+
+escape = <expression>
+       | (let ((<data-var> <expression>))
+           (lambda (<data-var>)
+             <escape>))
 
 FOL distinguishes two types of variables, one for holding procedures
 and one for holding data; both are represented as Scheme symbols.  The
