@@ -128,6 +128,9 @@
          (lambda (binding-type index)
            (if (values-form? binding-type)
                (error "LET binds a VALUES shape"
+                      expr binding-type index))
+           (if (function-type? binding-type)
+               (error "LET binds a procedure"
                       expr binding-type index)))
          binding-types
          (iota (length binding-types)))
@@ -151,6 +154,13 @@
         (if (not (= (length (caar bindings)) (length (cdr binding-type))))
             (error "LET-VALUES binds the wrong number of VALUES"
                    expr binding-type))
+        (for-each
+         (lambda (binding-type index)
+           (if (function-type? binding-type)
+               (error "LET-VALUES binds a procedure"
+                      expr binding-type index)))
+         (cdr binding-type)
+         (iota (length (cdr binding-type))))
         (loop body (augment-type-env
                     env (caar bindings) (cdr binding-type))))))
   (define (check-lambda-types expr env)
@@ -199,6 +209,8 @@
        (iota (length element-types)))
       (construct-shape element-types expr)))
   (define (check-application-types expr env)
+    (if (not (fol-var? (car expr)))
+        (error "Calling a statically unknown procedure" expr))
     (let ((expected-types (arg-types (global-type (car expr))))
           (argument-types (map (lambda (exp) (loop exp env)) (cdr expr))))
       (if (not (= (length expected-types) (length argument-types)))
