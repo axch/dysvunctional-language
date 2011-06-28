@@ -15,9 +15,11 @@
 ;;; environment with (ge fol-environment), and get back to the usual
 ;;; place with (ge user-initial-environment).
 
+(define *environment* (the-environment))
 (define fol-environment (make-top-level-environment))
 
 (environment-define fol-environment 'fol-environment fol-environment)
+(environment-define fol-environment '*environment* fol-environment)
 
 (load-relative "../support/rule-system/load" fol-environment)
 
