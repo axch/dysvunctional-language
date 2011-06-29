@@ -97,6 +97,13 @@
         (let-values (((x y) (foo)))
           y))))
 
+   (equal?
+    '(lambda (x) (+ x 1))
+    (eliminate-intraprocedural-dead-variables
+     '(let ((x (real 3)))
+        (lambda (x)
+          (+ x 1)))))
+
    (equal? #f (procedure-definitions->program
                (program->procedure-definitions #f)))
 
