@@ -103,6 +103,8 @@
            (eliminate-in-let expr live-out win))
           ((let-values-form? expr)
            (eliminate-in-let-values expr live-out win))
+          ((lambda-form? expr)
+           (eliminate-in-lambda expr live-out win))
           ;; If used post SRA, there may be constructions to build the
           ;; answer for the outside world, but there should be no
           ;; accesses.
@@ -179,6 +181,14 @@
                           sub-expr-needs
                           (var-set-difference body-needs names)))))
                  (win new-body body-needs))))))))
+  (define (eliminate-in-lambda expr live-out win)
+    (let ((formal (cadr expr))
+          (body (caddr expr)))
+      (loop body #t ; Nothing that escapes can be dead
+       (lambda (new-body body-needs)
+         (win `(lambda ,formal
+                 ,new-body)
+              (var-set-difference body-needs formal))))))
   ;; Given that I decided not to do proper elimination of dead
   ;; structure slots, I will say that if a structure is needed then
   ;; all of its slots are needed, and any access to any slot of a
