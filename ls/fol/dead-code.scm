@@ -437,6 +437,8 @@
            (study-let expr))
           ((let-values-form? expr)
            (study-let-values expr))
+          ((lambda-form? expr)
+           (study-lambda expr))
           ;; If used post SRA, there may be constructions to build the
           ;; answer for the outside world, but there should be no
           ;; accesses.
@@ -476,6 +478,11 @@
       (let ((body-needs (loop body))
             (bindings-need (map cons names (loop sub-expr))))
         (map (interpolate-let-bindings bindings-need) body-needs))))
+  (define (study-lambda expr)
+    (let ((formal (cadr expr))
+          (body (caddr expr)))
+      (let ((body-needs (loop body)))
+        (var-set-difference body-needs formal))))
   (define (interpolate-let-bindings bindings-need)
     (lambda (need-set)
       (var-set-union-map
@@ -586,6 +593,8 @@
            (study-let expr live-out))
           ((let-values-form? expr)
            (study-let-values expr live-out))
+          ((lambda-form? expr)
+           (study-lambda expr live-out))
           ;; If used post SRA, there may be constructions to build the
           ;; answer for the outside world, but there should be no
           ;; accesses.
@@ -627,6 +636,11 @@
         (let ((sub-expr-live-out (map slot-used? names)))
           (var-set-union (var-set-difference body-needs names)
                          (loop sub-expr sub-expr-live-out))))))
+  (define (study-lambda expr live-out)
+    (let ((formal (cadr expr))
+          (body (caddr expr)))
+      (let ((body-needs (loop body (list #t))))
+        (var-set-difference body-needs formal))))
   (define (study-construction expr live-out)
     (var-set-union*
      (map (lambda (arg)
