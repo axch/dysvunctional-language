@@ -284,7 +284,7 @@ expression = <data-var>
            | (let ((<data-var> <expression>) ...) <expression>)
            | (let-values (((<data-var> <data-var> <data-var> ...) <expression>))
                <expression>)
-           | (lambda (<data-var>) <expression>)  ; escaping position only
+           | (lambda (<data-var>) <expression>)  ; for escape only
            | <access>
            | <construction>
            | (values <expression> <expression> <expression> ...)
