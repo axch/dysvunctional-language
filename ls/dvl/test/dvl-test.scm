@@ -140,6 +140,16 @@
                     fact)))))
      (check (equal? 5040 ((proc 4) 7)))))
 
+ (define-test (optimized-function-escapes-and-is-called-locally)
+   (let ((proc (fast-union-free-answer
+                '(let ()
+                   (define ((fact dead) n)
+                     (if (= n 0)
+                         1
+                         (* n ((fact dead) (- n 1)))))
+                   fact))))
+     (check (equal? 5040 ((proc 4) 7)))))
+
  (for-each-example "../../vl/examples.scm" define-union-free-example-test)
  (for-each-example "../../vl/test/test-vl-programs.scm"
                    define-union-free-example-test)
