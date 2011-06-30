@@ -130,6 +130,8 @@
            (cse-let expr env win))
           ((let-values-form? expr)
            (cse-let-values expr env win))
+          ((lambda-form? expr)
+           (cse-lambda expr env win))
           ((values-form? expr)
            (cse-values expr env win))
           (else ; general application
@@ -206,6 +208,17 @@
                            ,new-body)
                         new-body)
                     body-symbolic)))))))))
+  (define (cse-lambda expr env win)
+    (let ((formal (cadr expr))
+          (body (caddr expr)))
+      (augment-cse-env env formal (list unique-expression)
+       (lambda (env dead-bindings)
+         (loop body env
+          (lambda (new-body body-symbolic)
+            (degment-cse-env! env formal)
+            (win `(lambda ,formal
+                    ,new-body)
+                 body-symbolic)))))))
   (define (cse-values expr env win)
     (loop* (cdr expr) env
      (lambda (exprs symbolics)
