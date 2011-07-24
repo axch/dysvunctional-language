@@ -51,7 +51,7 @@
                (list earth-x earth-y)))))
     (list earth-vx earth-vy earth-ax earth-ay)))
 
-(define (naive-euler state state-deriv step count)
+(define ((((naive-euler state-deriv) state) step) count)
   (let loop ((state state)
              (count count))
     (if (<= count 0)
@@ -75,7 +75,9 @@
 ;; digital orrery should take about 20 hours of compute, assuming
 ;; perfect serial utilization.
 
-(naive-euler initial-state state-derivative step-size (real 10000000))
+;((((naive-euler state-derivative) initial-state) step-size) (real 1000000))
+
+((naive-euler state-derivative) initial-state)
 
 #|
 On moria, July 24, 2011:
