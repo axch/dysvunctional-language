@@ -9,7 +9,19 @@
 (define (primitive-impure? primitive)
   (not (primitive-pure? primitive)))
 
-(define-structure (function-type (constructor function-type) safe-accessors)
+(define-structure
+  (function-type
+   (constructor function-type)
+   safe-accessors
+   (print-procedure
+    (lambda (state object)
+      (with-current-unparser-state state
+        (lambda (port)
+          (display "(-> " port)
+          (write (arg-types object) port)
+          (display " " port)
+          (write (return-type object) port)
+          (display ")" port))))))
   args
   return)
 

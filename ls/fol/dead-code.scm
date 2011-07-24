@@ -103,6 +103,8 @@
            (eliminate-in-let expr live-out win))
           ((let-values-form? expr)
            (eliminate-in-let-values expr live-out win))
+          ((lambda-form? expr)
+           (eliminate-in-lambda expr live-out win))
           ;; If used post SRA, there may be constructions to build the
           ;; answer for the outside world, but there should be no
           ;; accesses.
@@ -179,6 +181,14 @@
                           sub-expr-needs
                           (var-set-difference body-needs names)))))
                  (win new-body body-needs))))))))
+  (define (eliminate-in-lambda expr live-out win)
+    (let ((formal (cadr expr))
+          (body (caddr expr)))
+      (loop body #t ; Nothing that escapes can be dead
+       (lambda (new-body body-needs)
+         (win `(lambda ,formal
+                 ,new-body)
+              (var-set-difference body-needs formal))))))
   ;; Given that I decided not to do proper elimination of dead
   ;; structure slots, I will say that if a structure is needed then
   ;; all of its slots are needed, and any access to any slot of a
@@ -427,6 +437,8 @@
            (study-let expr))
           ((let-values-form? expr)
            (study-let-values expr))
+          ((lambda-form? expr)
+           (study-lambda expr))
           ;; If used post SRA, there may be constructions to build the
           ;; answer for the outside world, but there should be no
           ;; accesses.
@@ -466,6 +478,11 @@
       (let ((body-needs (loop body))
             (bindings-need (map cons names (loop sub-expr))))
         (map (interpolate-let-bindings bindings-need) body-needs))))
+  (define (study-lambda expr)
+    (let ((formal (cadr expr))
+          (body (caddr expr)))
+      (let ((body-needs (loop body)))
+        (var-set-difference body-needs formal))))
   (define (interpolate-let-bindings bindings-need)
     (lambda (need-set)
       (var-set-union-map
@@ -576,6 +593,8 @@
            (study-let expr live-out))
           ((let-values-form? expr)
            (study-let-values expr live-out))
+          ((lambda-form? expr)
+           (study-lambda expr live-out))
           ;; If used post SRA, there may be constructions to build the
           ;; answer for the outside world, but there should be no
           ;; accesses.
@@ -617,6 +636,11 @@
         (let ((sub-expr-live-out (map slot-used? names)))
           (var-set-union (var-set-difference body-needs names)
                          (loop sub-expr sub-expr-live-out))))))
+  (define (study-lambda expr live-out)
+    (let ((formal (cadr expr))
+          (body (caddr expr)))
+      (let ((body-needs (loop body (list #t))))
+        (var-set-difference body-needs formal))))
   (define (study-construction expr live-out)
     (var-set-union*
      (map (lambda (arg)

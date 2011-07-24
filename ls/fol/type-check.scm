@@ -97,6 +97,7 @@
           ((if-form? expr) (check-if-types expr env))
           ((let-form? expr) (check-let-types expr env))
           ((let-values-form? expr) (check-let-values-types expr env))
+          ((lambda-form? expr) (check-lambda-types expr env))
           ((cons-ref? expr) (check-cons-ref-types expr env))
           ((vector-ref? expr) (check-vector-ref-types expr env))
           ((construction? expr) (check-construction-types expr env))
@@ -127,6 +128,9 @@
          (lambda (binding-type index)
            (if (values-form? binding-type)
                (error "LET binds a VALUES shape"
+                      expr binding-type index))
+           (if (function-type? binding-type)
+               (error "LET binds a procedure"
                       expr binding-type index)))
          binding-types
          (iota (length binding-types)))
@@ -150,8 +154,28 @@
         (if (not (= (length (caar bindings)) (length (cdr binding-type))))
             (error "LET-VALUES binds the wrong number of VALUES"
                    expr binding-type))
+        (for-each
+         (lambda (binding-type index)
+           (if (function-type? binding-type)
+               (error "LET-VALUES binds a procedure"
+                      expr binding-type index)))
+         (cdr binding-type)
+         (iota (length (cdr binding-type))))
         (loop body (augment-type-env
                     env (caar bindings) (cdr binding-type))))))
+  (define (check-lambda-types expr env)
+    (if (not (= 3 (length expr)))
+        (error "Malformed LAMBDA (excess body forms?)" expr))
+    (let ((formal (cadr expr))
+          (body (caddr expr)))
+      (if (not (list? formal))
+          (error "Malformed LAMBDA (formal not a list)" expr))
+      (if (not (= 1 (length formal)))
+          (error "Malformed LAMBDA (multiple args not allowed)" expr))
+      (function-type
+       'real
+       ;; TODO Extend to checking other foreign types
+       (loop body (augment-type-env env formal (list 'real))))))
   (define (check-cons-ref-types expr env)
     (if (not (= (length expr) 2))
         (error "Malformed pair access" expr))
@@ -185,6 +209,8 @@
        (iota (length element-types)))
       (construct-shape element-types expr)))
   (define (check-application-types expr env)
+    (if (not (fol-var? (car expr)))
+        (error "Calling a statically unknown procedure" expr))
     (let ((expected-types (arg-types (global-type (car expr))))
           (argument-types (map (lambda (exp) (loop exp env)) (cdr expr))))
       (if (not (= (length expected-types) (length argument-types)))

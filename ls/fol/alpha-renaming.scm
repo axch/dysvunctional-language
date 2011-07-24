@@ -101,17 +101,23 @@
            (loop (->lambda exp1) (->lambda exp2) env))
           ((and (let-values-form? exp1) (let-values-form? exp2))
            (loop (->lambda exp1) (->lambda exp2) env))
-          ;; TODO This is not actually right, because it will forget
-          ;; that name1 is name2 outside the bodies of these
-          ;; definitions.  The right thing is to treat a begin form
-          ;; properly, and pay attention to the fact that definitions
-          ;; are scoped globally over it.  Do I want to mess with the
-          ;; fact that the order of definitions is semantically
-          ;; insignificant?
+          ;; Do I want to mess with the fact that the order of
+          ;; definitions is semantically insignificant?
+          ((and (begin-form? exp1) (begin-form? exp2))
+           (let* ((names1 (map definiendum (filter definition? exp1)))
+                  (names2 (map definiendum (filter definition? exp2)))
+                  (new-env (append (map cons names1 names2) env)))
+             (apply boolean/and
+              (map (lambda (form1 form2)
+                     (loop form1 form2 new-env))
+                   exp1 exp2))))
+          ;; At this point, the environment has already accounted
+          ;; for the scope of the definitions
           ((and (definition? exp1) (definition? exp2))
            (let ((name1 (definiendum exp1))
                  (name2 (definiendum exp2)))
-             (loop (definiens exp1) (definiens exp2) (cons (cons name1 name2) env))))
+             (and (loop name1 name2 env)
+                  (loop (definiens exp1) (definiens exp2) env))))
           ((and (pair? exp1) (pair? exp2))
            (and (loop (car exp1) (car exp2) env)
                 (loop (cdr exp1) (cdr exp2) env)))
