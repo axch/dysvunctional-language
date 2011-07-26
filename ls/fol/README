@@ -284,6 +284,7 @@ expression = <data-var>
            | (let ((<data-var> <expression>) ...) <expression>)
            | (let-values (((<data-var> <data-var> <data-var> ...) <expression>))
                <expression>)
+           | (lambda (<data-var>) <expression>)  ; for escape only
            | <access>
            | <construction>
            | (values <expression> <expression> <expression> ...)
@@ -302,9 +303,10 @@ procedure variables have global scope, must be globally unique, may
 only be bound by DEFINE forms, and may not shadow primitive
 procedures.  The data variables are lexically scoped with shadowing,
 and may be bound by LET forms and the formal parameter positions of
-DEFINE forms.  Procedures may only be defined at the top level.
-Applications may only apply procedures directly by name.  This serves
-to make FOL a first-order language.
+DEFINE forms.  Procedures may only be defined at the top level.  The
+lambda form is provided only for wrapping FOL procedures for export
+across the foreign interface.  Applications may only apply procedures
+directly by name.  This serves to make FOL a first-order language.
 
 FOL being first-order was the point.  The restrictions on FOL make the
 targets of all control transfers (except procedure returns) statically

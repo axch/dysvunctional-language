@@ -51,7 +51,7 @@
                (list earth-x earth-y)))))
     (list earth-vx earth-vy earth-ax earth-ay)))
 
-(define (naive-euler state state-deriv step count)
+(define ((((naive-euler state-deriv) state) step) count)
   (let loop ((state state)
              (count count))
     (if (<= count 0)
@@ -75,85 +75,52 @@
 ;; digital orrery should take about 20 hours of compute, assuming
 ;; perfect serial utilization.
 
-(naive-euler initial-state state-derivative step-size (real 10000000))
+;((((naive-euler state-derivative) initial-state) step-size) (real 1000000))
+
+((naive-euler state-derivative) initial-state)
 
 #|
-On khazad-dum, Apr 4, 2011:
+On moria, July 24, 2011:
 (define opt-fol (compile-visibly (dvl-read-file "examples/planets.scm")))
-Stage analyze-and-generate on 2731 pairs
-;process time: 45890 (22480 RUN + 23410 GC); real time: 48822
-Stage structure-definitions->vectors on 801317 pairs
-;process time: 4540 (1500 RUN + 3040 GC); real time: 4551
-Stage inline on 799903 pairs
-;process time: 790 (560 RUN + 230 GC); real time: 781
-Stage scalar-replace-aggregates on 103805 pairs
-;process time: 4490 (1360 RUN + 3130 GC); real time: 4501
-Stage intraprocedural-de-alias on 1264796 pairs
-;process time: 12940 (1590 RUN + 11350 GC); real time: 15904
-Stage eliminate-intraprocedural-dead-variables on 14650 pairs
-;process time: 12370 (12280 RUN + 90 GC); real time: 20852
-Stage reverse-anf on 8489 pairs
-;process time: 680 (440 RUN + 240 GC); real time: 689
+Stage analyze-and-generate on 2905 pairs
+;process time: 11110 (7200 RUN + 3910 GC); real time: 11118
+Stage structure-definitions->vectors on 46377 pairs
+;process time: 180 (180 RUN + 0 GC); real time: 183
+Stage inline on 807744 pairs
+;process time: 720 (520 RUN + 200 GC); real time: 719
+Stage scalar-replace-aggregates on 95803 pairs
+;process time: 3450 (1320 RUN + 2130 GC); real time: 3450
+Stage intraprocedural-cse on 1518812 pairs
+;process time: 44400 (5420 RUN + 38980 GC); real time: 44448
+Stage eliminate-intraprocedural-dead-variables on 7015 pairs
+;process time: 690 (690 RUN + 0 GC); real time: 697
+Stage interprocedural-dead-code-elimination on 6965 pairs
+;process time: 270 (160 RUN + 110 GC); real time: 263
+Stage reverse-anf on 622 pairs
+;process time: 10 (10 RUN + 0 GC); real time: 10
+Final output has 394 pairs
 ;Value: opt-fol
 |#
 
 #|
-On arrakis, Apr 8, 2011
+On arrakis, July 24, 2011
 (define opt-fol (compile-visibly (dvl-read-file "examples/planets.scm")))
-Stage analyze-and-generate on 2731 pairs
-;process time: 10550 (9310 RUN + 1240 GC); real time: 10557
-Stage structure-definitions->vectors on 801317 pairs
-;process time: 1010 (790 RUN + 220 GC); real time: 1014
-Stage inline on 799903 pairs
-;process time: 660 (660 RUN + 0 GC); real time: 662
-Stage scalar-replace-aggregates on 189633 pairs
-;process time: 1230 (960 RUN + 270 GC); real time: 1228
-Stage intraprocedural-de-alias on 2345105 pairs
-;process time: 1520 (1240 RUN + 280 GC); real time: 1525
-Stage eliminate-intraprocedural-dead-variables on 16502 pairs
-;process time: 1130 (1130 RUN + 0 GC); real time: 1134
-Stage reverse-anf on 7190 pairs
-;process time: 380 (240 RUN + 140 GC); real time: 388
-;Value: opt-fol
-|#
-
-#|
-On arrakis, Apr 11, 2011
-(define opt-fol (compile-visibly (dvl-read-file "examples/planets.scm")))
-Stage analyze-and-generate on 2731 pairs
-;process time: 9060 (8030 RUN + 1030 GC); real time: 9074
-Stage structure-definitions->vectors on 801317 pairs
-;process time: 850 (850 RUN + 0 GC); real time: 852
-Stage inline on 799903 pairs
-;process time: 510 (310 RUN + 200 GC); real time: 513
-Stage scalar-replace-aggregates on 103805 pairs
-;process time: 550 (550 RUN + 0 GC); real time: 549
-Stage intraprocedural-de-alias on 1264796 pairs
-;process time: 920 (680 RUN + 240 GC); real time: 922
-Stage eliminate-intraprocedural-dead-variables on 14650 pairs
-;process time: 4380 (4380 RUN + 0 GC); real time: 4383
-Stage reverse-anf on 8489 pairs
-;process time: 220 (220 RUN + 0 GC); real time: 228
-;Value: opt-fol
-|#
-
-#|
-On arrakis, in the same Scheme as before,
-Apr 15, 2011
-(define opt-fol (compile-visibly (dvl-read-file "examples/planets.scm")))
-Stage analyze-and-generate on 2731 pairs
-;process time: 7790 (6810 RUN + 980 GC); real time: 7798
-Stage structure-definitions->vectors on 801317 pairs
-;process time: 810 (810 RUN + 0 GC); real time: 809
-Stage inline on 799903 pairs
-;process time: 900 (710 RUN + 190 GC); real time: 901
-Stage scalar-replace-aggregates on 189633 pairs
-;process time: 1300 (1010 RUN + 290 GC); real time: 1311
-Stage intraprocedural-de-alias on 2345105 pairs
-;process time: 1620 (1320 RUN + 300 GC); real time: 1624
-Stage eliminate-intraprocedural-dead-variables on 16502 pairs
-;process time: 1170 (1170 RUN + 0 GC); real time: 1176
-Stage reverse-anf on 7190 pairs
-;process time: 410 (270 RUN + 140 GC); real time: 413
+Stage analyze-and-generate on 2905 pairs
+;process time: 2980 (2830 RUN + 150 GC); real time: 2991
+Stage structure-definitions->vectors on 46377 pairs
+;process time: 90 (90 RUN + 0 GC); real time: 82
+Stage inline on 807744 pairs
+;process time: 240 (240 RUN + 0 GC); real time: 251
+Stage scalar-replace-aggregates on 95582 pairs
+;process time: 490 (490 RUN + 0 GC); real time: 495
+Stage intraprocedural-cse on 1510545 pairs
+;process time: 2500 (2150 RUN + 350 GC); real time: 2504
+Stage eliminate-intraprocedural-dead-variables on 7011 pairs
+;process time: 190 (190 RUN + 0 GC); real time: 195
+Stage interprocedural-dead-code-elimination on 6961 pairs
+;process time: 50 (50 RUN + 0 GC); real time: 60
+Stage reverse-anf on 610 pairs
+;process time: 0 (0 RUN + 0 GC); real time: 2
+Final output has 322 pairs
 ;Value: opt-fol
 |#

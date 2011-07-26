@@ -112,9 +112,13 @@
       (do-wallpaper count analysis *analyze-wallp*)
       (if (null? (analysis-queue analysis))
           (begin
-            ;; 0 always triggers any wallpaper.
-            (do-wallpaper 0 analysis *analyze-wallp*)
-            analysis)
+            (ensure-escaping-values-have-bindings! analysis)
+            (if (null? (analysis-queue analysis))
+                (begin
+                  ;; 0 always triggers any wallpaper.
+                  (do-wallpaper 0 analysis *analyze-wallp*)
+                  analysis)
+                (loop (+ count 1))))
           (begin
             (refine-next-binding! analysis)
             (loop (+ count 1)))))))
@@ -143,7 +147,9 @@
      (initial-user-env)
      (initial-world)
      abstract-none
-     impossible-world))))
+     impossible-world
+     #t ;; The initial binding's value will escape
+     ))))
 
 (define (refine-next-binding! analysis)
   (let ((binding (analysis-queue-pop! analysis)))
@@ -268,7 +274,7 @@
    (lambda ()
      (if (impossible-world? world)
          (win abstract-none impossible-world)
-         (let ((binding (make-binding key1 key2 world abstract-none impossible-world)))
+         (let ((binding (make-binding key1 key2 world abstract-none impossible-world #f)))
            (analysis-new-binding! analysis binding)
            (search-win binding))))))
 
@@ -317,3 +323,43 @@
       number
       ;; Newly made
       (+ number (- (world-gensym new-world) (world-gensym old-world)))))
+
+(define (ensure-escaping-values-have-bindings! analysis)
+  (for-each
+   (lambda (binding)
+     (let ((some-acceptable-world (binding-new-world binding)))
+       (let loop! ((val (binding-value binding)))
+         (cond ((some-boolean? val)
+                'ok)
+               ((some-real? val)
+                'ok)
+               ((abstract-none? val)
+                'ok)       ; This shouldn't happen, but it's ok anyway
+               ((abstract-gensym? val)
+                'ok)
+               ((null? val)
+                'ok)
+               ((pair? val)
+                (loop! (car val))
+                (loop! (cdr val)))
+               ((closure? val)
+                (analysis-search
+                 ;; TODO Extend to other foreign input types
+                 val abstract-real analysis
+                 (lambda (found)
+                   'ok)
+                 (lambda ()
+                   (analysis-new-binding!
+                    analysis
+                    (make-binding
+                     val
+                     ;; TODO Extend to other foreign input types
+                     abstract-real
+                     some-acceptable-world
+                     abstract-none
+                     impossible-world
+                     #t                 ; The result escapes
+                     )))))
+               (else
+                (error "Unsupported escaping object" val))))))
+   (filter binding-escapes? (analysis-bindings analysis))))

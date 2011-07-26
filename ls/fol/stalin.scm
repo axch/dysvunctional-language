@@ -29,13 +29,9 @@
    (list
     (rule `(let-values (((? names) (? exp)))
              (?? body))
-          (let ((the-name (make-name 'the-values)))
-            `(let ((,the-name ,exp))
-               (let ,(map (lambda (name index)
-                            `(,name (vector-ref ,the-name ,index)))
-                          names
-                          (iota (length names)))
-                 ,@body)))))))
+          `(call-with-values ,exp
+             (lambda ,names
+               ,@body))))))
 
 (define replace-nulls
   (on-subexpressions
