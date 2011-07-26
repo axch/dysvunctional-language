@@ -54,7 +54,7 @@ behavior.  If the program is in A-normal form, that problem can be
 punted to the dead code eliminator, but if it is not, some care should
 be taken about the subexpression that would produce x.
 
-On the other hand, (* 0 x) --> x is worth thinking about despite these
+On the other hand, (* 0 x) --> 0 is worth thinking about despite these
 problems, because it chains and can therefore eliminate lots of excess
 code by itself.  In particular, taking tangents of things that are not
 bundles and asking for sensitivities of things that get dropped will
