@@ -17,7 +17,7 @@
     (check (equal? answer (macroexpand answer)))
     answer))
 
-(define (careful-solved-analyze kernel-program answer)
+(define (meticulous-solved-analyze kernel-program answer)
   (let ((analysis (analyze kernel-program)))
     (let loop ((bindings (analysis-bindings analysis)))
       (cond ((null? bindings)
@@ -29,18 +29,18 @@
              analysis)
             (else (loop (cdr bindings)))))))
 
-(define (careful-generate program analysis answer)
+(define (meticulous-generate program analysis answer)
   (let ((raw-fol (generate program analysis)))
     (check (equal? answer (fol-eval raw-fol)))
     raw-fol))
 
-(define (careful-solved-generate program analysis answer)
+(define (meticulous-solved-generate program analysis answer)
   (let ((raw-fol (strip-argument-types
-                  (careful-generate program analysis answer))))
+                  (meticulous-generate program analysis answer))))
     (check (equal? `(begin ,answer) raw-fol))
     raw-fol))
 
-(define ((fol-carefully stage) fol-code answer)
+(define ((fol-meticulously stage) fol-code answer)
   (let ((done (stage fol-code)))
     (check-program-types done)
     (check (equal? answer (fol-eval done)))
@@ -50,26 +50,26 @@
 (define (determined-answer program)
   (let* ((kernel (careful-macroexpand program))
          (answer (interpret kernel))
-         (analysis (careful-solved-analyze kernel answer))
-         (raw-fol (careful-solved-generate kernel analysis answer)))
+         (analysis (meticulous-solved-analyze kernel answer))
+         (raw-fol (meticulous-solved-generate kernel analysis answer)))
     answer))
 
-(define (compile-carefully program)
+(define (compile-meticulously program)
   (let* ((kernel (careful-macroexpand program))
          (answer (interpret kernel))
          (analysis (analyze kernel))
-         (raw-fol (careful-generate kernel analysis answer))
-         (vectors-fol ((fol-carefully structure-definitions->vectors)
+         (raw-fol (meticulous-generate kernel analysis answer))
+         (vectors-fol ((fol-meticulously structure-definitions->vectors)
                        raw-fol answer))
-         (inlined ((fol-carefully inline) vectors-fol answer))
-         (anf ((fol-carefully approximate-anf) inlined answer))
+         (inlined ((fol-meticulously inline) vectors-fol answer))
+         (anf ((fol-meticulously approximate-anf) inlined answer))
          (scalars (scalar-replace-aggregates anf)) ; SRA is not idempotent
-         (cse ((fol-carefully intraprocedural-cse) scalars answer))
-         (variables ((fol-carefully eliminate-intraprocedural-dead-variables)
+         (cse ((fol-meticulously intraprocedural-cse) scalars answer))
+         (variables ((fol-meticulously eliminate-intraprocedural-dead-variables)
                      cse answer))
-         (more-variables ((fol-carefully interprocedural-dead-code-elimination)
+         (more-variables ((fol-meticulously interprocedural-dead-code-elimination)
                           variables answer))
-         (opt-fol ((fol-carefully reverse-anf) more-variables answer)))
+         (opt-fol ((fol-meticulously reverse-anf) more-variables answer)))
     ;; SRA emits sane code
     (check-program-types scalars)
     (check (equal? answer (fol-eval scalars)))
@@ -154,7 +154,7 @@
 
     (fol-eval opt-fol)))
 
-(define union-free-answer (union-free-answerer compile-carefully))
+(define union-free-answer (union-free-answerer compile-meticulously))
 (define fast-union-free-answer (union-free-answerer compile-to-scheme))
 
 (define (analyzed-answer program)
