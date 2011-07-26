@@ -31,7 +31,7 @@ The eliminator performs the following simplifications:
 
   (if foo bar bar) --> bar
 
-The first six of these perserve the semantics of FOL programs, even
+The first six of these preserve the semantics of FOL programs, even
 for floating point numbers.  CSE is also the best place in the
 software stack for them, because they would have no effect on flow
 analysis (because if x were known at compile time they would get done
