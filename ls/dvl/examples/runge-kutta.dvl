@@ -1,0 +1,65 @@
+(define (((naive-euler state-deriv) step) state)
+  (+ state (* step (state-deriv state))))
+
+(define (((rk4 state-deriv) step) state)
+  (let* ((k1 (* step (state-deriv state)))
+         (k2 (* step (state-deriv (+ state (* 1/2 k1)))))
+         (k3 (* step (state-deriv (+ state (* 1/2 k2)))))
+         (k4 (* step (state-deriv (+ state k3)))))
+    (+ state (* 1/6 (+ k1 (+ (* 2 k2) (+ (* 2 k3) k4)))))))
+
+;; A tableau is a matrix of coefficients for the various steps
+(define ((((rk-by-tableau tableau) state-deriv) step) state)
+  (let loop ((state-deltas '())
+             (derivatives '())
+             (coeff-lists (map reverse tableau)))
+    (if (null? coeff-lists)
+        ;; TODO Should check for null state-deltas (which would have
+        ;; meant a null tableau) but need an error system for that.
+        (+ state (car state-deltas))
+        (let* ((new-state-delta
+                (sum (map2 * (car coeff-lists) derivatives)))
+               (new-derivative
+                (* step (state-deriv (+ state new-state-delta)))))
+          (loop (cons new-state-delta state-deltas)
+                (cons new-derivative derivatives)
+                (cdr coeff-lists))))))
+
+
+;; Things I wish the system would (effectively) deduce by itself
+;; 1) naive-euler is 
+;;    0 |
+;;      | 1
+;;    heun's method, RK4, midpoint method, etc.
+;; 2) RK4 reduces to the simpson rule for quadrature when f(t,y)
+;;    doesn't depend on y.
+
+(define naive-euler-again
+  (rk-by-tableau
+   '(()
+     (1))))
+
+(define rk4-again
+  (rk-by-tableau
+   '(()
+     (1/2)
+     (0   1/2)
+     (0   0   1)
+     (1/6 1/3 1/3 1/6))))
+
+(define (exp-state-deriv (list t y))
+  (list 1 t))
+
+(define (((integrate-test method) step) count)
+  (let loop ((state (list 0 1))
+             (count count))
+    (if (<= count 0)
+        state
+        (loop
+         (((method exp-state-deriv) step) state)
+         (- count 1)))))
+
+(define euler-exp (integrate-test naive-euler))
+(define rk4-exp (integrate-test rk4-again))
+
+(cons euler-exp rk4-exp)

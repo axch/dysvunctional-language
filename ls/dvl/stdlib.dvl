@@ -158,6 +158,15 @@
 
 (define (length l) (if (null? l) 0 (+ (length (cdr l)) 1)))
 
+(define (reverse l)
+  (let loop ((l l)
+             (answer '()))
+    (if (null? l)
+        answer
+        (loop (cdr l) (cons (car l) answer)))))
+
+(define (map f l) (if (null? l) '() (cons (f (car l)) (map f (cdr l)))))
+
 (define (map2 f l1 l2)
  (if (null? l1)
      '()
@@ -335,3 +344,9 @@
 (define (universal-zero? thing)
   (and (gensym? thing)
        (gensym= thing zero)))
+
+(define ((reduce f i) l)
+  (if (null? l) i (f (car l) ((reduce f i) (cdr l)))))
+
+(define sum (reduce g:+ zero))
+(define product (reduce g:* 1))
