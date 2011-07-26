@@ -91,4 +91,4 @@
     (let ((scm-file (->namestring (pathname-new-type filename #f))))
       (fol->floating-mit-scheme compiled-program scm-file)
       (fluid-let ((load/suppress-loading-message? #t))
-        (pp (run-mit-scheme scm-file))))))
+        (run-mit-scheme scm-file)))))
