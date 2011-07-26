@@ -1,7 +1,7 @@
                             FOL Cost Model
 
 A precise cost model for FOL is very difficult to specify.  In part,
-this is because because this job is very hard even for the assembly
+this is because this job is very hard even for the assembly
 languages of modern computers (will this load hit the cache or fall
 through to main memory?  How often will the chip correctly predict
 which way this branch will go?)  In part, this is also because FOL is
