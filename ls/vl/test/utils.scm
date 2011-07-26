@@ -40,11 +40,20 @@
     (check (equal? `(begin ,answer) raw-fol))
     raw-fol))
 
-(define ((fol-meticulously stage) fol-code answer)
+(define ((fol-carefully stage) fol-code)
   (let ((done (stage fol-code)))
-    (check-program-types done)
-    (check (equal? answer (fol-eval done)))
+    (if (eq? stage structure-definitions->vectors)
+        ;; TODO Argh!  The input to structure-definitions->vectors
+        ;; does not type check.
+        (check-program-types done)
+        (check (equal? (check-program-types done)
+                       (check-program-types fol-code))))
     (check (equal? done (stage done)))
+    done))
+
+(define ((fol-meticulously stage) fol-code answer)
+  (let ((done ((fol-carefully stage) fol-code)))
+    (check (equal? answer (fol-eval done)))
     done))
 
 (define (determined-answer program)
