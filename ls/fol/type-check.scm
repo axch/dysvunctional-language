@@ -128,9 +128,6 @@
          (lambda (binding-type index)
            (if (values-form? binding-type)
                (error "LET binds a VALUES shape"
-                      expr binding-type index))
-           (if (function-type? binding-type)
-               (error "LET binds a procedure"
                       expr binding-type index)))
          binding-types
          (iota (length binding-types)))

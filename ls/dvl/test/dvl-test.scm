@@ -150,6 +150,13 @@
                    fact))))
      (check (equal? 5040 ((proc 4) 7)))))
 
+ (define-test (multiple-functions-escape)
+   (let ((procs (fast-union-free-answer
+                 '(cons (lambda (x) (+ 1 x))
+                        (lambda (x) (* 2 x))))))
+     (check (equal? 5 ((car procs) 4)))
+     (check (equal? 6 ((cdr procs) 3)))))
+
  (for-each-example "../../vl/examples.scm" define-union-free-example-test)
  (for-each-example "../../vl/test/test-vl-programs.scm"
                    define-union-free-example-test)
