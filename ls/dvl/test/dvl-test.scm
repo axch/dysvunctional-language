@@ -141,7 +141,7 @@
      (check (equal? 5040 ((proc 4) 7)))))
 
  (define-test (optimized-function-escapes-and-is-called-locally)
-   (let ((proc (fast-union-free-answer
+   (let ((proc (loose-union-free-answer
                 '(let ()
                    (define ((fact dead) n)
                      (if (= n 0)
@@ -151,7 +151,7 @@
      (check (equal? 5040 ((proc 4) 7)))))
 
  (define-test (multiple-functions-escape)
-   (let ((procs (fast-union-free-answer
+   (let ((procs (loose-union-free-answer
                  '(cons (lambda (x) (+ 1 x))
                         (lambda (x) (* 2 x))))))
      (check (equal? 5 ((car procs) 4)))

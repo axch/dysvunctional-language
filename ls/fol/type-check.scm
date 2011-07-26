@@ -151,13 +151,6 @@
         (if (not (= (length (caar bindings)) (length (cdr binding-type))))
             (error "LET-VALUES binds the wrong number of VALUES"
                    expr binding-type))
-        (for-each
-         (lambda (binding-type index)
-           (if (function-type? binding-type)
-               (error "LET-VALUES binds a procedure"
-                      expr binding-type index)))
-         (cdr binding-type)
-         (iota (length (cdr binding-type))))
         (loop body (augment-type-env
                     env (caar bindings) (cdr binding-type))))))
   (define (check-lambda-types expr env)
@@ -283,3 +276,12 @@
         (or answer
             (error "Looking up unknown name" name))))
     lookup-type))
+
+(define (equal-type? type1 type2)
+  (cond ((and (function-type? type1) (function-type? type2))
+         (and (equal-type? (arg-types type1) (arg-types type2))
+              (equal-type? (return-type type1) (return-type type2))))
+        ((and (pair? type1) (pair? type2))
+         (and (equal-type? (car type1) (car type2))
+              (equal-type? (cdr type1) (cdr type2))))
+        (else (equal? type1 type2))))

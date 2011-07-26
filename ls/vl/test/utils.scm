@@ -46,12 +46,12 @@
         ;; TODO Argh!  The input to structure-definitions->vectors
         ;; does not type check.
         (check-program-types done)
-        (check (equal? (check-program-types done)
-                       (check-program-types fol-code))))
+        (check (equal-type? (check-program-types done)
+                            (check-program-types fol-code))))
     (check (equal? done (stage done)))
     done))
 
-(define ((fol-meticulously stage) fol-code answer)
+(define (((fol-meticulously answer) stage) fol-code)
   (let ((done ((fol-carefully stage) fol-code)))
     (check (equal? answer (fol-eval done)))
     done))
@@ -63,25 +63,19 @@
          (raw-fol (meticulous-solved-generate kernel analysis answer)))
     answer))
 
-(define (compile-meticulously program)
-  (let* ((kernel (careful-macroexpand program))
-         (answer (interpret kernel))
-         (analysis (analyze kernel))
-         (raw-fol (meticulous-generate kernel analysis answer))
-         (vectors-fol ((fol-meticulously structure-definitions->vectors)
-                       raw-fol answer))
-         (inlined ((fol-meticulously inline) vectors-fol answer))
-         (anf ((fol-meticulously approximate-anf) inlined answer))
+(define (optimizer how raw-fol)
+  (let* ((vectors-fol ((how structure-definitions->vectors) raw-fol))
+         (inlined ((how inline) vectors-fol))
+         (anf ((how approximate-anf) inlined))
          (scalars (scalar-replace-aggregates anf)) ; SRA is not idempotent
-         (cse ((fol-meticulously intraprocedural-cse) scalars answer))
-         (variables ((fol-meticulously eliminate-intraprocedural-dead-variables)
-                     cse answer))
-         (more-variables ((fol-meticulously interprocedural-dead-code-elimination)
-                          variables answer))
-         (opt-fol ((fol-meticulously reverse-anf) more-variables answer)))
+         (cse ((how intraprocedural-cse) scalars))
+         (variables ((how eliminate-intraprocedural-dead-variables) cse))
+         (more-variables ((how interprocedural-dead-code-elimination) variables))
+         (opt-fol ((how reverse-anf) more-variables))
+         (type (check-program-types opt-fol)))
     ;; SRA emits sane code
     (check-program-types scalars)
-    (check (equal? answer (fol-eval scalars)))
+; TODO    (check (equal? answer (fol-eval scalars)))
 
     ;; INLINE alpha renames; alpha renaming is preserved thereafter
     (check (unique-names? inlined))
@@ -101,7 +95,7 @@
     ;; Except for reconstruction of the structure that the outside
     ;; world expects, SRA and subsequent stages (except REVERSE-ANF)
     ;; preserve ANF.
-    (if (not (pair? answer))
+    (if (symbol? type)
         (begin
           (check (approximate-anf? scalars))
           (check (approximate-anf? cse))
@@ -111,7 +105,7 @@
     ;; Except for reconstruction of the structure that the outside
     ;; world expects, SRA is idempotent and subsequent ANF-preserving
     ;; stages do not introduce new work for it.
-    (if (not (pair? answer))
+    (if (symbol? type)
         (begin
           (check (equal? scalars (scalar-replace-aggregates scalars)))
           (check (equal? cse (scalar-replace-aggregates cse)))
@@ -145,6 +139,19 @@
 
     opt-fol))
 
+(define (compile-carefully program)
+  (let* ((kernel (careful-macroexpand program))
+         (analysis (analyze kernel))
+         (raw-fol (generate kernel analysis)))
+    (optimizer fol-carefully raw-fol)))
+
+(define (compile-meticulously program)
+  (let* ((kernel (careful-macroexpand program))
+         (answer (interpret kernel))
+         (analysis (analyze kernel))
+         (raw-fol (meticulous-generate kernel analysis answer)))
+    (optimizer (fol-meticulously answer) raw-fol)))
+
 (define ((union-free-answerer compile) program #!optional wallpaper?)
   (if (default-object? wallpaper?)
       (set! wallpaper? #f))
@@ -164,6 +171,7 @@
     (fol-eval opt-fol)))
 
 (define union-free-answer (union-free-answerer compile-meticulously))
+(define loose-union-free-answer (union-free-answerer compile-carefully))
 (define fast-union-free-answer (union-free-answerer compile-to-scheme))
 
 (define (analyzed-answer program)

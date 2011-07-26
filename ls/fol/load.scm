@@ -62,6 +62,7 @@
 
      ;; Optimization
      check-program-types
+     equal-type? ; TODO
      fol-optimize
      optimize-visibly
 
