@@ -62,7 +62,7 @@ generate lots of zeros which will constantly get multiplied by things,
 and eliminating all that work can probably lead to much acceleration.
 TODO Is there a really compelling example of this?
 
-On the third hand, the importance of (* 0 x) --> x also complicates
+On the third hand, the importance of (* 0 x) --> 0 also complicates
 its position in the software stack.  It would be effective directly in
 flow analysis, because it would allow x not to be analyzed at all, and
 would yield a nice constant to propagate through its return value.  On
