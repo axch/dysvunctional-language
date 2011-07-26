@@ -241,9 +241,9 @@
   (lambda (thing1 thing2)
     (f (primal* thing1) (primal* thing2))))
 
-(define (g:+ args) ((lift-real*real->real + (lambda (x1 x2) 1) (lambda (x1 x2) 1)) args))
-(define (g:- args) ((lift-real*real->real - (lambda (x1 x2) 1) (lambda (x1 x2) -1)) args))
-(define (g:* args) ((lift-real*real->real * (lambda (x1 x2) x2) (lambda (x1 x2) x1)) args))
+(define (g:+ args) ((lift-real*real->real v:+ (lambda (x1 x2) 1) (lambda (x1 x2) 1)) args))
+(define (g:- args) ((lift-real*real->real v:- (lambda (x1 x2) 1) (lambda (x1 x2) -1)) args))
+(define (g:* args) ((lift-real*real->real v:* (lambda (x1 x2) x2) (lambda (x1 x2) x1)) args))
 (define (g:/ args)
   ((lift-real*real->real
     / (lambda (x1 x2) (g:/ 1 x2)) (lambda (x1 x2) (g:- 0 (g:/ x1 (g:* x2 x2))))) args))
@@ -270,3 +270,68 @@
   (if (g:negative? x)
       (g:- 0 x)
       x))
+
+(define (pointwise f obj)
+  (cond ((real? obj)
+         (f obj))
+        ((pair? obj)
+         (cons (f (car obj)) (f (cdr obj))))
+        ((procedure? obj)
+         (lambda (x) (f (obj x))))
+        (else
+         obj)))
+
+(define (equal? x y)
+ (or
+  (and (null? x) (null? y))
+  (and (boolean? x) (boolean? y) (or (and x y) (and (not x) (not y))))
+  (and (real? x) (real? y) (= x y))
+  (and (pair? x) (pair? y) (equal? (car x) (car y)) (equal? (cdr x) (cdr y)))
+  (and (gensym? x) (gensym? y) (gensym= x y))))
+
+(define (pointwise2 f obj1 obj2)
+  (cond ((and (real? obj1) (real? obj2))
+         (f obj1 obj2))
+        ((and (pair? obj1) (pair? obj2))
+         (cons (f (car obj1) (car obj2))
+               (f (cdr obj1) (cdr obj2))))
+        ((and (procedure? obj1) (procedure? obj2))
+         (lambda (z)
+           (f (obj1 z) (obj2 z))))
+        ;; Presume no real content
+        #;
+        ((equal? obj1 obj2)
+         obj1) #;
+        (else (error "Object shape mismatch"))
+        (else obj1) ; TODO The previous two clauses would have been
+                    ; better, but we need an error system for that
+        ))
+
+(define (v:+ x y)
+  (cond ((universal-zero? x) y)
+        ((universal-zero? y) x)
+        ((and (real? x) (real? y))
+         (+ x y))
+        (else
+         (pointwise2 g:+ x y))))
+
+(define (v:- x y)
+  (v:+ x (g:* -1 y)))
+
+(define (v:* obj1 obj2)
+  (if (real? obj1)
+      (if (real? obj2)
+          (* obj1 obj2)
+          (pointwise (lambda (x) (g:* obj1 x)) obj2))
+      ; TODO This if is better, but we need an error system for that
+      #;
+      (if (real? obj2)
+          (pointwise (lambda (x) (g:* x obj2)) obj1)
+          (error "Multiplication mismatch"))
+      (pointwise (lambda (x) (g:* x obj2)) obj1)))
+
+(define zero (gensym))
+
+(define (universal-zero? thing)
+  (and (gensym? thing)
+       (gensym= thing zero)))
