@@ -60,6 +60,8 @@
          (- count 1)))))
 
 (define euler-exp (integrate-test naive-euler))
-(define rk4-exp (integrate-test rk4-again))
+(define euler-exp-2 (integrate-test naive-euler-again))
+(define rk4-exp (integrate-test rk4))
+(define rk4-exp-2 (integrate-test rk4-again))
 
-(cons euler-exp rk4-exp)
+(list euler-exp euler-exp-2 rk4-exp rk4-exp-2)
