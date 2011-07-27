@@ -779,12 +779,12 @@
    form))
 
 (define (find-needed-inputs needed-outputs i/o-map)
-  (define (parallel-list-and lists)
+  (define (parallel-list-or lists)
     (reduce (lambda (input answer)
-              (map boolean/and input answer))
+              (map boolean/or input answer))
             (map (lambda (x) #f) (car i/o-map))
             lists))
-  (parallel-list-and
+  (parallel-list-or
    (select-masked needed-outputs i/o-map)))
 
 (define (select-masked liveness items)

@@ -166,4 +166,21 @@
           1)
         (foo 5))))
 
+   ;; Elimination should keep all inputs that are needed by any
+   ;; output, even if some output does not need them.
+   (equal?
+    '(begin
+       (define (foo not-dead)
+         (argument-types real (values real real))
+         (values not-dead 1))
+       (let-values (((x one) (foo 5)))
+         (cons x one)))
+    (interprocedural-dead-code-elimination
+     '(begin
+        (define (foo not-dead)
+          (argument-types real (values real real))
+          (values not-dead 1))
+        (let-values (((x one) (foo 5)))
+          (cons x one)))))
+
    ))
