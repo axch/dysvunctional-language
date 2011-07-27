@@ -716,10 +716,10 @@
                   (if all-ins-needed?
                       body
                       (tidy-empty-let
-                       `(let (,(map (lambda (name)
-                                      `(,name ,(make-tombstone)))
-                                    (select-masked
-                                     (map not needed-inputs) args)))
+                       `(let ,(map (lambda (name)
+                                     `(,name ,(make-tombstone)))
+                                   (select-masked
+                                    (map not needed-inputs) args))
                           ,body)))))
             (if all-outs-needed?
                 the-body ; All the outs of the entry point will always be needed

@@ -150,4 +150,20 @@
          (let-values (((dead n!) (fact (real 5))))
            n!)))))
 
+   ;; Dead variable elimination should emit syntactically correct
+   ;; stuff, no?
+   (equal?
+    '(begin
+       (define (foo)
+         (argument-types real)
+         (let ((dead ()))
+           1))
+       (foo))
+    (%interprocedural-dead-code-elimination
+     '(begin
+        (define (foo dead)
+          (argument-types real real)
+          1)
+        (foo 5))))
+
    ))
