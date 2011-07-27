@@ -780,10 +780,9 @@
 
 (define (find-needed-inputs needed-outputs i/o-map)
   (define (parallel-list-or lists)
-    (reduce (lambda (input answer)
-              (map boolean/or input answer))
-            (map (lambda (x) #f) (car i/o-map))
-            lists))
+    (if (null? lists)
+        (map (lambda (x) #f) (car i/o-map))
+        (apply map boolean/or lists)))
   (parallel-list-or
    (select-masked needed-outputs i/o-map)))
 
