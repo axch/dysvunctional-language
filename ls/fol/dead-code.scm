@@ -365,14 +365,18 @@
       ,@(except-last-pair defns)
       ,(cadddr (last defns)))))
 
-(define (interprocedural-dead-code-elimination program)
+(define (%interprocedural-dead-code-elimination program)
   (let* ((defns (program->procedure-definitions program))
          (dependency-map (compute-dependency-map defns))
          (liveness-map (compute-liveness-map dependency-map defns))
          (rewritten (rewrite-definitions dependency-map liveness-map defns)))
-    (eliminate-intraprocedural-dead-variables ;; TODO Check absence of tombstones
-     (procedure-definitions->program
-      rewritten))))
+    (procedure-definitions->program
+     rewritten)))
+
+(define (interprocedural-dead-code-elimination program)
+  (eliminate-intraprocedural-dead-variables ; TODO Check for absence of tombstones
+   (%interprocedural-dead-code-elimination
+    program)))
 
 ;;; The dependency-map is the structure built by steps 1-3 above.  It
 ;;; maps every procedure name to a list of boolean lists.  The outer
