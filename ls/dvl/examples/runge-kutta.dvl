@@ -47,11 +47,11 @@
      (0   0   1)
      (1/6 1/3 1/3 1/6))))
 
-(define (exp-state-deriv (list t y))
-  (list 1 y))
+(define (exp-state-deriv (cons t y))
+  (cons 1 y))
 
 (define (((integrate-test method) step) count)
-  (let loop ((state (list 0 1))
+  (let loop ((state (cons 0 1))
              (count count))
     (if (<= count 0)
         state
@@ -59,9 +59,25 @@
          (((method exp-state-deriv) step) state)
          (- count 1)))))
 
-(define euler-exp (integrate-test naive-euler))
-(define euler-exp-2 (integrate-test naive-euler-again))
-(define rk4-exp (integrate-test rk4))
-(define rk4-exp-2 (integrate-test rk4-again))
+;; (define euler-exp (integrate-test naive-euler))
+;; (define euler-exp-2 (integrate-test naive-euler-again))
+;; (define rk4-exp (integrate-test rk4))
+;; (define rk4-exp-2 (integrate-test rk4-again))
+
+(define (step-stream method)
+  (lambda (t)
+    (lambda (y)
+      (lambda (step)
+        (((method exp-state-deriv) step) (cons t y))))))
+
+(define euler-exp   (step-stream naive-euler))
+(define euler-exp-2 (step-stream naive-euler-again))
+(define rk4-exp     (step-stream rk4))
+(define rk4-exp-2   (step-stream rk4-again))
+
+;; I have verified that rk4-exp and rk4-exp-2 compile to the same code
+;; up to algebraic manipulations (e.g. multiplying by 1/3 instead of
+;; multiplying by 2 and then by 1/6), by symbolically evaluating them
+;; both in ScmUtils.
 
 (list euler-exp euler-exp-2 rk4-exp rk4-exp-2)
