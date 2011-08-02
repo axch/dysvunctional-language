@@ -70,6 +70,13 @@
       (lambda (step)
         (((method exp-state-deriv) step) (cons t y))))))
 
+#;
+(define (step-stream method)
+  (let loop ((state (cons (real 0) (real 1))))
+    (cons state
+          (lambda (step)
+            (loop (((method exp-state-deriv) step) state))))))
+
 (define euler-exp   (step-stream naive-euler))
 (define euler-exp-2 (step-stream naive-euler-again))
 (define rk4-exp     (step-stream rk4))

@@ -21,3 +21,15 @@
             (loop (cons (cons new-time new-y) result)
                   new-time
                   new-y))))))
+
+#;
+(define (show-1d-ode integrator time-step total-time)
+  (let loop ((result '())
+             (integrator integrator))
+    (let* ((state (car integrator))
+           (current-time (car state))
+           (func (cdr integrator)))
+      (if (>= current-time total-time)
+          (gnuplot-plot-alist (reverse result) "with points, exp(x)")
+          (loop (cons state result)
+                (func time-step))))))
