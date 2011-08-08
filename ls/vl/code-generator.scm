@@ -276,6 +276,9 @@
   (let ((operator (binding-proc binding)))
     (let ((name (escaping-closure->scheme-function-name operator)))
       `(define (,name the-closure)
+         (argument-types
+          ,(shape->type-declaration operator)
+          escaping-function)
          (lambda (external-formal)
            ;; TODO Support for other incoming types besides real
            ,(prepare-to-escape

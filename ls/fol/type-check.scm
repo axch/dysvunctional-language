@@ -174,10 +174,11 @@
           (error "Malformed LAMBDA (formal not a list)" expr))
       (if (not (= 1 (length formal)))
           (error "Malformed LAMBDA (multiple args not allowed)" expr))
-      (function-type
-       'real
-       ;; TODO Extend to checking other foreign types
-       (loop body (augment-type-env env formal (list 'real))))))
+      (let ((body-type (loop body (augment-type-env env formal (list 'real)))))
+        ;; TODO Do I want to actually declare and check lambda expression types?
+        ;; TODO Extend to checking other foreign types
+        #;(function-type 'real body-type)
+        'escaping-function)))
   (define (check-cons-ref-types expr env)
     (if (not (= (length expr) 2))
         (error "Malformed pair access" expr))
@@ -233,7 +234,7 @@
   ;; This will need to be updated when union types appear
   (or (null? thing)
       (and (fol-var? thing)
-           (memq thing '(real bool gensym)))
+           (memq thing '(real bool gensym escaping-function)))
       (and (list? thing)
            (> (length thing) 0)
            (memq (car thing) '(cons vector values))
