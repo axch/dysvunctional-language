@@ -157,6 +157,26 @@
      (check (equal? 5 ((car procs) 4)))
      (check (equal? 6 ((cdr procs) 3)))))
 
+ (define-test (loop-escapes-poor-mans-stream)
+   (define program '(let loop ((state (real 0)))
+                      (cons state
+                            (lambda (step)
+                              (loop (+ state step))))))
+   (let ((stream (loose-union-free-answer program)))
+     (check (equal? 0 (car stream)))
+     (let ((tail ((cdr stream) 4)))
+       (check (equal? 4 (car tail)))
+       (check (equal? 7 (car ((cdr tail) 3))))))
+   (check (alpha-rename?
+           '(begin (define (loop accum)
+                (argument-types real escaping-function)
+                (lambda (inc)
+                  (let ((new-accum (+ accum inc)))
+                    (cons new-accum (loop new-accum)))))
+              (let ((start (real 0)))
+                (cons start (loop start))))
+           (compile-to-scheme program))))
+
  (for-each-example "../../vl/examples.scm" define-union-free-example-test)
  (for-each-example "../../vl/test/test-vl-programs.scm"
                    define-union-free-example-test)
