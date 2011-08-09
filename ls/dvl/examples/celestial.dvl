@@ -1,13 +1,22 @@
+(include "runge-kutta.dvl")
+
+(define (map3 f l1 l2 l3)
+ (if (null? l1)
+     '()
+     (cons (f (car l1) (car l2) (car l3))
+           (map3 f (cdr l1) (cdr l2) (cdr l3)))))
+
 (define (append x y)
   (if (null? x)
       y
       (cons (car x) (append (cdr x) y))))
 
 (define (tree-map f tree)
-  (if (pair? tree)
-      (cons (tree-map f (car tree))
-            (tree-map f (cdr tree)))
-      (f tree)))
+  (cond ((pair? tree)
+         (cons (tree-map f (car tree))
+               (tree-map f (cdr tree))))
+        ((null? tree) tree)
+        (else (f tree))))
 
 (define (pairwise f lst)
   (cond ((null? lst)
@@ -33,10 +42,10 @@
 (define (make-body mass position velocity)
   (tree-map real (make-object mass position velocity)))
 
-(define make-object list)
-(define mass car)
-(define position cadr)
-(define velocity caddr)
+(define (make-object m p v) (list m p v))
+(define (mass (list m p v)) m)
+(define (position (list m p v)) p)
+(define (velocity (list m p v)) v)
 
 (define (update-position (list mass position velocity) new-position)
   (make-object mass new-position velocity))
@@ -75,45 +84,44 @@
    (list -30.173660054850 1.917641287545 -.153885933998)
    (list -2.241622739519e-4 -3.1072718854630e-3 3.58376025706e-5)))
 #;
-(define pluto
-  (make-body
-   0                                    ; (/ 1 360000.)
-   (list -21.381833467487 32.077998611553 2.492458557184)
-   (list -0.17760562614312e-2 -0.20608701590214e-2 0.06580950635153e-2)))
+ (define pluto
+   (make-body
+    0                                    ; (/ 1 360000.)
+    (list -21.381833467487 32.077998611553 2.492458557184)
+    (list -0.17760562614312e-2 -0.20608701590214e-2 0.06580950635153e-2)))
 
+(define G-si 6.67300e-11)             ; m^3 / kg s^2
 
-(define G-si (real 6.67300e-11)) ; m^3 / kg s^2
+(define m/AU 149598000000)
+(define s/day (* 24 (* 60 60)))
+(define kg/Msun 1.98892e30)
+(define G (real (* (/ G-si (* m/AU (* m/AU m/AU))) (* kg/Msun (* s/day s/day)))))
 
 (define (potential2 obj1 obj2)
-  (/ (* -1 G (mass obj1) (mass obj2))
+  (/ (* -1 (* G (* (mass obj1) (mass obj2))))
      (distance (position obj1) (position obj2))))
 
 (define (potential objects)
   (sum (pairwise potential2 objects)))
 
-(define ((positions->potential objects) positions)
-  (potential (map2 update-position objects positions)))
+(define (positions->potential objects)
+  (lambda (positions)
+    (potential (map2 update-position objects positions))))
 
 (define (forces objects)
-  (gradient (positions->potential objects) positions))
+  (gradient (positions->potential objects) (map position objects)))
 
 (define (state-derivative state)
-  (make-state (velocities state)
-    (map / (forces (positions state)) masses))
+  (let ((time (car state))
+        (objects (cdr state)))
+    (cons 1
+          (map3 make-object
+                (map (lambda (obj) 0) objects) ; masses do not change
+                (map velocity objects) ; the velocities are the derivatives of the positions
+                (map2 / (forces objects) (map mass objects))))))
 
-(define (state-derivative time objects)
-  (cons
-   1
-   (map3 make-object
-         (map (lambda (obj) 0) objects) ; masses do not change
-         (map velocity objects) ; the velocities are the derivatives of the positions
-         (map2 / (forces objects) (map mass objects))
-         )))
-
-(runge-kutta-4
+(step-stream
+ rk4-again
  state-derivative
- (make-state init-positions init-velocities)
- 1) ; day
+ (cons (real 0) (list sun jupiter saturn uranus neptune)))
 
-;; TODO G in the right units
-;; TODO Actual integrators, rather than just step functions.
