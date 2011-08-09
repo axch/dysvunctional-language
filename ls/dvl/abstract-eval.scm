@@ -346,7 +346,11 @@
                 ;; TODO Extend to other foreign input types
                 val abstract-real analysis
                 (lambda (found)
-                  'ok)
+                  (if (binding-escapes? found)
+                      'ok
+                      (begin
+                        (set-binding-escapes?! found #t)
+                        (loop! (binding-value found)))))
                 (lambda ()
                   (analysis-new-binding!
                    analysis

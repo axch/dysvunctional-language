@@ -158,10 +158,11 @@
      (check (equal? 6 ((cdr procs) 3)))))
 
  (define-test (loop-escapes-poor-mans-stream)
-   (define program '(let loop ((state (real 0)))
-                      (cons state
-                            (lambda (step)
-                              (loop (+ state step))))))
+   (define program
+     '(let loop ((state (real 0)))
+        (cons state
+              (lambda (step)
+                (loop (+ state step))))))
    (let ((stream (loose-union-free-answer program)))
      (check (equal? 0 (car stream)))
      (let ((tail ((cdr stream) 4)))
@@ -176,6 +177,18 @@
               (let ((start (real 0)))
                 (cons start (loop start))))
            (compile-to-scheme program))))
+
+ (define-test (same-function-escapes-and-is-used-internally)
+   (define program
+     '(let ()
+        (define (foo x)
+          (+ x 5))
+        ;; Non-escaping binding hides the need to make an escaping binding
+        (let ((bogon (foo (real 4))))
+          foo)))
+   (let ((proc (loose-union-free-answer program)))
+     (check (equal? 7 (proc 2)))
+     (check (equal? 0 (proc -5)))))
 
  (for-each-example "../../vl/examples.scm" define-union-free-example-test)
  (for-each-example "../../vl/test/test-vl-programs.scm"
