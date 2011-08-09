@@ -4,11 +4,9 @@
 
 (define integrators (run-mit-scheme))
 
-(define euler-exp (car integrators))
-(define euler-exp-2 (cadr integrators))
-(define rk4-exp (caddr integrators))
-(define rk4-exp-2 (cadddr integrators))
-
+(define euler (car integrators))
+(define rk4  (cadr integrators))
+#;
 (define (show-1d-ode integrator time-step total-time)
   (let loop ((result '((0. . 1.)))
              (current-time 0.)
@@ -22,14 +20,28 @@
                   new-time
                   new-y))))))
 
-#;
-(define (show-1d-ode integrator time-step total-time)
+
+(define ((show-1d-ode thing-to-show) integrator time-step total-time)
   (let loop ((result '())
              (integrator integrator))
     (let* ((state (car integrator))
            (current-time (car state))
            (func (cdr integrator)))
       (if (>= current-time total-time)
-          (gnuplot-plot-alist (reverse result) "with points, exp(x)")
+          (gnuplot-plot-alist (map (lambda (datum)
+                                     (let ((time (car datum))
+                                           (estimate (cadr datum)))
+                                       (cons time (thing-to-show time estimate))))
+                                   (reverse result))
+                              "with points, sin(x)")
           (loop (cons state result)
                 (func time-step))))))
+
+(define ((relative-error solution) time estimate)
+   (if (>= (abs (solution time)) 1)
+       (/ (- (solution time) estimate) (solution time))
+       (- (solution time) estimate)))
+
+(define (answer time estimate) estimate)
+
+(define show-1d (show-1d-ode answer))

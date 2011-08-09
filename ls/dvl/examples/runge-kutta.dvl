@@ -1,7 +1,7 @@
 (define (((naive-euler state-deriv) step) state)
   (+ state (* step (state-deriv state))))
 
-(define (((rk4 state-deriv) step) state)
+(define (((manual-rk4 state-deriv) step) state)
   (let* ((k1 (* step (state-deriv state)))
          (k2 (* step (state-deriv (+ state (* 1/2 k1)))))
          (k3 (* step (state-deriv (+ state (* 1/2 k2)))))
@@ -50,41 +50,25 @@
 (define (exp-state-deriv (cons t y))
   (cons 1 y))
 
-(define (((integrate-test method) step) count)
-  (let loop ((state (cons 0 1))
-             (count count))
-    (if (<= count 0)
-        state
-        (loop
-         (((method exp-state-deriv) step) state)
-         (- count 1)))))
+(define exp-init (cons (real 0) (real 1)))
 
-;; (define euler-exp (integrate-test naive-euler))
-;; (define euler-exp-2 (integrate-test naive-euler-again))
-;; (define rk4-exp (integrate-test rk4))
-;; (define rk4-exp-2 (integrate-test rk4-again))
+(define (sin-state-deriv (list t y y-prime))
+  (list 1 y-prime (- 0 y)))
+
+(define sin-init (list (real 0) (real 0) (real 1)))
 
 (define (step-stream method)
-  (lambda (t)
-    (lambda (y)
-      (lambda (step)
-        (((method exp-state-deriv) step) (cons t y))))))
-
-#;
-(define (step-stream method)
-  (let loop ((state (cons (real 0) (real 1))))
+  (let loop ((state sin-init))
     (cons state
           (lambda (step)
-            (loop (((method exp-state-deriv) step) state))))))
+            (loop (((method sin-state-deriv) step) state))))))
 
-(define euler-exp   (step-stream naive-euler))
-(define euler-exp-2 (step-stream naive-euler-again))
-(define rk4-exp     (step-stream rk4))
-(define rk4-exp-2   (step-stream rk4-again))
+(define euler (step-stream naive-euler-again))
+(define rk4   (step-stream rk4-again))
 
 ;; I have verified that rk4-exp and rk4-exp-2 compile to the same code
 ;; up to algebraic manipulations (e.g. multiplying by 1/3 instead of
 ;; multiplying by 2 and then by 1/6), by symbolically evaluating them
 ;; both in ScmUtils.
 
-(list euler-exp euler-exp-2 rk4-exp rk4-exp-2)
+(list euler rk4)
