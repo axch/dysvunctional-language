@@ -325,41 +325,42 @@
       (+ number (- (world-gensym new-world) (world-gensym old-world)))))
 
 (define (ensure-escaping-values-have-bindings! analysis)
+  (define (ensure-escaping-value-has-binding! binding)
+    (let ((some-acceptable-world (binding-new-world binding)))
+      (let loop! ((val (binding-value binding)))
+        (cond ((some-boolean? val)
+               'ok)
+              ((some-real? val)
+               'ok)
+              ((abstract-none? val)
+               'ok)        ; This shouldn't happen, but it's ok anyway
+              ((abstract-gensym? val)
+               'ok)
+              ((null? val)
+               'ok)
+              ((pair? val)
+               (loop! (car val))
+               (loop! (cdr val)))
+              ((closure? val)
+               (analysis-search
+                ;; TODO Extend to other foreign input types
+                val abstract-real analysis
+                (lambda (found)
+                  'ok)
+                (lambda ()
+                  (analysis-new-binding!
+                   analysis
+                   (make-binding
+                    val
+                    ;; TODO Extend to other foreign input types
+                    abstract-real
+                    some-acceptable-world
+                    abstract-none
+                    impossible-world
+                    #t                  ; The result escapes
+                    )))))
+              (else
+               (error "Unsupported escaping object" val))))))
   (for-each
-   (lambda (binding)
-     (let ((some-acceptable-world (binding-new-world binding)))
-       (let loop! ((val (binding-value binding)))
-         (cond ((some-boolean? val)
-                'ok)
-               ((some-real? val)
-                'ok)
-               ((abstract-none? val)
-                'ok)       ; This shouldn't happen, but it's ok anyway
-               ((abstract-gensym? val)
-                'ok)
-               ((null? val)
-                'ok)
-               ((pair? val)
-                (loop! (car val))
-                (loop! (cdr val)))
-               ((closure? val)
-                (analysis-search
-                 ;; TODO Extend to other foreign input types
-                 val abstract-real analysis
-                 (lambda (found)
-                   'ok)
-                 (lambda ()
-                   (analysis-new-binding!
-                    analysis
-                    (make-binding
-                     val
-                     ;; TODO Extend to other foreign input types
-                     abstract-real
-                     some-acceptable-world
-                     abstract-none
-                     impossible-world
-                     #t                 ; The result escapes
-                     )))))
-               (else
-                (error "Unsupported escaping object" val))))))
+   ensure-escaping-value-has-binding!
    (filter binding-escapes? (analysis-bindings analysis))))
