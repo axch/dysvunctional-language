@@ -120,7 +120,7 @@
                            (eat (cons different-thing thing2))))
                    (loop thing2
                          (lambda (different-thing)
-                           (eat (cons different-thing thing1)))))))
+                           (eat (cons thing1 different-thing)))))))
           ((null? thing)
            '())
           ;; TODO This should probably be an error
