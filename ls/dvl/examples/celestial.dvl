@@ -56,7 +56,7 @@
 
 (define sun
   (make-body
-   (+ 1 0.597682e-5)
+   (+ 1 0.597682e-5) ; Lump the inner planets in with the sun
    (list 0 0 0)
    (list 0 0 0)))
 
