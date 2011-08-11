@@ -1,6 +1,8 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 module FOL.Language.Pretty
     ( Pretty
     , pp
+    , real
     , pprint
     , sepMap
     , ppList
@@ -9,10 +11,14 @@ module FOL.Language.Pretty
     )
     where
 
+import FOL.Language.Common
 import Text.PrettyPrint
 
 class Pretty a where
     pp :: a -> Doc
+
+real :: Real -> Doc
+real = double
 
 pprint :: Pretty a => a -> String
 pprint = render . pp

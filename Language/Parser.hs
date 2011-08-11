@@ -1,5 +1,7 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 module FOL.Language.Parser where
 
+import FOL.Language.Common
 import FOL.Language.Expression
 import FOL.Language.Token
 import FOL.Language.Pretty (pprint)
@@ -60,18 +62,18 @@ identifier = tok maybeIdentifier
           | otherwise            = Nothing
       maybeIdentifier _          = Nothing
 
--- Accept a token 't' with the result 'd' when 't' is the double 'd'.
-double :: Parser Double
-double = tok maybeDouble
+-- Accepts a token 't' with the result 'd' when 't' is the real 'd'.
+real :: Parser Real
+real = tok maybeReal
     where
-      maybeDouble (TokDouble d) = Just d
-      maybeDouble _             = Nothing
+      maybeReal (TokReal r) = Just r
+      maybeReal _           = Nothing
 
 -- To parse 'vector-ref's we must be able to parse integers, but I am
 -- lazy to modify the tokenizer.  Whenever an integer is expected, it
--- is parsed as a double and is truncated.
+-- is parsed as a real and is truncated.
 integer :: Parser Integer
-integer = truncate <$> double
+integer = truncate <$> real
 
 -- Helper combinators and aliases for better readability.
 
@@ -91,20 +93,20 @@ parseEmptyList = do { lparen; rparen; return () }
 
 -- Parsing types
 
-parseTyNil, parseTyCons, parseTyVector, parseTyValues, parseType :: Parser Type
-parseTyNil    = TyNil <$ parseEmptyList
-parseTyCons   = liftA2 TyCons parseType parseType
-parseTyVector = liftA  TyVector (many parseType)
-parseTyValues = liftA  TyValues (many parseType)
+parseNilTy, parseConsTy, parseVectorTy, parseValuesTy, parseType :: Parser Type
+parseNilTy    = NilTy <$ parseEmptyList
+parseConsTy   = liftA2 ConsTy parseType parseType
+parseVectorTy = liftA  VectorTy (many parseType)
+parseValuesTy = liftA  ValuesTy (many parseType)
 
-parseType = try parseTyNil <|> parseAtomicType <|> parens parseCompoundType
+parseType = try parseNilTy <|> parseAtomicType <|> parens parseCompoundType
     where
-      parseAtomicType   = caseParser [ ("real",   return TyReal)
-                                     , ("bool",   return TyBool)
+      parseAtomicType   = caseParser [ ("real",   return RealTy)
+                                     , ("bool",   return BoolTy)
                                      ]
-      parseCompoundType = caseParser [ ("cons",   parseTyCons  )
-                                     , ("vector", parseTyVector)
-                                     , ("values", parseTyValues)
+      parseCompoundType = caseParser [ ("cons",   parseConsTy  )
+                                     , ("vector", parseVectorTy)
+                                     , ("values", parseValuesTy)
                                      ]
 
 -- Parsing programs
@@ -118,9 +120,9 @@ parseVariable = Var <$> identifier
 parseConstant :: Parser Expr
 parseConstant = try parseNil <|> tok maybeConstant
     where
-      maybeConstant (TokBool b)   = Just (Boolean b)
-      maybeConstant (TokDouble d) = Just (Number d)
-      maybeConstant _             = Nothing
+      maybeConstant (TokBool b) = Just (Bool b)
+      maybeConstant (TokReal r) = Just (Real r)
+      maybeConstant _           = Nothing
 
 -- The list of reserved keywords.
 reserved :: [String]

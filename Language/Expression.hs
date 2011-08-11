@@ -1,5 +1,7 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 module FOL.Language.Expression where
 
+import FOL.Language.Common
 import FOL.Language.Pretty
 
 data Name = Name String deriving (Eq, Show)
@@ -8,17 +10,19 @@ data Prog = Prog [Defn] Expr deriving (Eq, Show)
 
 data Defn = Defn TypedVar [TypedVar] Expr deriving (Eq, Show)
 
-data Type = TyNil
-          | TyReal
-          | TyBool
-          | TyCons Type Type
-          | TyVector [Type]
-          | TyValues [Type]
+data Type = NilTy
+          | RealTy
+          | BoolTy
+          | ConsTy Type Type
+          | VectorTy [Type]
+          | ValuesTy [Type]
             deriving (Eq, Show)
 
 data Expr = Var Name
           -- Literals
-          | Number Double | Boolean Bool | Nil
+          | Nil
+          | Bool Bool
+          | Real Real
           -- Special forms
           | If Expr Expr Expr
           | Let [LetBinding] Expr
@@ -59,19 +63,19 @@ instance Pretty Defn where
           types = ppForm "argument-types" (arg_types ++ [proc_type])
 
 instance Pretty Type where
-    pp TyNil  = ppList []
-    pp TyReal = text "real"
-    pp TyBool = text "bool"
-    pp (TyCons t1 t2) = ppForm "cons"   [t1, t2]
-    pp (TyVector ts)  = ppForm "vector" ts
-    pp (TyValues ts)  = ppForm "values" ts
+    pp NilTy          = ppList []
+    pp RealTy         = text "real"
+    pp BoolTy         = text "bool"
+    pp (ConsTy t1 t2) = ppForm "cons"   [t1, t2]
+    pp (VectorTy ts)  = ppForm "vector" ts
+    pp (ValuesTy ts)  = ppForm "values" ts
 
 instance Pretty Expr where
-    pp Nil             = ppList []
-    pp (Var x)         = pp x
-    pp (Number d)      = double d
-    pp (Boolean True)  = text "#t"
-    pp (Boolean False) = text "#f"
+    pp Nil          = ppList []
+    pp (Var x)      = pp x
+    pp (Real r)     = real r
+    pp (Bool True)  = text "#t"
+    pp (Bool False) = text "#f"
 
     pp (If p c a) = parens $ text "if" <+> sepMap pp [p, c, a]
 

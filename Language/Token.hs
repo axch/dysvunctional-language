@@ -1,10 +1,13 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 module FOL.Language.Token where
+
+import FOL.Language.Common
 
 import Data.Char
 
 data Token
     = TokSymbol String
-    | TokDouble Double
+    | TokReal Real
     | TokBool Bool
     | TokLParen
     | TokRParen
@@ -27,7 +30,7 @@ scan ('+':c:cs)
     | not (isDigit c)
     = TokSymbol "+" : scan (c:cs)
     | otherwise
-    = TokDouble (read cs' :: Double) : scan cs''
+    = TokReal (read cs' :: Real) : scan cs''
     where
       (cs', cs'') = scanUnsignedReal (c:cs)
 scan ['+'] = [TokSymbol "+"]
@@ -35,14 +38,14 @@ scan ('-':c:cs)
     | not (isDigit c)
     = TokSymbol "-" : scan (c:cs)
     | otherwise
-    = TokDouble (negate (read cs' :: Double)) : scan cs''
+    = TokReal (negate (read cs' :: Real)) : scan cs''
     where
       (cs', cs'') = scanUnsignedReal (c:cs)
 scan ['-'] = [TokSymbol "-"]
 
 scan s@(c:_)
     | isDigit c
-    = TokDouble (read cs' :: Double) : scan cs''
+    = TokReal (read cs' :: Real) : scan cs''
     where
       (cs', cs'') = scanUnsignedReal s
 
