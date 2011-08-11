@@ -37,22 +37,22 @@
 (define (binding-exp binding)
   (if (eval-binding? binding)
       (binding-part1 binding)
-      (error "Trying to take the exp of an apply binding" binding)))
+      (internal-error "Trying to take the exp of an apply binding" binding)))
 
 (define (binding-env binding)
   (if (eval-binding? binding)
       (binding-part2 binding)
-      (error "Trying to take the env of an apply binding" binding)))
+      (internal-error "Trying to take the env of an apply binding" binding)))
 
 (define (binding-proc binding)
   (if (apply-binding? binding)
       (binding-part1 binding)
-      (error "Trying to take the proc of an eval binding" binding)))
+      (internal-error "Trying to take the proc of an eval binding" binding)))
 
 (define (binding-arg binding)
   (if (apply-binding? binding)
       (binding-part2 binding)
-      (error "Trying to take the arg of an eval binding" binding)))
+      (internal-error "Trying to take the arg of an eval binding" binding)))
 
 (define (make-binding key1 key2 world value new-world escapes?)
   (%make-binding key1 key2 world value new-world '() escapes?))
@@ -99,7 +99,7 @@
 
 (define (analysis-queue-pop! analysis)
   (if (null? (analysis-queue analysis))
-      (error "Popping an empty queue")
+      (internal-error "Popping an empty queue")
       (let ((answer (car (analysis-queue analysis))))
         (set-analysis-queue! analysis (cdr (analysis-queue analysis)))
         answer)))

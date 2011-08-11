@@ -27,7 +27,7 @@
              (lambda (operand new-world)
                (concrete-apply operator operand new-world win))))))
         (else
-         (error "Invalid expression type" exp))))
+         (syntax-error "Invalid expression type" exp))))
 
 (define (concrete-apply proc arg world win)
   (cond ((primitive? proc)

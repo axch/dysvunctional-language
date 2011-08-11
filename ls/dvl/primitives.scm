@@ -158,7 +158,7 @@
   (lambda (x)
     (cond ((abstract-real? x) abstract-real)
           ((number? x) abstract-real)
-          (else (error "A known non-real is declared real" x))))))
+          (else (dvl-error "A known non-real is declared real" x))))))
 
 ;;; IF-PROCEDURE is special because it is the only primitive that
 ;;; accepts VL closures as arguments and invokes them internally.

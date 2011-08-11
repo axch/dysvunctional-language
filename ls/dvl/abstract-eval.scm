@@ -80,8 +80,8 @@
              (lambda (operand operand-world)
                (get-during-flow-analysis operator operand operand-world analysis win))))))
         (else
-         (error "Invalid expression in abstract refiner"
-                exp env analysis))))
+         (dvl-error "Invalid expression in abstract refiner"
+                    exp env analysis))))
 
 ;;; REFINE-APPLY is the counterpart of A from [1].
 (define (refine-apply proc arg world analysis win)
@@ -97,8 +97,8 @@
           analysis
           win))
         (else
-         (error "Refining an application of a known non-procedure"
-                proc arg analysis))))
+         (dvl-error "Refining an application of a known non-procedure"
+                    proc arg analysis))))
 
 ;;;; Flow analysis
 
@@ -265,7 +265,7 @@
 ;; Contrast this complexity with ANALYSIS-GET.
 (define (get-during-flow-analysis key1 key2 world analysis win)
   (if (not *on-behalf-of*)
-      (error "get-during-flow-analysis must always be done on behalf of some binding"))
+      (internal-error "get-during-flow-analysis must always be done on behalf of some binding"))
   (define (search-win binding)
     (register-notification! binding *on-behalf-of*)
     (world-update-binding binding world win))
@@ -364,7 +364,7 @@
                     #t                  ; The result escapes
                     )))))
               (else
-               (error "Unsupported escaping object" val))))))
+               (dvl-error "Unsupported escaping object" val))))))
   (for-each
    ensure-escaping-value-has-binding!
    (filter binding-escapes? (analysis-bindings analysis))))

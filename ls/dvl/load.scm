@@ -19,6 +19,7 @@
 (for-each
  load-relative-compiled
  '("../support/utils"
+   "errors"
    "data"
    "../vl/env"
    "syntax"

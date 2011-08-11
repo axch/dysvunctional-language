@@ -145,7 +145,7 @@
                                       17579))
                                (map abstract-hash lst))))
                thing))
-             (else (error "Do not know how to hash" thing)))))))
+             (else (internal-error "Do not know how to hash" thing)))))))
 
 (define (abstract-hash-mod thing modulus)
   (modulo (abstract-hash thing) modulus))
@@ -184,7 +184,7 @@
         (else
          (congruent-map abstract-union thing1 thing2
           (lambda ()
-            (error "This program is not union-free:" thing1 thing2))))))
+            (dvl-error "This program is not union-free:" thing1 thing2))))))
 ;;;; Things the code generator wants to know about abstract values
 
 ;;; Is this shape completely determined by the analysis?
@@ -228,7 +228,7 @@
         ((solved-abstractly? thing) '(vector))
         ((closure? thing)
          (abstract-closure->scheme-structure-name thing))
-        (else (error "shape->type-declaration loses!" thing))))
+        (else (internal-error "shape->type-declaration loses!" thing))))
 
 (define (needs-translation? thing)
   (not (contains-no-closures? thing)))
