@@ -32,7 +32,7 @@ lit t = tok maybeLiteral
           | otherwise = Nothing
 
 -- Accept a token 't' with the result 'n' when 't' is the symbol 'n'.
-sym :: Parser Name
+sym :: Parser String
 sym = tok maybeSymbol
     where
       maybeSymbol (TokSymbol x) = Just x
@@ -55,7 +55,7 @@ identifier :: Parser Name
 identifier = tok maybeIdentifier
     where
       maybeIdentifier (TokSymbol x)
-          | x `notElem` reserved = Just x
+          | x `notElem` reserved = Just (Name x)
           | otherwise            = Nothing
       maybeIdentifier _          = Nothing
 

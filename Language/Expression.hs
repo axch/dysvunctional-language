@@ -1,12 +1,10 @@
 module FOL.Language.Expression where
 
-type Name = String
+data Name = Name String deriving (Eq, Show)
 
 data Prog = Prog [Defn] Expr deriving (Eq, Show)
 
 data Defn = Defn TypedVar [TypedVar] Expr deriving (Eq, Show)
-
-type TypedVar = (Name, Type)
 
 data Type = TyNil
           | TyReal
@@ -35,5 +33,6 @@ data Expr = Var Name
           | ProcCall Name [Expr]
             deriving (Eq, Show)
 
-type LetBinding = (Name, Expr)
+type TypedVar         = (Name, Type)
+type LetBinding       = (Name, Expr)
 type LetValuesBinding = ([Name], Expr)
