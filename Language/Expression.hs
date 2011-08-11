@@ -4,8 +4,6 @@ module FOL.Language.Expression where
 import FOL.Language.Common
 import FOL.Language.Pretty
 
-data Name = Name String deriving (Eq, Show)
-
 data Prog = Prog [Defn] Expr deriving (Eq, Show)
 
 data Defn = Defn TypedVar [TypedVar] Expr deriving (Eq, Show)
