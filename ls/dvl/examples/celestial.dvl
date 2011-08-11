@@ -112,7 +112,7 @@
   (let loop ((thing pt)
              (eat f))
     (cond ((real? thing)
-           (derivative eat thing))
+           ((derivative eat) thing))
           ((pair? thing)
            (let (((cons thing1 thing2) thing))
              (cons (loop thing1
