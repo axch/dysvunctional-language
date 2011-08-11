@@ -94,7 +94,7 @@ instance Pretty Expr where
     pp (Car e)         = ppForm "car" [e]
     pp (Cdr e)         = ppForm "cdr" [e]
     pp (VectorRef e i) = ppList [text "vector-ref", pp e, integer i]
-    pp (Cons e1 e2)    = ppForm "cons" [e1, e2]
+    pp (Cons e1 e2)    = ppForm "cons"   [e1, e2]
     pp (Vector es)     = ppForm "vector" es
     pp (Values es)     = ppForm "values" es
 
