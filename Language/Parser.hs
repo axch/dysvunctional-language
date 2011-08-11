@@ -2,6 +2,7 @@ module FOL.Language.Parser where
 
 import FOL.Language.Expression
 import FOL.Language.Token
+import FOL.Language.Pretty (pprint)
 
 import Control.Applicative
 import Control.Arrow
@@ -96,7 +97,7 @@ parseTyCons   = liftA2 TyCons parseType parseType
 parseTyVector = liftA  TyVector (many parseType)
 parseTyValues = liftA  TyValues (many parseType)
 
-parseType = parseTyNil <|> parseAtomicType <|> parens parseCompoundType
+parseType = try parseTyNil <|> parseAtomicType <|> parens parseCompoundType
     where
       parseAtomicType   = caseParser [ ("real",   return TyReal)
                                      , ("bool",   return TyBool)
@@ -178,10 +179,15 @@ parseVector    = liftA  Vector    (many parseExpression)
 parseValues    = liftA  Values    (many parseExpression)
 
 parseSpecialForm, parseApplication :: Parser Expr
-parseSpecialForm = caseParser [ ("cons"      , parseCons     )
-                              , ("if"        , parseIf       )
+parseSpecialForm = caseParser [ ("if"        , parseIf       )
                               , ("let"       , parseLet      )
                               , ("let-values", parseLetValues)
+                              , ("cons"      , parseCons     )
+                              , ("vector"    , parseVector   )
+                              , ("values"    , parseValues   )
+                              , ("car"       , parseCar      )
+                              , ("cdr"       , parseCdr      )
+                              , ("vector-ref", parseVectorRef)
                               ]
 parseApplication = liftA2 ProcCall proc args
     where
@@ -211,3 +217,5 @@ parse = (either (\_ -> error "parse error") id)
       . scan
 
 example = "(begin (define (loop-on-pair-19 the-closure-160 the-closure-161 the-formals-162 the-formals-163) (argument-types real real real real real) (if (< (abs (- the-formals-162 the-formals-163)) 0.00001) the-formals-163 (loop-on-pair-19 the-closure-161 the-closure-161 the-formals-163 (/ (+ the-formals-163 (/ the-closure-160 the-formals-163)) 2)))) (let ((the-formals-64 (real 2))) (let ((anf-132 (real 1.0))) (cons 1.4142135623730951 (loop-on-pair-19 the-formals-64 the-formals-64 anf-132 (/ (+ anf-132 (/ the-formals-64 anf-132)) 2))))))"
+
+bigExample = "(begin (define (operation-2 the-closure the-formals) (argument-types (vector) (vector) (cons real real)) (let () (operation-3 (vector) (vector)))) (define (recur-on-closure-4 the-closure the-formals) (argument-types (vector (vector (vector real))) (vector (vector (vector real))) (vector (vector real) (vector (vector (vector (vector real)))))) (let ((recur the-formals)) (kernel-on-closure-7 (vector-ref the-closure 0) (vector recur)))) (define (numeric-fix-on-pair-9 the-closure the-formals) (argument-types (vector) (cons (vector real) (cons real (vector))) real) (let ((f (car the-formals)) (start (car (cdr the-formals)))) (operation-11 (vector f start) (vector)))) (define (close-enuf?-on-pair-13 the-closure the-formals) (argument-types (vector) (cons real real) bool) (let ((a (car the-formals)) (b (cdr the-formals))) (let ((temp-15 (cons (abs (let ((temp-14 (cons a b))) (- (car temp-14) (cdr temp-14)))) 0.00001))) (< (car temp-15) 0.00001)))) (define (operation-16 the-closure the-formals) (argument-types (vector (vector real) (vector (vector real) (vector (vector (vector (vector real))))) real) () real) (let () (loop-on-pair-19 (vector-ref the-closure 1) (cons (vector-ref the-closure 2) (f-on-real-18 (vector-ref the-closure 0) (vector-ref the-closure 2)))))) (define (operation-20 the-closure the-formals) (argument-types (vector (vector real) (vector (vector (vector (vector real)))) real) () real) (let () (loop-on-pair-22 (vector-ref the-closure 1) (cons (vector-ref the-closure 2) (f-on-real-18 (vector-ref the-closure 0) (vector-ref the-closure 2)))))) (define (f-on-real-18 the-closure the-formals) (argument-types (vector real) real real) (let ((guess the-formals)) (let ((temp-25 (cons (let ((temp-24 (cons guess (let ((temp-23 (cons (vector-ref the-closure 0) guess))) (/ (car temp-23) (cdr temp-23)))))) (+ (car temp-24) (cdr temp-24))) 2))) (/ (car temp-25) 2)))) (define (operation-26 the-closure the-formals) (argument-types (vector) (vector) (cons real real)) (let () (operation-27 (vector) ()))) (define (kernel-on-closure-7 the-closure the-formals) (argument-types (vector (vector real)) (vector (vector (vector (vector real)))) (vector (vector real) (vector (vector (vector (vector real)))))) (let ((loop the-formals)) (vector (vector-ref the-closure 0) loop))) (define (loop-on-pair-22 the-closure the-formals) (argument-types (vector (vector (vector (vector real)))) (cons real real) real) (let ((y the-formals)) (loop-on-pair-19 (recur-on-closure-4 (vector-ref the-closure 0) (vector-ref the-closure 0)) y))) (define (operation-27 the-closure the-formals) (argument-types (vector) () (cons real real)) (let () (cons 1.4142135623730951 (square-root-on-real-29 (vector) (real 2))))) (define (the-z-combinator-on-closure-30 the-closure the-formals) (argument-types (vector) (vector (vector real)) (vector (vector real) (vector (vector (vector (vector real)))))) (let ((kernel the-formals)) (recur-on-closure-4 (vector kernel) (vector kernel)))) (define (operation-11 the-closure the-formals) (argument-types (vector (vector real) real) (vector) real) (let () (operation-32 (vector (vector-ref the-closure 0) (vector-ref the-closure 1)) (the-z-combinator-on-closure-30 (vector) (vector (vector-ref the-closure 0)))))) (define (heron-step-on-real-33 the-closure the-formals) (argument-types (vector) real (vector real)) (let ((x the-formals)) (vector x))) (define (operation-32 the-closure the-formals) (argument-types (vector (vector real) real) (vector (vector real) (vector (vector (vector (vector real))))) real) (let ((loop the-formals)) (operation-16 (vector (vector-ref the-closure 0) loop (vector-ref the-closure 1)) ()))) (define (operation-1 the-closure the-formals) (argument-types (vector) () (cons real real)) (let () (operation-34 (vector) (vector)))) (define (operation-34 the-closure the-formals) (argument-types (vector) (vector) (cons real real)) (let () (operation-2 (vector) (vector)))) (define (operation-35 the-closure the-formals) (argument-types (vector real) () real) (let () (vector-ref the-closure 0))) (define (operation-3 the-closure the-formals) (argument-types (vector) (vector) (cons real real)) (let () (operation-26 (vector) (vector)))) (define (square-root-on-real-29 the-closure the-formals) (argument-types (vector) real real) (let ((x the-formals)) (numeric-fix-on-pair-9 (vector) (cons (heron-step-on-real-33 (vector) x) (cons (real 1.0) (vector)))))) (define (loop-on-pair-19 the-closure the-formals) (argument-types (vector (vector real) (vector (vector (vector (vector real))))) (cons real real) real) (let ((old (car the-formals)) (new (cdr the-formals))) (if (close-enuf?-on-pair-13 (vector) (cons old new)) (operation-35 (vector new) ()) (operation-20 (vector (vector-ref the-closure 0) (vector-ref the-closure 1) new) ())))) (operation-1 (vector) ()))"
