@@ -255,7 +255,7 @@
 (define (g:* args) ((lift-real*real->real v:* (lambda (x1 x2) x2) (lambda (x1 x2) x1)) args))
 (define (g:/ args)
   ((lift-real*real->real
-    / (lambda (x1 x2) (g:/ 1 x2)) (lambda (x1 x2) (g:- 0 (g:/ x1 (g:* x2 x2))))) args))
+    v:/ (lambda (x1 x2) (g:/ 1 x2)) (lambda (x1 x2) (g:- 0 (g:/ x1 (g:* x2 x2))))) args))
 (define (g:sqrt args) ((lift-real->real sqrt (lambda (x) (g:/ 1 (g:* 2 (g:sqrt x))))) args))
 (define (g:exp args) ((lift-real->real exp (lambda (x) (g:exp x))) args))
 (define (g:log args) ((lift-real->real log (lambda (x) (g:/ 1 x))) args))
@@ -338,6 +338,11 @@
           (pointwise (lambda (x) (g:* x obj2)) obj1)
           (error "Multiplication mismatch"))
       (pointwise (lambda (x) (g:* x obj2)) obj1)))
+
+(define (v:/ obj1 obj2)
+  (if (real? obj1)
+      (/ obj1 obj2)
+      (pointwise (lambda (x) (g:/ x obj2)) obj1)))
 
 (define zero (gensym))
 
