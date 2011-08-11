@@ -271,28 +271,47 @@
              operator
              analysis))))))
 
+(define ((escaper-definition analysis)
+         binding)
+  (let ((operator (binding-proc binding)))
+    (let ((name (escaping-closure->scheme-function-name operator)))
+      `(define (,name the-closure)
+         (argument-types
+          ,(shape->type-declaration operator)
+          escaping-function)
+         (lambda (external-formal)
+           ;; TODO Support for other incoming types besides real
+           ,(prepare-to-escape
+             (analysis-get operator abstract-real analysis)
+             (generate-closure-application
+              operator abstract-real 'the-closure 'external-formal)))))))
+
+(define (escaper-definitions analysis)
+  (define (needs-escaper-definition? binding)
+    (and (apply-binding? binding)
+         (binding-escapes? binding)))
+  (map (escaper-definition analysis)
+       ((unique abstract-hash-table-type)
+        (filter needs-escaper-definition?
+                (analysis-bindings analysis)))))
+
+(define (prepare-to-escape val code)
+  (if (not (needs-translation? val))
+      code
+      (let ((capture-name (name->symbol (make-name 'capture))))
+        `(let ((,capture-name ,code))
+           ,(let loop ((access capture-name)
+                       (val val))
+              (cond ((not (needs-translation? val))
+                     access)
+                    ((pair? val)
+                     `(cons ,(loop `(car ,access) (car val))
+                            ,(loop `(cdr ,access) (cdr val))))
+                    ((closure? val)
+                     `(,(escaping-closure->scheme-function-name val) ,access))
+                    (else (error "Unsupported escaping object" val))))))))
+
 (define (compile-escaping exp env enclosure analysis)
-  (define (prepare-to-escape val code)
-    (if (not (needs-translation? val))
-        code
-        (let ((capture-name (name->symbol (make-name 'capture))))
-          `(let ((,capture-name ,code))
-             ,(let loop ((access capture-name)
-                         (val val))
-                (cond ((not (needs-translation? val))
-                       access)
-                      ((pair? val)
-                       `(cons ,(loop `(car ,access) (car val))
-                              ,(loop `(cdr ,access) (cdr val))))
-                      ((closure? val)
-                       `(lambda (external-formal)
-                          ;; TODO Extend to other foreign input types
-                          ,(let ((code
-                                  (generate-closure-application
-                                   val abstract-real access 'external-formal))
-                                 (val (analysis-get val abstract-real analysis)))
-                             (prepare-to-escape val code))))
-                      (else (error "Unsupported escaping object" val))))))))
   (prepare-to-escape (analysis-get exp env analysis)
                      (compile exp env enclosure analysis)))
 
@@ -302,6 +321,7 @@
   (initialize-name-caches!)
   `(begin ,@(structure-definitions analysis)
           ,@(procedure-definitions analysis)
+          ,@(escaper-definitions analysis)
           ,(compile-escaping
             (macroexpand program)
             (initial-user-env)

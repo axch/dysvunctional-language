@@ -65,7 +65,7 @@
           structure-definitions))
     (define basic-tree
       (lambda (type)
-        (cond ((or (null? type) (memq type '(real bool gensym)))
+        (cond ((or (null? type) (memq type '(real bool gensym escaping-function)))
                type)
               ((pair? type)
                (cons (car type) (map basic-tree (cdr type))))

@@ -30,6 +30,12 @@
   (hash-table/intern! *call-site-names* (cons closure abstract-arg)
    (lambda () (name->symbol (make-name 'operation)))))
 
+(define *escaper-names* (make-abstract-hash-table))
+
+(define (escaping-closure->scheme-function-name closure)
+  (hash-table/intern! *escaper-names* closure
+   (lambda () (name->symbol (make-name 'escaping-operation)))))
+
 (define (clear-name-caches!)
   (set! *closure-names* (make-abstract-hash-table))
   (set! *call-site-names* (make-abstract-hash-table))
@@ -43,4 +49,5 @@
 (define (initialize-name-caches!)
   (set! *closure-names* (make-abstract-hash-table))
   (set! *call-site-names* (make-abstract-hash-table))
+  (set! *escaper-names* (make-abstract-hash-table))
   (reset-fol-names!))

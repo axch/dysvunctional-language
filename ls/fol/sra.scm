@@ -364,7 +364,7 @@
         (else (reduce + 0 (map count-meaningful-parts (sra-parts shape))))))
 (define (primitive-shape? shape)
   (or (function-type? shape)
-      (memq shape '(real bool gensym))))
+      (memq shape '(real bool gensym escaping-function))))
 (define (primitive-fringe shape)
   (cond ((null? shape) '())
         ((primitive-shape? shape) (list shape))
