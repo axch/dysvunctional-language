@@ -1,0 +1,33 @@
+* Alpha renaming
+
+The purpose of alpha renaming is to ensure that every variable has at
+most one binding cite.  A variable needs renaming at its binding cite
+if it is known to be bound at some other cite.  Other variables must
+be renamed to what they were renamed to at their immediate binding
+cites.  Hence the following algorithm:
+
+- Traverse the expression recursively carrying around an environment
+  =E= mapping variables in the scope to new names and a set =B= of
+  variables that are known to be bound somewhere.
+
+- Every instance of =Var m= is renamed to =Var n=, where =n= is the
+  new name =m= is bound to in the environment =E=.
+
+- When traversing =Let [(x1, e1), ..., (xn, en)] e=, for each variable
+  =xi= decide whether it requires renaming by checking whether it is
+  contained in =B=; for each of the names that are not in =B= the
+  renaming is the name itself.  Generate these new names:
+  #+begin_example
+  x1 ~> x1', ..., xn ~> xn'
+  #+end_example
+
+- Rename the body =e= of =Let= using the environment =E= extended with
+  the bindings =(x1, x1')=, ..., =(xn, xn')= and the set of names =B=
+  extended with =x1=, ..., =xn=.  Rename, sequentially, =e1=, ...,
+  =en= starting with the old environment =E= and the set of names
+  produced by the renaming the body of =Let=.  (This particular order
+  is arbitrary.)
+
+- Ditto for =LetValues=.
+
+What kind of monad do we need here?
