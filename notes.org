@@ -57,7 +57,7 @@ rename' (Var x) env = return (Var x')
 rename' (Let bindings body) = do
   used_names <- get
   let (xs, es) = unzip bindings
-      maybeRename x | x `elem` used_name = uniqueName x
+      maybeRename x | x `elem` used_names = uniqueName x
                     | otherwise = return x
       xs' = map maybeRename xs
   put (xs `union` used_names)
