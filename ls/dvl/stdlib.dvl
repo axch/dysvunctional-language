@@ -2,6 +2,7 @@
 
 (define (car (cons x y)) x)
 (define (cdr (cons x y)) y)
+(define (not x) (if x #f #t))
 
 (define bundle-tag (gensym))
 (define (make-bundle epsilon primal tangent)
