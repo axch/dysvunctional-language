@@ -230,3 +230,22 @@ instance Traversable Defn where
           args' = sequenceA [ liftA2 (,) (f arg_name) (pure arg_type)
                                   | (arg_name, arg_type) <- args ]
           body' = traverse f body
+
+-- Program is a Functor
+instance Functor Prog where
+    fmap f (Prog defns expr) = Prog defns' expr'
+        where
+          defns' = map (fmap f) defns
+          expr'  = fmap f expr
+
+-- Programs are Foldable
+instance Foldable Prog where
+    foldMap f (Prog defns expr)
+        = mconcat (map (foldMap f) defns) `mappend` foldMap f expr
+
+-- Programs are Traversable
+instance Traversable Prog where
+    traverse f (Prog defns expr) = liftA2 Prog defns' expr'
+        where
+          defns' = sequenceA (map (traverse f) defns)
+          expr'  = traverse f expr
