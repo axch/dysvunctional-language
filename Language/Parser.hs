@@ -5,6 +5,8 @@ import FOL.Language.Common
 import FOL.Language.Expression
 import FOL.Language.Token
 import FOL.Language.Pretty (pprint)
+import FOL.Language.Rename (rename)
+import FOL.Language.Unique
 
 import Control.Applicative
 import Control.Arrow
