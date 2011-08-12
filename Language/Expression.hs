@@ -4,6 +4,12 @@ module FOL.Language.Expression where
 import FOL.Language.Common
 import FOL.Language.Pretty
 
+import Control.Applicative
+
+import Data.Foldable
+import Data.Monoid
+import Data.Traversable
+
 data Prog name = Prog [Defn name] (Expr name) deriving (Eq, Show)
 
 data Defn name = Defn (Typed name) [Typed name] (Expr name) deriving (Eq, Show)
@@ -101,3 +107,99 @@ instance Pretty name => Pretty (Expr name) where
     pp (Values es)     = ppForm "values" es
 
     pp (ProcCall proc args) = ppList $ pp proc : map pp args
+
+-- Expression is a Functor
+instance Functor Expr where
+    fmap f = fmapExpr
+        where
+          -- fmapExprs :: [Expr a] -> [Expr b]
+          fmapExprs = map fmapExpr
+
+          -- fmapExpr :: Expr a -> Expr b
+          fmapExpr (Var x)    = Var (f x)
+          fmapExpr Nil        = Nil
+          fmapExpr (Bool b)   = Bool b
+          fmapExpr (Real r)   = Real r
+          fmapExpr (If p c a) = If (fmapExpr p) (fmapExpr c) (fmapExpr a)
+          fmapExpr (Let bindings body)
+              = Let [(f x, fmapExpr e) | (x, e) <- bindings] (fmapExpr body)
+          fmapExpr (LetValues bindings body)
+              = LetValues [(map f xs, fmapExpr e) | (xs, e) <- bindings] (fmapExpr body)
+          fmapExpr (Car e)              = Car (fmapExpr e)
+          fmapExpr (Cdr e)              = Cdr (fmapExpr e)
+          fmapExpr (VectorRef e i)      = VectorRef (fmapExpr e) i
+          fmapExpr (Cons e1 e2)         = Cons (fmapExpr e1) (fmapExpr e2)
+          fmapExpr (Vector es)          = Vector (fmapExprs es)
+          fmapExpr (Values es)          = Values (fmapExprs es)
+          fmapExpr (ProcCall proc args) = ProcCall (f proc) (fmapExprs args)
+
+-- Expressions are Foldable
+instance Foldable Expr where
+    foldMap f = foldExpr
+        where
+          -- foldExprs :: Monoid m => [Expr a] -> m
+          foldExprs = mconcat . map foldExpr
+
+          -- foldExpr :: Monoid m => Expr a -> m
+          foldExpr (Var x)    = f x
+          foldExpr Nil        = mempty
+          foldExpr (Bool _)   = mempty
+          foldExpr (Real _)   = mempty
+          foldExpr (If p c a) = foldExprs [p, c, a]
+          foldExpr (Let bindings body)
+              = mconcat [ f x `mappend` foldExpr e
+                              | (x, e) <- bindings ]
+                `mappend` foldExpr body
+          foldExpr (LetValues bindings body)
+              = mconcat [ mconcat (map f xs) `mappend` foldExpr e
+                              | (xs, e) <- bindings ]
+                `mappend` foldExpr body
+          foldExpr (Car e)              = foldExpr e
+          foldExpr (Cdr e)              = foldExpr e
+          foldExpr (VectorRef e _)      = foldExpr e
+          foldExpr (Cons e1 e2)         = foldExprs [e1, e2]
+          foldExpr (Vector es)          = foldExprs es
+          foldExpr (Values es)          = foldExprs es
+          foldExpr (ProcCall proc args) = f proc `mappend` foldExprs args
+
+-- Expressions are Traversable
+instance Traversable Expr where
+    traverse f = traverseExpr
+        where
+          -- traverseExprs :: [Expr a] -> f [Expr b]
+          traverseExprs = sequenceA . map traverseExpr
+
+          -- traverseExpr :: Expr a -> f (Expr b)
+          traverseExpr (Var x)    = Var <$> f x
+          traverseExpr Nil        = pure Nil
+          traverseExpr (Bool b)   = pure (Bool b)
+          traverseExpr (Real r)   = pure (Real r)
+          traverseExpr (If p c a) = liftA3 If p' c' a'
+                where
+                  p' = traverseExpr p
+                  c' = traverseExpr c
+                  a' = traverseExpr a
+          traverseExpr (Let bindings body)
+              = liftA2 Let bindings' body'
+              where
+                bindings' = sequenceA
+                            [ liftA2 (,) (f x) (traverseExpr e)
+                                  | (x, e) <- bindings ]
+                body'     = traverseExpr body
+          traverseExpr (LetValues bindings body)
+              = liftA2 LetValues bindings' body'
+              where
+                bindings' = sequenceA
+                            [ liftA2 (,) (traverse f xs) (traverseExpr e)
+                                  | (xs, e) <- bindings ]
+                body'     = traverseExpr body
+          traverseExpr (Car e) = Car <$> traverseExpr e
+          traverseExpr (Cdr e) = Cdr <$> traverseExpr e
+          traverseExpr (VectorRef e i)
+              = liftA2 VectorRef (traverseExpr e) (pure i)
+          traverseExpr (Cons e1 e2)
+              = liftA2 Cons (traverseExpr e1) (traverseExpr e2)
+          traverseExpr (Vector es) = Vector <$> traverseExprs es
+          traverseExpr (Values es) = Values <$> traverseExprs es
+          traverseExpr (ProcCall proc args)
+              = liftA2 ProcCall (f proc) (traverseExprs args)
