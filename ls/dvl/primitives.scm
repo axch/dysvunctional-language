@@ -9,7 +9,13 @@
 ;;; symbol in the initial environment in the source language to which
 ;;; it is bound.
 
-(define-structure (primitive (safe-accessors #t))
+(define-structure
+  (primitive
+   safe-accessors
+   (print-procedure
+    (simple-unparser-method 'primitive
+     (lambda (object)
+       (list (primitive-name object))))))
   name                                  ; source language
   implementation                        ; concrete eval
   abstract-implementation               ; abstract eval
