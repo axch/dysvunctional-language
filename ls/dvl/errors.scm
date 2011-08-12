@@ -18,7 +18,9 @@
 (define (report-dvl-error dvl-error port)
   (format-error-message
    (dvl-error-message dvl-error)
-   `(,(dvl-error-binding dvl-error)
+   `(,(error-irritant/noise " in")
+     ,(dvl-error-binding dvl-error)
+     ,(error-irritant/noise ":")
      ,@(dvl-error-irritants dvl-error))
    port))
 

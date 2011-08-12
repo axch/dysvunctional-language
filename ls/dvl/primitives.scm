@@ -36,9 +36,12 @@
   (simple-primitive name 1
    base
    (lambda (arg)
-     (if (abstract-real? arg)
-         abstract-answer
-         (base arg)))))
+     (if (some-real? arg)
+         (if (abstract-real? arg)
+             abstract-answer
+             (base arg))
+         (dvl-error "Bad argument" name
+                    (error-irritant/noise " expects real, given") arg)))))
 
 ;;; Binary numeric primitives also have to destructure their input,
 ;;; because the VL system will hand it in as a pair.
