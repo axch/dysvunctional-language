@@ -72,3 +72,24 @@ doesn't work, and in retrospect it is obvious why: when we transform
 =Expr (Unique Name)= into =Unique (Expr Name)=, we chain the actions
 of type =Unique Name=, and as a result things that must be named the
 same are given different names.
+
+An observation: the composition of two =StateT= monad transformers is
+again a =StateT= monad transformer, namely:
+#+begin_example
+StateT s (StateT s' m) ~ StateT (s, s') m
+
+StateT s' m a == s' -> m (a, s')
+
+StateT s (StateT s' m) a
+    ~ s -> (StateT s' m) (a, s)
+    ~ s -> (s' -> m ((a, s), s'))
+    ~ (s, s') -> m (a, (s, s'))
+    ~ StateT (s, s') m a
+#+end_example
+The isomorphism is given explicitly by:
+#+begin_src haskell
+iso :: Monad m => StateT s (StateT t m) a -> StateT (s, t) m a
+iso (StateT f) = StateT $ \(s, t) -> let StateT g = f s
+                                     in do ((x, s'), t') <- g t
+                                           return (x, (s', t'))
+#+end_src
