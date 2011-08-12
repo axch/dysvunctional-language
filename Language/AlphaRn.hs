@@ -1,5 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-module FOL.Language.AlphaRn where
+module FOL.Language.AlphaRn (alphaRn) where
 
 import FOL.Language.Common
 import FOL.Language.Expression

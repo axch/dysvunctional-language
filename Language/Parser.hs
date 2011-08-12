@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module FOL.Language.Parser where
 
-import FOL.Language.AlphaRn (alphaRn)
+import FOL.Language.AlphaRn
 import FOL.Language.Common
 import FOL.Language.Expression
 import FOL.Language.Token
