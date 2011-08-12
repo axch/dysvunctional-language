@@ -37,7 +37,8 @@ alphaRnExpr env (Let bindings body)
     = do used_names <- get
          xs' <- lift $ mapM (rename used_names) xs
          put (xs `union` used_names)
-         body' <- alphaRnExpr (zip xs xs' ++ env) body
+         let env' = zip xs xs' ++ env
+         body' <- alphaRnExpr env' body
          es' <- mapM (alphaRnExpr env) es
          let bindings' = zip xs' es'
          return (Let bindings' body')
@@ -47,7 +48,8 @@ alphaRnExpr env (LetValues bindings body)
     = do used_names <- get
          xs' <- lift $ mapM (mapM (rename used_names)) xs
          put (concat xs `union` used_names)
-         body' <- alphaRnExpr (zip (concat xs) (concat xs') ++ env) body
+         let env' = zip (concat xs) (concat xs') ++ env
+         body' <- alphaRnExpr env' body
          es' <- mapM (alphaRnExpr env) es
          let bindings' = zip xs' es'
          return (LetValues bindings' body')
