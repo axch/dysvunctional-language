@@ -15,3 +15,14 @@ uniqueName prefix = do i <- get
                        let name = prefix ++ "-" ++ show i
                        put (succ i)
                        return (Name name)
+
+-- type UniqueT = StateT Int
+
+-- evalUniqueT :: Monad m => UniqueT m a -> m a
+-- evalUniqueT = flip evalStateT 0
+
+-- uniqueName :: Monad m => String -> UniqueT m Name
+-- uniqueName prefix = do i <- get
+--                        let name = prefix ++ "-" ++ show i
+--                        put (succ i)
+--                        return (Name name)
