@@ -111,13 +111,13 @@ parseType = try parseNilTy <|> parseAtomicType <|> parens parseCompoundType
 
 -- Parsing programs
 
-parseNil :: Parser Expr
+parseNil :: Parser (Expr Name)
 parseNil = Nil <$ parseEmptyList
 
-parseVariable :: Parser Expr
+parseVariable :: Parser (Expr Name)
 parseVariable = Var <$> identifier
 
-parseConstant :: Parser Expr
+parseConstant :: Parser (Expr Name)
 parseConstant = try parseNil <|> tok maybeConstant
     where
       maybeConstant (TokBool b) = Just (Bool b)
@@ -139,7 +139,7 @@ reserved = [ "begin"
            , "vector-ref"
            ]
 
-parseDefine :: Parser Defn
+parseDefine :: Parser (Defn Name)
 parseDefine = tagged "define" $ do
                 (proc, args) <- parens $ liftA2 (,) identifier (many identifier)
                 types <- tagged "argument-types" (many parseType)
@@ -148,8 +148,8 @@ parseDefine = tagged "define" $ do
                 body <- parseExpression
                 return $ Defn (proc, proc_type) (zip args arg_types) body
 
-parseIf, parseLet, parseLetValues, parseCar, parseCdr :: Parser Expr
-parseVectorRef, parseCons, parseVector, parseValues   :: Parser Expr
+parseIf, parseLet, parseLetValues, parseCar, parseCdr :: Parser (Expr Name)
+parseVectorRef, parseCons, parseVector, parseValues   :: Parser (Expr Name)
 
 parseIf = liftA3 If predicate consequent alternate
     where
@@ -180,7 +180,7 @@ parseCons      = liftA2 Cons      parseExpression parseExpression
 parseVector    = liftA  Vector    (many parseExpression)
 parseValues    = liftA  Values    (many parseExpression)
 
-parseSpecialForm, parseApplication :: Parser Expr
+parseSpecialForm, parseApplication :: Parser (Expr Name)
 parseSpecialForm = caseParser [ ("if"        , parseIf       )
                               , ("let"       , parseLet      )
                               , ("let-values", parseLetValues)
@@ -196,14 +196,14 @@ parseApplication = liftA2 ProcCall proc args
       proc = identifier
       args = many parseExpression
 
-parseExpression :: Parser Expr
+parseExpression :: Parser (Expr Name)
 parseExpression = parseAtom <|> parseList
     where
       parseAtom = parseVariable <|> parseConstant
       parseList = parens $ try parseSpecialForm
                            <|> parseApplication
 
-parseProgram :: Parser Prog
+parseProgram :: Parser (Prog Name)
 parseProgram = try (liftA2 Prog (pure []) parseExpression)
                <|> (tagged "begin" $ parseBegin)
     where
@@ -213,7 +213,7 @@ parseProgram = try (liftA2 Prog (pure []) parseExpression)
                            Prog defns expr <- parseBegin
                            return $ Prog (defn:defns) expr)
 
-parse :: String -> Prog
+parse :: String -> (Prog Name)
 parse = (either (\_ -> error "parse error") id)
       . runParser parseProgram () ""
       . scan
