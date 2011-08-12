@@ -307,13 +307,9 @@
         ((and (procedure? obj1) (procedure? obj2))
          (lambda (z)
            (f (obj1 z) (obj2 z))))
-        ;; Presume no real content
-        #;
         ((equal? obj1 obj2)
-         obj1) #;
-        (else (error "Object shape mismatch"))
-        (else obj1) ; TODO The previous two clauses would have been
-                    ; better, but we need an error system for that
+         obj1)
+        (else (error)) ; TODO Error string "Object shape mismatch"
         ))
 
 (define (v:+ x y)
@@ -332,17 +328,18 @@
       (if (real? obj2)
           (* obj1 obj2)
           (pointwise (lambda (x) (g:* obj1 x)) obj2))
-      ; TODO This if is better, but we need an error system for that
-      #;
       (if (real? obj2)
           (pointwise (lambda (x) (g:* x obj2)) obj1)
-          (error "Multiplication mismatch"))
-      (pointwise (lambda (x) (g:* x obj2)) obj1)))
+          (error)) ; TODO Error string "Multiplication mismatch"
+      ))
 
 (define (v:/ obj1 obj2)
-  (if (real? obj1)
-      (/ obj1 obj2)
-      (pointwise (lambda (x) (g:/ x obj2)) obj1)))
+  (if (real? obj2)
+      (if (real? obj1)
+          (/ obj1 obj2)
+          (pointwise (lambda (x) (g:/ x obj2)) obj1))
+      (error) ; TODO Error string "Dividing by a non-real"
+      ))
 
 (define zero (gensym))
 
