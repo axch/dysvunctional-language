@@ -31,3 +31,38 @@ cites.  Hence the following algorithm:
 - Ditto for =LetValues=.
 
 What kind of monad do we need here?
+
+It appears that =Expr= should be parametrized over the type of names
+used to represent variables and then eventually =rename= should take
+an expression of type =Expr Name= and return an expression of type
+=Expr (Unique Name)=:
+#+begin_src haskell
+rename :: Expr Name -> Expr (Unique Name)
+#+end_src
+Then we need to turn =Expr (Unique Name)= into =Unique (Expr Name)=,
+which suggests that =Expr= should be declared an instance of
+=Traversable= (then the necessary commutation morphism is =sequence=
+from =Traversable= class), which it almost certainly is.
+
+Also, to carry the set of names known to be bound we can employ a
+version of the state monad.
+#+begin_src haskell
+type Rename = State Names
+type Names  = [Name]
+
+rename' :: Expr Name -> [(Name, Unique Name)] -> Rename (Expr (Unique Name))
+rename' (Var x) env = return (Var x')
+    where
+      x' = fromMaybe (return x) (lookup x env)
+rename' (Let bindings body) = do
+  used_names <- get
+  let (xs, es) = unzip bindings
+      maybeRename x | x `elem` used_name = uniqueName x
+                    | otherwise = return x
+      xs' = map maybeRename xs
+  put (xs `union` used_names)
+  body' <- rename' body (zip xs xs' ++ env)
+  es' <- mapM (flip rename' env) es
+  let bindings' = zip xs' es'
+  return (Let bindings' body')
+#+end_src
