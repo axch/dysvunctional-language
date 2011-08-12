@@ -17,36 +17,36 @@ type NameList = [Name]
 evalAlphaRnT :: Monad m => AlphaRnT m a -> m a
 evalAlphaRnT = flip evalStateT []
 
-maybeRename :: NameList -> Name -> Unique Name
-maybeRename names name
-    | name `elem` names = uniqueName (name2str name)
-    | otherwise         = return name
+rename :: NameList -> Name -> Unique Name
+rename ns n@(Name name)
+    | n `elem` ns = uniqueName name
+    | otherwise   = return n
 
 alphaRnExpr :: [(Name, Name)] -> Expr -> AlphaRnT Unique Expr
 alphaRnExpr env (Var x) = return (Var x')
     where
       x' = fromMaybe x (lookup x env)
-alphaRnExpr env Nil      = return Nil
-alphaRnExpr env (Bool b) = return (Bool b)
-alphaRnExpr env (Real r) = return (Real r)
+alphaRnExpr _ Nil       = return Nil
+alphaRnExpr _ (Bool b)  = return (Bool b)
+alphaRnExpr _ (Real r)  = return (Real r)
 alphaRnExpr env (If p c a)
     = liftA3 If (alphaRnExpr env p)
                 (alphaRnExpr env c)
                 (alphaRnExpr env a)
 alphaRnExpr env (Let bindings body)
-    = do names <- get
+    = do used_names <- get
          let (xs, es) = unzip bindings
-         xs' <- lift $ mapM (maybeRename names) xs
-         put (xs `union` names)
+         xs' <- lift $ mapM (rename used_names) xs
+         put (xs `union` used_names)
          body' <- alphaRnExpr (zip xs xs' ++ env) body
          es' <- mapM (alphaRnExpr env) es
          let bindings' = zip xs' es'
          return (Let bindings' body')
 alphaRnExpr env (LetValues bindings body)
-    = do names <- get
+    = do used_names <- get
          let (xs, es) = unzip bindings
-         xs' <- lift $ mapM (mapM (maybeRename names)) xs
-         put (concat xs `union` names)
+         xs' <- lift $ mapM (mapM (rename used_names)) xs
+         put (concat xs `union` used_names)
          body' <- alphaRnExpr (zip (concat xs) (concat xs') ++ env) body
          es' <- mapM (alphaRnExpr env) es
          let bindings' = zip xs' es'
@@ -64,10 +64,10 @@ alphaRnExpr env (ProcCall proc args)
 
 alphaRnDefn :: [(Name, Name)] -> Defn -> AlphaRnT Unique Defn
 alphaRnDefn env (Defn proc args body)
-    = do names <- get
-         arg_names' <- lift $ mapM (maybeRename names) arg_names
+    = do used_names <- get
+         arg_names' <- lift $ mapM (rename used_names) arg_names
          let args' = zip arg_names' arg_types
-         put ((proc_name : arg_names) `union` names)
+         put ((proc_name : arg_names) `union` used_names)
          body' <- alphaRnExpr (zip arg_names arg_names' ++ env) body
          return (Defn proc args' body')
     where
