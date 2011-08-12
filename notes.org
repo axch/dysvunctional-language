@@ -66,3 +66,9 @@ rename' (Let bindings body) = do
   let bindings' = zip xs' es'
   return (Let bindings' body')
 #+end_src
+
+The idea that renaming turns =Expr Name= into =Expr (Unique Name)=
+doesn't work, and in retrospect it is obvious why: when we transform
+=Expr (Unique Name)= into =Unique (Expr Name)=, we chain the actions
+of type =Unique Name=, and as a result things that must be named the
+same are given different names.
