@@ -35,22 +35,24 @@ alphaRnExpr env (If p c a)
                 (alphaRnExpr env a)
 alphaRnExpr env (Let bindings body)
     = do used_names <- get
-         let (xs, es) = unzip bindings
          xs' <- lift $ mapM (rename used_names) xs
          put (xs `union` used_names)
          body' <- alphaRnExpr (zip xs xs' ++ env) body
          es' <- mapM (alphaRnExpr env) es
          let bindings' = zip xs' es'
          return (Let bindings' body')
+    where
+      (xs, es) = unzip bindings
 alphaRnExpr env (LetValues bindings body)
     = do used_names <- get
-         let (xs, es) = unzip bindings
          xs' <- lift $ mapM (mapM (rename used_names)) xs
          put (concat xs `union` used_names)
          body' <- alphaRnExpr (zip (concat xs) (concat xs') ++ env) body
          es' <- mapM (alphaRnExpr env) es
          let bindings' = zip xs' es'
          return (LetValues bindings' body')
+    where
+      (xs, es) = unzip bindings
 alphaRnExpr env (Car e) = Car <$> alphaRnExpr env e
 alphaRnExpr env (Cdr e) = Cdr <$> alphaRnExpr env e
 alphaRnExpr env (VectorRef e i)
