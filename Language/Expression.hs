@@ -203,3 +203,30 @@ instance Traversable Expr where
           traverseExpr (Values es) = Values <$> traverseExprs es
           traverseExpr (ProcCall proc args)
               = liftA2 ProcCall (f proc) (traverseExprs args)
+
+-- Definition is a Functor
+instance Functor Defn where
+    fmap f (Defn proc args body) = Defn proc' args' body'
+        where
+          (proc_name, proc_type) = proc
+          proc' = (f proc_name, proc_type)
+          args' = [ (f arg_name, arg_type) | (arg_name, arg_type) <- args ]
+          body' = fmap f body
+
+-- Definitions are Foldable
+instance Foldable Defn where
+    foldMap f (Defn proc args body)
+        = f proc_name `mappend` mconcat [ f arg_name | (arg_name, _) <- args ]
+                      `mappend` foldMap f body
+        where
+          (proc_name, _) = proc
+
+-- Definitions are Traversable
+instance Traversable Defn where
+    traverse f (Defn proc args body) = liftA3 Defn proc' args' body'
+        where
+          (proc_name, proc_type) = proc
+          proc' = liftA2 (,) (f proc_name) (pure proc_type)
+          args' = sequenceA [ liftA2 (,) (f arg_name) (pure arg_type)
+                                  | (arg_name, arg_type) <- args ]
+          body' = traverse f body
