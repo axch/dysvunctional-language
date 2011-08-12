@@ -58,10 +58,14 @@
    (lambda (arg)
      (let ((first (car arg))
            (second (cdr arg)))
-       (if (or (abstract-real? first)
-               (abstract-real? second))
-           abstract-answer
-           (base first second))))))
+       (if (and (some-real? first)
+                (some-real? second))
+           (if (or (abstract-real? first)
+                   (abstract-real? second))
+               abstract-answer
+               (base first second))
+           (dvl-error "Bad argument" name
+                      (error-irritant/noise " expects two reals, given") first second))))))
 
 ;;; Type predicates need to take care to respect the possible abstract
 ;;; types.

@@ -41,5 +41,8 @@
        '(1 2)))))
 
  (broken-programs
+  (no-ternary-*   (* 1 2 3))
+  (no-ternary-*-2 (* (real 1) 2 3))
+  (no-ternary-*-3 (* 1 (real 2) 3))
   (well-typed-sin (sin sin))
   ))
