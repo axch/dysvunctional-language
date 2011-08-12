@@ -11,7 +11,16 @@ import Control.Applicative
 import Data.List
 import Data.Maybe
 
+-- The alpha renamer need to carry around the set of names that it has
+-- already seen and that should be avoided.  Because we need access to
+-- Unique in order to be able to generate new names, we make the alpha
+-- renamer a monad transformer based on StateT.
 type AlphaRnT = StateT NameList
+
+-- Because this program is written for clarity and not speed, we use a
+-- list of names to represent the set of names the alpha renamer has
+-- already seen.  This will save us some conversions between lists and
+-- sets.
 type NameList = [Name]
 
 evalAlphaRnT :: Monad m => AlphaRnT m a -> m a
@@ -23,7 +32,7 @@ rename ns n@(Name name)
     | n `elem` ns = uniqueName name
     | otherwise   = return n
 
--- Record a given list of names as names already in use.
+-- Record a given list of names as names already seen.
 record :: Monad m => NameList -> AlphaRnT m ()
 record names = modify (names `union`)
 
@@ -43,8 +52,8 @@ alphaRnExpr env (If p c a)
                 (alphaRnExpr env c)
                 (alphaRnExpr env a)
 alphaRnExpr env (Let bindings body)
-    = do used_names <- get
-         xs' <- lift $ mapM (rename used_names) xs
+    = do seen_names <- get
+         xs' <- lift $ mapM (rename seen_names) xs
          record xs
          es' <- mapM (alphaRnExpr env) es
          let env' = extend xs xs' env
@@ -54,8 +63,8 @@ alphaRnExpr env (Let bindings body)
     where
       (xs, es) = unzip bindings
 alphaRnExpr env (LetValues bindings body)
-    = do used_names <- get
-         xs' <- lift $ mapM (mapM (rename used_names)) xs
+    = do seen_names <- get
+         xs' <- lift $ mapM (mapM (rename seen_names)) xs
          record (concat xs)
          es' <- mapM (alphaRnExpr env) es
          let env' = extend (concat xs) (concat xs') env
@@ -77,8 +86,8 @@ alphaRnExpr env (ProcCall proc args)
 
 alphaRnDefn :: [(Name, Name)] -> Defn -> AlphaRnT Unique Defn
 alphaRnDefn env (Defn proc args body)
-    = do used_names <- get
-         arg_names' <- lift $ mapM (rename used_names) arg_names
+    = do seen_names <- get
+         arg_names' <- lift $ mapM (rename seen_names) arg_names
          record (proc_name : arg_names)
          let args' = zip arg_names' arg_types
              env'  = extend arg_names arg_names' env
