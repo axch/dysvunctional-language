@@ -22,7 +22,7 @@ maybeRename names name
     | name `elem` names = uniqueName (name2str name)
     | otherwise         = return name
 
-alphaRnExpr :: [(Name, Name)] -> Expr Name -> AlphaRnT Unique (Expr Name)
+alphaRnExpr :: [(Name, Name)] -> Expr -> AlphaRnT Unique Expr
 alphaRnExpr env (Var x) = return (Var x')
     where
       x' = fromMaybe x (lookup x env)
@@ -62,7 +62,7 @@ alphaRnExpr env (Values es) = Values <$> mapM (alphaRnExpr env) es
 alphaRnExpr env (ProcCall proc args)
     = liftA2 ProcCall (pure proc) (mapM (alphaRnExpr env) args)
 
-alphaRnDefn :: [(Name, Name)] -> Defn Name -> AlphaRnT Unique (Defn Name)
+alphaRnDefn :: [(Name, Name)] -> Defn -> AlphaRnT Unique Defn
 alphaRnDefn env (Defn proc args body)
     = do names <- get
          arg_names' <- lift $ mapM (maybeRename names) arg_names
@@ -74,9 +74,9 @@ alphaRnDefn env (Defn proc args body)
       (proc_name, proc_type) = proc
       (arg_names, arg_types) = unzip args
 
-alphaRnProg :: [(Name, Name)] -> Prog Name -> AlphaRnT Unique (Prog Name)
+alphaRnProg :: [(Name, Name)] -> Prog -> AlphaRnT Unique Prog
 alphaRnProg env (Prog defns expr)
     = liftA2 Prog (mapM (alphaRnDefn env) defns) (alphaRnExpr env expr)
 
-alphaRn :: Prog Name -> Unique (Prog Name)
+alphaRn :: Prog -> Unique Prog
 alphaRn = evalAlphaRnT . alphaRnProg []
