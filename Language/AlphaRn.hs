@@ -17,10 +17,19 @@ type NameList = [Name]
 evalAlphaRnT :: Monad m => AlphaRnT m a -> m a
 evalAlphaRnT = flip evalStateT []
 
+-- Rename a given name if it occurs in a given list of names.
 rename :: NameList -> Name -> Unique Name
 rename ns n@(Name name)
     | n `elem` ns = uniqueName name
     | otherwise   = return n
+
+-- Record a given list of names as names already in use.
+record :: Monad m => NameList -> AlphaRnT m ()
+record names = modify (names `union`)
+
+-- Extend a given environment with new bindings.
+extend :: [Name] -> [v] -> [(Name, v)] -> [(Name, v)]
+extend xs vs env = zip xs vs ++ env
 
 alphaRnExpr :: [(Name, Name)] -> Expr -> AlphaRnT Unique Expr
 alphaRnExpr env (Var x) = return (Var x')
@@ -36,10 +45,10 @@ alphaRnExpr env (If p c a)
 alphaRnExpr env (Let bindings body)
     = do used_names <- get
          xs' <- lift $ mapM (rename used_names) xs
-         put (xs `union` used_names)
-         let env' = zip xs xs' ++ env
-         body' <- alphaRnExpr env' body
+         record xs
          es' <- mapM (alphaRnExpr env) es
+         let env' = extend xs xs' env
+         body' <- alphaRnExpr env' body
          let bindings' = zip xs' es'
          return (Let bindings' body')
     where
@@ -47,10 +56,10 @@ alphaRnExpr env (Let bindings body)
 alphaRnExpr env (LetValues bindings body)
     = do used_names <- get
          xs' <- lift $ mapM (mapM (rename used_names)) xs
-         put (concat xs `union` used_names)
-         let env' = zip (concat xs) (concat xs') ++ env
-         body' <- alphaRnExpr env' body
+         record (concat xs)
          es' <- mapM (alphaRnExpr env) es
+         let env' = extend (concat xs) (concat xs') env
+         body' <- alphaRnExpr env' body
          let bindings' = zip xs' es'
          return (LetValues bindings' body')
     where
@@ -70,9 +79,10 @@ alphaRnDefn :: [(Name, Name)] -> Defn -> AlphaRnT Unique Defn
 alphaRnDefn env (Defn proc args body)
     = do used_names <- get
          arg_names' <- lift $ mapM (rename used_names) arg_names
+         record (proc_name : arg_names)
          let args' = zip arg_names' arg_types
-         put ((proc_name : arg_names) `union` used_names)
-         body' <- alphaRnExpr (zip arg_names arg_names' ++ env) body
+             env'  = extend arg_names arg_names' env
+         body' <- alphaRnExpr env' body
          return (Defn proc args' body')
     where
       (proc_name, proc_type) = proc
