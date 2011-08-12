@@ -128,6 +128,7 @@
 
 (define-primitive-type-predicate null?)
 (define-primitive-type-predicate pair?)
+(define-primitive-type-predicate boolean?)
 (define-primitive-type-predicate real?)
 
 (define (vl-procedure? thing)
