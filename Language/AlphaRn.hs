@@ -1,0 +1,82 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+module FOL.Language.AlphaRn where
+
+import FOL.Language.Common
+import FOL.Language.Expression
+import FOL.Language.Unique
+
+import Control.Monad.State
+import Control.Applicative
+
+import Data.List
+import Data.Maybe
+
+type AlphaRnT = StateT NameList
+type NameList = [Name]
+
+evalAlphaRnT :: Monad m => AlphaRnT m a -> m a
+evalAlphaRnT = flip evalStateT []
+
+maybeRename :: NameList -> Name -> Unique Name
+maybeRename names name
+    | name `elem` names = uniqueName (name2str name)
+    | otherwise         = return name
+
+alphaRnExpr :: [(Name, Name)] -> Expr Name -> AlphaRnT Unique (Expr Name)
+alphaRnExpr env (Var x) = return (Var x')
+    where
+      x' = fromMaybe x (lookup x env)
+alphaRnExpr env Nil      = return Nil
+alphaRnExpr env (Bool b) = return (Bool b)
+alphaRnExpr env (Real r) = return (Real r)
+alphaRnExpr env (If p c a)
+    = liftA3 If (alphaRnExpr env p)
+                (alphaRnExpr env c)
+                (alphaRnExpr env a)
+alphaRnExpr env (Let bindings body)
+    = do names <- get
+         let (xs, es) = unzip bindings
+         xs' <- lift $ mapM (maybeRename names) xs
+         put (xs `union` names)
+         body' <- alphaRnExpr (zip xs xs' ++ env) body
+         es' <- mapM (alphaRnExpr env) es
+         let bindings' = zip xs' es'
+         return (Let bindings' body')
+alphaRnExpr env (LetValues bindings body)
+    = do names <- get
+         let (xs, es) = unzip bindings
+         xs' <- lift $ mapM (mapM (maybeRename names)) xs
+         put (concat xs `union` names)
+         body' <- alphaRnExpr (zip (concat xs) (concat xs') ++ env) body
+         es' <- mapM (alphaRnExpr env) es
+         let bindings' = zip xs' es'
+         return (LetValues bindings' body')
+alphaRnExpr env (Car e) = Car <$> alphaRnExpr env e
+alphaRnExpr env (Cdr e) = Cdr <$> alphaRnExpr env e
+alphaRnExpr env (VectorRef e i)
+    = liftA2 VectorRef (alphaRnExpr env e) (pure i)
+alphaRnExpr env (Cons e1 e2)
+    = liftA2 Cons (alphaRnExpr env e1) (alphaRnExpr env e2)
+alphaRnExpr env (Vector es) = Vector <$> mapM (alphaRnExpr env) es
+alphaRnExpr env (Values es) = Values <$> mapM (alphaRnExpr env) es
+alphaRnExpr env (ProcCall proc args)
+    = liftA2 ProcCall (pure proc) (mapM (alphaRnExpr env) args)
+
+alphaRnDefn :: [(Name, Name)] -> Defn Name -> AlphaRnT Unique (Defn Name)
+alphaRnDefn env (Defn proc args body)
+    = do names <- get
+         arg_names' <- lift $ mapM (maybeRename names) arg_names
+         let args' = zip arg_names' arg_types
+         put ((proc_name : arg_names) `union` names)
+         body' <- alphaRnExpr (zip arg_names arg_names' ++ env) body
+         return (Defn proc args' body')
+    where
+      (proc_name, proc_type) = proc
+      (arg_names, arg_types) = unzip args
+
+alphaRnProg :: [(Name, Name)] -> Prog Name -> AlphaRnT Unique (Prog Name)
+alphaRnProg env (Prog defns expr)
+    = liftA2 Prog (mapM (alphaRnDefn env) defns) (alphaRnExpr env expr)
+
+alphaRn :: Prog Name -> Unique (Prog Name)
+alphaRn = evalAlphaRnT . alphaRnProg []
