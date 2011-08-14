@@ -189,6 +189,16 @@
                    y)))
           z))))
 
+   ;; Treating CONS as a pure procedure collapses EQUAL? pairs into
+   ;; structure sharing.
+   (equal?
+    '(let ((x (cons 1 2)))
+       (cons x x))
+    (intraprocedural-cse
+     '(let ((x (cons 1 2)))
+        (let ((y (cons 1 2)))
+          (cons x y)))))
+
    ;; TODO An example for interprocedural CSE
    #;
    (begin

@@ -279,8 +279,13 @@
       (rule `(* (? thing) 0) 0)
       (rule `(/ 0 (? thing)) 0)
       )))
+  ;; Treating constructors and accessors as non-user-procedures (and
+  ;; as not impure) here has the effect of collapsing EQUAL?
+  ;; structures into EQ? structures.  This is ok because identity of
+  ;; structures is not testable in the source language.
   (define (user-procedure? operator)
-    (not (memq operator (map primitive-name *primitives*))))
+    (not (memq operator (append '(cons car cdr vector vector-ref)
+                                (map primitive-name *primitives*)))))
   (simplify
    (cond ((memq operator
                 (cons 'real ; REAL is "statically" but not "dynamically" impure
