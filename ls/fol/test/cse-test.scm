@@ -177,6 +177,18 @@
           (let ((x (* foo 1)))
             (+ bar (+ x 1)))))))
 
+   ;; Lambda expressions are not the same as their bodies
+   (equal?
+    '(let ((y (real 3)))
+       (let ((z (lambda (formal)
+                  y)))
+         z))
+    (intraprocedural-cse
+     '(let ((y (real 3)))
+        (let ((z (lambda (formal)
+                   y)))
+          z))))
+
    ;; TODO An example for interprocedural CSE
    #;
    (begin

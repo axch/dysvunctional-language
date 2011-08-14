@@ -224,7 +224,9 @@
             (degment-cse-env! env formal)
             (win `(lambda ,formal
                     ,new-body)
-                 body-symbolic)))))))
+                 ;; TODO With more work, I could try to collapse
+                 ;; identical exported functions, but why bother?
+                 unique-expression)))))))
   (define (cse-values expr env win)
     (loop* (cdr expr) env
      (lambda (exprs symbolics)
