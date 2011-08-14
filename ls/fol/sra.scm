@@ -46,6 +46,11 @@
 (define (scalar-replace-aggregates program)
   (%scalar-replace-aggregates (approximate-anf program)))
 
+(define (scalar-replace-aggregates-visibly program)
+  ((visible-stage %scalar-replace-aggregates)
+   ((visible-stage approximate-anf)
+    program)))
+
 ;;; The actual implementation of SRA makes its bookkeeping easier by
 ;;; first converting its input to approximate A-normal form with
 ;;; APPROXIMATE-ANF (see a-normal-form.scm).  As it happens, the
