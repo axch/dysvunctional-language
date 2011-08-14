@@ -229,7 +229,8 @@
        (lambda (new-body body-shape)
          (win `(lambda ,formal
                  ,(reconstruct-pre-sra-shape new-body body-shape))
-              (function-type 'real body-shape))))))
+              #;(function-type 'real body-shape)
+              'escaping-function)))))
   (define (sra-access expr env win)
     (loop (cadr expr) env
      (lambda (new-cadr cadr-shape)
