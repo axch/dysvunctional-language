@@ -39,7 +39,7 @@
    ((visible-stage reverse-anf)
     ((visible-stage interprocedural-dead-code-elimination)
      ((visible-stage eliminate-intraprocedural-dead-variables)
-      ((visible-stage intraprocedural-cse)
+      (intraprocedural-cse-visibly
        (scalar-replace-aggregates-visibly
         ((visible-stage inline)             ; includes ALPHA-RENAME
          program))))))))

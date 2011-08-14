@@ -87,6 +87,12 @@
     (%intraprocedural-cse
      program))))
 
+(define (intraprocedural-cse-visibly program)
+  ((visible-stage %intraprocedural-cse)
+   ((visible-stage lift-lets)
+    ((visible-stage %intraprocedural-cse)
+     program))))
+
 (define (%intraprocedural-cse program)
   (define (cse-entry-point expression)
     (cse-expression expression (empty-cse-env)))
