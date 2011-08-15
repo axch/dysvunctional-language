@@ -15,6 +15,9 @@ import qualified Data.Map as Map
 inline :: Prog -> Unique Prog
 inline = alphaRn . inlineProg
 
+-- Compute the list of procedures called within a given expression.
+-- The list may contain duplicates, which is fine because we use it
+-- only for set manipulations.
 callees :: Expr -> [Name]
 callees (Var x)  = []
 callees Nil      = []
@@ -41,19 +44,25 @@ inlineProg (Prog defns expr) = Prog defns' expr'
       non_inlinable = feedbackVertexSet call_graph
       call_graph    = [(proc_name, callees body \\ primitives)
                            | Defn (proc_name, _) _ body <- defns]
+      -- A map mapping the names of the procedures that are
+      -- to be inlined to their definitions.
       defn_map      = Map.fromList
                       [(proc_name, defn)
                            | defn@(Defn (proc_name, _) _ _) <- defns
                            , proc_name `notElem` non_inlinable]
+      -- Leave only the procedure definitions that have not
+      -- been inlined, inlining their bodies.
       defns'        = [inlineDefn defn_map defn
                            | defn@(Defn (proc_name, _) _ _) <- defns
                            , proc_name `elem` non_inlinable]
       expr'         = inlineExpr defn_map expr
 
+-- Inline given procedure definitions in a given definition.
 inlineDefn :: Map Name Defn -> Defn -> Defn
 inlineDefn defn_map (Defn proc args body)
     = Defn proc args (inlineExpr defn_map body)
 
+-- Inline given procedure definitions in a given expression.
 inlineExpr :: Map Name Defn -> Expr -> Expr
 inlineExpr _ e@(Var _)  = e
 inlineExpr _ e@Nil      = e
