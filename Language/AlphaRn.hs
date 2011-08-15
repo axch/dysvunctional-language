@@ -11,16 +11,7 @@ import Control.Applicative
 import Data.List
 import Data.Maybe
 
--- The alpha renamer need to carry around the set of names that it has
--- already seen and that should be avoided.  Because we need access to
--- Unique in order to be able to generate new names, we make the alpha
--- renamer a monad transformer based on StateT.
 type AlphaRnT = StateT NameList
-
--- Because this program is written for clarity and not speed, we use a
--- list of names to represent the set of names the alpha renamer has
--- already seen.  This will save us some conversions between lists and
--- sets.
 type NameList = [Name]
 
 evalAlphaRnT :: Monad m => AlphaRnT m a -> m a
