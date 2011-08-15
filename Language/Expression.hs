@@ -15,7 +15,7 @@ data Type
     | ConsTy Type Type
     | VectorTy [Type]
     | ValuesTy [Type]
-      deriving (Eq, Show)
+      deriving (Eq, Ord, Show)
 
 data Expr
     = Var Name

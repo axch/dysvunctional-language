@@ -10,4 +10,4 @@ import Prelude hiding (Real)
 
 type Real = Double
 
-data Name = Name String deriving (Eq, Show)
+data Name = Name String deriving (Eq, Ord, Show)
