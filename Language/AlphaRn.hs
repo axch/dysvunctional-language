@@ -83,6 +83,9 @@ alphaRnDefn env (Defn proc args body)
          let args' = zip arg_names' arg_types
              env'  = extend arg_names arg_names' env
          body' <- alphaRnExpr env' body
+         -- We assume here that procedure names are already unique.
+         -- Something should check this assumption and signal an
+         -- error if it is not satisfied.
          return (Defn proc args' body')
     where
       (proc_name, proc_type) = proc
