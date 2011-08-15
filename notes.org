@@ -93,3 +93,16 @@ iso (StateT f) = StateT $ \(s, t) -> let StateT g = f s
                                      in do ((x, s'), t') <- g t
                                            return (x, (s', t'))
 #+end_src
+
+* Inlining
+
+My approach follows more or less that of Alexey.  The definition of
+=inlineExpr= suggests that some generic programming technique a la
+"Scrap Your Boilerplate" might be successfully applied here.
+
+** TODO Study SYB papers.  Does the SYB approach apply here?
+** TODO Write a test suite for my FOL implementation.
+   Testing alpha-renamer can be fully automated (take a DVL program,
+   compile it to raw FOL, feed to my optimizer, alpha-rename and check
+   the result against Alexey's FOL using =alpha-rename?=).  What about
+   inlining?  Is there a fully automatic way to test it?
