@@ -102,7 +102,10 @@ My approach follows more or less that of Alexey.  The definition of
 
 ** TODO Study SYB papers.  Does the SYB approach apply here?
 ** TODO Write a test suite for my FOL implementation.
-   Testing alpha-renamer can be fully automated (take a DVL program,
-   compile it to raw FOL, feed to my optimizer, alpha-rename and check
-   the result against Alexey's FOL using =alpha-rename?=).  What about
-   inlining?  Is there a fully automatic way to test it?
+   Testing alpha-renamer can be fully automated:
+   - take a DVL program,
+   - compile it to raw FOL,
+   - feed the code to my optimizer,
+   - alpha-rename it, and
+   - check the result against Alexey's FOL using =alpha-rpename?=).
+   What about inlining?  Is there a fully automatic way to test it?
