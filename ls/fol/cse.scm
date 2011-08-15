@@ -285,7 +285,7 @@
   (define (simplify-access expr)
     (if (accessor? expr)
         (let ((accessee (cadr expr)))
-          ;; Let's see what value this accessed object holds I think
+          ;; Let's see what value this accessed object holds.  I think
           ;; this relies on the accessee being a single variable, and
           ;; furthermore the canonical name of the constructed object
           ;; being accessed.
