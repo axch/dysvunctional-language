@@ -236,7 +236,8 @@
   (define (cse-application expr env win)
     (loop* (cdr expr) env
      (lambda (new-args args-symbolics)
-       (let* ((symb-candidate (symbolic-application (car expr) args-symbolics))
+       (let* ((symb-candidate
+               (symbolic-application (car expr) args-symbolics env))
               (symbolic (cse-canonical env symb-candidate)))
          (win (if (or (fol-var? symbolic) (fol-const? symbolic))
                   symbolic
@@ -256,8 +257,8 @@
                    ;; interprocedural CSE crunch.
                    new-expr)))
 
-(define (symbolic-application operator arguments)
-  (define simplify
+(define (symbolic-application operator arguments env)
+  (define simplify-arithmetic
     ;; There are lots of possibilities for simplification here,
     ;; especially if I request the environment and look up the
     ;; symbolic expressions that various variables among the arguments
@@ -281,10 +282,39 @@
       (rule `(* (? thing) 0) 0)
       (rule `(/ 0 (? thing)) 0)
       )))
+  (define (simplify-access expr)
+    (if (accessor? expr)
+        (let ((accessee (cadr expr)))
+          ;; Let's see what value this accessed object holds I think
+          ;; this relies on the accessee being a single variable, and
+          ;; furthermore the canonical name of the constructed object
+          ;; being accessed.
+          (reverse-lookup accessee env
+           (lambda (held-value)
+             (if (construction? held-value)
+                 (let ((candidate
+                        ;; It's not really "from shape" here, but
+                        ;; let's pick out the accessed field.
+                        (select-from-shape-by-access held-value expr)))
+                   ;; If the canonical name for that accessed field is
+                   ;; still in scope, then the current expression can
+                   ;; be replaced by it.
+                   (let ((canonical-candidate
+                          (hash-table/get env candidate candidate)))
+                     (if (in-scope? canonical-candidate env)
+                         canonical-candidate
+                         expr)))
+                 expr))
+           (lambda ()
+             ;; The held value was not constructed in this procedure
+             expr)))
+        expr))
   ;; Treating constructors and accessors as non-user-procedures (and
   ;; as not impure) here has the effect of collapsing EQUAL?
   ;; structures into EQ? structures.  This is ok because identity of
   ;; structures is not testable in the source language.
+  (define (simplify expr)
+    (simplify-arithmetic (simplify-access expr)))
   (define (user-procedure? operator)
     (not (memq operator (append '(cons car cdr vector vector-ref)
                                 (map primitive-name *primitives*)))))
@@ -380,6 +410,18 @@
     (lambda (datum)
       (cons name datum))
     (lambda () #f)))
+
+(define (reverse-lookup canonical-name env win lose)
+  (let ((binding
+         (assq canonical-name
+               (map (lambda (datum)
+                      (cons (cdr datum) (car datum)))
+                    (filter (lambda (datum)
+                              (not (fol-var? (car datum))))
+                            (hash-table->alist env))))))
+    (if binding
+        (win (cdr binding))
+        (lose))))
 
 ;;; To do interprocedural must-alias analysis and alias elimination, I
 ;;; have to proceed as follows:
