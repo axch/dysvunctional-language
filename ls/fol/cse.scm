@@ -124,7 +124,9 @@
   ;; new, CSE'd expression and the symbolic expression representing
   ;; the return value from this expression (using a values form for
   ;; the symbolic expressions for the elements of a multivalue
-  ;; return).
+  ;; return).  If this expression is unique and gets bound to
+  ;; something, that something will become the canonical name for this
+  ;; expression.
   (define (loop expr env win)
     (cond ((fol-var? expr)
            (cse-fol-var expr env win))
