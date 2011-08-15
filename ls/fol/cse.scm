@@ -403,7 +403,8 @@
             names))
 
 (define (in-scope? name env)
-  (hash-table/get env name #f))
+  (or (fol-const? name)
+      (hash-table/get env name #f)))
 
 (define (find-alias name env)
   (hash-table/lookup env name
