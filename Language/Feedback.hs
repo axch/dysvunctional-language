@@ -10,89 +10,88 @@ import qualified Data.Map as Map
 
 import Data.Maybe
 
-data Node = Node { outNeighbors :: [Name]
-                 , inNeighbors  :: [Name]
-                 , outDegree    :: Int
-                 , inDegree     :: Int
-                 }
+data Node    a = Node { outNeighbors :: [a]
+                      , inNeighbors  :: [a]
+                      , outDegree    :: Int
+                      , inDegree     :: Int
+                      }
+type Graph   a = [(a, [a])]
+type NodeMap a = Map a (Node a)
 
-type Graph = Map Name Node
-
-addOutNeighbor :: Name -> Name -> Graph -> Graph
-addOutNeighbor name1 name2 graph = Map.adjust addOutNeighbor' name1 graph
+addOutNeighbor :: Ord a => a -> a -> NodeMap a -> NodeMap a
+addOutNeighbor v1 v2 = Map.adjust addOutNeighbor' v1
     where
       addOutNeighbor' node
-          = node { outNeighbors = name2 : outNeighbors node
+          = node { outNeighbors = v2 : outNeighbors node
                  , outDegree    = outDegree node + 1
                  }
 
-addInNeighbor  :: Name -> Name -> Graph -> Graph
-addInNeighbor  name1 name2 graph = Map.adjust addInNeighbor'  name1 graph
+addInNeighbor  :: Ord a => a -> a -> NodeMap a -> NodeMap a
+addInNeighbor  v1 v2 = Map.adjust addInNeighbor'  v1
     where
       addInNeighbor'  node
-          = node { inNeighbors  = name2 : inNeighbors  node
+          = node { inNeighbors  = v2 : inNeighbors  node
                  , inDegree     = inDegree  node + 1
                  }
 
-attachEdge :: Name -> Name -> Graph -> Graph
-attachEdge name1 name2
-    = addInNeighbor name2 name1 . addOutNeighbor name1 name2
+attachEdge :: Ord a => a -> a -> NodeMap a -> NodeMap a
+attachEdge v1 v2 = addInNeighbor v2 v1 . addOutNeighbor v1 v2
 
-deleteNode :: Name -> Graph -> Graph
-deleteNode name graph
-    | Just (Node o i _ _) <- Map.lookup name graph
+deleteNode :: Ord a => a -> NodeMap a -> NodeMap a
+deleteNode v node_map
+    | Just (Node o i _ _) <- Map.lookup v node_map
     = compose (map delInNeighbor o
-                       ++ map delOutNeighbor i) (Map.delete name graph)
+                       ++ map delOutNeighbor i) (Map.delete v node_map)
     | otherwise
-    = graph
+    = node_map
     where
       delOutNeighbor = Map.adjust delOutNeighbor'
           where
             delOutNeighbor' node
-                = node { outNeighbors = delete name (outNeighbors node)
+                = node { outNeighbors = delete v (outNeighbors node)
                        , outDegree    = outDegree node - 1
                        }
       delInNeighbor  = Map.adjust delInNeighbor'
           where
             delInNeighbor'  node
-                = node { inNeighbors  = delete name (inNeighbors  node)
+                = node { inNeighbors  = delete v (inNeighbors  node)
                        , inDegree     = inDegree  node - 1
                        }
 
 compose :: [a -> a] -> a -> a
 compose = foldr (.) id
 
-mkGraph :: [(Name,[Name])] -> Graph
-mkGraph vertices = compose (map insertVertex vertices) initialGraph
+mkNodeMap :: Ord a => Graph a -> NodeMap a
+mkNodeMap graph = compose (map insertVertex graph) initialNodeMap
     where
-      initialGraph
-          = Map.fromList [(name, Node [] [] 0 0) | (name, _) <- vertices]
+      initialNodeMap
+          = Map.fromList [(name, Node [] [] 0 0) | (name, _) <- graph]
       insertVertex (name, neighbors)
           = compose (map (attachEdge name) neighbors)
 
-feedbackVertexSet :: [(Name,[Name])] -> [Name]
-feedbackVertexSet vertices = prune (mkGraph vertices, [])
+feedbackVertexSet :: Ord a => Graph a -> [a]
+feedbackVertexSet graph = prune (mkNodeMap graph, [])
     where
       prune = pass2 . pass1
-      pass1 (graph, feedback)
-          = Map.foldrWithKey sweep (graph, feedback, False) graph
-      sweep name node state@(graph, feedback, progress)
+      pass1 (node_map, feedback)
+          = Map.foldrWithKey sweep (node_map, feedback, False) node_map
+      sweep name node state@(node_map, feedback, progress)
           | outDegree node == 0 || inDegree node == 0
-          = (deleteNode name graph, feedback, True)
+          = (deleteNode name node_map,        feedback, True)
           | name `elem` (outNeighbors node)
-          = (deleteNode name graph, name : feedback, True)
+          = (deleteNode name node_map, name : feedback, True)
           | otherwise
           = state
-      pass2 (graph, feedback, progress)
-          | Map.null graph
+      pass2 (node_map, feedback, progress)
+          | Map.null node_map
           = feedback
           | not progress
-          , let name = select graph
-          = prune (deleteNode name graph, name : feedback)
+          , let name = select node_map
+          = prune (deleteNode name node_map, name : feedback)
           | otherwise
-          = prune (graph, feedback)
+          = prune (node_map, feedback)
 
-select :: Graph -> Name
+select :: NodeMap a -> a
 select = fst . maximumBy nodeMax . Map.toList
     where
       nodeMax (name1, Node _ _ o1 i1) (name2, Node _ _ o2 i2)
