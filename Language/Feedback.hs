@@ -66,9 +66,6 @@ deleteNode v node_map
                        , inDegree     = inDegree  node - 1
                        }
 
-compose :: [a -> a] -> a -> a
-compose = foldr (.) id
-
 -- Build a node map out of adjacency list representation of a graph.
 mkNodeMap :: Ord a => Graph a -> NodeMap a
 mkNodeMap graph = compose (map insertVertex graph) initialNodeMap

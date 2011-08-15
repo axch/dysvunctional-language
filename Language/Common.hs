@@ -3,6 +3,7 @@ module FOL.Language.Common
     ( Real
     , Name (..)
     , primitives
+    , compose
     , module Prelude
     )
     where
@@ -22,3 +23,6 @@ primitives
                , "zero?", "positive?", "negative?"
                , "<", "<=", ">", ">=", "="
                ]
+
+compose :: [a -> a] -> a -> a
+compose = foldr (.) id
