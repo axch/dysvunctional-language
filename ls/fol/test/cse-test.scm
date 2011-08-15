@@ -199,6 +199,18 @@
         (let ((y (cons 1 2)))
           (cons x y)))))
 
+   ;; With appropriate simplifications, CSE works through locally
+   ;; constructed structures.
+   (equal?
+    '(let ((z (real 1)))
+       (let ((x (cons z 2)))
+         z))
+    (intraprocedural-cse
+     '(let ((z (real 1)))
+        (let ((x (cons z 2)))
+          (let ((y (car x)))
+            y)))))
+
    ;; TODO An example for interprocedural CSE
    #;
    (begin
