@@ -71,8 +71,8 @@ real = tok maybeReal
 -- To parse 'vector-ref's we must be able to parse integers, but I am
 -- lazy to modify the tokenizer.  Whenever an integer is expected, it
 -- is parsed as a real and is truncated.
-integer :: Parser Integer
-integer = truncate <$> real
+int :: Parser Int
+int = truncate <$> real
 
 -- Helper combinators and aliases for better readability.
 
@@ -174,7 +174,7 @@ parseLetValues = liftA2 LetValues bindings body
 
 parseCar       = liftA  Car       parseExpression
 parseCdr       = liftA  Cdr       parseExpression
-parseVectorRef = liftA2 VectorRef parseExpression integer
+parseVectorRef = liftA2 VectorRef parseExpression int
 parseCons      = liftA2 Cons      parseExpression parseExpression
 parseVector    = liftA  Vector    (many parseExpression)
 parseValues    = liftA  Values    (many parseExpression)
