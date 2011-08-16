@@ -109,3 +109,31 @@ My approach follows more or less that of Alexey.  The definition of
    - alpha-rename it, and
    - check the result against Alexey's FOL using =alpha-rpename?=).
    What about inlining?  Is there a fully automatic way to test it?
+
+* Type checker
+
+I would like to implement a type checker for FOL.  Because FOL is a
+first-order language with explicit type annotations for procedures,
+type checking it should not be too hard.  The plan is as follows:
+
+- for each definition, check, assuming the supplied types of other
+  definitions, that the inferred type of the procedure agrees with
+  the supplied type;
+
+- infer the type of the expression.
+
+This is not the same (or so it seems) as to type check the implicit
+=letrec= of which the definitions are bindings.
+
+For that, I've decided to change the nomenclature a bit: what was
+called =Type= is called =Shape= now.  Shapes are abstractions of
+values.  Because procedures are not first-class values in FOL, they
+don't have shapes.  Initially, I wanted to add one clause =ProcTy
+[Type] Type= to the definition of =Type= (called =Shape= now), but
+that would be wrong as it would allow types of higher-order
+procedures.  Instead, I'm going to have two separate types: =Shape=
+and =Type= defined as
+#+begin_src haskell
+data Type = PrimTy Shape
+          | ProcTy [Type] Type
+#+end_src
