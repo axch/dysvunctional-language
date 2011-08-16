@@ -135,5 +135,5 @@ procedures.  Instead, I'm going to have two separate types: =Shape=
 and =Type= defined as
 #+begin_src haskell
 data Type = PrimTy Shape
-          | ProcTy [Type] Type
+          | ProcTy [Shape] Shape
 #+end_src
