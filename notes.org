@@ -137,3 +137,14 @@ and =Type= defined as
 data Type = PrimTy Shape
           | ProcTy [Shape] Shape
 #+end_src
+I have done that and the result is pretty ugly.  Some of its ugliness
+is avoidable, but my attempt to make error messages informative turned
+into a mess.  Furthermore, there is at least one subtle bug having to
+do with laziness: type checking an expression is lazy in the
+environment argument, which, as currently implemented, may result in,
+say, LET expressions about which the type checker thinks that they are
+well-typed although some of the bindings may be ill-typed.
+
+The next thing I am going to do is switch to a proper error messaging
+mechanism: monads.  That is going to solve the laziness problem as
+well, hopefully.
