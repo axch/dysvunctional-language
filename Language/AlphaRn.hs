@@ -80,7 +80,7 @@ alphaRnDefn env (Defn proc args body)
     = do seen_names <- get
          arg_names' <- lift $ mapM (rename seen_names) arg_names
          record (proc_name : arg_names)
-         let args' = zip arg_names' arg_types
+         let args' = zip arg_names' arg_shapes
              env'  = extend arg_names arg_names' env
          body' <- alphaRnExpr env' body
          -- We assume here that procedure names are already unique.
@@ -88,8 +88,8 @@ alphaRnDefn env (Defn proc args body)
          -- error if it is not satisfied.
          return (Defn proc args' body')
     where
-      (proc_name, proc_type) = proc
-      (arg_names, arg_types) = unzip args
+      (proc_name, proc_shape) = proc
+      (arg_names, arg_shapes) = unzip args
 
 alphaRnProg :: [(Name, Name)] -> Prog -> AlphaRnT Unique Prog
 alphaRnProg env (Prog defns expr)

@@ -90,23 +90,23 @@ tagged name body = parens (lit (TokSymbol name) >> body)
 parseEmptyList :: Parser ()
 parseEmptyList = do { lparen; rparen; return () }
 
--- Parsing types
+-- Parsing shapes
 
-parseNilTy, parseConsTy, parseVectorTy, parseValuesTy, parseType :: Parser Type
-parseNilTy    = NilTy <$ parseEmptyList
-parseConsTy   = liftA2 ConsTy parseType parseType
-parseVectorTy = liftA  VectorTy (many parseType)
-parseValuesTy = liftA  ValuesTy (many parseType)
+parseNilSh, parseConsSh, parseVectorSh, parseValuesSh, parseShape :: Parser Shape
+parseNilSh    = NilSh <$ parseEmptyList
+parseConsSh   = liftA2 ConsSh parseShape parseShape
+parseVectorSh = liftA  VectorSh (many parseShape)
+parseValuesSh = liftA  ValuesSh (many parseShape)
 
-parseType = try parseNilTy <|> parseAtomicType <|> parens parseCompoundType
+parseShape = try parseNilSh <|> parseAtomicShape <|> parens parseCompoundShape
     where
-      parseAtomicType   = caseParser [ ("real",   return RealTy)
-                                     , ("bool",   return BoolTy)
-                                     ]
-      parseCompoundType = caseParser [ ("cons",   parseConsTy  )
-                                     , ("vector", parseVectorTy)
-                                     , ("values", parseValuesTy)
-                                     ]
+      parseAtomicShape   = caseParser [ ("real",   return RealSh)
+                                      , ("bool",   return BoolSh)
+                                      ]
+      parseCompoundShape = caseParser [ ("cons",   parseConsSh  )
+                                      , ("vector", parseVectorSh)
+                                      , ("values", parseValuesSh)
+                                      ]
 
 -- Parsing programs
 
@@ -141,11 +141,11 @@ reserved = [ "begin"
 parseDefine :: Parser Defn
 parseDefine = tagged "define" $ do
                 (proc, args) <- parens $ liftA2 (,) identifier (many identifier)
-                types <- tagged "argument-types" (many parseType)
-                let proc_type = last types
-                    arg_types = init types
+                shapes <- tagged "argument-types" (many parseShape)
+                let proc_shape = last shapes
+                    arg_shapes = init shapes
                 body <- parseExpression
-                return $ Defn (proc, proc_type) (zip args arg_types) body
+                return $ Defn (proc, proc_shape) (zip args arg_shapes) body
 
 parseIf, parseLet, parseLetValues, parseCar, parseCdr :: Parser Expr
 parseVectorRef, parseCons, parseVector, parseValues   :: Parser Expr

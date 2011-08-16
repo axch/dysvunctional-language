@@ -6,15 +6,15 @@ import FOL.Language.Pretty
 
 data Prog = Prog [Defn] Expr deriving (Eq, Show)
 
-data Defn = Defn TypedName [TypedName] Expr deriving (Eq, Show)
+data Defn = Defn ShapedName [ShapedName] Expr deriving (Eq, Show)
 
-data Type
-    = NilTy
-    | RealTy
-    | BoolTy
-    | ConsTy Type Type
-    | VectorTy [Type]
-    | ValuesTy [Type]
+data Shape
+    = NilSh
+    | RealSh
+    | BoolSh
+    | ConsSh Shape Shape
+    | VectorSh [Shape]
+    | ValuesSh [Shape]
       deriving (Eq, Ord, Show)
 
 data Expr
@@ -39,7 +39,7 @@ data Expr
     | ProcCall Name [Expr]
       deriving (Eq, Show)
 
-type TypedName        = (Name,   Type)
+type ShapedName       = (Name,   Shape)
 type LetBinding       = (Name,   Expr)
 type LetValuesBinding = ([Name], Expr)
 
@@ -55,20 +55,20 @@ instance Pretty Prog where
           body = nest 1 (sepMap pp defns $+$ pp expr)
 
 instance Pretty Defn where
-    pp (Defn proc args body) = parens $ proto $+$ nest 1 (types $+$ pp body)
+    pp (Defn proc args body) = parens $ proto $+$ nest 1 (shapes $+$ pp body)
         where
-          (proc_name, proc_type) = proc
-          (arg_names, arg_types) = unzip args
-          proto = text "define" <+> (parens $ pp proc_name <+> sepMap pp arg_names)
-          types = ppForm "argument-types" (arg_types ++ [proc_type])
+          (proc_name, proc_shape) = proc
+          (arg_names, arg_shapes) = unzip args
+          proto  = text "define" <+> (parens $ pp proc_name <+> sepMap pp arg_names)
+          shapes = ppForm "argument-types" (arg_shapes ++ [proc_shape])
 
-instance Pretty Type where
-    pp NilTy          = ppList []
-    pp RealTy         = text "real"
-    pp BoolTy         = text "bool"
-    pp (ConsTy t1 t2) = ppForm "cons"   [t1, t2]
-    pp (VectorTy ts)  = ppForm "vector" ts
-    pp (ValuesTy ts)  = ppForm "values" ts
+instance Pretty Shape where
+    pp NilSh          = ppList []
+    pp RealSh         = text "real"
+    pp BoolSh         = text "bool"
+    pp (ConsSh t1 t2) = ppForm "cons"   [t1, t2]
+    pp (VectorSh ts)  = ppForm "vector" ts
+    pp (ValuesSh ts)  = ppForm "values" ts
 
 instance Pretty Expr where
     pp Nil          = ppList []
