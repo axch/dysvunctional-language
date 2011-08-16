@@ -75,14 +75,14 @@ inlineExpr defn_map (If p c a)
 inlineExpr defn_map (Let bindings body)
     = Let bindings' body'
     where
-      bindings' = [ (x,  e') | (x,  e) <- bindings
-                             , let e' = inlineExpr defn_map e ]
+      bindings' = [(x,  e') | (x,  e) <- bindings
+                            , let e' = inlineExpr defn_map e]
       body' = inlineExpr defn_map body
 inlineExpr defn_map (LetValues bindings body)
     = LetValues bindings' body'
     where
-      bindings' = [ (xs, e') | (xs, e) <- bindings
-                             , let e' = inlineExpr defn_map e ]
+      bindings' = [(xs, e') | (xs, e) <- bindings
+                            , let e' = inlineExpr defn_map e]
       body' = inlineExpr defn_map body
 inlineExpr defn_map (Car e)         = Car (inlineExpr defn_map e)
 inlineExpr defn_map (Cdr e)         = Cdr (inlineExpr defn_map e)
