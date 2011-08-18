@@ -22,7 +22,7 @@ data Type = PrimTy Shape
 instance Pretty Type where
     pp (PrimTy shape) = pp shape
     pp (ProcTy arg_shapes ret_shape)
-        = ppList [text "PROCEDURE", ppList (map pp arg_shapes), pp ret_shape]
+        = ppList [symbol "procedure", ppList (map pp arg_shapes), pp ret_shape]
 
 -- Possible type checker errors.
 data TCError
@@ -124,7 +124,7 @@ instance Pretty TCError where
         = fsep [ text "The expression"
                , nest 2 (pp expr)
                , text "is expected to have shape"
-               , text shape <> comma
+               , symbol shape <> comma
                , text "but its inferred type is"
                , pp expr_type
                ]
@@ -239,7 +239,7 @@ tcExpr env e@(If p c a) = tcPredicate >> tcBranches
       tcPredicate
           = do tp <- tcExpr env p
                unless (tp == PrimTy BoolSh) $
-                 tcFail $ ShapeMismatch p tp "BOOL"
+                 tcFail $ ShapeMismatch p tp "bool"
       tcBranches
           = do tc <- tcExpr env c
                ta <- tcExpr env a
@@ -265,25 +265,25 @@ tcExpr env e@(LetValues bindings body)
                 | otherwise
                 = tcFail $ PatternVarsNumMismatch xs e
             destructure xs t
-                = tcFail $ ShapeMismatch e t "VALUES"
+                = tcFail $ ShapeMismatch e t "values"
 
 tcExpr env e@(Car e')
     = do t' <- tcExpr env e'
          case t' of
            PrimTy (ConsSh t _) -> return $ PrimTy t
-           _ -> tcFail $ ShapeMismatch e' t' "CONS"
+           _ -> tcFail $ ShapeMismatch e' t' "cons"
 
 tcExpr env e@(Cdr e')
     = do t' <- tcExpr env e'
          case t' of
            PrimTy (ConsSh _ t) -> return $ PrimTy t
-           _ -> tcFail $ ShapeMismatch e' t' "CONS"
+           _ -> tcFail $ ShapeMismatch e' t' "cons"
 
 tcExpr env e@(VectorRef e' i)
     = do t' <- tcExpr env e'
          case t' of
            PrimTy (VectorSh ss) -> return $ PrimTy (ss !! i)
-           _ -> tcFail $ ShapeMismatch e' t' "VECTOR"
+           _ -> tcFail $ ShapeMismatch e' t' "vector"
 
 tcExpr env (Cons e1 e2) = liftM PrimTy $ liftA2 ConsSh s1 s2
     where
