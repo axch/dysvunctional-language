@@ -8,13 +8,10 @@ import FOL.Language.Pretty
 import Control.Applicative
 import Control.Monad
 
-import Data.Char
 import Data.List
 import Data.Maybe
 
 import Debug.Trace
-
-import Text.Printf
 
 -- Types of entities in FOL programs.  In addition to shapes that
 -- values may have there are also procedure types.
