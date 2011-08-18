@@ -137,45 +137,54 @@ tcExpr :: TyEnv -> Expr -> TC Type
 tcExpr env (Var x)
     = case lookup x env of
         Just (t@(PrimTy _)) -> return t
-        Just _  -> fail $ "Variable bound to a procedure: " ++ pprint x
+        -- The only way for a name to be bound to a procedure type is
+        -- if that name denotes a global procedure (i.e., a primitive
+        -- or a procedure defined using DEFINE).  Hence the following
+        -- error message.
+        Just _  -> fail $ "Procedure name used as a variable: " ++ pprint x
         Nothing -> fail $ "Unbound variable: " ++ pprint x
 tcExpr _ Nil      = return $ PrimTy NilSh
 tcExpr _ (Bool _) = return $ PrimTy BoolSh
 tcExpr _ (Real _) = return $ PrimTy RealSh
-tcExpr env e@(If p c a)
-    = do tp <- tcExpr env p
-         case tp of
-           PrimTy BoolSh ->
-               do tc <- tcExpr env c
-                  ta <- tcExpr env a
-                  if tc == ta
-                    then return tc
-                    else fail $ unlines [ "Branches of IF expression"
-                                        , pprint e
-                                        , unwords [ "have different types:"
-                                                  , pprint tc
-                                                  , "and"
-                                                  , pprint ta
-                                                  ]
-                                        ]
-           ty -> fail $ unlines [ "The predicate of IF expression"
-                                , pprint e
-                                , unwords [ "is expected to have type"
-                                          , pprint (PrimTy BoolSh)
-                                          , "but the inferred type is"
-                                          , pprint ty
-                                          ]
-                                ]
+tcExpr env e@(If p c a) = tcPredicate >> tcBranches
+    where
+      tcPredicate
+          = do tp <- tcExpr env p
+               case tp of
+                 PrimTy BoolSh -> return ()
+                 _ -> fail $ unwords [ "The pridicate of IF expression"
+                                     , pprint e
+                                     , "is expected to have type"
+                                     , pprint (PrimTy BoolSh)
+                                     , "but the inferred type is"
+                                     , pprint tp
+                                     ]
+      tcBranches
+          = do tc <- tcExpr env c
+               ta <- tcExpr env a
+               if tc == ta
+                  then return tc
+                  else fail $ unwords [ "The branches of IF expression"
+                                      , pprint e
+                                      , "have different types"
+                                      , pprint tc
+                                      , "and"
+                                      , pprint ta
+                                      ]
+
 tcExpr env (Let bindings body)
-    = do env' <- mapM (return <***> tcExpr env) bindings
-         tcExpr (env' ++ env) body
-tcExpr env e@(LetValues bindings body)
-    = do env' <- concatMapM destructure bindings
+    = do env' <- mapM tcBinding bindings
          tcExpr (env' ++ env) body
     where
-      destructure (xs, e) = destructure' xs =<< tcExpr env e
+      tcBinding (x, e) = do t <- tcExpr env e
+                            return (x, t)
+tcExpr env e@(LetValues bindings body)
+    = do env' <- concatMapM tcBinding bindings
+         tcExpr (env' ++ env) body
+    where
+      tcBinding (xs, e) = destructure xs =<< tcExpr env e
           where
-            destructure' xs (PrimTy (ValuesSh ss))
+            destructure xs (PrimTy (ValuesSh ss))
                 | length xs == length ss
                 = return $ zip xs (map PrimTy ss)
                 | otherwise
@@ -184,7 +193,7 @@ tcExpr env e@(LetValues bindings body)
                                  , "does not match the number of values in"
                                  , pprint e
                                  ]
-            destructure' xs _ = fail "An expression of shape VALUES is expected"
+            destructure xs _ = fail "An expression of shape VALUES is expected"
 tcExpr env e@(Car e')
     = do t' <- tcExpr env e'
          case t' of
@@ -234,7 +243,7 @@ tcExpr env e@(ProcCall proc args)
     , let nargs = length args
     , let narg_shapes = length arg_shapes
     = if nargs == narg_shapes
-      then mapM_ testArgType (zip args arg_shapes) >>= (const . return $ PrimTy proc_shape)
+      then mapM_ testArgType (zip args arg_shapes) >> (return $ PrimTy proc_shape)
       else fail $ unwords [ "Procedure"
                           , pprint proc
                           , "needs"
