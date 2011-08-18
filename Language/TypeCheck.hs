@@ -224,17 +224,16 @@ tcExpr env e@(VectorRef e' i)
                                , pprint t'
                                ]
 
-tcExpr env e@(Cons e1 e2)
-    = do t <- liftA2 (,) (tcExpr env e1) (tcExpr env e2)
-         case t of
-           (PrimTy s1, PrimTy s2) -> return $ PrimTy (ConsSh s1 s2)
-           _ -> fail $ "The arguments of CONS can't be procedures: " ++ pprint e
+tcExpr env (Cons e1 e2) = liftM PrimTy $ liftA2 ConsSh tcCar tcCdr
+    where
+      tcCar = fromPrimTy =<< tcExpr env e1
+      tcCdr = fromPrimTy =<< tcExpr env e2
 
-tcExpr env e@(Vector es) = liftM (PrimTy . VectorSh) ss
+tcExpr env (Vector es) = liftM (PrimTy . VectorSh) ss
     where
       ss = mapM (fromPrimTy <=< tcExpr env) es
 
-tcExpr env e@(Values es) = liftM (PrimTy . ValuesSh) ss
+tcExpr env (Values es) = liftM (PrimTy . ValuesSh) ss
     where
       ss = mapM (fromPrimTy <=< tcExpr env) es
 
@@ -270,7 +269,6 @@ tcExpr env e@(ProcCall proc args)
 
 fromPrimTy :: Type -> TC Shape
 fromPrimTy (PrimTy s) = return s
-fromPrimTy t          = fail $ unwords [ "Procedure type"
-                                       , pprint t
-                                       , "where a shape is expected"
-                                       ]
+-- 'fromPrimTy' should be used only where the following cannot happen.
+--  We add a catch-all case anyway.
+fromPrimTy _          = fail "Procedure type where a shape is expected"
