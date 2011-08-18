@@ -135,9 +135,8 @@ tcExpr env e@(If p c a) = tcPredicate >> tcBranches
     where
       tcPredicate
           = do tp <- tcExpr env p
-               case tp of
-                 PrimTy BoolSh -> return ()
-                 _ -> failWithShapeMismatch p "BOOL" tp
+               unless (tp == PrimTy BoolSh) $
+                 failWithShapeMismatch p "BOOL" tp
       tcBranches
           = do tc <- tcExpr env c
                ta <- tcExpr env a
@@ -245,11 +244,7 @@ fromPrimTy (PrimTy s) = return s
 fromPrimTy _          = fail "Procedure type where a shape is expected"
 
 failWithShapeMismatch :: Expr -> String -> Type -> TC a
-failWithShapeMismatch e s t
-    = fail $ unwords [ "The expression"
-                     , pprint e
-                     , "is expected to have shape"
-                     , s
-                     , "but the inferred type is"
-                     , pprint t
-                     ]
+failWithShapeMismatch e s t = fail $ printf fmt (pprint e) s (pprint t)
+    where
+      fmt = "The expression %s is expected to have \
+            \shape %s,\nbut the inferred type is %s"
