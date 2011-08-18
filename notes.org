@@ -116,7 +116,7 @@ I would like to implement a type checker for FOL.  Because FOL is a
 first-order language with explicit type annotations for procedures,
 type checking it should not be too hard.  The plan is as follows:
 
-- for each definition, check, assuming the supplied types of other
+- for each definition, check, assuming the supplied types of the
   definitions, that the inferred type of the procedure agrees with
   the supplied type;
 
@@ -148,3 +148,15 @@ well-typed although some of the bindings may be ill-typed.
 The next thing I am going to do is switch to a proper error messaging
 mechanism: monads.  That is going to solve the laziness problem as
 well, hopefully.
+
+Wrapped error messaging into a monad.  Also introduced a data type to
+encode various kinds of errors the type checker may throw.  The code
+looks better but still pretty ugly.  I am getting tired of polishing
+it, so I guess it is time to move on.
+
+Testing that the inliner preserves types of programs revealed a bug: I
+was type-checking each definition assuming the declared types of
+*other* definitions, which doesn't work for self-recursive procedures.
+The fix is easy: type-check each definition assuming the declared
+types of *all* definitions (in a sense, we simply check that the
+declared types are a solution to the fixed point equation).
