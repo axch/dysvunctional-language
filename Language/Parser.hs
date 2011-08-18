@@ -217,4 +217,4 @@ parseProgram = try (liftA2 Prog (pure []) parseExpression)
 parse :: String -> Prog
 parse = (either (\_ -> error "parse error") id)
       . runParser parseProgram () ""
-      . scan
+      . tokenize

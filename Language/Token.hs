@@ -13,6 +13,9 @@ data Token
     | TokRParen
       deriving (Eq, Show)
 
+tokenize :: String -> [Token]
+tokenize = scan . map toLower
+
 scan :: String -> [Token]
 scan [] = []
 
