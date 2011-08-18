@@ -7,6 +7,7 @@ import FOL.Language.Token
 
 import Control.Applicative
 import Control.Arrow
+import Control.Monad
 
 import Data.Maybe
 
@@ -144,6 +145,7 @@ parseDefine = tagged "define" $ do
                 shapes <- tagged "argument-types" (many parseShape)
                 let proc_shape = last shapes
                     arg_shapes = init shapes
+                when (length args /= length arg_shapes) (fail "parse error")
                 body <- parseExpression
                 return $ Defn (proc, proc_shape) (zip args arg_shapes) body
 
