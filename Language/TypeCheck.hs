@@ -43,19 +43,6 @@ instance Applicative TC where
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = liftM concat . mapM f
 
-liftPair :: Applicative f => (f a, f b) -> f (a, b)
-liftPair = uncurry (liftA2 (,))
-
--- (<***>) and (<&&&>) are like (***) and (&&&) for Kleisli arrows of
--- a monad, but for an arbitrary applicative functor.
-(<***>) :: Applicative f => (b -> f b') -> (c -> f c') -> ((b, c) -> f (b', c'))
-g <***> h = liftPair . (g *** h)
-infixr 3 <***>
-
-(<&&&>) :: Applicative f => (b -> f c) -> (b -> f c') -> (b -> f (c, c'))
-g <&&&> h = liftPair . (g &&& h)
-infixr 3 <&&&>
-
 type TyEnv = [(Name, Type)]
 
 typesOfPrimitives :: TyEnv
@@ -106,12 +93,13 @@ declProcType (Defn proc args body) = ProcTy arg_shapes proc_shape
       arg_shapes = map snd args
 
 tcDefns :: TyEnv -> [Defn] -> TC TyEnv
-tcDefns env defns
-    = sequence
-      [(return . procName <&&&> tcDefn env') defn
-           | defn <- defns
-           , let env' = [(procName defn', declProcType defn')
-                             | defn' <- defns, defn' /= defn] ++ env]
+tcDefns env defns = mapM tcDefn' defns
+    where
+      tcDefn' defn = do proc_type <- tcDefn (env' ++ env) defn
+                        return (procName defn, proc_type)
+          where
+            env' = [(procName defn', declProcType defn')
+                        | defn' <- defns, defn' /= defn]
 
 procName :: Defn -> Name
 procName (Defn (proc_name, _) _ _) = proc_name
