@@ -40,6 +40,9 @@ instance Applicative TC where
     pure = return
     (<*>) = ap
 
+concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
+concatMapM f = liftM concat . mapM f
+
 liftPair :: Applicative f => (f a, f b) -> f (a, b)
 liftPair = uncurry (liftA2 (,))
 
@@ -170,7 +173,6 @@ tcExpr env e@(LetValues bindings body)
     = do env' <- concatMapM destructure bindings
          tcExpr (env' ++ env) body
     where
-      concatMapM f = liftM concat . mapM f
       destructure (xs, e) = destructure' xs =<< tcExpr env e
           where
             destructure' xs (PrimTy (ValuesSh ss))
