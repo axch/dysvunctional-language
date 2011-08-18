@@ -207,22 +207,24 @@ tcExpr env (Values es) = liftM (PrimTy . ValuesSh) ss
       ss = mapM (fromPrimTy <=< tcExpr env) es
 
 tcExpr env e@(ProcCall proc args)
-    | Just (ProcTy arg_shapes proc_shape) <- lookup proc env
+    | Just proc_type@(ProcTy arg_shapes proc_shape) <- lookup proc env
     , let nargs = length args
     , let narg_shapes = length arg_shapes
     = if nargs == narg_shapes
-      then mapM_ testArgType (zip args arg_shapes) >> (return $ PrimTy proc_shape)
-      else fail $ unwords [ "Procedure"
+      then mapM_ checkArgType (zip args arg_shapes) >> (return $ PrimTy proc_shape)
+      else fail $ unwords [ "The procedure"
                           , pprint proc
-                          , "needs"
-                          , show narg_shapes
-                          , "arguments, but is given"
+                          , "is applied to"
                           , show nargs
+                          , "arguments,\nbut its type"
+                          , pprint proc_type
+                          , "has"
+                          , show narg_shapes
                           ]
     | otherwise
     = error $ "Undefined procedure: " ++ pprint proc
     where
-      testArgType (arg, arg_shape)
+      checkArgType (arg, arg_shape)
           = do targ <- tcExpr env arg
                if targ == PrimTy arg_shape
                   then return targ
