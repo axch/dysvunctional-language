@@ -8,6 +8,7 @@ import FOL.Language.Pretty
 import Control.Applicative
 import Control.Monad
 
+import Data.Char
 import Data.List
 import Data.Maybe
 
@@ -15,6 +16,8 @@ import Debug.Trace
 
 import Text.Printf
 
+-- Types of entities in FOL programs.  In addition to shapes that
+-- values may have there are also procedure types.
 data Type = PrimTy Shape
           | ProcTy [Shape] Shape
             deriving (Eq, Show)
@@ -22,15 +25,128 @@ data Type = PrimTy Shape
 instance Pretty Type where
     pp (PrimTy shape) = pp shape
     pp (ProcTy arg_shapes ret_shape)
-        = ppList [text "procedure", ppList (map pp arg_shapes), pp ret_shape]
+        = ppList [text "PROCEDURE", ppList (map pp arg_shapes), pp ret_shape]
 
-data TC a = TCError String | TCOk a deriving (Eq, Show)
+-- Possible type checker errors.
+data TCError
+    -- The inferred return type of a procedure does not match its
+    -- declared return type.
+    = ProcReturnTypeMismatch
+        Name           -- procedure name
+        Type           -- its inferred type
+        Shape          -- its declared shape
+    -- Procedure name that is used in non-operator position.
+    | ProcNameUsedAsVariable
+        Name           -- procedure name
+    -- Branches of an IF expression have different types.
+    | IfBranchesTypeMismatch
+        Expr           -- IF expression
+        Type           -- type of consequent
+        Type           -- type of alternate
+    -- The number of variables in a LET-VALUES binding pattern is
+    -- different from the number of values returned from the
+    -- expression.
+    | PatternVarsNumMismatch
+        [Name]         -- pattern
+        Expr           -- expression
+    -- Procedure is applied to the wrong (different from declared
+    -- in the definition) number of arguments.
+    | ProcArgsNumMismatch
+        Name           -- procedure name
+        Type           -- procedure type
+        Int            -- number of arguments given
+    -- Procedure argument has the wrong (different from declared)
+    -- shape.
+    | ProcArgTypeMismatch
+        Expr           -- procedure call
+        Expr           -- argument
+        Type           -- argument type
+        Shape          -- expected argument shape
+    -- Expected shape differs from the inferred type.
+    | ShapeMismatch
+        Expr           -- expression
+        Type           -- its type
+        String         -- shape it is expected to have
+    | UnboundVariable
+        Name
+    | UndefinedProc
+        Name
+      deriving (Eq, Show)
+
+instance Pretty TCError where
+    pp (ProcReturnTypeMismatch proc_name ret_type ret_shape)
+        = fsep [ text "The inferred return type"
+               , nest 2 (pp ret_type)
+               , text "of the procedure"
+               , pp proc_name
+               , text "doesn't match its declared return type"
+               , nest 2 (pp ret_shape)
+               ]
+    pp (ProcNameUsedAsVariable proc_name)
+        = fsep [ text "Procedure name"
+               , pp proc_name
+               , text "is used as a variable"
+               ]
+    pp (IfBranchesTypeMismatch expr type1 type2)
+        = fsep [ text "The branches of the expression"
+               , nest 2 (pp expr)
+               , text "have different types"
+               , nest 2 (pp type1)
+               , text "and"
+               , nest 2 (pp type2)
+               ]
+    pp (PatternVarsNumMismatch names expr)
+        = fsep [ text "The number of pattern variables in the pattern"
+               , nest 2 (ppList (map pp names))
+               , text "doesn't match the number of values returned from"
+               , nest 2 (pp expr)
+               ]
+    pp (ProcArgsNumMismatch proc_name proc_type@(ProcTy arg_shapes _) n)
+        = fsep [ text "The procedure"
+               , pp proc_name
+               , text "is applied to"
+               , int n
+               , text "arguments,"
+               , text "but its type"
+               , pp proc_type
+               , text "has"
+               , int (length arg_shapes)
+               ]
+    pp (ProcArgTypeMismatch proc_call arg arg_type arg_shape)
+        = sep [ text "The argument"
+              , nest 2 (pp arg)
+              , text "in the procedure call"
+              , nest 2 (pp proc_call)
+              , fsep [ text "is expected to have shape"
+                     , pp arg_shape <> comma
+                     , text "but its inferred type is"
+                     , pp arg_type
+                     ]
+              ]
+    pp (ShapeMismatch expr expr_type shape)
+        = fsep [ text "The expression"
+               , nest 2 (pp expr)
+               , text "is expected to have shape"
+               , text shape <> comma
+               , text "but its inferred type is"
+               , pp expr_type
+               ]
+    pp (UnboundVariable name)
+        = fsep [ text "Unbound variable:"
+               , pp name
+               ]
+    pp (UndefinedProc name)
+        = fsep [ text "Undefined procedure:"
+               , pp name
+               ]
+
+-- Type checker monad.
+data TC a = TCError TCError | TCOk a deriving (Eq, Show)
 
 instance Monad TC where
     return = TCOk
     TCError msg >>= _ = TCError msg
     TCOk res >>= f = f res
-    fail msg = TCError msg
 
 instance Functor TC where
     fmap = liftM
@@ -38,6 +154,9 @@ instance Functor TC where
 instance Applicative TC where
     pure = return
     (<*>) = ap
+
+tcFail :: TCError -> TC a
+tcFail = TCError
 
 concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
 concatMapM f = liftM concat . mapM f
@@ -97,23 +216,14 @@ tcDefns env defns = mapM tcDefn' defns
       tcDefn' defn = do proc_type <- tcDefn (env' ++ env) defn
                         return (procName defn, proc_type)
           where
-            env' = [(procName d, declProcType d) | d <- defns, d /= defn]
-
-procName :: Defn -> Name
-procName (Defn (proc_name, _) _ _) = proc_name
+            env' = [(procName d, declProcType d) | d <- defns]
 
 tcDefn :: TyEnv -> Defn -> TC Type
 tcDefn env defn@(Defn proc args body)
     = do proc_type <- tcExpr (env' ++ env) body
          if proc_type == PrimTy proc_shape
             then return $ declProcType defn
-            else fail $ unwords [ "The inferred return type"
-                                , pprint proc_type
-                                , "of procedure"
-                                , pprint proc_name
-                                , "doesn't match its declared type"
-                                , pprint proc_shape
-                                ]
+            else tcFail $ ProcReturnTypeMismatch proc_name proc_type proc_shape
     where
       (proc_name, proc_shape) = proc
       env' = [(arg_name, PrimTy arg_shape) | (arg_name, arg_shape) <- args]
@@ -122,12 +232,8 @@ tcExpr :: TyEnv -> Expr -> TC Type
 tcExpr env (Var x)
     = case lookup x env of
         Just (t@(PrimTy _)) -> return t
-        -- The only way for a name to be bound to a procedure type is
-        -- if that name denotes a global procedure (i.e., a primitive
-        -- or a procedure defined using DEFINE).  Hence the following
-        -- error message.
-        Just _  -> fail $ "Procedure name used as a variable: " ++ pprint x
-        Nothing -> fail $ "Unbound variable: " ++ pprint x
+        Just _              -> tcFail $ ProcNameUsedAsVariable x
+        Nothing             -> tcFail $ UnboundVariable x
 tcExpr _ Nil      = return $ PrimTy NilSh
 tcExpr _ (Bool _) = return $ PrimTy BoolSh
 tcExpr _ (Real _) = return $ PrimTy RealSh
@@ -136,19 +242,13 @@ tcExpr env e@(If p c a) = tcPredicate >> tcBranches
       tcPredicate
           = do tp <- tcExpr env p
                unless (tp == PrimTy BoolSh) $
-                 failWithShapeMismatch p "BOOL" tp
+                 tcFail $ ShapeMismatch p tp "BOOL"
       tcBranches
           = do tc <- tcExpr env c
                ta <- tcExpr env a
                if tc == ta
                   then return tc
-                  else fail $ unwords [ "The branches of IF expression"
-                                      , pprint e
-                                      , "have different types"
-                                      , pprint tc
-                                      , "and"
-                                      , pprint ta
-                                      ]
+                  else tcFail $ IfBranchesTypeMismatch e tc ta
 
 tcExpr env (Let bindings body)
     = do env' <- mapM tcBinding bindings
@@ -166,85 +266,63 @@ tcExpr env e@(LetValues bindings body)
                 | length xs == length ss
                 = return $ zip xs (map PrimTy ss)
                 | otherwise
-                = fail $ unwords [ "The number of variables in the pattern"
-                                 , render (ppList (map pp xs))
-                                 , "does not match the number of values returned from"
-                                 , pprint e
-                                 ]
+                = tcFail $ PatternVarsNumMismatch xs e
             destructure xs t
-                = failWithShapeMismatch e "VALUES" t
+                = tcFail $ ShapeMismatch e t "VALUES"
 
 tcExpr env e@(Car e')
     = do t' <- tcExpr env e'
          case t' of
            PrimTy (ConsSh t _) -> return $ PrimTy t
-           _ -> failWithShapeMismatch e' "CONS" t'
+           _ -> tcFail $ ShapeMismatch e' t' "CONS"
 
 tcExpr env e@(Cdr e')
     = do t' <- tcExpr env e'
          case t' of
            PrimTy (ConsSh _ t) -> return $ PrimTy t
-           _ -> failWithShapeMismatch e' "CONS" t'
+           _ -> tcFail $ ShapeMismatch e' t' "CONS"
 
 tcExpr env e@(VectorRef e' i)
     = do t' <- tcExpr env e'
          case t' of
            PrimTy (VectorSh ss) -> return $ PrimTy (ss !! i)
-           _ -> failWithShapeMismatch e' "VECTOR" t'
+           _ -> tcFail $ ShapeMismatch e' t' "VECTOR"
 
-tcExpr env (Cons e1 e2) = liftM PrimTy $ liftA2 ConsSh tcCar tcCdr
+tcExpr env (Cons e1 e2) = liftM PrimTy $ liftA2 ConsSh s1 s2
     where
-      tcCar = fromPrimTy =<< tcExpr env e1
-      tcCdr = fromPrimTy =<< tcExpr env e2
+      s1 = exprShape env e1
+      s2 = exprShape env e2
 
 tcExpr env (Vector es) = liftM (PrimTy . VectorSh) ss
     where
-      ss = mapM (fromPrimTy <=< tcExpr env) es
+      ss = mapM (exprShape env) es
 
 tcExpr env (Values es) = liftM (PrimTy . ValuesSh) ss
     where
-      ss = mapM (fromPrimTy <=< tcExpr env) es
+      ss = mapM (exprShape env) es
 
 tcExpr env e@(ProcCall proc args)
     | Just proc_type@(ProcTy arg_shapes proc_shape) <- lookup proc env
     , let nargs = length args
     , let narg_shapes = length arg_shapes
     = if nargs == narg_shapes
-      then mapM_ checkArgType (zip args arg_shapes) >> (return $ PrimTy proc_shape)
-      else fail $ unwords [ "The procedure"
-                          , pprint proc
-                          , "is applied to"
-                          , show nargs
-                          , "arguments,\nbut its type"
-                          , pprint proc_type
-                          , "has"
-                          , show narg_shapes
-                          ]
+      then mapM_ checkArgType (zip args arg_shapes)
+               >> (return $ PrimTy proc_shape)
+      else tcFail $ ProcArgsNumMismatch proc proc_type nargs
     | otherwise
-    = error $ "Undefined procedure: " ++ pprint proc
+    = tcFail $ UndefinedProc proc
     where
       checkArgType (arg, arg_shape)
-          = do targ <- tcExpr env arg
-               if targ == PrimTy arg_shape
-                  then return targ
-                  else fail $ unwords [ "The argument"
-                                      , pprint arg
-                                      , "of the procedure call"
-                                      , pprint e
-                                      , "is expected to have type"
-                                      , pprint (PrimTy arg_shape)
-                                      , "but the inferred type is"
-                                      , pprint targ
-                                      ]
+          = do arg_type <- tcExpr env arg
+               if arg_type == PrimTy arg_shape
+                  then return arg_type
+                  else tcFail $ ProcArgTypeMismatch e arg arg_type arg_shape
 
 fromPrimTy :: Type -> TC Shape
 fromPrimTy (PrimTy s) = return s
--- 'fromPrimTy' should be used only where the following cannot happen.
---  We add a catch-all case anyway.
+-- 'fromPrimTy' is only used where the following cannot happen.  We
+-- add a catch-all case anyway.
 fromPrimTy _          = fail "Procedure type where a shape is expected"
 
-failWithShapeMismatch :: Expr -> String -> Type -> TC a
-failWithShapeMismatch e s t = fail $ printf fmt (pprint e) s (pprint t)
-    where
-      fmt = "The expression %s is expected to have \
-            \shape %s,\nbut the inferred type is %s"
+exprShape :: TyEnv -> Expr -> TC Shape
+exprShape env = fromPrimTy <=< tcExpr env
