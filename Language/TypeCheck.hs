@@ -5,6 +5,10 @@ import FOL.Language.Common
 import FOL.Language.Expression
 import FOL.Language.Pretty
 
+import Control.Applicative
+import Control.Arrow
+import Control.Monad
+
 import Data.List
 import Data.Maybe
 
@@ -20,6 +24,34 @@ instance Pretty Type where
     pp (PrimTy shape) = pp shape
     pp (ProcTy arg_shapes ret_shape)
         = ppList [text "procedure", ppList (map pp arg_shapes), pp ret_shape]
+
+data TC a = TCError String | TCOk a deriving (Eq, Show)
+
+instance Monad TC where
+    return = TCOk
+    TCError msg >>= _ = TCError msg
+    TCOk res >>= f = f res
+    fail msg = TCError msg
+
+instance Functor TC where
+    fmap = liftM
+
+instance Applicative TC where
+    pure = return
+    (<*>) = ap
+
+liftPair :: Applicative f => (f a, f b) -> f (a, b)
+liftPair = uncurry (liftA2 (,))
+
+-- (<***>) and (<&&&>) are like (***) and (&&&) for Kleisli arrows of
+-- a monad, but for an arbitrary applicative functor.
+(<***>) :: Applicative f => (b -> f b') -> (c -> f c') -> ((b, c) -> f (b', c'))
+g <***> h = liftPair . (g *** h)
+infixr 3 <***>
+
+(<&&&>) :: Applicative f => (b -> f c) -> (b -> f c') -> (b -> f (c, c'))
+g <&&&> h = liftPair . (g &&& h)
+infixr 3 <&&&>
 
 type TyEnv = [(Name, Type)]
 
@@ -55,11 +87,13 @@ typesOfPrimitives = [ (Name "abs",       r2r  )
       r2b   = ProcTy [RealSh] BoolSh
       rxr2b = ProcTy [RealSh, RealSh] BoolSh
 
-tc :: Prog -> Type
+tc :: Prog -> TC Type
 tc = tcProg typesOfPrimitives
 
-tcProg :: TyEnv -> Prog -> Type
-tcProg env (Prog defns expr) = tcExpr (tcDefns env defns ++ env) expr
+tcProg :: TyEnv -> Prog -> TC Type
+tcProg env (Prog defns expr)
+    = do env' <- tcDefns env defns
+         tcExpr (env' ++ env) expr
 
 -- The declared type of a given procedure.
 declProcType :: Defn -> Type
@@ -68,9 +102,10 @@ declProcType (Defn proc args body) = ProcTy arg_shapes proc_shape
       proc_shape = snd proc
       arg_shapes = map snd args
 
-tcDefns :: TyEnv -> [Defn] -> [(Name, Type)]
+tcDefns :: TyEnv -> [Defn] -> TC TyEnv
 tcDefns env defns
-    = [(procName defn, tcDefn env' defn)
+    = sequence
+      [(return . procName <&&&> tcDefn env') defn
            | defn <- defns
            , let env' = [(procName defn', declProcType defn')
                              | defn' <- defns, defn' /= defn] ++ env]
@@ -78,138 +113,153 @@ tcDefns env defns
 procName :: Defn -> Name
 procName (Defn (proc_name, _) _ _) = proc_name
 
-tcDefn :: TyEnv -> Defn -> Type
+tcDefn :: TyEnv -> Defn -> TC Type
 tcDefn env defn@(Defn proc args body)
-    | proc_type == PrimTy proc_shape
-    = declProcType defn
-    | otherwise
-    = error $ unwords [ "The inferred return type"
-                      , pprint proc_type
-                      , "of procedure"
-                      , pprint proc_name
-                      , "doesn't match its declared type"
-                      , pprint proc_shape
-                      ]
+    = do proc_type <- tcExpr env' body
+         if proc_type == PrimTy proc_shape
+            then return $ declProcType defn
+            else fail $ unwords [ "The inferred return type"
+                                , pprint proc_type
+                                , "of procedure"
+                                , pprint proc_name
+                                , "doesn't match its declared type"
+                                , pprint proc_shape
+                                ]
     where
       (proc_name, proc_shape) = proc
       env' = [(arg_name, PrimTy arg_shape)
                   | (arg_name, arg_shape) <- args] ++ env
-      proc_type = tcExpr env' body
 
-tcExpr :: TyEnv -> Expr -> Type
+tcExpr :: TyEnv -> Expr -> TC Type
 tcExpr env (Var x)
     = case lookup x env of
-        Just (t@(PrimTy _)) -> t
-        Just _  -> error $ "Variable bound to a procedure: " ++ pprint x
-        Nothing -> error $ "Unbound variable: " ++ pprint x
-tcExpr _ Nil      = PrimTy NilSh
-tcExpr _ (Bool _) = PrimTy BoolSh
-tcExpr _ (Real _) = PrimTy RealSh
+        Just (t@(PrimTy _)) -> return t
+        Just _  -> fail $ "Variable bound to a procedure: " ++ pprint x
+        Nothing -> fail $ "Unbound variable: " ++ pprint x
+tcExpr _ Nil      = return $ PrimTy NilSh
+tcExpr _ (Bool _) = return $ PrimTy BoolSh
+tcExpr _ (Real _) = return $ PrimTy RealSh
 tcExpr env e@(If p c a)
-    = case (tcExpr env p) of
-        PrimTy BoolSh ->
-            let tc = tcExpr env c
-                ta = tcExpr env a
-            in if tc == ta
-               then tc
-               else error $ unlines [ "Branches of IF expression"
-                                    , pprint e
-                                    , unwords [ "have different types:"
-                                              , pprint tc
-                                              , "and"
-                                              , pprint ta
-                                              ]
-                                    ]
-        ty -> error $ unlines [ "The predicate of IF expression"
-                              , pprint e
-                              , unwords [ "is expected to have type"
-                                        , pprint (PrimTy BoolSh)
-                                        , "but the inferred type is"
-                                        , pprint ty
+    = do tp <- tcExpr env p
+         case tp of
+           PrimTy BoolSh ->
+               do tc <- tcExpr env c
+                  ta <- tcExpr env a
+                  if tc == ta
+                    then return tc
+                    else fail $ unlines [ "Branches of IF expression"
+                                        , pprint e
+                                        , unwords [ "have different types:"
+                                                  , pprint tc
+                                                  , "and"
+                                                  , pprint ta
+                                                  ]
                                         ]
-                              ]
-tcExpr env (Let bindings body) = tcExpr env' body
+           ty -> fail $ unlines [ "The predicate of IF expression"
+                                , pprint e
+                                , unwords [ "is expected to have type"
+                                          , pprint (PrimTy BoolSh)
+                                          , "but the inferred type is"
+                                          , pprint ty
+                                          ]
+                                ]
+tcExpr env (Let bindings body)
+    = do env' <- mapM (return <***> tcExpr env) bindings
+         tcExpr (env' ++ env) body
+tcExpr env e@(LetValues bindings body)
+    = do env' <- concatMapM destructure bindings
+         tcExpr (env' ++ env) body
     where
-      env' = [(x, tcExpr env e) | (x, e) <- bindings] ++ env
-tcExpr env e@(LetValues bindings body) = tcExpr env' body
-    where
-      env' = concatMap destructure bindings ++ env
-      destructure (xs, e) = destructure' xs (tcExpr env e)
+      concatMapM f = liftM concat . mapM f
+      destructure (xs, e) = destructure' xs =<< tcExpr env e
           where
             destructure' xs (PrimTy (ValuesSh ss))
                 | length xs == length ss
-                = zip xs (map PrimTy ss)
+                = return $ zip xs (map PrimTy ss)
                 | otherwise
-                = error $ unwords [ "The number of variables in the pattern"
-                                  , render (ppList (map pp xs))
-                                  , "does not match the number of values in"
-                                  , pprint e
-                                  ]
-            destructure' xs _ = error $ "An expression of shape VALUES is expected"
+                = fail $ unwords [ "The number of variables in the pattern"
+                                 , render (ppList (map pp xs))
+                                 , "does not match the number of values in"
+                                 , pprint e
+                                 ]
+            destructure' xs _ = fail "An expression of shape VALUES is expected"
 tcExpr env e@(Car e')
-    | PrimTy (ConsSh t _) <- t'
-    = PrimTy t
-    | otherwise
-    = error $ unlines [ "The expression"
-                      , pprint e'
-                      , "is expected to have shape CONS, but the inferred type is"
-                      , pprint t'
-                      ]
-    where
-      t' = tcExpr env e'
+    = do t' <- tcExpr env e'
+         case t' of
+           PrimTy (ConsSh t _) -> return $ PrimTy t
+           _ -> fail $ unlines [ "The expression"
+                               , pprint e'
+                               , "is expected to have shape CONS, but the inferred type is"
+                               , pprint t'
+                               ]
 
 tcExpr env e@(Cdr e')
-    | PrimTy (ConsSh _ t) <- t'
-    = PrimTy t
-    | otherwise
-    = error $ unlines [ "The expression"
-                      , pprint e'
-                      , "is expected to have shape CONS, but the inferred type is"
-                      , pprint t'
-                      ]
-    where
-      t' = tcExpr env e'
+    = do t' <- tcExpr env e'
+         case t' of
+           PrimTy (ConsSh _ t) -> return $ PrimTy t
+           _ -> fail $ unlines [ "The expression"
+                               , pprint e'
+                               , "is expected to have shape CONS, but the inferred type is"
+                               , pprint t'
+                               ]
 
 tcExpr env e@(VectorRef e' i)
-    | PrimTy (VectorSh ss) <- t'
-    = PrimTy (ss !! i)
-    | otherwise
-    = error $ unlines [ "The expression"
-                      , pprint e'
-                      , "is expected to have shape VECTOR, but the inferred type is"
-                      , pprint t'
-                      ]
-    where
-      t' = tcExpr env e'
+    = do t' <- tcExpr env e'
+         case t' of
+           PrimTy (VectorSh ss) -> return $ PrimTy (ss !! i)
+           _ -> fail $ unlines [ "The expression"
+                               , pprint e'
+                               , "is expected to have shape VECTOR, but the inferred type is"
+                               , pprint t'
+                               ]
 
 tcExpr env e@(Cons e1 e2)
-    | PrimTy s1 <- tcExpr env e1
-    , PrimTy s2 <- tcExpr env e2
-    = PrimTy (ConsSh s1 s2)
-    | otherwise
-    = error $ "The arguments of CONS can't be procedures: " ++ pprint e
+    = do t <- liftA2 (,) (tcExpr env e1) (tcExpr env e2)
+         case t of
+           (PrimTy s1, PrimTy s2) -> return $ PrimTy (ConsSh s1 s2)
+           _ -> fail $ "The arguments of CONS can't be procedures: " ++ pprint e
 
-tcExpr env e@(Vector es) = PrimTy (VectorSh ss)
+tcExpr env e@(Vector es) = liftM (PrimTy . VectorSh) ss
     where
-      ss = map (fromPrimTy . tcExpr env) es
+      ss = mapM (fromPrimTy <=< tcExpr env) es
 
-tcExpr env e@(Values es) = PrimTy (ValuesSh ss)
+tcExpr env e@(Values es) = liftM (PrimTy . ValuesSh) ss
     where
-      ss = map (fromPrimTy . tcExpr env) es
+      ss = mapM (fromPrimTy <=< tcExpr env) es
 
 tcExpr env e@(ProcCall proc args)
     | Just (ProcTy arg_shapes proc_shape) <- lookup proc env
-    = if (length args == length arg_shapes) &&
-              and [tcExpr env arg == PrimTy arg_shape
-                       | (arg, arg_shape) <- zip args arg_shapes]
-      then PrimTy proc_shape
-      else error $ "Ill-typed procedure call: " ++ pprint e
+    , let nargs = length args
+    , let narg_shapes = length arg_shapes
+    = if nargs == narg_shapes
+      then mapM_ testArgType (zip args arg_shapes) >>= (const . return $ PrimTy proc_shape)
+      else fail $ unwords [ "Procedure"
+                          , pprint proc
+                          , "needs"
+                          , show narg_shapes
+                          , "arguments, but is given"
+                          , show nargs
+                          ]
     | otherwise
     = error $ "Undefined procedure: " ++ pprint proc
+    where
+      testArgType (arg, arg_shape)
+          = do targ <- tcExpr env arg
+               if targ == PrimTy arg_shape
+                  then return targ
+                  else fail $ unwords [ "The argument"
+                                      , pprint arg
+                                      , "of the procedure call"
+                                      , pprint e
+                                      , "is expected to have type"
+                                      , pprint (PrimTy arg_shape)
+                                      , "but the inferred type is"
+                                      , pprint targ
+                                      ]
 
-fromPrimTy :: Type -> Shape
-fromPrimTy (PrimTy s) = s
-fromPrimTy t          = error $ unwords [ "Procedure type"
-                                        , pprint t
-                                        , "where a shape is expected"
-                                        ]
+fromPrimTy :: Type -> TC Shape
+fromPrimTy (PrimTy s) = return s
+fromPrimTy t          = fail $ unwords [ "Procedure type"
+                                       , pprint t
+                                       , "where a shape is expected"
+                                       ]
