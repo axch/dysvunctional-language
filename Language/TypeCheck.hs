@@ -6,7 +6,6 @@ import FOL.Language.Expression
 import FOL.Language.Pretty
 
 import Control.Applicative
-import Control.Arrow
 import Control.Monad
 
 import Data.List
@@ -98,15 +97,14 @@ tcDefns env defns = mapM tcDefn' defns
       tcDefn' defn = do proc_type <- tcDefn (env' ++ env) defn
                         return (procName defn, proc_type)
           where
-            env' = [(procName defn', declProcType defn')
-                        | defn' <- defns, defn' /= defn]
+            env' = [(procName d, declProcType d) | d <- defns, d /= defn]
 
 procName :: Defn -> Name
 procName (Defn (proc_name, _) _ _) = proc_name
 
 tcDefn :: TyEnv -> Defn -> TC Type
 tcDefn env defn@(Defn proc args body)
-    = do proc_type <- tcExpr env' body
+    = do proc_type <- tcExpr (env' ++ env) body
          if proc_type == PrimTy proc_shape
             then return $ declProcType defn
             else fail $ unwords [ "The inferred return type"
@@ -118,8 +116,7 @@ tcDefn env defn@(Defn proc args body)
                                 ]
     where
       (proc_name, proc_shape) = proc
-      env' = [(arg_name, PrimTy arg_shape)
-                  | (arg_name, arg_shape) <- args] ++ env
+      env' = [(arg_name, PrimTy arg_shape) | (arg_name, arg_shape) <- args]
 
 tcExpr :: TyEnv -> Expr -> TC Type
 tcExpr env (Var x)
@@ -140,13 +137,7 @@ tcExpr env e@(If p c a) = tcPredicate >> tcBranches
           = do tp <- tcExpr env p
                case tp of
                  PrimTy BoolSh -> return ()
-                 _ -> fail $ unwords [ "The pridicate of IF expression"
-                                     , pprint e
-                                     , "is expected to have type"
-                                     , pprint (PrimTy BoolSh)
-                                     , "but the inferred type is"
-                                     , pprint tp
-                                     ]
+                 _ -> failWithShapeMismatch p "BOOL" tp
       tcBranches
           = do tc <- tcExpr env c
                ta <- tcExpr env a
@@ -178,39 +169,29 @@ tcExpr env e@(LetValues bindings body)
                 | otherwise
                 = fail $ unwords [ "The number of variables in the pattern"
                                  , render (ppList (map pp xs))
-                                 , "does not match the number of values in"
+                                 , "does not match the number of values returned from"
                                  , pprint e
                                  ]
-            destructure xs _ = fail "An expression of shape VALUES is expected"
+            destructure xs t
+                = failWithShapeMismatch e "VALUES" t
+
 tcExpr env e@(Car e')
     = do t' <- tcExpr env e'
          case t' of
            PrimTy (ConsSh t _) -> return $ PrimTy t
-           _ -> fail $ unlines [ "The expression"
-                               , pprint e'
-                               , "is expected to have shape CONS, but the inferred type is"
-                               , pprint t'
-                               ]
+           _ -> failWithShapeMismatch e' "CONS" t'
 
 tcExpr env e@(Cdr e')
     = do t' <- tcExpr env e'
          case t' of
            PrimTy (ConsSh _ t) -> return $ PrimTy t
-           _ -> fail $ unlines [ "The expression"
-                               , pprint e'
-                               , "is expected to have shape CONS, but the inferred type is"
-                               , pprint t'
-                               ]
+           _ -> failWithShapeMismatch e' "CONS" t'
 
 tcExpr env e@(VectorRef e' i)
     = do t' <- tcExpr env e'
          case t' of
            PrimTy (VectorSh ss) -> return $ PrimTy (ss !! i)
-           _ -> fail $ unlines [ "The expression"
-                               , pprint e'
-                               , "is expected to have shape VECTOR, but the inferred type is"
-                               , pprint t'
-                               ]
+           _ -> failWithShapeMismatch e' "VECTOR" t'
 
 tcExpr env (Cons e1 e2) = liftM PrimTy $ liftA2 ConsSh tcCar tcCdr
     where
@@ -260,3 +241,13 @@ fromPrimTy (PrimTy s) = return s
 -- 'fromPrimTy' should be used only where the following cannot happen.
 --  We add a catch-all case anyway.
 fromPrimTy _          = fail "Procedure type where a shape is expected"
+
+failWithShapeMismatch :: Expr -> String -> Type -> TC a
+failWithShapeMismatch e s t
+    = fail $ unwords [ "The expression"
+                     , pprint e
+                     , "is expected to have shape"
+                     , s
+                     , "but the inferred type is"
+                     , pprint t
+                     ]
