@@ -202,9 +202,9 @@ tcProg env (Prog defns expr)
 
 -- The declared type of a given procedure.
 declProcType :: Defn -> Type
-declProcType (Defn proc args body) = ProcTy arg_shapes proc_shape
+declProcType (Defn proc args body) = ProcTy arg_shapes ret_shape
     where
-      proc_shape = snd proc
+      ret_shape  = snd proc
       arg_shapes = map snd args
 
 tcDefns :: TyEnv -> [Defn] -> TC TyEnv
@@ -217,12 +217,12 @@ tcDefns env defns = mapM tcDefn' defns
 
 tcDefn :: TyEnv -> Defn -> TC Type
 tcDefn env defn@(Defn proc args body)
-    = do proc_type <- tcExpr (env' ++ env) body
-         if proc_type == PrimTy proc_shape
+    = do ret_type <- tcExpr (env' ++ env) body
+         if ret_type == PrimTy ret_shape
             then return $ declProcType defn
-            else tcFail $ ProcReturnTypeMismatch proc_name proc_type proc_shape
+            else tcFail $ ProcReturnTypeMismatch proc_name ret_type ret_shape
     where
-      (proc_name, proc_shape) = proc
+      (proc_name, ret_shape) = proc
       env' = [(arg_name, PrimTy arg_shape) | (arg_name, arg_shape) <- args]
 
 tcExpr :: TyEnv -> Expr -> TC Type
@@ -299,12 +299,12 @@ tcExpr env (Values es) = liftM (PrimTy . ValuesSh) ss
       ss = mapM (exprShape env) es
 
 tcExpr env e@(ProcCall proc args)
-    | Just proc_type@(ProcTy arg_shapes proc_shape) <- lookup proc env
+    | Just proc_type@(ProcTy arg_shapes ret_shape) <- lookup proc env
     , let nargs = length args
     , let narg_shapes = length arg_shapes
     = if nargs == narg_shapes
       then mapM_ checkArgType (zip args arg_shapes)
-               >> (return $ PrimTy proc_shape)
+               >> (return $ PrimTy ret_shape)
       else tcFail $ ProcArgsNumMismatch proc proc_type nargs
     | otherwise
     = tcFail $ UndefinedProc proc
