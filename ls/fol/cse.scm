@@ -406,6 +406,9 @@
 
 (define (in-scope? name env)
   (or (fol-const? name)
+      ;; This #f default is OK because #f is never the value of a
+      ;; non-constant canonical name (which is because #f, being
+      ;; constant, is always its own canonical name).
       (forward-get env name #f)))
 
 (define (find-alias name env)
