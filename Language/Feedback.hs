@@ -80,8 +80,9 @@ feedbackVertexSet graph = prune (mkNodeMap graph, [])
       prune = pass2 . pass1
       pass1 (node_map, feedback)
           = Map.foldrWithKey sweep (node_map, feedback, False) node_map
-      -- 'progress' is a flag indicating whether we have made progress.
-      sweep name node state@(node_map, feedback, progress)
+      -- The third component of the tuple is a flag indicating whether
+      -- we have made progress.
+      sweep name node state@(node_map, feedback, _)
           | outDegree node == 0 || inDegree node == 0
           = (deleteNode name node_map,        feedback, True)
           | name `elem` outNeighbors node
@@ -103,6 +104,6 @@ feedbackVertexSet graph = prune (mkNodeMap graph, [])
 select :: NodeMap a -> a
 select = fst . maximumBy nodeMax . Map.toList
     where
-      nodeMax (name1, Node _ _ o1 i1) (name2, Node _ _ o2 i2)
+      nodeMax (_, Node _ _ o1 i1) (_, Node _ _ o2 i2)
           | i1 * o1 > i2 * o2 = GT
           | otherwise         = LT

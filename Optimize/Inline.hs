@@ -19,7 +19,7 @@ inline = alphaRn . inlineProg
 -- The list may contain duplicates, which is fine because we use it
 -- only for set manipulations.
 callees :: Expr -> [Name]
-callees (Var x)  = []
+callees (Var _)  = []
 callees Nil      = []
 callees (Bool _) = []
 callees (Real _) = []
