@@ -289,7 +289,7 @@
           ;; this relies on the accessee being a single variable, and
           ;; furthermore the canonical name of the constructed object
           ;; being accessed.
-          (reverse-lookup accessee env
+          (reverse-lookup env accessee
            (lambda (held-value)
              (if (construction? held-value)
                  (let ((candidate
@@ -300,7 +300,7 @@
                    ;; still in scope, then the current expression can
                    ;; be replaced by it.
                    (let ((canonical-candidate
-                          (hash-table/get env candidate candidate)))
+                          (forward-get env candidate candidate)))
                      (if (in-scope? canonical-candidate env)
                          canonical-candidate
                          expr)))
@@ -347,13 +347,15 @@
 (define (cse-canonical env symbolic)
   ;; Either here or in degment-cse-env!, I have to flush expressions
   ;; whose canonical variables are not in scope any more.
-  (let ((candidate (hash-table/get env symbolic symbolic)))
+  (let ((candidate (forward-get env symbolic symbolic)))
     (if (in-scope? candidate env)
         candidate
         symbolic)))
 
 (define (empty-cse-env)
-  (make-equal-hash-table))
+  (make-two-way-table
+   (lambda (key datum)
+     (not (fol-var? key)))))
 
 (define (fresh-cse-env names)
   (augment-cse-env (empty-cse-env) names names
@@ -378,12 +380,12 @@
            ;; output, so as to try and preserve the names originally
            ;; chosen by the user, for legibility of the output.  This
            ;; idea is due to Taylor Campbell.
-           (hash-table/put! env name symbolic)
+           (two-way-put! env name symbolic)
            (begin
              ;; The symbolic expression had no canonical name.
              ;; Therefore the given name becomes a canonical name for
              ;; itself, and maybe for the expression.
-             (hash-table/put! env name name)
+             (two-way-put! env name name)
              ;; Don't put variables back because if a variable is not
              ;; an acceptable alias, then it's out of scope, and
              ;; putting it back would forget that.  Also don't put
@@ -392,37 +394,25 @@
              ;; (e.g. (read-real)) would have different effects.
              (if (and (not (fol-var? symbolic))
                       (not (unique-expression? symbolic)))
-                 (hash-table/put! env symbolic name))))))
+                 (two-way-put! env symbolic name))))))
    names
    symbolics)
   (win env (map acceptable-alias? symbolics)))
 
 (define (degment-cse-env! env names)
   (for-each (lambda (name)
-              (hash-table/remove! env name))
+              (two-way-remove! env name))
             names))
 
 (define (in-scope? name env)
   (or (fol-const? name)
-      (hash-table/get env name #f)))
+      (forward-get env name #f)))
 
 (define (find-alias name env)
-  (hash-table/lookup env name
+  (forward-lookup env name
     (lambda (datum)
       (cons name datum))
     (lambda () #f)))
-
-(define (reverse-lookup canonical-name env win lose)
-  (let ((binding
-         (assq canonical-name
-               (map (lambda (datum)
-                      (cons (cdr datum) (car datum)))
-                    (filter (lambda (datum)
-                              (not (fol-var? (car datum))))
-                            (hash-table->alist env))))))
-    (if binding
-        (win (cdr binding))
-        (lose))))
 
 ;;; To do interprocedural must-alias analysis and alias elimination, I
 ;;; have to proceed as follows:
