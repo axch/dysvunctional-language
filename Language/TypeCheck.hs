@@ -212,8 +212,7 @@ tcDefns env defns = mapM tcDefn' defns
     where
       tcDefn' defn = do proc_type <- tcDefn (env' ++ env) defn
                         return (procName defn, proc_type)
-          where
-            env' = [(procName d, declProcType d) | d <- defns]
+      env' = [(procName defn, declProcType defn) | defn <- defns]
 
 tcDefn :: TyEnv -> Defn -> TC Type
 tcDefn env defn@(Defn proc args body)
