@@ -8,8 +8,6 @@ import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
 
-import Data.Maybe
-
 data Node    a = Node { outNeighbors :: [a]
                       , inNeighbors  :: [a]
                       , outDegree    :: Int

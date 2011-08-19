@@ -6,14 +6,13 @@ import FOL.Language.Expression
 import FOL.Language.Token
 
 import Control.Applicative
-import Control.Arrow
 import Control.Monad
 
 import Data.Maybe
 
 import Text.Parsec.Prim hiding (many, (<|>), parse)
 import Text.ParserCombinators.Parsec.Prim (GenParser)
-import Text.ParserCombinators.Parsec.Combinator (between, manyTill)
+import Text.ParserCombinators.Parsec.Combinator (between)
 
 -- A custom parser type that accepts streams of 'Token's.
 type Parser = GenParser Token ()

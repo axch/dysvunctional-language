@@ -3,10 +3,8 @@ module FOL.Optimize.Optimize where
 
 import FOL.Language.AlphaRn
 import FOL.Language.Common
-import FOL.Language.Expression
 import FOL.Language.Parser
 import FOL.Language.Pretty
-import FOL.Language.TypeCheck
 import FOL.Language.Unique
 
 import FOL.Optimize.Inline

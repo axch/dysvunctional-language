@@ -88,7 +88,7 @@ alphaRnDefn env (Defn proc args body)
          -- error if it is not satisfied.
          return (Defn proc args' body')
     where
-      (proc_name, proc_shape) = proc
+      (proc_name, _) = proc
       (arg_names, arg_shapes) = unzip args
 
 alphaRnProg :: [(Name, Name)] -> Prog -> AlphaRnT Unique Prog
