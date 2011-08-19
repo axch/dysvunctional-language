@@ -145,10 +145,11 @@
           (else ; general application
            (cse-application expr env win))))
   (define (cse-fol-var expr env win)
-    (let ((alias-binding (find-alias expr env)))
-      (if alias-binding
-          (win (cdr alias-binding) (cdr alias-binding))
-          (error "Trying to cse an unbound variable" expr env))))
+    (forward-lookup env expr
+     (lambda (canonical)
+       (win canonical canonical))
+     (lambda ()
+       (error "Trying to cse an unbound variable" expr env))))
   (define (cse-if expr env win)
     (loop (cadr expr) env
      (lambda (new-pred symbolic-pred)
@@ -410,12 +411,6 @@
       ;; non-constant canonical name (which is because #f, being
       ;; constant, is always its own canonical name).
       (forward-get env name #f)))
-
-(define (find-alias name env)
-  (forward-lookup env name
-    (lambda (datum)
-      (cons name datum))
-    (lambda () #f)))
 
 ;;; To do interprocedural must-alias analysis and alias elimination, I
 ;;; have to proceed as follows:
