@@ -62,7 +62,7 @@ instance Pretty Defn where
         where
           (proc_name, proc_shape) = proc
           (arg_names, arg_shapes) = unzip args
-          proto  = symbol "define" <+> (parens $ pp proc_name <+> sepMap pp arg_names)
+          proto  = symbol "define" <+> parens (pp proc_name <+> sepMap pp arg_names)
           shapes = ppForm "argument-types" (arg_shapes ++ [proc_shape])
 
 instance Pretty Shape where

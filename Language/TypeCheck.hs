@@ -302,8 +302,8 @@ tcExpr env e@(ProcCall proc args)
     , let nargs = length args
     , let narg_shapes = length arg_shapes
     = if nargs == narg_shapes
-      then mapM_ checkArgType (zip args arg_shapes)
-               >> (return $ PrimTy ret_shape)
+      then mapM_ checkArgType (zip args arg_shapes) >>
+             return (PrimTy ret_shape)
       else tcFail $ ProcArgsNumMismatch proc proc_type nargs
     | otherwise
     = tcFail $ UndefinedProc proc

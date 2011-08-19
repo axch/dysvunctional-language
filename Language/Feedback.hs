@@ -86,7 +86,7 @@ feedbackVertexSet graph = prune (mkNodeMap graph, [])
       sweep name node state@(node_map, feedback, progress)
           | outDegree node == 0 || inDegree node == 0
           = (deleteNode name node_map,        feedback, True)
-          | name `elem` (outNeighbors node)
+          | name `elem` outNeighbors node
           = (deleteNode name node_map, name : feedback, True)
           | otherwise
           = state

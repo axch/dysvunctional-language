@@ -24,7 +24,7 @@ type Parser = GenParser Token ()
 -- Like 'token' from Text.Parsec.Prim, but uses the default token
 -- pretty-printing function and ignores the position info.
 tok :: (Token -> Maybe a) -> Parser a
-tok test = tokenPrim show (\pos _ _ -> pos) test
+tok = tokenPrim show (\pos _ _ -> pos)
 
 -- Accepts the token 't' with the result 't'.
 lit :: Token -> Parser Token
@@ -206,7 +206,7 @@ parseExpression = parseAtom <|> parseList
 
 parseProgram :: Parser Prog
 parseProgram = try (liftA2 Prog (pure []) parseExpression)
-               <|> (tagged "begin" $ parseBegin)
+               <|> (tagged "begin" parseBegin)
     where
       parseBegin = try (do expr <- parseExpression
                            return $ Prog [] expr)
@@ -215,6 +215,6 @@ parseProgram = try (liftA2 Prog (pure []) parseExpression)
                            return $ Prog (defn:defns) expr)
 
 parse :: String -> Prog
-parse = (either (\_ -> error "parse error") id)
+parse = either (\_ -> error "parse error") id
       . runParser parseProgram () ""
       . tokenize
