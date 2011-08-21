@@ -17,9 +17,7 @@
    ;; Eliminate common (+ x 2) in parallel let
    (equal?
     '(let ((x (real 5)))
-       ;; I could improve this by hacking intraprocedural-cse more,
-       ;; or I can just let dead code elimination deal with it.
-       (let ((y (+ x 2)) (z (+ x 2)))
+       (let ((y (+ x 2)))
          (+ y y)))
     (intraprocedural-cse
      '(let ((x (real 5)))
@@ -124,7 +122,7 @@
     '(let ((x (read-real))
            (y (read-real)))
        (+ x y))
-    (intraprocedural-cse
+    (%intraprocedural-cse
      '(let ((x (read-real))
             (y (read-real)))
         (+ x y))))
@@ -146,7 +144,7 @@
        (let ((x (my-read))
              (y (my-read)))
          (+ x y)))
-    (intraprocedural-cse
+    (%intraprocedural-cse
      '(begin
         (define (my-read)
           (read-real))

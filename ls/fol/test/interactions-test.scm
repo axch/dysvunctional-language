@@ -84,8 +84,7 @@
    (check
     (alpha-rename?
      '(let ((x (real 4)))
-        (let ((y (+ x 1))
-              (z (+ x 1)))              ; Leaving some dead code here
+        (let ((y (+ x 1)))
           (+ y y)))
      (intraprocedural-cse (approximate-anf program))))
    (check

@@ -106,10 +106,6 @@
    (let ((y 4))
      y))
 
-;; TODO Would rewriting this as a pass accelerate things
-;; significantly?
-;; TODO Can/Should I lift lets out of IF predicates?  Procedure
-;; calls?  CAR/CDR/CONS?
 (define lift-lets
   (rule-simplifier
    (list
@@ -128,7 +124,7 @@
           `(,bind ,inner-bindings
              (let-values ((,names ,exp))
                ,@body))))))
-#;
+
 (define (lift-lets program)
   (if (begin-form? program)
       `(begin
