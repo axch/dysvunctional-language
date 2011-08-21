@@ -278,8 +278,10 @@
         `(define ,formals
            ,@body)))
 
-(define strip-argument-types
-  (rule-simplifier (list remove-defn-argument-types)))
+(define (strip-argument-types program)
+  (if (begin-form? program)
+      (map remove-defn-argument-types program)
+      program))
 
 ;;; Reserved words
 
