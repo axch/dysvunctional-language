@@ -35,6 +35,21 @@
            ;; This is G from the comments in feedback-vertex-set.scm
            '((a b) (b a c) (c a e) (d c e) (e d))))
 
+   (equal?
+    '(let ((x y))
+       x)
+    (lift-lets-expression
+     '(let ((x y))
+        x)))
+
+   (equal?
+    '(let ((y z))
+       (let ((x y))
+         x))
+    (lift-lets-expression
+     '(let ((x (let ((y z)) y)))
+        x)))
+
    ;; Some fooling around with SRA and conditionals
    (alpha-rename?
     '(if (< (real 1) (real 2))
