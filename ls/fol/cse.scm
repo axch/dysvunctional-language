@@ -258,31 +258,32 @@
                    ;; interprocedural CSE crunch.
                    new-expr)))
 
+(define simplify-arithmetic
+  ;; There are lots of possibilities for simplification here,
+  ;; especially if I request the environment and look up the
+  ;; symbolic expressions that various variables among the arguments
+  ;; hold.
+  ;;
+  ;; For some warnings, see doc/simplification.txt
+  ;;
+  ;; TODO Do I want to notice that (+ 2 x) is the same as (+ x 2)?
+  (rule-simplifier
+   (list
+    (rule `(+ 0 (? thing)) thing)
+    (rule `(+ (? thing) 0) thing)
+    (rule `(- (? thing) 0) thing)
+
+    (rule `(* 1 (? thing)) thing)
+    (rule `(* (? thing) 1) thing)
+    (rule `(/ (? thing) 1) thing)
+
+    ;; Warning: these may replace a runtime NaN answer with 0.
+    (rule `(* 0 (? thing)) 0)
+    (rule `(* (? thing) 0) 0)
+    (rule `(/ 0 (? thing)) 0)
+    )))
+
 (define (symbolic-application operator arguments env)
-  (define simplify-arithmetic
-    ;; There are lots of possibilities for simplification here,
-    ;; especially if I request the environment and look up the
-    ;; symbolic expressions that various variables among the arguments
-    ;; hold.
-    ;;
-    ;; For some warnings, see doc/simplification.txt
-    ;;
-    ;; TODO Do I want to notice that (+ 2 x) is the same as (+ x 2)?
-    (rule-simplifier
-     (list
-      (rule `(+ 0 (? thing)) thing)
-      (rule `(+ (? thing) 0) thing)
-      (rule `(- (? thing) 0) thing)
-
-      (rule `(* 1 (? thing)) thing)
-      (rule `(* (? thing) 1) thing)
-      (rule `(/ (? thing) 1) thing)
-
-      ;; Warning: these may replace a runtime NaN answer with 0.
-      (rule `(* 0 (? thing)) 0)
-      (rule `(* (? thing) 0) 0)
-      (rule `(/ 0 (? thing)) 0)
-      )))
   (define (simplify-access expr)
     (if (accessor? expr)
         (let ((accessee (cadr expr)))
