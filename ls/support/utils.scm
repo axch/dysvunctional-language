@@ -107,30 +107,6 @@
 
 (define (visible-named-stage stage name)
   (lambda (input)
-    (display "Stage ")
-    (display name)
-    (display " on ")
-    (display (count-pairs input))
-    (display " pairs")
-    (newline)
-    (let ((answer (show-time (lambda () (stage input)))))
-      (newline)
-      answer)))
-
-(define (report-size program)
-  (display "Final output has ")
-  (display (count-pairs program))
-  (display " pairs")
-  (newline)
-  program)
-
-(define-syntax visible-stage
-  (syntax-rules ()
-    ((_ name)
-     (visible-named-stage name 'name))))
-
-(define (visible-named-stage stage name)
-  (lambda (input)
     (let ((size (count-pairs input))
           (stripped-size (count-pairs (strip-argument-types input))))
       (display "Stage ")
