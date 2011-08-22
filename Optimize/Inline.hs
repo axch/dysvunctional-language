@@ -49,36 +49,14 @@ inlineDefn defn_map (Defn proc args body)
 
 -- Inline given procedure definitions in a given expression.
 inlineExpr :: Map Name Defn -> Expr -> Expr
-inlineExpr _ e@(Var _)  = e
-inlineExpr _ e@Nil      = e
-inlineExpr _ e@(Bool _) = e
-inlineExpr _ e@(Real _) = e
-inlineExpr defn_map (If p c a)
-    = If (inlineExpr defn_map p)
-         (inlineExpr defn_map c)
-         (inlineExpr defn_map a)
-inlineExpr defn_map (Let bindings body)
-    = Let bindings' body'
-    where
-      bindings' = [(x,  e') | (x,  e) <- bindings
-                            , let e' = inlineExpr defn_map e]
-      body' = inlineExpr defn_map body
-inlineExpr defn_map (LetValues bindings body)
-    = LetValues bindings' body'
-    where
-      bindings' = [(xs, e') | (xs, e) <- bindings
-                            , let e' = inlineExpr defn_map e]
-      body' = inlineExpr defn_map body
-inlineExpr defn_map (Car e)         = Car (inlineExpr defn_map e)
-inlineExpr defn_map (Cdr e)         = Cdr (inlineExpr defn_map e)
-inlineExpr defn_map (VectorRef e i) = VectorRef (inlineExpr defn_map e) i
-inlineExpr defn_map (Cons e1 e2)
-    = Cons (inlineExpr defn_map e1) (inlineExpr defn_map e2)
-inlineExpr defn_map (Vector es)     = Vector (map (inlineExpr defn_map) es)
-inlineExpr defn_map (Values es)     = Values (map (inlineExpr defn_map) es)
-inlineExpr defn_map (ProcCall name args)
+inlineExpr defn_map = transform (maybeInline defn_map)
+
+maybeInline :: Map Name Defn -> Expr -> Expr
+maybeInline defn_map e@(ProcCall name args)
     | Just (Defn _ vars body) <- Map.lookup name defn_map
     , let bindings = zip (map fst vars) args
-    = inlineExpr defn_map $ Let bindings body
+    -- 'body' may still be inlinable
+    = Let bindings (inlineExpr defn_map body)
     | otherwise
-    = ProcCall name (map (inlineExpr defn_map) args)
+    = e
+maybeInline _ e = e
