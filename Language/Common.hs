@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude, DeriveDataTypeable #-}
 module FOL.Language.Common
     ( Real
     , Name (..)
@@ -8,11 +8,13 @@ module FOL.Language.Common
     )
     where
 
+import Data.Data
+
 import Prelude hiding (Real)
 
 type Real = Double
 
-data Name = Name String deriving (Eq, Ord, Show)
+data Name = Name String deriving (Eq, Ord, Show, Typeable, Data)
 
 primitives :: [Name]
 primitives

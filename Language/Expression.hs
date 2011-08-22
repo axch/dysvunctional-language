@@ -1,12 +1,16 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude, DeriveDataTypeable #-}
 module FOL.Language.Expression where
 
 import FOL.Language.Common
 import FOL.Language.Pretty
 
-data Prog = Prog [Defn] Expr deriving (Eq, Show)
+import Data.Data
 
-data Defn = Defn ShapedName [ShapedName] Expr deriving (Eq, Show)
+data Prog = Prog [Defn] Expr
+            deriving (Eq, Show, Typeable, Data)
+
+data Defn = Defn ShapedName [ShapedName] Expr
+            deriving (Eq, Show, Typeable, Data)
 
 data Shape
     = NilSh
@@ -15,7 +19,7 @@ data Shape
     | ConsSh Shape Shape
     | VectorSh [Shape]
     | ValuesSh [Shape]
-      deriving (Eq, Ord, Show)
+      deriving (Eq, Ord, Show, Typeable, Data)
 
 data Expr
     = Var Name
@@ -37,7 +41,7 @@ data Expr
     | Values [Expr]
     -- Procedure call
     | ProcCall Name [Expr]
-      deriving (Eq, Show)
+      deriving (Eq, Show, Typeable, Data)
 
 type ShapedName       = (Name,   Shape)
 type LetBinding       = (Name,   Expr)
