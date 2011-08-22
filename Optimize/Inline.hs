@@ -18,8 +18,6 @@ inline :: Prog -> Unique Prog
 inline = alphaRn . inlineProg
 
 -- Compute the list of procedures called within a given expression.
--- The list may contain duplicates, which is fine because we use it
--- only for set manipulations.
 callees :: Expr -> [Name]
 callees e = nub [proc | ProcCall proc _ <- universe e]
 
