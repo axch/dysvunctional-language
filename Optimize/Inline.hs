@@ -7,6 +7,8 @@ import FOL.Language.Expression
 import FOL.Language.Feedback
 import FOL.Language.Unique
 
+import Data.Generics.Uniplate.Data
+
 import Data.List
 
 import Data.Map (Map)
@@ -19,24 +21,7 @@ inline = alphaRn . inlineProg
 -- The list may contain duplicates, which is fine because we use it
 -- only for set manipulations.
 callees :: Expr -> [Name]
-callees (Var _)  = []
-callees Nil      = []
-callees (Bool _) = []
-callees (Real _) = []
-callees (If p c a)
-    = concat [callees p , callees c, callees a]
-callees (Let bindings body)
-    = concat $ callees body : [callees e | (_, e) <- bindings]
-callees (LetValues bindings body)
-    = concat $ callees body : [callees e | (_, e) <- bindings]
-callees (Car e)         = callees e
-callees (Cdr e)         = callees e
-callees (VectorRef e _) = callees e
-callees (Cons e1 e2)    = callees e1 ++ callees e2
-callees (Vector es)     = concatMap callees es
-callees (Values es)     = concatMap callees es
-callees (ProcCall proc args)
-    = proc : concatMap callees args
+callees e = nub [proc | ProcCall proc _ <- universe e]
 
 inlineProg :: Prog -> Prog
 inlineProg (Prog defns expr) = Prog defns' expr'
