@@ -14,15 +14,24 @@
   (let ((position (cadr object)))
     (let ((x (car position))
           (y (cadr position)))
-      ; Drop z coord
+      ;(pp `(object-at ,x ,y ,z))
+      ;(pp `(speed ,@(caddr object)))
+      ; Drop z coord in plot
       (plot-point window x y))))
 
 (define ((plot-objects window) state)
-  (for-each (plot-object window) (cadr state)))
+  (for-each (plot-object window) (cdr state)))
 
 (define win (frame -6 6 -6 6))
 
-(stream-for-each
- (plot-objects window)
- ((constant-arg-for-dvl-stream 10.)
-  (run-mit-scheme)))
+(define (stream-take count stream)
+  (if (= count 0)
+      stream
+      (stream-take (- count 1) (force (cdr stream)))))
+
+(stream-take
+ 1000
+ (stream-for-each
+  (plot-objects window)
+  ((constant-arg-for-dvl-stream 10.)
+   (run-mit-scheme))))
