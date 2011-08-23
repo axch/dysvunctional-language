@@ -5,6 +5,11 @@ import FOL.Language.Common
 import FOL.Language.Pretty
 
 import Data.Data
+import Data.Monoid
+import Data.Foldable
+import Data.Traversable
+
+import Control.Applicative
 
 data Prog = Prog [Defn] Expr
             deriving (Eq, Show, Typeable, Data)
@@ -29,8 +34,8 @@ data Expr
     | Real Real
     -- Special forms
     | If Expr Expr Expr
-    | Let [LetBinding] Expr
-    | LetValues [LetValuesBinding] Expr
+    | Let (Bindings Name Expr) Expr
+    | LetValues (Bindings [Name] Expr) Expr
     -- Access
     | Car Expr
     | Cdr Expr
@@ -44,8 +49,20 @@ data Expr
       deriving (Eq, Show, Typeable, Data)
 
 type ShapedName       = (Name,   Shape)
-type LetBinding       = (Name,   Expr)
-type LetValuesBinding = ([Name], Expr)
+
+newtype Bindings p v = Bindings [(p, v)] deriving (Eq, Show, Typeable, Data)
+
+instance Functor (Bindings p) where
+    fmap f (Bindings bs)
+        = Bindings [(x, f v) | (x, v) <- bs]
+
+instance Foldable (Bindings p) where
+    foldMap f (Bindings bs)
+        = mconcat [f v | (_, v) <- bs]
+
+instance Traversable (Bindings p) where
+    traverse f (Bindings bs)
+        = Bindings <$> sequenceA [liftA2 (,) (pure x) (f v) | (x, v) <- bs]
 
 procName :: Defn -> Name
 procName (Defn (proc_name, _) _ _) = proc_name
@@ -86,14 +103,14 @@ instance Pretty Expr where
 
     pp (If p c a) = parens $ symbol "if" <+> sepMap pp [p, c, a]
 
-    pp (Let bs e)
+    pp (Let (Bindings bs) e)
         = parens $ (symbol "let" <+> bindings) $+$ (nest 1 body)
         where
           body = pp e
           bindings = parens . sepMap ppBinding $ bs
           ppBinding (name, expr) = ppList [pp name, pp expr]
 
-    pp (LetValues bs e)
+    pp (LetValues (Bindings bs) e)
         = parens $ (symbol "let-values" <+> bindings) $+$ (nest 1 body)
         where
           body = pp e

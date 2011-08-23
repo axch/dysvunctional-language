@@ -5,6 +5,8 @@ import FOL.Language.Common
 import FOL.Language.Expression
 import FOL.Language.Unique
 
+import qualified Data.Traversable as Traversable
+
 import Control.Applicative
 import Control.Monad.Writer
 
@@ -15,7 +17,7 @@ isSimpleExpr (Bool _) = True
 isSimpleExpr (Real _) = True
 isSimpleExpr _        = False
 
-type NormalT = WriterT [LetBinding]
+type NormalT = WriterT [(Name, Expr)]
 
 normalize :: Expr -> NormalT Unique Expr
 normalize e
@@ -31,24 +33,30 @@ toLet :: Monad m => NormalT m Expr -> m Expr
 toLet a = do (body, bindings) <- runWriterT a
              return $ mkLet bindings body
 
-mkLet :: [LetBinding] -> Expr -> Expr
-mkLet []       body =              body
-mkLet bindings body = Let bindings body
+mkLet :: [(Name, Expr)] -> Expr -> Expr
+mkLet bs body
+    | null bs
+    =  body
+    | otherwise
+    = Let (Bindings bs) body
 
 anfExpr :: Expr -> Unique Expr
 anfExpr e
     | isSimpleExpr e
     = return e
 anfExpr (If p c a)
-    = liftA3 If (anfExpr p) (anfExpr c) (anfExpr a)
+    = liftA3 If
+             (anfExpr p)
+             (anfExpr c)
+             (anfExpr a)
 anfExpr (Let bindings body)
-    = do bindings' <- sequence [liftA2 (,) (pure x) (anfExpr e) | (x, e) <- bindings]
-         body'     <- anfExpr body
-         return (Let bindings' body')
+    = liftA2 Let
+             (Traversable.mapM anfExpr bindings)
+             (anfExpr body)
 anfExpr (LetValues bindings body)
-    = do bindings' <- sequence [liftA2 (,) (pure xs) (anfExpr e) | (xs, e) <- bindings]
-         body'     <- anfExpr body
-         return (LetValues bindings' body')
+    = liftA2 LetValues
+             (Traversable.mapM anfExpr bindings)
+             (anfExpr body)
 anfExpr (Car e)
     = toLet $ liftA  Car       (normalize e)
 anfExpr (Cdr e)

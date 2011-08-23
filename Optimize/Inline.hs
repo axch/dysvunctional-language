@@ -52,9 +52,9 @@ inlineExpr defn_map = transform (maybeInline defn_map)
 maybeInline :: Map Name Defn -> Expr -> Expr
 maybeInline defn_map e@(ProcCall name args)
     | Just (Defn _ vars body) <- Map.lookup name defn_map
-    , let bindings = zip (map fst vars) args
+    , let bs = zip (map fst vars) args
     -- 'body' may still be inlinable
-    = Let bindings (inlineExpr defn_map body)
+    = Let (Bindings bs) (inlineExpr defn_map body)
     | otherwise
     = e
 maybeInline _ e = e

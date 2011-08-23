@@ -241,14 +241,14 @@ tcExpr env e@(If p c a) = tcPredicate >> tcBranches
                   then return tc
                   else tcFail $ IfBranchesTypeMismatch e tc ta
 
-tcExpr env (Let bindings body)
-    = do env' <- mapM tcBinding bindings
+tcExpr env (Let (Bindings bs) body)
+    = do env' <- mapM tcBinding bs
          tcExpr (env' ++ env) body
     where
       tcBinding (x, e) = do t <- tcExpr env e
                             return (x, t)
-tcExpr env e@(LetValues bindings body)
-    = do env' <- concatMapM tcBinding bindings
+tcExpr env e@(LetValues (Bindings bs) body)
+    = do env' <- concatMapM tcBinding bs
          tcExpr (env' ++ env) body
     where
       tcBinding (xs, e) = destructure xs =<< tcExpr env e

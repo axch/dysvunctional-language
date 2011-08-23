@@ -42,28 +42,28 @@ alphaRnExpr env (If p c a)
     = liftA3 If (alphaRnExpr env p)
                 (alphaRnExpr env c)
                 (alphaRnExpr env a)
-alphaRnExpr env (Let bindings body)
+alphaRnExpr env (Let (Bindings bs) body)
     = do seen_names <- get
          xs' <- lift $ mapM (rename seen_names) xs
          record xs
          es' <- mapM (alphaRnExpr env) es
          let env' = extend xs xs' env
          body' <- alphaRnExpr env' body
-         let bindings' = zip xs' es'
-         return (Let bindings' body')
+         let bs' = zip xs' es'
+         return (Let (Bindings bs') body')
     where
-      (xs, es) = unzip bindings
-alphaRnExpr env (LetValues bindings body)
+      (xs, es) = unzip bs
+alphaRnExpr env (LetValues (Bindings bs) body)
     = do seen_names <- get
          xs' <- lift $ mapM (mapM (rename seen_names)) xs
          record (concat xs)
          es' <- mapM (alphaRnExpr env) es
          let env' = extend (concat xs) (concat xs') env
          body' <- alphaRnExpr env' body
-         let bindings' = zip xs' es'
-         return (LetValues bindings' body')
+         let bs' = zip xs' es'
+         return (LetValues (Bindings bs') body')
     where
-      (xs, es) = unzip bindings
+      (xs, es) = unzip bs
 alphaRnExpr env (Car e) = Car <$> alphaRnExpr env e
 alphaRnExpr env (Cdr e) = Cdr <$> alphaRnExpr env e
 alphaRnExpr env (VectorRef e i)

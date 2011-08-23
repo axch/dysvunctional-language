@@ -159,7 +159,7 @@ parseIf = liftA3 If predicate consequent alternate
 
 parseLet = liftA2 Let bindings body
     where
-      bindings = listOf binding
+      bindings = Bindings <$> listOf binding
       binding  = parens $ liftA2 (,) pattern expr
       pattern  = identifier
       expr     = parseExpression
@@ -167,7 +167,7 @@ parseLet = liftA2 Let bindings body
 
 parseLetValues = liftA2 LetValues bindings body
     where
-      bindings = listOf binding
+      bindings = Bindings <$> listOf binding
       binding  = parens $ liftA2 (,) pattern expr
       pattern  = listOf identifier
       expr     = parseExpression
