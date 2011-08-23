@@ -69,3 +69,6 @@ anfDefn (Defn proc args body) = liftA (Defn proc args) (anfExpr body)
 
 anfProg :: Prog -> Unique Prog
 anfProg (Prog defns expr) = liftA2 Prog (mapM anfDefn defns) (anfExpr expr)
+
+anf :: Prog -> Unique Prog
+anf = anfProg
