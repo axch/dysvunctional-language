@@ -15,10 +15,10 @@ isSimpleExpr (Bool _) = True
 isSimpleExpr (Real _) = True
 isSimpleExpr _        = False
 
-type SimpleT = WriterT [LetBinding]
+type NormalT = WriterT [LetBinding]
 
-simplify :: Expr -> SimpleT Unique Expr
-simplify e
+normalize :: Expr -> NormalT Unique Expr
+normalize e
     | isSimpleExpr e
     = return e
     | otherwise
@@ -27,8 +27,8 @@ simplify e
          tell [(name, e')]
          return (Var name)
 
-evalSimpleT :: Monad m => SimpleT m Expr -> m Expr
-evalSimpleT a = do (body, bindings) <- runWriterT a
+evalNormalT :: Monad m => NormalT m Expr -> m Expr
+evalNormalT a = do (body, bindings) <- runWriterT a
                    return $ mkLet bindings body
 
 mkLet :: [LetBinding] -> Expr -> Expr
@@ -50,19 +50,19 @@ anfExpr (LetValues bindings body)
          body'     <- anfExpr body
          return (LetValues bindings' body')
 anfExpr (Car e)
-    = evalSimpleT $ liftA  Car       (simplify e)
+    = evalNormalT $ liftA  Car       (normalize e)
 anfExpr (Cdr e)
-    = evalSimpleT $ liftA  Cdr       (simplify e)
+    = evalNormalT $ liftA  Cdr       (normalize e)
 anfExpr (VectorRef e i)
-    = evalSimpleT $ liftA2 VectorRef (simplify e) (pure i)
+    = evalNormalT $ liftA2 VectorRef (normalize e) (pure i)
 anfExpr (Cons e1 e2)
-    = evalSimpleT $ liftA2 Cons      (simplify e1) (simplify e2)
+    = evalNormalT $ liftA2 Cons      (normalize e1) (normalize e2)
 anfExpr (Vector es)
-    = evalSimpleT $ liftA  Vector    (mapM simplify es)
+    = evalNormalT $ liftA  Vector    (mapM normalize es)
 anfExpr (Values es)
-    = evalSimpleT $ liftA  Values    (mapM simplify es)
+    = evalNormalT $ liftA  Values    (mapM normalize es)
 anfExpr (ProcCall proc args)
-    = evalSimpleT $ liftA2 ProcCall  (pure proc) (mapM simplify args)
+    = evalNormalT $ liftA2 ProcCall  (pure proc) (mapM normalize args)
 
 anfDefn :: Defn -> Unique Defn
 anfDefn (Defn proc args body) = liftA (Defn proc args) (anfExpr body)
