@@ -27,9 +27,9 @@ normalize e
          tell [(name, e')]
          return (Var name)
 
-evalNormalT :: Monad m => NormalT m Expr -> m Expr
-evalNormalT a = do (body, bindings) <- runWriterT a
-                   return $ mkLet bindings body
+toLet :: Monad m => NormalT m Expr -> m Expr
+toLet a = do (body, bindings) <- runWriterT a
+             return $ mkLet bindings body
 
 mkLet :: [LetBinding] -> Expr -> Expr
 mkLet []       body =              body
@@ -50,19 +50,19 @@ anfExpr (LetValues bindings body)
          body'     <- anfExpr body
          return (LetValues bindings' body')
 anfExpr (Car e)
-    = evalNormalT $ liftA  Car       (normalize e)
+    = toLet $ liftA  Car       (normalize e)
 anfExpr (Cdr e)
-    = evalNormalT $ liftA  Cdr       (normalize e)
+    = toLet $ liftA  Cdr       (normalize e)
 anfExpr (VectorRef e i)
-    = evalNormalT $ liftA2 VectorRef (normalize e) (pure i)
+    = toLet $ liftA2 VectorRef (normalize e) (pure i)
 anfExpr (Cons e1 e2)
-    = evalNormalT $ liftA2 Cons      (normalize e1) (normalize e2)
+    = toLet $ liftA2 Cons      (normalize e1) (normalize e2)
 anfExpr (Vector es)
-    = evalNormalT $ liftA  Vector    (mapM normalize es)
+    = toLet $ liftA  Vector    (mapM normalize es)
 anfExpr (Values es)
-    = evalNormalT $ liftA  Values    (mapM normalize es)
+    = toLet $ liftA  Values    (mapM normalize es)
 anfExpr (ProcCall proc args)
-    = evalNormalT $ liftA2 ProcCall  (pure proc) (mapM normalize args)
+    = toLet $ liftA2 ProcCall  (pure proc) (mapM normalize args)
 
 anfDefn :: Defn -> Unique Defn
 anfDefn (Defn proc args body) = liftA (Defn proc args) (anfExpr body)
