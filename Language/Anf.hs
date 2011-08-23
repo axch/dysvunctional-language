@@ -32,11 +32,13 @@ evalSimpleT a = do (body, bindings) <- runWriterT a
                    return $ mkLet bindings body
 
 mkLet :: [LetBinding] -> Expr -> Expr
-mkLet [] body = body
+mkLet []       body =              body
 mkLet bindings body = Let bindings body
 
 anfExpr :: Expr -> Unique Expr
-anfExpr e | isSimpleExpr e = return e
+anfExpr e
+    | isSimpleExpr e
+    = return e
 anfExpr (If p c a)
     = liftA3 If (anfExpr p) (anfExpr c) (anfExpr a)
 anfExpr (Let bindings body)
@@ -48,19 +50,19 @@ anfExpr (LetValues bindings body)
          body'     <- anfExpr body
          return (LetValues bindings' body')
 anfExpr (Car e)
-    = evalSimpleT $ liftA Car (simplify e)
+    = evalSimpleT $ liftA  Car       (simplify e)
 anfExpr (Cdr e)
-    = evalSimpleT $ liftA Cdr (simplify e)
+    = evalSimpleT $ liftA  Cdr       (simplify e)
 anfExpr (VectorRef e i)
     = evalSimpleT $ liftA2 VectorRef (simplify e) (pure i)
 anfExpr (Cons e1 e2)
-    = evalSimpleT $ liftA2 Cons (simplify e1) (simplify e2)
+    = evalSimpleT $ liftA2 Cons      (simplify e1) (simplify e2)
 anfExpr (Vector es)
-    = evalSimpleT $ liftA Vector (mapM simplify es)
+    = evalSimpleT $ liftA  Vector    (mapM simplify es)
 anfExpr (Values es)
-    = evalSimpleT $ liftA Values (mapM simplify es)
+    = evalSimpleT $ liftA  Values    (mapM simplify es)
 anfExpr (ProcCall proc args)
-    = evalSimpleT $ liftA2 ProcCall (pure proc) (mapM simplify args)
+    = evalSimpleT $ liftA2 ProcCall  (pure proc) (mapM simplify args)
 
 anfDefn :: Defn -> Unique Defn
 anfDefn (Defn proc args body) = liftA (Defn proc args) (anfExpr body)
