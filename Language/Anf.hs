@@ -44,19 +44,14 @@ anfExpr :: Expr -> Unique Expr
 anfExpr e
     | isSimpleExpr e
     = return e
+
 anfExpr (If p c a)
-    = liftA3 If
-             (anfExpr p)
-             (anfExpr c)
-             (anfExpr a)
+    = liftA3 If        (anfExpr p) (anfExpr c) (anfExpr a)
 anfExpr (Let bindings body)
-    = liftA2 Let
-             (Traversable.mapM anfExpr bindings)
-             (anfExpr body)
+    = liftA2 Let       (Traversable.mapM anfExpr bindings) (anfExpr body)
 anfExpr (LetValues bindings body)
-    = liftA2 LetValues
-             (Traversable.mapM anfExpr bindings)
-             (anfExpr body)
+    = liftA2 LetValues (Traversable.mapM anfExpr bindings) (anfExpr body)
+
 anfExpr (Car e)
     = toLet $ liftA  Car       (normalize e)
 anfExpr (Cdr e)
