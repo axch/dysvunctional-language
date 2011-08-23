@@ -127,7 +127,7 @@
           (else thing))))
 
 (define (forces objects)
-  (gradient (positions->potential objects) (map position objects)))
+  (* -1 (gradient (positions->potential objects) (map position objects))))
 
 (define (state-derivative state)
   (let ((time (car state))
