@@ -8,6 +8,8 @@ import FOL.Language.Pretty
 import Control.Applicative
 import Control.Monad
 
+import qualified Data.Traversable as Traversable
+
 -- Types of entities in FOL programs.  In addition to shapes that
 -- values may have there are also procedure types.
 data Type = PrimTy Shape
@@ -187,13 +189,118 @@ typesOfPrimitives = [ (Name "abs",       r2r  )
       r2b   = ProcTy [RealSh] BoolSh
       rxr2b = ProcTy [RealSh, RealSh] BoolSh
 
-tc :: Prog -> TC Type
-tc = tcProg typesOfPrimitives
+-- Type check the program and return its type (i.e., the type of the
+-- expression given the declared types of the local procedures,
+-- provided they are consistent).  Error out on type errors.
+tc :: Prog -> Type
+tc = fst . ann
 
-tcProg :: TyEnv -> Prog -> TC Type
-tcProg env (Prog defns expr)
-    = do env' <- tcDefns env defns
-         tcExpr (env' ++ env) expr
+-- Given a program, annotate each node with its type, and return the
+-- annotated program.  Error out on type errors.
+ann :: Prog -> AnnProg Type
+ann prog = case annProg typesOfPrimitives prog of
+             TCOk a      -> a
+             TCError err -> error ("\n" ++ pprint err)
+
+annProg :: TyEnv -> Prog -> TC (AnnProg Type)
+annProg init_env (Prog defns expr)
+    = do ann_defns               <- mapM (annDefn prog_env) defns
+         ann_expr@(prog_type, _) <- annExpr prog_env expr
+         return (prog_type, AnnProg ann_defns ann_expr)
+    where
+      prog_env = [(procName defn, declProcType defn) | defn <- defns] ++ init_env
+
+annDefn :: TyEnv -> Defn -> TC (AnnDefn Type)
+annDefn env defn@(Defn proc args body)
+    = do ann_body@(ret_type, _) <- annExpr (env' ++ env) body
+         if ret_type == PrimTy ret_shape
+            then return $ (declProcType defn, AnnDefn proc args ann_body)
+            else tcFail $ ProcReturnTypeMismatch proc_name ret_type ret_shape
+    where
+      (proc_name, ret_shape) = proc
+      env' = [(arg_name, PrimTy arg_shape) | (arg_name, arg_shape) <- args]
+
+annExpr :: TyEnv -> Expr -> TC (AnnExpr Type)
+annExpr env (Var x)
+    = case lookup x env of
+        Just (t@(PrimTy _)) -> return (t, AnnVar x)
+        Just _              -> tcFail $ProcNameUsedAsVariable x
+        Nothing             -> tcFail $ UnboundVariable x
+annExpr _ Nil      = return (PrimTy NilSh,  AnnNil   )
+annExpr _ (Bool b) = return (PrimTy BoolSh, AnnBool b)
+annExpr _ (Real r) = return (PrimTy RealSh, AnnReal r)
+annExpr env e@(If p c a)
+    = do ann_p@(tp, _) <- annExpr env p
+         unless (tp == PrimTy BoolSh) $
+            tcFail $ ShapeMismatch p tp "bool"
+         ann_c@(tc, _) <- annExpr env c
+         ann_a@(ta, _) <- annExpr env a
+         if tc == ta
+            then return (tc, AnnIf ann_p ann_c ann_a)
+            else tcFail $ IfBranchesTypeMismatch e tc ta
+annExpr env (Let bindings body)
+    = do Bindings bs' <- Traversable.mapM (annExpr env) bindings
+         let env' = [(x, t) | (x, (t, _)) <- bs']
+         ann_body@(body_type, _) <- annExpr (env' ++ env) body
+         return (body_type, AnnLet (Bindings bs') ann_body)
+annExpr env (LetValues bindings body)
+    = do Bindings bs' <- Traversable.mapM (annExpr env) bindings
+         env' <- concatMapM destructure bs'
+         ann_body@(body_type, _) <- annExpr (env' ++ env) body
+         return (body_type, AnnLetValues (Bindings bs') ann_body)
+    where
+      destructure (xs, ann_e@(PrimTy (ValuesSh ss), _))
+          | length xs == length ss
+          = return $ zip xs (map PrimTy ss)
+          | otherwise
+          = tcFail $ PatternVarsNumMismatch xs (stripAnnExpr ann_e)
+      destructure (xs, ann_e@(t, _))
+          = tcFail $ ShapeMismatch (stripAnnExpr ann_e) t "values"
+annExpr env (Car e)
+    = do ann_e@(t, _) <- annExpr env e
+         case t of
+           PrimTy (ConsSh s1 _) -> return (PrimTy s1, AnnCar ann_e)
+           _                    -> tcFail $ ShapeMismatch e t "cons"
+annExpr env (Cdr e)
+    = do ann_e@(t, _) <- annExpr env e
+         case t of
+           PrimTy (ConsSh _ s2) -> return (PrimTy s2, AnnCdr ann_e)
+           _                    -> tcFail $ ShapeMismatch e t "cons"
+annExpr env (VectorRef e i)
+    = do ann_e@(t, _) <- annExpr env e
+         case t of
+           PrimTy (VectorSh ss) -> return (PrimTy (ss !! i), AnnVectorRef ann_e i)
+           _                    -> tcFail $ ShapeMismatch e t "vector"
+annExpr env (Cons e1 e2)
+    = do ann_e1@(t1, _) <- annExpr env e1
+         ann_e2@(t2, _) <- annExpr env e2
+         s1             <- fromPrimTy t1
+         s2             <- fromPrimTy t2
+         return (PrimTy (ConsSh s1 s2), AnnCons ann_e1 ann_e2)
+annExpr env (Vector es)
+    = do es' <- mapM (annExpr env) es
+         ss  <- mapM (fromPrimTy . fst) es'
+         return (PrimTy (VectorSh ss), AnnVector es')
+annExpr env (Values es)
+    = do es' <- mapM (annExpr env) es
+         ss  <- mapM (fromPrimTy . fst) es'
+         return (PrimTy (ValuesSh ss), AnnValues es')
+annExpr env e@(ProcCall proc args)
+    | Just proc_type@(ProcTy arg_shapes ret_shape) <- lookup proc env
+    , let nargs       = length args
+    , let narg_shapes = length arg_shapes
+    = if nargs == narg_shapes
+      then do ann_args <- mapM (annExpr env) args
+              zipWithM_ checkArgType arg_shapes ann_args
+              return (PrimTy ret_shape, AnnProcCall proc ann_args)
+      else tcFail $ ProcArgsNumMismatch proc proc_type nargs
+    | otherwise
+    = tcFail $ UndefinedProc proc
+    where
+      checkArgType arg_shape ann_arg@(arg_type, _)
+          = unless (arg_type == PrimTy arg_shape)
+          $ tcFail
+          $ ProcArgTypeMismatch e (stripAnnExpr ann_arg) arg_type arg_shape
 
 -- The declared type of a given procedure.
 declProcType :: Defn -> Type
@@ -202,118 +309,8 @@ declProcType (Defn proc args body) = ProcTy arg_shapes ret_shape
       ret_shape  = snd proc
       arg_shapes = map snd args
 
-tcDefns :: TyEnv -> [Defn] -> TC TyEnv
-tcDefns env defns = mapM tcDefn' defns
-    where
-      tcDefn' defn = do proc_type <- tcDefn (env' ++ env) defn
-                        return (procName defn, proc_type)
-      env' = [(procName defn, declProcType defn) | defn <- defns]
-
-tcDefn :: TyEnv -> Defn -> TC Type
-tcDefn env defn@(Defn proc args body)
-    = do ret_type <- tcExpr (env' ++ env) body
-         if ret_type == PrimTy ret_shape
-            then return $ declProcType defn
-            else tcFail $ ProcReturnTypeMismatch proc_name ret_type ret_shape
-    where
-      (proc_name, ret_shape) = proc
-      env' = [(arg_name, PrimTy arg_shape) | (arg_name, arg_shape) <- args]
-
-tcExpr :: TyEnv -> Expr -> TC Type
-tcExpr env (Var x)
-    = case lookup x env of
-        Just (t@(PrimTy _)) -> return t
-        Just _              -> tcFail $ ProcNameUsedAsVariable x
-        Nothing             -> tcFail $ UnboundVariable x
-tcExpr _ Nil      = return $ PrimTy NilSh
-tcExpr _ (Bool _) = return $ PrimTy BoolSh
-tcExpr _ (Real _) = return $ PrimTy RealSh
-tcExpr env e@(If p c a) = tcPredicate >> tcBranches
-    where
-      tcPredicate
-          = do tp <- tcExpr env p
-               unless (tp == PrimTy BoolSh) $
-                 tcFail $ ShapeMismatch p tp "bool"
-      tcBranches
-          = do tc <- tcExpr env c
-               ta <- tcExpr env a
-               if tc == ta
-                  then return tc
-                  else tcFail $ IfBranchesTypeMismatch e tc ta
-
-tcExpr env (Let (Bindings bs) body)
-    = do env' <- mapM tcBinding bs
-         tcExpr (env' ++ env) body
-    where
-      tcBinding (x, e) = do t <- tcExpr env e
-                            return (x, t)
-tcExpr env e@(LetValues (Bindings bs) body)
-    = do env' <- concatMapM tcBinding bs
-         tcExpr (env' ++ env) body
-    where
-      tcBinding (xs, e) = destructure xs =<< tcExpr env e
-          where
-            destructure xs (PrimTy (ValuesSh ss))
-                | length xs == length ss
-                = return $ zip xs (map PrimTy ss)
-                | otherwise
-                = tcFail $ PatternVarsNumMismatch xs e
-            destructure xs t
-                = tcFail $ ShapeMismatch e t "values"
-
-tcExpr env e@(Car e')
-    = do t' <- tcExpr env e'
-         case t' of
-           PrimTy (ConsSh t _) -> return $ PrimTy t
-           _ -> tcFail $ ShapeMismatch e' t' "cons"
-
-tcExpr env e@(Cdr e')
-    = do t' <- tcExpr env e'
-         case t' of
-           PrimTy (ConsSh _ t) -> return $ PrimTy t
-           _ -> tcFail $ ShapeMismatch e' t' "cons"
-
-tcExpr env e@(VectorRef e' i)
-    = do t' <- tcExpr env e'
-         case t' of
-           PrimTy (VectorSh ss) -> return $ PrimTy (ss !! i)
-           _ -> tcFail $ ShapeMismatch e' t' "vector"
-
-tcExpr env (Cons e1 e2) = liftM PrimTy $ liftA2 ConsSh s1 s2
-    where
-      s1 = exprShape env e1
-      s2 = exprShape env e2
-
-tcExpr env (Vector es) = liftM (PrimTy . VectorSh) ss
-    where
-      ss = mapM (exprShape env) es
-
-tcExpr env (Values es) = liftM (PrimTy . ValuesSh) ss
-    where
-      ss = mapM (exprShape env) es
-
-tcExpr env e@(ProcCall proc args)
-    | Just proc_type@(ProcTy arg_shapes ret_shape) <- lookup proc env
-    , let nargs = length args
-    , let narg_shapes = length arg_shapes
-    = if nargs == narg_shapes
-      then mapM_ checkArgType (zip args arg_shapes) >>
-             return (PrimTy ret_shape)
-      else tcFail $ ProcArgsNumMismatch proc proc_type nargs
-    | otherwise
-    = tcFail $ UndefinedProc proc
-    where
-      checkArgType (arg, arg_shape)
-          = do arg_type <- tcExpr env arg
-               if arg_type == PrimTy arg_shape
-                  then return arg_type
-                  else tcFail $ ProcArgTypeMismatch e arg arg_type arg_shape
-
 fromPrimTy :: Type -> TC Shape
 fromPrimTy (PrimTy s) = return s
 -- 'fromPrimTy' is only used where the following cannot happen.  We
 -- add a catch-all case anyway.
 fromPrimTy _          = fail "Procedure type where a shape is expected"
-
-exprShape :: TyEnv -> Expr -> TC Shape
-exprShape env = fromPrimTy <=< tcExpr env
