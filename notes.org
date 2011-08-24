@@ -160,3 +160,36 @@ was type-checking each definition assuming the declared types of
 The fix is easy: type-check each definition assuming the declared
 types of *all* definitions (in a sense, we simply check that the
 declared types are a solution to the fixed point equation).
+
+* A-normal form
+
+Implemented (approximate) A-normal form conversion.  The
+implementation is not completely satisfactory in a few ways:
+
+- expressions in ANF have a grammar that is different from the grammar
+  of ordinary expressions, however I'm reusing =Expr= type, instead of
+  capturing the invariants of expressions in ANF (e.g., CONS can only
+  be applied to variables or constants) in a type.  That would be more
+  Haskellish and generally a Good Thing.  However, I don't know if the
+  subsequent stages of the optimizer are going to need ANF or not.
+
+- recursive traversal in =anfExpr= doesn't benefit for SYB techniques,
+  nor from other generic programming techniques.
+
+  *Question*: how do I apply SYB to data types like =Expr=?  The paper
+  tells me how to deal with lots of mutually recursive data types, but
+  not with one recursive data type.
+
+  Can I write a generic fold function for folding over expressions?
+  Ideally, I would like to be able to specify, in declarative manner,
+  for each node type, which functions to apply the children of that
+  node, and how to combine the results.
+
+  I see how I can do that with "Data Types A La Carte" approach, but
+  it implies boilerplate of other kind: writing down instances for
+  each node type.
+
+  I was also a little discouraged to find out, but grepping the source
+  tree of GHC, that they doesn't use SYB techniques (only in libraries
+  but not in the compiler code).  Apparently, doing so would introduce
+  unnecessary complexity.
