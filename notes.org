@@ -161,6 +161,9 @@ The fix is easy: type-check each definition assuming the declared
 types of *all* definitions (in a sense, we simply check that the
 declared types are a solution to the fixed point equation).
 
+Type-checking IF expressions makes sure that the consequent and
+alternate have the same type.
+
 * A-normal form
 
 Implemented (approximate) A-normal form conversion.  The
