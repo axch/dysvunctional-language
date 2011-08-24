@@ -48,7 +48,7 @@ data Expr
     | ProcCall Name [Expr]
       deriving (Eq, Show, Typeable, Data)
 
-type ShapedName       = (Name,   Shape)
+type ShapedName = (Name, Shape)
 
 newtype Bindings p v = Bindings [(p, v)] deriving (Eq, Show, Typeable, Data)
 
@@ -125,3 +125,86 @@ instance Pretty Expr where
     pp (Values es)     = ppForm "values" es
 
     pp (ProcCall proc args) = ppList $ pp proc : map pp args
+
+-- Annotated programs, definitions, and expressions
+
+-- It is really obnoxious that I have to write down these definitions
+-- and pretty trivial conversion functions but there appears to be no
+-- better way to arrange these things.  Cf.
+--
+-- Simon L. Peyton Jones, David Lester,
+-- /A Modular Fully-lazy Lambda Lifter in Haskell/,
+-- Software --- Practice and Experience, Vol. 21(5), 479--506 (1991).
+
+type AnnProg ann = (ann, AnnProg' ann)
+data AnnProg' ann
+    = AnnProg [AnnDefn ann] (AnnExpr ann)
+      deriving (Eq, Show)
+
+stripAnnProg :: AnnProg ann -> Prog
+stripAnnProg (_, prog) = stripAnnProg' prog
+
+stripAnnProg' :: AnnProg' ann -> Prog
+stripAnnProg' (AnnProg defns expr)
+    = Prog (map stripAnnDefn defns) (stripAnnExpr expr)
+
+instance Pretty (AnnProg' ann) where
+    pp = pp . stripAnnProg'
+
+type AnnDefn ann = (ann, AnnDefn' ann)
+data AnnDefn' ann
+    = AnnDefn ShapedName [ShapedName] (AnnExpr ann)
+      deriving (Eq, Show)
+
+stripAnnDefn :: AnnDefn ann -> Defn
+stripAnnDefn (_, defn) = stripAnnDefn' defn
+
+stripAnnDefn' :: AnnDefn' ann -> Defn
+stripAnnDefn' (AnnDefn proc args body)
+    = Defn proc args (stripAnnExpr body)
+
+instance Pretty (AnnDefn' ann) where
+    pp = pp . stripAnnDefn'
+
+type AnnExpr ann = (ann, AnnExpr' ann)
+data AnnExpr' ann
+    = AnnVar Name
+    | AnnNil
+    | AnnBool Bool
+    | AnnReal Real
+    | AnnIf (AnnExpr ann) (AnnExpr ann) (AnnExpr ann)
+    | AnnLet (Bindings Name (AnnExpr ann)) (AnnExpr ann)
+    | AnnLetValues (Bindings [Name] (AnnExpr ann)) (AnnExpr ann)
+    | AnnCar (AnnExpr ann)
+    | AnnCdr (AnnExpr ann)
+    | AnnVectorRef (AnnExpr ann) Int
+    | AnnCons (AnnExpr ann) (AnnExpr ann)
+    | AnnVector [AnnExpr ann]
+    | AnnValues [AnnExpr ann]
+    | AnnProcCall Name [AnnExpr ann]
+      deriving (Eq, Show)
+
+stripAnnExpr :: AnnExpr ann -> Expr
+stripAnnExpr (_, e) = stripAnnExpr' e
+
+stripAnnExpr' :: AnnExpr' ann -> Expr
+stripAnnExpr' (AnnVar x)  = Var x
+stripAnnExpr' AnnNil      = Nil
+stripAnnExpr' (AnnBool b) = Bool b
+stripAnnExpr' (AnnReal r) = Real r
+stripAnnExpr' (AnnIf p c a)
+    = If (stripAnnExpr p) (stripAnnExpr c) (stripAnnExpr a)
+stripAnnExpr' (AnnLet bindings body)
+    = Let (fmap stripAnnExpr bindings) (stripAnnExpr body)
+stripAnnExpr' (AnnLetValues bindings body)
+    = LetValues (fmap stripAnnExpr bindings) (stripAnnExpr body)
+stripAnnExpr' (AnnCar e)              = Car (stripAnnExpr e)
+stripAnnExpr' (AnnCdr e)              = Cdr (stripAnnExpr e)
+stripAnnExpr' (AnnVectorRef e i)      = VectorRef (stripAnnExpr e) i
+stripAnnExpr' (AnnCons e1 e2)         = Cons (stripAnnExpr e1) (stripAnnExpr e2)
+stripAnnExpr' (AnnVector es)          = Vector (map stripAnnExpr es)
+stripAnnExpr' (AnnValues es)          = Values (map stripAnnExpr es)
+stripAnnExpr' (AnnProcCall proc args) = ProcCall proc (map stripAnnExpr args)
+
+instance Pretty (AnnExpr' ann) where
+    pp = pp . stripAnnExpr'
