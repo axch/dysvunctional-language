@@ -72,6 +72,12 @@ mkLetValues :: [([Name], Expr)] -> Expr -> Expr
 mkLetValues [] body = body
 mkLetValues bs body = LetValues (Bindings bs) body
 
+smartLetValues :: [([Name], Expr)] -> Expr -> Expr
+smartLetValues bs body = mkLet bs1 (mkLetValues bs2 body)
+    where
+      bs1 = [(x,  e) | ([x],        e) <- bs]
+      bs2 = [(xs, e) | (xs@(_:_:_), e) <- bs]
+
 procName :: Defn -> Name
 procName (Defn (proc_name, _) _ _) = proc_name
 
