@@ -1,9 +1,10 @@
-{-# LANGUAGE NoImplicitPrelude, DeriveDataTypeable #-}
+{-# LANGUAGE NoImplicitPrelude, DeriveDataTypeable, TypeOperators, MultiParamTypeClasses #-}
 module FOL.Language.Common
     ( Real
     , Name (..)
     , primitives
     , compose
+    , (:<:) (..)
     , module Prelude
     )
     where
@@ -28,3 +29,6 @@ primitives
 
 compose :: [a -> a] -> a -> a
 compose = foldr (.) id
+
+class sub :<: sup where
+    inj :: sub -> sup
