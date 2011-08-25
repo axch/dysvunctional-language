@@ -33,13 +33,6 @@ toLet :: Monad m => NormalT m Expr -> m Expr
 toLet a = do (body, bindings) <- runWriterT a
              return $ mkLet bindings body
 
-mkLet :: [(Name, Expr)] -> Expr -> Expr
-mkLet bs body
-    | null bs
-    =  body
-    | otherwise
-    = Let (Bindings bs) body
-
 anfExpr :: Expr -> Unique Expr
 anfExpr e
     | isSimpleExpr e
