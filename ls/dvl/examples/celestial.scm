@@ -29,6 +29,10 @@
       stream
       (stream-take (- count 1) (force (cdr stream)))))
 
+;; Compile the DVL program with
+(fol->mit-scheme (compile-visibly (dvl-read-file "examples/celestial.dvl")))
+
+;; Then run with
 (stream-take
  1000
  (stream-for-each
