@@ -11,6 +11,7 @@ import FOL.Language.TypeCheck
 import FOL.Language.Unique
 
 import FOL.Optimize.Inline
+import FOL.Optimize.Sra
 
 import Control.Monad
 
