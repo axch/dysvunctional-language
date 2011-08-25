@@ -6,7 +6,7 @@ import FOL.Language.Pretty
 
 import Data.Data
 import Data.Monoid
-import Data.Foldable
+import Data.Foldable (Foldable, foldMap)
 import Data.Traversable
 
 import Control.Applicative
@@ -63,6 +63,14 @@ instance Foldable (Bindings p) where
 instance Traversable (Bindings p) where
     traverse f (Bindings bs)
         = Bindings <$> sequenceA [liftA2 (,) (pure x) (f v) | (x, v) <- bs]
+
+mkLet :: [(Name, Expr)] -> Expr -> Expr
+mkLet [] body = body
+mkLet bs body = Let (Bindings bs) body
+
+mkLetValues :: [([Name], Expr)] -> Expr -> Expr
+mkLetValues [] body = body
+mkLetValues bs body = LetValues (Bindings bs) body
 
 procName :: Defn -> Name
 procName (Defn (proc_name, _) _ _) = proc_name
@@ -208,3 +216,33 @@ stripAnnExpr' (AnnProcCall proc args) = ProcCall proc (map stripAnnExpr args)
 
 instance Pretty (AnnExpr' ann) where
     pp = pp . stripAnnExpr'
+
+-- Annotated shapes
+
+data AnnShape ann
+    = AnnNilSh  ann
+    | AnnRealSh ann
+    | AnnBoolSh ann
+    | AnnConsSh (AnnShape ann) (AnnShape ann)
+    | AnnVectorSh [AnnShape ann]
+    | AnnValuesSh [AnnShape ann]
+      deriving (Eq, Show)
+
+stripAnnShape :: AnnShape ann -> Shape
+stripAnnShape (AnnNilSh  _)     = NilSh
+stripAnnShape (AnnRealSh _)     = RealSh
+stripAnnShape (AnnBoolSh _)     = BoolSh
+stripAnnShape (AnnConsSh s1 s2) = ConsSh (stripAnnShape s1) (stripAnnShape s2)
+stripAnnShape (AnnVectorSh ss)  = VectorSh (map stripAnnShape ss)
+stripAnnShape (AnnValuesSh ss)  = ValuesSh (map stripAnnShape ss)
+
+fringe :: AnnShape ann -> [(ann, Shape)]
+fringe (AnnNilSh  ann)   = [(ann, NilSh )]
+fringe (AnnRealSh ann)   = [(ann, RealSh)]
+fringe (AnnBoolSh ann)   = [(ann, BoolSh)]
+fringe (AnnConsSh s1 s2) = fringe s1 ++ fringe s2
+fringe (AnnVectorSh ss)  = concatMap fringe ss
+fringe (AnnValuesSh ss)  = concatMap fringe ss
+
+annots :: AnnShape ann -> [ann]
+annots = map fst . fringe
