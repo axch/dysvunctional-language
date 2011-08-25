@@ -15,6 +15,7 @@ data SraExpr
     | SraBool Bool
     | SraReal Real
     | SraIf SraExpr SraExpr SraExpr
+    | SraLet (Bindings Name SraExpr) SraExpr
     | SraLetValues (Bindings [Name] SraExpr) SraExpr
     | SraValues [SraExpr]
     | SraProcCall Name [SraExpr]
@@ -26,11 +27,12 @@ instance SraExpr :<: Expr where
     inj (SraBool b) = Bool b
     inj (SraReal r) = Real r
     inj (SraIf p c a) = If (inj p) (inj c) (inj a)
-    inj (SraLetValues (Bindings bs) body)
-        = mkLet bs1 $ mkLetValues bs' (inj body)
+    inj (SraLet (Bindings bs) body) = mkLet bs' (inj body)
         where
-          bs1 = [(x,  inj e) | ([x], e)      <- bs]
-          bs' = [(xs, inj e) | (xs@(_:_), e) <- bs]
+          bs' = [(x,  inj e) | (x,  e) <- bs]
+    inj (SraLetValues (Bindings bs) body) = mkLetValues bs' (inj body)
+        where
+          bs' = [(xs, inj e) | (xs, e) <- bs]
     inj (SraValues es) = Values (map inj es)
     inj (SraProcCall proc args) = ProcCall proc (map inj args)
 
@@ -58,7 +60,22 @@ vars :: [Name] -> [SraExpr]
 vars = map SraVar
 
 values :: [Name] -> SraExpr
-values = SraValues . vars
+values [x] = SraVar x
+values xs  = SraValues (vars xs)
+
+mkSraLet :: [(Name, SraExpr)] -> SraExpr -> SraExpr
+mkSraLet [] body = body
+mkSraLet bs body = SraLet (Bindings bs) body
+
+mkSraLetValues :: [([Name], SraExpr)] -> SraExpr -> SraExpr
+mkSraLetValues [] body = body
+mkSraLetValues bs body = SraLetValues (Bindings bs) body
+
+smartSraLetValues :: [([Name], SraExpr)] -> SraExpr -> SraExpr
+smartSraLetValues bs body = mkSraLet bs1 (mkSraLetValues bs2 body)
+    where
+      bs1 = [(x,  e) | ([x],        e) <- bs]
+      bs2 = [(xs, e) | (xs@(_:_:_), e) <- bs]
 
 sraExpr :: [(Name, AnnShape Name)] -> AnnExpr Type -> Unique SraExpr
 sraExpr env (_, AnnVar x)
@@ -66,9 +83,9 @@ sraExpr env (_, AnnVar x)
     = return (values xs)
     | otherwise
     = error $ "Unbound variable: " ++ pprint x
-sraExpr _ (_, AnnNil)    = return (SraValues [SraNil])
-sraExpr _ (_, AnnBool b) = return (SraValues [SraBool b])
-sraExpr _ (_, AnnReal r) = return (SraValues [SraReal r])
+sraExpr _ (_, AnnNil)    = return SraNil
+sraExpr _ (_, AnnBool b) = return (SraBool b)
+sraExpr _ (_, AnnReal r) = return (SraReal r)
 sraExpr env (_, AnnIf p c a)
     = liftA3 SraIf (sraExpr env p) (sraExpr env c) (sraExpr env a)
 sraExpr env (_, AnnLet (Bindings bs) body)
@@ -78,7 +95,7 @@ sraExpr env (_, AnnLet (Bindings bs) body)
              xss  = map annots ss'
              env' = zip xs  ss'
          body' <- sraExpr (env' ++ env) body
-         return $ SraLetValues (Bindings bs') body'
+         return $ smartSraLetValues bs' body'
     where
       (xs, es) = unzip bs
       ss       = [s | (PrimTy s, _) <- es]
@@ -90,7 +107,7 @@ sraExpr env (_, AnnLetValues (Bindings bs) body)
              xsss = map (map annots) sss'
              env' = zip (concat xss) (concat sss')
          body' <- sraExpr (env' ++ env) body
-         return $ SraLetValues (Bindings bs') body'
+         return $ smartSraLetValues bs' body'
     where
       (xss, es) = unzip bs
       sss       = [ss | (PrimTy (ValuesSh ss), _) <- es]
@@ -98,28 +115,28 @@ sraExpr env (_, AnnCar e)
     = do e'  <- sraExpr env e
          s1' <- annShape s1
          s2' <- annShape s2
-         let bs = [(xs1 ++ xs2, e')]
+         let bs  = [(xs1 ++ xs2, e')]
              xs1 = annots s1'
              xs2 = annots s2'
-         return $ SraLetValues (Bindings bs) (values xs1)
+         return $ smartSraLetValues bs (values xs1)
     where
       (PrimTy (ConsSh s1 s2), _) = e
 sraExpr env (_, AnnCdr e)
     = do e'  <- sraExpr env e
          s1' <- annShape s1
          s2' <- annShape s2
-         let bs = [(xs1 ++ xs2, e')]
+         let bs  = [(xs1 ++ xs2, e')]
              xs1 = annots s1'
              xs2 = annots s2'
-         return $ SraLetValues (Bindings bs) (values xs2)
+         return $ smartSraLetValues bs (values xs2)
     where
       (PrimTy (ConsSh s1 s2), _) = e
 sraExpr env (_, AnnVectorRef e i)
     = do e' <- sraExpr env e
          ss' <- mapM annShape ss
-         let bs = [(concat xss, e')]
+         let bs  = [(concat xss, e')]
              xss = map annots ss'
-         return $ SraLetValues (Bindings bs) (values (xss !! i))
+         return $ smartSraLetValues bs (values (xss !! i))
     where
       (PrimTy (VectorSh ss), _) = e
 sraExpr env (_, AnnCons e1 e2)
@@ -130,7 +147,7 @@ sraExpr env (_, AnnCons e1 e2)
          let bs  = [(xs1, e1'), (xs2, e2')]
              xs1 = annots s1'
              xs2 = annots s2'
-         return $ SraLetValues (Bindings bs) (values (xs1 ++ xs2))
+         return $ smartSraLetValues bs (values (xs1 ++ xs2))
     where
       (PrimTy s1, _) = e1
       (PrimTy s2, _) = e2
@@ -139,7 +156,7 @@ sraExpr env (_, AnnVector es)
          ss' <- mapM annShape ss
          let bs  = zip xss es'
              xss = map annots ss'
-         return $ SraLetValues (Bindings bs) (values (concat xss))
+         return $ smartSraLetValues bs (values (concat xss))
     where
       ss  = [s | (PrimTy s, _) <- es]
 sraExpr env (_, AnnValues es)
@@ -147,7 +164,7 @@ sraExpr env (_, AnnValues es)
          ss' <- mapM annShape ss
          let bs  = zip xss es'
              xss = map annots ss'
-         return $ SraLetValues (Bindings bs) (values (concat xss))
+         return $ smartSraLetValues bs (values (concat xss))
     where
       ss  = [s | (PrimTy s, _) <- es]
 sraExpr env (_, AnnProcCall proc args)
@@ -155,14 +172,17 @@ sraExpr env (_, AnnProcCall proc args)
          ss'   <- mapM annShape ss
          let bs  = zip xss args'
              xss = map annots ss'
-         return $ SraLetValues (Bindings bs) (SraProcCall proc (vars (concat xss)))
+         return $ smartSraLetValues bs (SraProcCall proc (vars (concat xss)))
     where
       ss  = [s | (PrimTy s, _) <- args]
 
 -- The expression argument is expected to have shape (VALUES ss), with
 -- the list ss parallel to the annots of the shape argument.
-shapeSraExpr :: SraExpr -> AnnShape Name -> Expr
-shapeSraExpr e s = mkLetValues [(annots s, inj e)] (exprOfShape s)
+shapeSraExpr :: AnnShape Name -> SraExpr -> Expr
+shapeSraExpr _ SraNil      = Nil
+shapeSraExpr _ (SraBool b) = Bool b
+shapeSraExpr _ (SraReal r) = Real r
+shapeSraExpr s e = smartLetValues [(annots s, inj e)] (exprOfShape s)
 
 -- Given a shape with named primitive parts, construct (using variable
 -- with those names) an expression that returns values of that shape
@@ -190,4 +210,7 @@ sraProg (_, AnnProg defns expr)
     = liftA2 SraProg (mapM sraDefn defns) (sraExpr [] expr)
 
 sra :: AnnProg Type -> Unique Prog
-sra = liftA inj . sraProg
+sra prog@(PrimTy s, AnnProg defns expr)
+    = do SraProg defns' expr' <- sraProg prog
+         s' <- annShape s
+         return $ Prog (map inj defns') (shapeSraExpr s' expr')
