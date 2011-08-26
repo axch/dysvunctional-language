@@ -14,8 +14,6 @@ module FOL.Language.Pretty
 
 import FOL.Language.Common
 
-import Data.Char
-
 import Text.PrettyPrint
 
 class Pretty a where
@@ -34,7 +32,7 @@ ppList :: [Doc] -> Doc
 ppList = parens . sep
 
 symbol :: String -> Doc
-symbol s = text (map toUpper s)
+symbol = text
 
 ppForm :: Pretty a => String -> [a] -> Doc
 ppForm name xs = ppList $ symbol name : map pp xs
