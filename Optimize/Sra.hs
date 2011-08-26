@@ -49,12 +49,12 @@ instance SraProg :<: Prog where
     inj (SraProg defns expr) = Prog (map inj defns) (inj expr)
 
 annShape :: Shape -> Unique (AnnShape Name)
-annShape NilSh  = AnnNilSh  <$> uniqueName "sra"
-annShape RealSh = AnnRealSh <$> uniqueName "sra"
-annShape BoolSh = AnnBoolSh <$> uniqueName "sra"
-annShape (ConsSh s1 s2) = liftA2 AnnConsSh (annShape s1) (annShape s2)
-annShape (VectorSh ss)  = AnnVectorSh <$> mapM annShape ss
-annShape (ValuesSh ss)  = AnnValuesSh <$> mapM annShape ss
+annShape NilSh          = liftA  AnnNilSh    (uniqueName "sra")
+annShape RealSh         = liftA  AnnRealSh   (uniqueName "sra")
+annShape BoolSh         = liftA  AnnBoolSh   (uniqueName "sra")
+annShape (ConsSh s1 s2) = liftA2 AnnConsSh   (annShape s1) (annShape s2)
+annShape (VectorSh ss)  = liftA  AnnVectorSh (mapM annShape ss)
+annShape (ValuesSh ss)  = liftA  AnnValuesSh (mapM annShape ss)
 
 vars :: [Name] -> [SraExpr]
 vars = map SraVar
