@@ -7,6 +7,7 @@ import FOL.Language.Common
 import FOL.Language.Expression
 import FOL.Language.Parser
 import FOL.Language.Pretty
+import FOL.Language.Tidy
 import FOL.Language.TypeCheck
 import FOL.Language.Unique
 
@@ -16,7 +17,7 @@ import FOL.Optimize.Sra
 import Control.Monad
 
 optimize :: String -> String
-optimize = pprint . evalUnique . transform . parse
+optimize = pprint . tidy . evalUnique . transform . parse
     where
       transform = (sra . ann) <=< inline <=< alphaRn
 
