@@ -177,7 +177,7 @@ sraExpr env (_, AnnProcCall proc args)
       ss  = [s | (PrimTy s, _) <- args]
 
 -- The expression argument is expected to have shape (VALUES ss), with
--- the list ss parallel to the annots of the shape argument.
+-- the list ss parallel to the fringe of the shape argument.
 shapeSraExpr :: AnnShape Name -> SraExpr -> Expr
 shapeSraExpr _ SraNil      = Nil
 shapeSraExpr _ (SraBool b) = Bool b
