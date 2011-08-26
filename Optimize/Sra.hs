@@ -78,17 +78,20 @@ smartSraLetValues bs body = mkSraLet bs1 (mkSraLetValues bs2 body)
       bs2 = [(xs, e) | (xs@(_:_:_), e) <- bs]
 
 sraExpr :: [(Name, AnnShape Name)] -> AnnExpr Type -> Unique SraExpr
-sraExpr env (_, AnnVar x)
+sraExpr env (_, e) = sraExpr' env e
+
+sraExpr' :: [(Name, AnnShape Name)] -> AnnExpr' Type -> Unique SraExpr
+sraExpr' env (AnnVar x)
     | Just s <- lookup x env, let xs = annots s
     = return (values xs)
     | otherwise
     = error $ "Unbound variable: " ++ pprint x
-sraExpr _ (_, AnnNil)    = return SraNil
-sraExpr _ (_, AnnBool b) = return (SraBool b)
-sraExpr _ (_, AnnReal r) = return (SraReal r)
-sraExpr env (_, AnnIf p c a)
+sraExpr' _ AnnNil      = return SraNil
+sraExpr' _ (AnnBool b) = return (SraBool b)
+sraExpr' _ (AnnReal r) = return (SraReal r)
+sraExpr' env (AnnIf p c a)
     = liftA3 SraIf (sraExpr env p) (sraExpr env c) (sraExpr env a)
-sraExpr env (_, AnnLet (Bindings bs) body)
+sraExpr' env (AnnLet (Bindings bs) body)
     = do es' <- mapM (sraExpr env) es
          ss' <- mapM annShape ss
          let bs'  = zip xss es'
@@ -99,7 +102,7 @@ sraExpr env (_, AnnLet (Bindings bs) body)
     where
       (xs, es) = unzip bs
       ss       = [s | (PrimTy s, _) <- es]
-sraExpr env (_, AnnLetValues (Bindings bs) body)
+sraExpr' env (AnnLetValues (Bindings bs) body)
     = do es'  <- mapM (sraExpr env) es
          sss' <- mapM (mapM annShape) sss
          let bs'  = zip xss' es'
@@ -111,7 +114,7 @@ sraExpr env (_, AnnLetValues (Bindings bs) body)
     where
       (xss, es) = unzip bs
       sss       = [ss | (PrimTy (ValuesSh ss), _) <- es]
-sraExpr env (_, AnnCar e)
+sraExpr' env (AnnCar e)
     = do e'  <- sraExpr env e
          s1' <- annShape s1
          s2' <- annShape s2
@@ -121,7 +124,7 @@ sraExpr env (_, AnnCar e)
          return $ smartSraLetValues bs (values xs1)
     where
       (PrimTy (ConsSh s1 s2), _) = e
-sraExpr env (_, AnnCdr e)
+sraExpr' env (AnnCdr e)
     = do e'  <- sraExpr env e
          s1' <- annShape s1
          s2' <- annShape s2
@@ -131,7 +134,7 @@ sraExpr env (_, AnnCdr e)
          return $ smartSraLetValues bs (values xs2)
     where
       (PrimTy (ConsSh s1 s2), _) = e
-sraExpr env (_, AnnVectorRef e i)
+sraExpr' env (AnnVectorRef e i)
     = do e' <- sraExpr env e
          ss' <- mapM annShape ss
          let bs  = [(concat xss, e')]
@@ -139,7 +142,7 @@ sraExpr env (_, AnnVectorRef e i)
          return $ smartSraLetValues bs (values (xss !! i))
     where
       (PrimTy (VectorSh ss), _) = e
-sraExpr env (_, AnnCons e1 e2)
+sraExpr' env (AnnCons e1 e2)
     = do e1' <- sraExpr env e1
          e2' <- sraExpr env e2
          s1' <- annShape s1
@@ -151,7 +154,7 @@ sraExpr env (_, AnnCons e1 e2)
     where
       (PrimTy s1, _) = e1
       (PrimTy s2, _) = e2
-sraExpr env (_, AnnVector es)
+sraExpr' env (AnnVector es)
     = do es' <- mapM (sraExpr env) es
          ss' <- mapM annShape ss
          let bs  = zip xss es'
@@ -159,7 +162,7 @@ sraExpr env (_, AnnVector es)
          return $ smartSraLetValues bs (values (concat xss))
     where
       ss  = [s | (PrimTy s, _) <- es]
-sraExpr env (_, AnnValues es)
+sraExpr' env (AnnValues es)
     = do es' <- mapM (sraExpr env) es
          ss' <- mapM annShape ss
          let bs  = zip xss es'
@@ -167,7 +170,7 @@ sraExpr env (_, AnnValues es)
          return $ smartSraLetValues bs (values (concat xss))
     where
       ss  = [s | (PrimTy s, _) <- es]
-sraExpr env (_, AnnProcCall proc args)
+sraExpr' env (AnnProcCall proc args)
     = do args' <- mapM (sraExpr env) args
          ss'   <- mapM annShape ss
          let bs  = zip xss args'
