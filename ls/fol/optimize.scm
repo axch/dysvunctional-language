@@ -37,9 +37,9 @@
 (define (optimize-visibly program)
   (report-size
    ((visible-stage reverse-anf)
-    ((visible-stage interprocedural-dead-code-elimination)
+    (interprocedural-dead-code-elimination-visibly
      ((visible-stage eliminate-intraprocedural-dead-variables)
       (intraprocedural-cse-visibly
        (scalar-replace-aggregates-visibly
-        ((visible-stage inline)             ; includes ALPHA-RENAME
+        (inline-visibly                         ; includes ALPHA-RENAME
          program))))))))

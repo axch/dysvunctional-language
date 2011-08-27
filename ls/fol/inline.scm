@@ -16,6 +16,12 @@
    (alpha-rename ; Duplicating code bodies may break binding uniqueness
     (%inline program))))
 
+(define (inline-visibly program)
+  (tidy-begin
+   ((visible-stage alpha-rename)
+    ((visible-stage %inline)
+     program))))
+
 (define (%inline program)
   (if (begin-form? program)
       (let ((procedure-bodies (inline-map program))
