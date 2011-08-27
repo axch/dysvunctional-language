@@ -340,10 +340,21 @@
 
 (define compile-to-scheme compile-to-fol) ; Backward compatibility.  TODO Flush.
 
+(define (analyze-and-generate-visibly program)
+  (let ((analysis ((visible-stage analyze) program)))
+    (display "Stage generate on ")
+    (display (length (analysis-bindings analysis)))
+    (display " bindings")
+    (newline)
+    (flush-output)
+    (let ((answer (show-time (lambda () (generate program analysis)))))
+      (newline)
+      answer)))
+
 (define (compile-visibly program)
   (optimize-visibly
    ((visible-stage structure-definitions->vectors)
-    (let ((raw-fol ((visible-stage analyze-and-generate)
+    (let ((raw-fol (analyze-and-generate-visibly
                     program)))
       (clear-name-caches!)
       raw-fol))))
