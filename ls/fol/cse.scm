@@ -83,15 +83,13 @@
 
 (define (intraprocedural-cse program)
   (%intraprocedural-cse
-   (lift-lets ; <-- this is slow, so shrink its input first
-    (%intraprocedural-cse
-     program))))
+   (lift-lets
+    program)))
 
 (define (intraprocedural-cse-visibly program)
   ((visible-stage %intraprocedural-cse)
    ((visible-stage lift-lets)
-    ((visible-stage %intraprocedural-cse)
-     program))))
+    program)))
 
 (define (%intraprocedural-cse program)
   (define (cse-entry-point expression)
