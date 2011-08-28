@@ -7,83 +7,61 @@
 ;;; various forms that do not bind names; it just has to catch the
 ;;; ones that do.
 
-;;; The recursive traversal carries down an environment of which
-;;; symbols currently in scope have been renamed to which others, and
-;;; also a list of symbols that are out of scope now but have been
-;;; bound elsewhere in the program.  If a name being bound has not
-;;; been bound before, it should be renamed to itself, otherwise to a
-;;; fresh name.  In any case, it should be registered as a name that
-;;; has been bound at some point.  In addition to the renamed
-;;; expression, the traversal needs to return the set of names that
-;;; expression had bound, so that other bindings elsewhere can avoid
-;;; them.  This global uniqueness is necessary because various later
-;;; operations may change the scopes of bound names.
+;;; The recursive traversal maintains an environment of which symbols
+;;; currently in scope have been renamed to which others, and also
+;;; which symbols are out of scope now but have been bound elsewhere
+;;; in the program.  If a name being bound has not been bound before,
+;;; it should be renamed to itself, otherwise to a fresh name.  In any
+;;; case, it should be registered as a name that has been bound at
+;;; some point so that other bindings elsewhere can avoid them.  This
+;;; global uniqueness is necessary because various later operations
+;;; may change the scopes of bound names.
 
 (define (alpha-rename program)
-  (alpha-rename-exp program
-   (map (lambda (name)
-          (cons name name))
-        (append fol-reserved (map primitive-name *primitives*)))
-   '()
-   (lambda (new-program new-env) new-program)))
+  (define stack (make-eq-hash-table))
+  (define (ever-bound? name)
+    (hash-table/get stack name #f))
+  (define (in-scope? name)
+    (pair? (hash-table/get stack name '())))
+  (define (rename name)
+    (car (hash-table/get stack name '())))
+  (define (push! name rename)
+    (hash-table/put!
+     stack name (cons rename (hash-table/get stack name '()))))
+  (define (pop! name)
+    (hash-table/put!
+     stack name (cdr (hash-table/get stack name '()))))
+  (define (bind! name)
+    (if (ever-bound? name)
+        (push! name (make-name name))
+        (push! name name)))
+  (define unbind! pop!)
+  (define (loop exp)
+    (cond ((in-scope? exp) (rename exp))
+          ((lambda-form? exp)
+           (let ((names (cadr exp)))
+             (for-each bind! names)
+             (let ((answer `(lambda ,(map rename names)
+                              ,@(loop (cddr exp)))))
+               (for-each unbind! names)
+               answer)))
+          ((let-form? exp)
+           (->let (loop (->lambda exp))))
+          ((let-values-form? exp)
+           (->let-values (loop (->lambda exp))))
+          ((definition? exp)
+           ;; Assume the definiendum is already unique
+           (reconstitute-definition
+            `(define ,(definiendum exp)
+               ,(loop (definiens exp)))))
+          ((pair? exp)
+           (cons (loop (car exp))
+                 (loop (cdr exp))))
+          (else exp)))
+  (loop program))
 
-;;; This is written in continuation passing style because the
-;;; traversal needs to return two things.
-(define (alpha-rename-exp exp env avoid win)
-  (cond ((assq exp env)
-         (win (cdr (assq exp env)) avoid))
-        ((lambda-form? exp)
-         (let* ((names (cadr exp))
-                (body (cddr exp))
-                (new-env (extend-alpha-env env names avoid))
-                (new-names (map (lambda (name)
-                                  (cdr (assq name new-env)))
-                                names)))
-           (alpha-rename-exp body new-env avoid
-            (lambda (new-body body-avoid)
-              (win `(lambda ,new-names ,@new-body)
-                   ;; Technically only need those names that are not
-                   ;; still in scope outside the lambda.
-                   (lset-union eq? body-avoid names))))))
-        ((let-form? exp)
-         (alpha-rename-exp (->lambda exp) env avoid
-          (lambda (new-exp new-avoid)
-            (win (->let new-exp) new-avoid))))
-        ((let-values-form? exp)
-         (alpha-rename-exp (->lambda exp) env avoid
-          (lambda (new-exp new-avoid)
-            (win (->let-values new-exp) new-avoid))))
-        ((definition? exp)
-         ;; Assume the definiendum is already unique
-         (alpha-rename-exp (definiens exp) env avoid
-          (lambda (new-definiens new-avoid)
-            (win (reconstitute-definition
-                  `(define ,(definiendum exp)
-                     ,new-definiens))
-                 new-avoid))))
-        ((pair? exp)
-         (alpha-rename-exp (car exp) env avoid
-          (lambda (new-car car-avoid)
-            (alpha-rename-exp (cdr exp) env car-avoid
-             (lambda (new-cdr cdr-avoid)
-               (win (cons new-car new-cdr) cdr-avoid))))))
-        (else (win exp avoid))))
-
-(define (extend-alpha-env env names avoid)
-  (append
-   (map cons
-        names
-        (map (lambda (name)
-               (if (or (assq name env) (memq name avoid))
-                   (make-name name)
-                   name))
-             names))
-   env))
-
-;;; The traversal to check whether two programs are alpha-renamings of
-;;; each other is much simpler, because there is no reason to carry
-;;; around any avoid list, and because the recursive call need only
-;;; return one thing.
+;;; Checking whether two programs are alpha-renamings of each other is
+;;; also a recursive traversal.
 
 (define (alpha-rename? exp1 exp2)
   (let loop ((exp1 exp1)
