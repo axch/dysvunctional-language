@@ -9,6 +9,8 @@ import Data.Monoid
 import Data.Foldable (Foldable, foldMap)
 import Data.Traversable
 
+import Data.Generics.Uniplate.Data ()
+
 import Control.Applicative
 
 data Prog = Prog [Defn] Expr
