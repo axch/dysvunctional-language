@@ -138,47 +138,47 @@ reserved = [ "begin"
            , "vector-ref"
            ]
 
-parseDefine :: Parser Defn
-parseDefine = tagged "define" $ do
-                (proc, args) <- parens $ liftA2 (,) identifier (many identifier)
-                shapes <- tagged "argument-types" (many parseShape)
-                let proc_shape = last shapes
-                    arg_shapes = init shapes
-                when (length args /= length arg_shapes) (fail "parse error")
-                body <- parseExpression
-                return $ Defn (proc, proc_shape) (zip args arg_shapes) body
+parseDefn :: Parser Defn
+parseDefn = tagged "define" $ do
+              (proc, args) <- parens $ liftA2 (,) identifier (many identifier)
+              shapes <- tagged "argument-types" (many parseShape)
+              let proc_shape = last shapes
+                  arg_shapes = init shapes
+              when (length args /= length arg_shapes) (fail "parse error")
+              body <- parseExpr
+              return $ Defn (proc, proc_shape) (zip args arg_shapes) body
 
 parseIf, parseLet, parseLetValues, parseCar, parseCdr :: Parser Expr
 parseVectorRef, parseCons, parseVector, parseValues   :: Parser Expr
 
 parseIf = liftA3 If predicate consequent alternate
     where
-      predicate  = parseExpression
-      consequent = parseExpression
-      alternate  = parseExpression
+      predicate  = parseExpr
+      consequent = parseExpr
+      alternate  = parseExpr
 
 parseLet = liftA2 Let bindings body
     where
       bindings = Bindings <$> listOf binding
       binding  = parens $ liftA2 (,) pattern expr
       pattern  = identifier
-      expr     = parseExpression
-      body     = parseExpression
+      expr     = parseExpr
+      body     = parseExpr
 
 parseLetValues = liftA2 LetValues bindings body
     where
       bindings = Bindings <$> listOf binding
       binding  = parens $ liftA2 (,) pattern expr
       pattern  = listOf identifier
-      expr     = parseExpression
-      body     = parseExpression
+      expr     = parseExpr
+      body     = parseExpr
 
-parseCar       = liftA  Car       parseExpression
-parseCdr       = liftA  Cdr       parseExpression
-parseVectorRef = liftA2 VectorRef parseExpression int
-parseCons      = liftA2 Cons      parseExpression parseExpression
-parseVector    = liftA  Vector    (many parseExpression)
-parseValues    = liftA  Values    (many parseExpression)
+parseCar       = liftA  Car       parseExpr
+parseCdr       = liftA  Cdr       parseExpr
+parseVectorRef = liftA2 VectorRef parseExpr int
+parseCons      = liftA2 Cons      parseExpr parseExpr
+parseVector    = liftA  Vector    (many parseExpr)
+parseValues    = liftA  Values    (many parseExpr)
 
 parseSpecialForm, parseApplication :: Parser Expr
 parseSpecialForm = caseParser [ ("if"        , parseIf       )
@@ -194,26 +194,26 @@ parseSpecialForm = caseParser [ ("if"        , parseIf       )
 parseApplication = liftA2 ProcCall proc args
     where
       proc = identifier
-      args = many parseExpression
+      args = many parseExpr
 
-parseExpression :: Parser Expr
-parseExpression = parseAtom <|> parseList
+parseExpr :: Parser Expr
+parseExpr = parseAtom <|> parseList
     where
       parseAtom = parseVariable <|> parseConstant
       parseList = parens $ try parseSpecialForm
                            <|> parseApplication
 
-parseProgram :: Parser Prog
-parseProgram = try (liftA2 Prog (pure []) parseExpression)
-               <|> (tagged "begin" parseBegin)
+parseProg :: Parser Prog
+parseProg = try (liftA2 Prog (pure []) parseExpr)
+            <|> (tagged "begin" parseBegin)
     where
-      parseBegin = try (do expr <- parseExpression
+      parseBegin = try (do expr <- parseExpr
                            return $ Prog [] expr)
-                   <|> (do defn <- parseDefine
+                   <|> (do defn <- parseDefn
                            Prog defns expr <- parseBegin
                            return $ Prog (defn:defns) expr)
 
 parse :: String -> Prog
 parse = either (\_ -> error "parse error") id
-      . runParser parseProgram () ""
+      . runParser parseProg () ""
       . tokenize
