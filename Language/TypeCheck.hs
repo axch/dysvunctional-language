@@ -214,7 +214,7 @@ annDefn :: TyEnv -> Defn -> TC (AnnDefn Type)
 annDefn env defn@(Defn proc args body)
     = do ann_body@(ret_type, _) <- annExpr (env' ++ env) body
          if ret_type == PrimTy ret_shape
-            then return $ (declProcType defn, AnnDefn proc args ann_body)
+            then return (declProcType defn, AnnDefn proc args ann_body)
             else tcFail $ ProcReturnTypeMismatch proc_name ret_type ret_shape
     where
       (proc_name, ret_shape) = proc
@@ -224,7 +224,7 @@ annExpr :: TyEnv -> Expr -> TC (AnnExpr Type)
 annExpr env (Var x)
     = case lookup x env of
         Just (t@(PrimTy _)) -> return (t, AnnVar x)
-        Just _              -> tcFail $ProcNameUsedAsVariable x
+        Just _              -> tcFail $ ProcNameUsedAsVariable x
         Nothing             -> tcFail $ UnboundVariable x
 annExpr _ Nil      = return (PrimTy NilSh,  AnnNil   )
 annExpr _ (Bool b) = return (PrimTy BoolSh, AnnBool b)
