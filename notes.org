@@ -164,6 +164,10 @@ declared types are a solution to the fixed point equation).
 Type-checking IF expressions makes sure that the consequent and
 alternate have the same type.
 
+*Bug*: according to FOL definition, VALUES cannot be bound to
+variables, stored in data structures, or used as procedure arguments.
+They also can't be nested in more VALUES.
+
 * A-normal form
 
 Implemented (approximate) A-normal form conversion.  The
@@ -196,3 +200,7 @@ implementation is not completely satisfactory in a few ways:
   tree of GHC, that they doesn't use SYB techniques (only in libraries
   but not in the compiler code).  Apparently, doing so would introduce
   unnecessary complexity.
+* Scalar replacement of aggregates
+*Bug*: =annShape= gives names to =Nil=s, which become additional, but
+arguably bogus parameters to procedures and can only be eliminated by
+interprocedural dead variable elimination.
