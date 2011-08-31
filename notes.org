@@ -204,3 +204,35 @@ implementation is not completely satisfactory in a few ways:
 *Bug*: =annShape= gives names to =Nil=s, which become additional, but
 arguably bogus parameters to procedures and can only be eliminated by
 interprocedural dead variable elimination.
+* Common subexpression elimination
+One of the purposes of CSE is to get rid of the following situations:
+#+begin_src scheme
+(let ((x e) ...)
+  ...
+  (let ((y e) ...)
+    ...))
+#+end_src
+and
+#+begin_src scheme
+(let-values (((x1 ... xn) e) ...)
+  ...
+  (let-values (((y1 ... yn) e) ...)
+    ...))
+#+end_src
+We proceed by recursively converting these expressions into
+#+begin_src scheme
+(let ((x e) ...)
+  ...
+  (let ((y x) ...)
+    ...))
+#+end_src
+and
+#+begin_src scheme
+(let-values (((x1 ... xn) e) ...)
+  ...
+  (let-values (((y1 ... yn) (values x1 ... xn)) ...)
+    ...))
+#+end_src
+and by subsequently flushing the bindings for =y= and each of =yi=
+(replacing each occurrence of =y= resp. =yi= in the body of =let=
+resp. =let-values= by =x= resp. =xi=).
