@@ -5,6 +5,7 @@ import FOL.Language.Common
 import FOL.Language.Pretty
 
 import Data.Data
+import Data.List
 import Data.Monoid
 import Data.Foldable (Foldable, foldMap)
 import Data.Traversable
@@ -82,6 +83,27 @@ smartLetValues bs body = mkLet bs1 (mkLetValues bs2 body)
 
 procName :: Defn -> Name
 procName (Defn (proc_name, _) _ _) = proc_name
+
+-- Free variables
+fv :: Expr -> [Name]
+fv (Var x)    = [x]
+fv Nil        = []
+fv (Bool _)   = []
+fv (Real _)   = []
+fv (If p c a) = (fv p) ++ (fv c) ++ (fv a)
+fv (Let (Bindings bs) body) = (fv body ++ concatMap fv es) \\ xs
+    where
+      (xs, es) = unzip bs
+fv (LetValues (Bindings bs) body) = (fv body ++ concatMap fv es) \\ concat xss
+    where
+      (xss, es) = unzip bs
+fv (Car e)           = fv e
+fv (Cdr e)           = fv e
+fv (VectorRef e _)   = fv e
+fv (Cons e1 e2)      = fv e1 ++ fv e2
+fv (Vector es)       = concatMap fv es
+fv (Values es)       = concatMap fv es
+fv (ProcCall _ args) = concatMap fv args
 
 -- Pretty-printing of programs
 
