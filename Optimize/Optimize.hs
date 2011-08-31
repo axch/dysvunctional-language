@@ -11,6 +11,7 @@ import FOL.Language.Tidy
 import FOL.Language.TypeCheck
 import FOL.Language.Unique
 
+import FOL.Optimize.Cse
 import FOL.Optimize.Inline
 import FOL.Optimize.Sra
 
@@ -19,7 +20,7 @@ import Control.Monad
 optimize :: String -> String
 optimize = pprint . tidy . evalUnique . transform . parse
     where
-      transform = (sra . ann) <=< inline <=< alphaRn
+      transform = liftM cse . ((sra . ann) <=< inline <=< alphaRn)
 
 {-
 (let ()
