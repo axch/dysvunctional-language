@@ -384,8 +384,6 @@
           unique-expression)
          ((user-procedure? operator)    ; TODO This is painful.
           unique-expression)
-         ;; Somewhere around here I also have a choice as to whether
-         ;; this CSE will have the effect of identifying equal pairs.
          (else `(,operator ,@arguments)))))
 
 (define (symbolic-if pred cons alt)
