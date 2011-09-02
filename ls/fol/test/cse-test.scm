@@ -169,6 +169,17 @@
           (let-values (((z w) (foo)))
             (+ x (+ y (+ z w))))))))
 
+   ;; Do not collapse expressions with side-effects even if the side-effects
+   ;; are hidden by layers of other stuff
+   (equal?
+    '(let ((x (+ (read-real) (read-real)))
+           (y (+ (read-real) (read-real))))
+       (+ x y))
+    (%intraprocedural-cse
+     '(let ((x (+ (read-real) (read-real)))
+            (y (+ (read-real) (read-real))))
+        (+ x y))))
+
    ;; Do not collapse calls to REAL -- we're not supposed to know what
    ;; the constant inside is.
    (equal?

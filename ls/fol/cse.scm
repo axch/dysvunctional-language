@@ -384,6 +384,8 @@
           unique-expression)
          ((user-procedure? operator)    ; TODO This is painful.
           unique-expression)
+         ((any unique-expression? arguments)
+          unique-expression)
          (else `(,operator ,@arguments)))))
 
 (define (symbolic-if pred cons alt)
