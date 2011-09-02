@@ -23,19 +23,66 @@
 ;;; Intraprocedural CSE is a structural recursion over the code,
 ;;; walking LET bindings before LET bodies.  The recursion carries
 ;;; down an environment mapping every computed expression to the
-;;; canonical variable storing the result of that expression.  Special
-;;; circumstances: a variable mapped to itself is the canonical name
-;;; for whatever object it holds; a variable mapped to something else
-;;; is an alias; all variables that are keys are in scope; if an
-;;; expression does not occur as a key, then it is fresh, in the sense
-;;; that no in-scope variable already stores the value it would
-;;; compute.  The recursive call returns the CSE'd subexpression and
-;;; also the (canonized) expression said subexpression computes (there
-;;; is ample potential for algebraic simplification here, but beware
-;;; floating point).  This may also be a sentinel meaning "this
-;;; expression is not pure, so do not eliminate copies of it".  The
-;;; expression may be a values-form to handle multiple value returns
-;;; and corresponding parallel bindings.
+;;; canonical variable storing the result of that expression.  The
+;;; recursive call returns the CSE'd subexpression and also the
+;;; (canonized) expression said subexpression computes, suitable for
+;;; use as a key in the environment (there is ample potential for
+;;; algebraic simplification here, but beware floating point).
+
+;;; The grammar of symbolic expressions, assuming the input is in
+;;; approximate A-normal form, is:
+;;;
+;;; <canonical> = const | var
+;;; <symbolic> = <canonical>
+;;;            | (if <symbolic> <symbolic> <symbolic>)
+;;;            | (values <canonical> ...)
+;;;            | (constructor <canonical> ...)
+;;;            | (accessor <canonical> ...) # Includes values-ref
+;;;            | (proc-var <canonical> ...)
+;;;            | unique-tag
+;;;
+;;; These are just like FOL expressions, except that LETs are elided,
+;;; and there is an extra possibility, called the unique-tag.  This
+;;; tag is a sentinel meaning "this expression is not pure, so do not
+;;; eliminate copies of it".  Symbolic expressions also admit a
+;;; synthetic accessor named VALUES-REF for representing the
+;;; destructuring that LET-VALUES does on the return of its
+;;; expression.
+
+;;; If the input is not in approximate ANF, the grammar of symbolic
+;;; expressions becomes
+;;;
+;;; <canonical> = const | var
+;;; <symbolic> = <canonical>
+;;;            | (if <symbolic> <symbolic> <symbolic>)
+;;;            | (values <symbolic> ...)
+;;;            | (constructor <symbolic> ...)
+;;;            | (accessor <symbolic> ...) # Includes values-ref
+;;;            | (proc-var <symbolic> ...)
+;;;            | unique-tag
+
+;;; Invariants of the environment structure:
+;;; - Every key is a symbolic expression and every datum is the
+;;;   canonical name for that object (a variable or a constant).
+;;;   Future occurrences of that expression will be replaced by a
+;;;   reference to that canonical name, as long as the name remains in
+;;;   scope.
+;;; - Corollary: A variable key that has itself for a datum is a
+;;;   canonical name (for something).
+;;; - Corollary: A variable key that has some other variable or
+;;;   constant for a datum is an alias.
+;;; - A variable that does not occur in the table as a key is not in
+;;;   scope.
+;;; - An entry whose datum is not in scope is treated as though it
+;;;   does not exist (this is implemented by the procedure
+;;;   CSE-CANONICAL).
+;;; - Every variable is the canonical name for at most one
+;;;   non-variable expression.
+;;; - An expression that does not occur as a key is fresh, in the
+;;;   sense that no in-scope variable already stores the value this
+;;;   expression would compute.
+;;; - The unique-tag expression never occurs as a key (because it is
+;;;   explicitly never inserted).
 
 ;;; In this setup:
 ;;; - A constant becomes itself and is its own canonical variable.
@@ -64,22 +111,24 @@
 ;;; - IF forms are analagous to procedures, with the simplification
 ;;;   being that if both branches are equal then the test can be
 ;;;   elided (IFs also map into multivalue returns when possible).
-;;; - Accesses are also analagous to procedures, with the
-;;;   simplification being to invert the canonical expressions that
-;;;   are the corresponding constructions in the appropriate way.
-;;;   This is not implemented yet, but doesn't much matter if CSE
-;;;   follows SRA.
+;;; - Constructions are analagous to procedures.  This has the effect
+;;;   of statically recovering structure sharing in data structures
+;;;   built within one procedure.
+;;; - Accesses are also analagous to procedures, with the added bonus
+;;;   that if they access an object that was constructed in the same
+;;;   procedure, they can be simplified to the obvious thing.  This
+;;;   requires reverse lookups in the environment.
 
 ;;; Because this is an intraprocedural common subexpression
 ;;; elimination, user procedures are not studied, but always assumed
 ;;; to be impure; and incoming procedure formal parameters are always
 ;;; assumed to be their own canonical variables (in particular, not
-;;; aliases of each other).  This whole thing will work a whole lot
-;;; better if the input is in A-normal form, because intermediate
-;;; values will always get names, and there will be a maximum of
-;;; opportunities for detecting commonalities.  It will probably also
-;;; work better if all lets are lifted, because then previously
-;;; computed subexpressions will spend more time in scope.
+;;; aliases of each other).  This whole thing will work better if the
+;;; input is in A-normal form, because intermediate values will always
+;;; get names, and there will be a maximum of opportunities for
+;;; detecting commonalities.  It will also work a whole lot better if
+;;; all lets are lifted, because then previously computed
+;;; subexpressions will spend more time in scope.
 
 (define (intraprocedural-cse program)
   (%intraprocedural-cse
@@ -124,7 +173,10 @@
   ;; the symbolic expressions for the elements of a multivalue
   ;; return).  If this expression is unique and gets bound to
   ;; something, that something will become the canonical name for this
-  ;; expression.
+  ;; expression.  The symbolic expression is actually very similar to
+  ;; the returned CSE'd expression, except that the symbolic
+  ;; expression elides LET forms.  Uniqueness of names and care about
+  ;; scopes ensure this elision causes no trouble.
   (define (loop expr env win)
     (cond ((fol-var? expr)
            (cse-fol-var expr env win))
