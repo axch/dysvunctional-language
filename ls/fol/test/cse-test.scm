@@ -180,6 +180,24 @@
             (y (+ (read-real) (read-real))))
         (+ x y))))
 
+   ;; Do not collapse IFs whose branches have side-effects.
+   (equal?
+    '(let ((x (if (< (real 1) 3)
+                  (read-real)
+                  2))
+           (y (if (< (real 1) 3)
+                  (read-real)
+                  2)))
+       (+ x y))
+    (%intraprocedural-cse
+     '(let ((x (if (< (real 1) 3)
+                   (read-real)
+                   2))
+            (y (if (< (real 1) 3)
+                   (read-real)
+                   2)))
+        (+ x y))))
+
    ;; Do not collapse calls to REAL -- we're not supposed to know what
    ;; the constant inside is.
    (equal?

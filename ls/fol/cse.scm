@@ -385,19 +385,28 @@
          ((user-procedure? operator)    ; TODO This is painful.
           unique-expression)
          ((any unique-expression? arguments)
+          ;; This is defensive, but not optimal for constructions.  It
+          ;; prevents optimization of (car (cons x (read-real))), for
+          ;; instance.  Then again, converting to approximate ANF
+          ;; first should prevent this case from ever happening.
           unique-expression)
          (else `(,operator ,@arguments)))))
 
 (define (symbolic-if pred cons alt)
-  (if (equal? cons alt)
-      ;; This is somewhat dangerous.  See doc/simplification.txt.
-      cons
-      (if (and (values-form? cons)
-               (values-form? alt))
-          `(values ,@(map (lambda (sub-cons sub-alt)
-                            (symbolic-if pred sub-cons sub-alt))
-                          (cdr cons) (cdr alt)))
-          `(if ,pred ,cons ,alt))))
+  (cond ((equal? cons alt)
+         ;; This is somewhat dangerous.  See doc/simplification.txt.
+         cons)
+        ((and (values-form? cons)
+              (values-form? alt))
+         `(values ,@(map (lambda (sub-cons sub-alt)
+                           (symbolic-if pred sub-cons sub-alt))
+                         (cdr cons) (cdr alt))))
+        ((or (unique-expression? pred)
+             (unique-expression? cons)
+             (unique-expression? alt))
+         unique-expression)
+        (else
+         `(if ,pred ,cons ,alt))))
 
 (define-structure (unique-expression safe-accessors))
 (define unique-expression (make-unique-expression))
