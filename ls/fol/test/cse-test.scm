@@ -198,6 +198,27 @@
                    2)))
         (+ x y))))
 
+   ;; Do not collapse structures whose slots are filled directly with
+   ;; side-effects.
+   (equal?
+    '(let ((x (cons 1 (read-real)))
+           (y (cons 1 (read-real))))
+       (cons x y))
+    (%intraprocedural-cse
+     '(let ((x (cons 1 (read-real)))
+            (y (cons 1 (read-real))))
+        (cons x y))))
+
+   ;; In this example, CSE alone will not be able to simplify an
+   ;; occurrence of (car x), but if you do ANF first, it will.
+   (equal?
+    1
+    (eliminate-intraprocedural-dead-variables
+     (%intraprocedural-cse
+      (approximate-anf
+       '(let ((x (cons 1 (read-real))))
+          (car x))))))
+
    ;; Do not collapse calls to REAL -- we're not supposed to know what
    ;; the constant inside is.
    (equal?
