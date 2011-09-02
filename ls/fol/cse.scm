@@ -240,16 +240,22 @@
       (loop subexpr env
        (lambda (new-subexpr subexpr-symbolic)
          (augment-cse-env env names
-          (if (values-form? subexpr-symbolic)
-              (cdr subexpr-symbolic)
-              ;; If the symbolic expression is not a values form, it
-              ;; must be a procedure call that returns multiple
-              ;; values.  I can still represent the operation of
-              ;; destructuring it, on the off chance that the same
-              ;; procedure may be called again.
-              (map (lambda (i)
-                     `(values-ref ,subexpr-symbolic ,i))
-                   (iota (length names))))
+          (cond ((values-form? subexpr-symbolic)
+                 (cdr subexpr-symbolic))
+                ;; If the symbolic expression is not a values form, it
+                ;; must be a procedure call that returns multiple
+                ;; values.  I can still represent the operation of
+                ;; destructuring it, on the off chance that the same
+                ;; procedure may be called again.  This is only safe
+                ;; if the procedure is known to be pure.
+                ((not (unique-expression? subexpr-symbolic))
+                 (map (lambda (i)
+                        `(values-ref ,subexpr-symbolic ,i))
+                      (iota (length names))))
+                (else
+                 ;; If the subexpression is unique, so are all the
+                 ;; variables being bound now.
+                 (make-list (length names) unique-expression)))
           (lambda (env dead-bindings)
             (loop body env
              (lambda (new-body body-symbolic)

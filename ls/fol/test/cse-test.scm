@@ -152,6 +152,23 @@
               (y (my-read)))
           (+ x y)))))
 
+   ;; Do not collapse user procedures that have side effects even if
+   ;; they return multiple values
+   (equal?
+    '(begin
+       (define (foo)
+         (values (read-real) (read-real)))
+       (let-values (((x y) (foo)))
+         (let-values (((z w) (foo)))
+           (+ x (+ y (+ z w))))))
+    (%intraprocedural-cse
+     '(begin
+        (define (foo)
+          (values (read-real) (read-real)))
+        (let-values (((x y) (foo)))
+          (let-values (((z w) (foo)))
+            (+ x (+ y (+ z w))))))))
+
    ;; Do not collapse calls to REAL -- we're not supposed to know what
    ;; the constant inside is.
    (equal?
