@@ -148,8 +148,9 @@
                                   new-exprs)
                          ,new-body))
                      (var-set-union
-                      used (var-set-difference
-                            body-needs (map car bindings))))))))))))
+                      (var-set-difference
+                       body-needs (map car bindings))
+                      used))))))))))
   (define (eliminate-in-let-values expr live-out win)
     (let ((binding (caadr expr))
           (body (caddr expr)))
