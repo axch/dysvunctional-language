@@ -5,11 +5,6 @@ import FOL.Language.Common
 import FOL.Language.Expression
 import FOL.Language.Pretty
 
-import Data.List
-import Data.Maybe
-
-import Debug.Trace
-
 isVariable, isConstant, isValues, isNotValues, isAtom, isNotAtom :: Expr -> Bool
 isVariable (Var _)  = True
 isVariable _        = False
