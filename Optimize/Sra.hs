@@ -213,7 +213,7 @@ sraProg (_, AnnProg defns expr)
     = liftA2 SraProg (mapM sraDefn defns) (sraExpr [] expr)
 
 sra :: AnnProg Type -> Unique Prog
-sra prog@(PrimTy prog_shape, AnnProg defns expr)
+sra prog@(PrimTy prog_shape, _)
     = do SraProg defns' expr' <- sraProg prog
          prog_shape' <- annShape prog_shape
          return $ Prog (map inj defns') (shapeSraExpr prog_shape' expr')

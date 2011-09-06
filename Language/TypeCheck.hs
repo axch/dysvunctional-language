@@ -316,7 +316,7 @@ annExpr env (LetValues bindings body)
           = return $ zip xs (map PrimTy ss)
           | otherwise
           = tcFail $ PatternVarsNumMismatch xs (stripAnnExpr ann_e)
-      destructure (xs, ann_e@(t, _))
+      destructure (_, ann_e@(t, _))
           = tcFail $ ShapeMismatch (stripAnnExpr ann_e) t "values"
 annExpr env (Car e)
     = do ann_e@(t, _) <- annExpr env e
@@ -381,7 +381,7 @@ annExpr env e@(ProcCall proc args)
       check_arg_type arg_shape ann_arg@(arg_type, _)
           | PrimTy (ValuesSh _) <- arg_type
           = tcFail $ ValuesUsedAsProcArg e (stripAnnExpr ann_arg)
-          | PrimTy arg_shape <- arg_type
+          | PrimTy _ <- arg_type
           = return ()
           | otherwise
           = tcFail

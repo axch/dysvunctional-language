@@ -18,7 +18,7 @@ tidyRules :: [Expr -> Maybe Expr]
 tidyRules = [tidyLetValues, flushUnusedBindings]
 
 tidyLetValues :: Expr -> Maybe Expr
-tidyLetValues e@(LetValues (Bindings bs) body)
+tidyLetValues (LetValues (Bindings bs) body)
     | null bs1
     = Nothing
     | otherwise

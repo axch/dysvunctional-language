@@ -28,7 +28,7 @@ cseExpr env e
     = a
     | isConstant e
     = e
-cseExpr env (Var x)
+cseExpr _ (Var x)
     = error $ "Unbound variable: " ++ pprint x
 cseExpr env (If p c a)
     = If (cseExpr env p) (cseExpr env c) (cseExpr env a)
