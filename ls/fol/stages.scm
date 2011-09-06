@@ -84,16 +84,32 @@
 
 ;;;; Stages
 
-(define-structure (stage-data safe-accessors)
+(define-structure (prim-stage-data safe-accessors)
   (name #f)
   (execution-function #f)
   (idempotent? #f))
+
+(define-structure (compound-stage-data safe-accessors)
+  combinator
+  components)
+
+(define (stage-data? thing)
+  (or (prim-stage-data? thing)
+      (compound-stage-data? thing)))
+
+(define (stage-execution-function stage-data)
+  (if (prim-stage-data? stage-data)
+      (prim-stage-data-execution-function stage-data)
+      ((compound-stage-data-combinator stage-data)
+       (compound-stage-data-components stage-data))))
 
 (define (execute-stage stage-data program)
   ((stage-execution-function stage-data) program))
 
 (define (stage? thing)
   (and (entity? thing) (stage-data? (entity-extra thing))))
+
+(define stage-data entity-extra)
 
 ;;; I want a nice language for specifying stages.  For example,
 ;;;
@@ -141,7 +157,7 @@
 ;;; clauses of the same type.
 
 (define (parse-stage features)
-  (define stage-data (make-stage-data))
+  (define stage-data (make-prim-stage-data))
   (for-each
    (lambda (clause)
      (if (not (null? (cdr clause)))
@@ -156,27 +172,28 @@
 ;;; just set a field of the stage object:
 
 (define (name the-name)
-  (lambda (stage-data)
-    (set-stage-data-name! stage-data the-name)))
+  (lambda (prim-stage-data)
+    (set-prim-stage-data-name! prim-stage-data the-name)))
 
 (define (execution-function f)
-  (lambda (stage-data)
-    (set-stage-data-execution-function! stage-data f)))
+  (lambda (prim-stage-data)
+    (set-prim-stage-data-execution-function! prim-stage-data f)))
 
-(define (idempotent stage-data)
-  (set-stage-data-idempotent?! stage-data #t))
+(define (idempotent prim-stage-data)
+  (set-prim-stage-data-idempotent?! prim-stage-data #t))
 
 ;;; In addition, there are clauses that modify the execution function
 ;;; (once it's been set) by wrapping it in some wrapper that handles
 ;;; some property annotation.
 
-(define (modify-exectution-function f)
-  (lambda (stage-data)
-    (set-stage-data-execution-function!
-     stage-data (f (stage-data-execution-function stage-data)))))
+(define (modify-execution-function f)
+  (lambda (prim-stage-data)
+    (set-prim-stage-data-execution-function!
+     prim-stage-data
+     (f (prim-stage-data-execution-function prim-stage-data)))))
 
 (define (requires property)
-  (modify-exectution-function
+  (modify-execution-function
    (lambda (exec)
      (lambda (program)
        (if (present? property program)
@@ -184,19 +201,41 @@
            (exec ((property-generator property) program)))))))
 
 (define (preserves property)
-  (modify-exectution-function
+  (modify-execution-function
    (lambda (exec)
      (lambda (program)
        (let ((val (property-value property program)))
          (property-value! property val (exec program)))))))
 
 (define (generates property)
-  (modify-exectution-function
+  (modify-execution-function
    (lambda (exec)
      (lambda (program)
        (present! property (exec program))))))
 
 (define (breaks property)
-  (modify-exectution-function
+  (modify-execution-function
    (lambda (exec) exec)))
 
+;;; I want to be able to uniformly change stage pipelines by mapping
+;;; some wrapper over all the primitive stages in the pipeline.
+
+(define (do-primitive-stages stage how)
+  (let loop ((stage stage))
+    (cond ((stage? stage)
+           (make-entity execute-stage
+                        (loop (stage-data stage))))
+          ((prim-stage-data? stage)
+           (how stage))
+          ((compound-stage-data? stage)
+           (make-compound-stage-data
+            (compound-stage-data-combinator stage)
+            (map loop (compound-stage-data-components stage)))))))
+
+(define (stage-pipeline . substages)
+  (define (compose . fs)
+    (if (null? fs)
+        (lambda (x) x)
+        (lambda (x)
+          ((car fs) ((compose (cdr fs)) x)))))
+  (make-compound-stage-data compose substages))
