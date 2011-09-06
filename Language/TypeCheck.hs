@@ -75,6 +75,9 @@ data TCError
     | NestedValues
         Expr           -- enclosing VALUES expression
         Expr           -- offending expression
+    | ValuesAsConstructorArg
+        Expr           -- enclosing construction
+        Expr           -- offending expression
       deriving (Eq, Show)
 
 instance Pretty TCError where
@@ -163,6 +166,12 @@ instance Pretty TCError where
                , nest 2 (pp expr)
                , text "of shape VALUES is nested inside VALUES expression"
                , nest 2 (pp values_expr)
+               ]
+    pp (ValuesAsConstructorArg constr_expr expr)
+        = fsep [ text "Expression"
+               , nest 2 (pp expr)
+               , text "of shape VALUES is used as an argument in construction"
+               , nest 2 (pp constr_expr)
                ]
 
 -- Type checker monad.
@@ -308,16 +317,29 @@ annExpr env (VectorRef e i)
          case t of
            PrimTy (VectorSh ss) -> return (PrimTy (ss !! i), AnnVectorRef ann_e i)
            _                    -> tcFail $ ShapeMismatch e t "vector"
-annExpr env (Cons e1 e2)
+annExpr env e@(Cons e1 e2)
     = do ann_e1@(t1, _) <- annExpr env e1
          ann_e2@(t2, _) <- annExpr env e2
          s1             <- fromPrimTy t1
+         check_shape s1 e1
          s2             <- fromPrimTy t2
+         check_shape s2 e2
          return (PrimTy (ConsSh s1 s2), AnnCons ann_e1 ann_e2)
-annExpr env (Vector es)
+    where
+      check_shape (ValuesSh _) component
+          = tcFail $ ValuesAsConstructorArg e component
+      check_shape _ _
+          = return ()
+annExpr env e@(Vector es)
     = do es' <- mapM (annExpr env) es
          ss  <- mapM (fromPrimTy . fst) es'
+         zipWithM_ check_shape ss es
          return (PrimTy (VectorSh ss), AnnVector es')
+    where
+      check_shape (ValuesSh _) component
+          = tcFail $ ValuesAsConstructorArg e component
+      check_shape _ _
+          = return ()
 annExpr env e@(Values es)
     = do es' <- mapM (annExpr env) es
          ss  <- mapM (fromPrimTy . fst) es'
