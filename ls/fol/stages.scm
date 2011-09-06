@@ -115,7 +115,7 @@
 ;;; known to be idempotent and to require and preserve the indicated
 ;;; properties.
 
-;;; This first step for a nice language is a macro to perform the
+;;; The first step for a nice language is a macro to perform the
 ;;; desired syntactic abstraction.
 
 (define-syntax define-stage
