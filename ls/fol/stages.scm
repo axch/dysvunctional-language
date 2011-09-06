@@ -72,16 +72,6 @@
 (define (present! property program)
   (property-value! property #t program))
 
-(define-syntax define-property
-  (syntax-rules ()
-    ((_ property)
-     (define property 'property))))
-
-(define-property type-correct)
-(define-property unique-names)
-(define-property a-normal-form)
-(define-property lets-lifted)
-
 ;;;; Stages
 
 (define-structure (prim-stage-data safe-accessors)
@@ -114,7 +104,7 @@
 ;;; I want a nice language for specifying stages.  For example,
 ;;;
 ;;; (define-stage scalar-replace-aggregates
-;;;   (execution-function raw-scalar-replace-aggregates)
+;;;   raw-scalar-replace-aggregates
 ;;;   (requires type-correct unique-names a-normal-form)
 ;;;   (preserves type-correct unique-names)
 ;;;   (breaks a-normal-form lets-lifted)
@@ -130,21 +120,25 @@
 
 (define-syntax define-stage
   (syntax-rules ()
-    ((_ the-name (clause-head clause-arg ...) ...)
+    ((_ the-name exec (clause-head clause-arg ...) ...)
      (define the-name
        (parse-stage
         `((,name the-name)
-          (,clause-head ,clause-arg ...) ...))))))
+          (,execution-function
+           ;; Layer of indirection sees changes zapped at the REPL.
+           ,(lambda (program) (exec program)))
+          (,clause-head clause-arg ...) ...))))))
 
 ;;; The above example expands into
 ;;;
 ;;; (define scalar-replace-aggregates
 ;;;   (parse-stage
-;;;    `((,name ,scalar-replace-aggregates)
-;;;      (,execution-function ,raw-scalar-replace-aggregates)
-;;;      (,requires ,type-correct ,unique-names ,a-normal-form)
-;;;      (,preserves ,type-correct ,unique-names)
-;;;      (,breaks ,a-normal-form ,lets-lifted)
+;;;    `((,name scalar-replace-aggregates)
+;;;      (,execution-function
+;;;       ,(lambda (program) (raw-scalar-replace-aggregates program)))
+;;;      (,requires type-correct unique-names a-normal-form)
+;;;      (,preserves type-correct unique-names)
+;;;      (,breaks a-normal-form lets-lifted)
 ;;;      (,idempotent))))
 
 ;;; Now, the stage parser's job is to construct the data object
