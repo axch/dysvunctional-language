@@ -166,7 +166,7 @@ alternate have the same type.
 
 *Bug*: according to FOL definition, VALUES cannot be bound to
 variables, stored in data structures, or used as procedure arguments.
-They also can't be nested in more VALUES.
+They also can't be nested in more VALUES. *FIXED*
 
 * A-normal form
 
