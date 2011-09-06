@@ -142,11 +142,12 @@ instance Pretty TCError where
                ]
     pp (ValuesBoundToVariable let_expr name rhs_expr)
         = fsep [ text "Cannot bind expression"
-               , pp rhs_expr
-               , text "of shape VALUES to variable"
-               , pp name
-               , text "in expression"
-               , pp let_expr
+               , nest 2 (pp rhs_expr)
+               , hsep [ text "of shape VALUES to variable"
+                      , pp name
+                      , text "in expression"
+                      ]
+               , nest 2 (pp let_expr)
                ]
     pp (ValuesUsedAsProcArg proc_call arg)
         = fsep [ text "Expression"
