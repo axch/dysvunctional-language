@@ -84,10 +84,16 @@
 
 ;;;; Stages
 
-(define-structure (stage safe-accessors)
-  name
-  execution-function
-  idempotent?)
+(define-structure (stage-data safe-accessors)
+  (name #f)
+  (execution-function #f)
+  (idempotent? #f))
+
+(define (execute-stage stage-data program)
+  ((stage-execution-function stage-data) program))
+
+(define (stage? thing)
+  (and (entity? thing) (stage-data? (entity-extra thing))))
 
 ;;; I want a nice language for specifying stages.  For example,
 ;;;
@@ -134,40 +140,40 @@
 ;;; clause arguments are the same as separating them out into several
 ;;; clauses of the same type.
 
-(define (parse-stage raw-stage features)
-  (define answer (make-stage raw-stage))
+(define (parse-stage features)
+  (define stage-data (make-stage-data))
   (for-each
    (lambda (clause)
      (if (not (null? (cdr clause)))
          (for-each (lambda (adjust!)
-                     (adjust! answer))
+                     (adjust! stage-data))
                    (map (car clause) (cdr clause)))
-         ((car clause) answer)))
+         ((car clause) stage-data)))
    features)
-  answer)
+  (make-entity execute-stage stage-data))
 
 ;;; Now for the actual clause types.  There are simple clauses that
 ;;; just set a field of the stage object:
 
 (define (name the-name)
-  (lambda (stage)
-    (set-stage-name! stage the-name)))
+  (lambda (stage-data)
+    (set-stage-data-name! stage-data the-name)))
 
 (define (execution-function f)
-  (lambda (stage)
-    (set-stage-execution-function! stage f)))
+  (lambda (stage-data)
+    (set-stage-data-execution-function! stage-data f)))
 
-(define (idempotent stage)
-  (set-stage-idempotent?! stage #t))
+(define (idempotent stage-data)
+  (set-stage-data-idempotent?! stage-data #t))
 
 ;;; In addition, there are clauses that modify the execution function
 ;;; (once it's been set) by wrapping it in some wrapper that handles
 ;;; some property annotation.
 
 (define (modify-exectution-function f)
-  (lambda (stage)
-    (set-stage-execution-function!
-     stage (f (stage-execution-function stage)))))
+  (lambda (stage-data)
+    (set-stage-data-execution-function!
+     stage-data (f (stage-data-execution-function stage-data)))))
 
 (define (requires property)
   (modify-exectution-function
