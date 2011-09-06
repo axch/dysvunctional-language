@@ -17,7 +17,7 @@
 ;;;   - Common subexpressions have been eliminated
 ;;;   - Dead code has been eliminated intraprocedurally
 ;;;   - Dead code has been eliminated interprocedurally
- 
+
 ;;; For each stage, I want to know the following information:
 ;;; - Does it create, preserve, or break each property (default preserve)?
 ;;;   (The fourth option is toggle, but that doesn't happen in this system)
@@ -57,30 +57,140 @@
 ;;; any given stage ordering can be inferred automatically?  Do the
 ;;; commutativity checks even depend on the stage ordering?
 
-(define (requires property)
+
+;;;; Properties
+
+(define (property-value property program)
+  (eq-get program property))
+
+(define (property-value! property value program)
+  (eq-put! program property value))
+
+(define (present? property program)
+  (not (not (property-value property program))))
+
+(define (present! property program)
+  (property-value! property #t program))
+
+(define-syntax define-property
+  (syntax-rules ()
+    ((_ property)
+     (define property 'property))))
+
+(define-property type-correct)
+(define-property unique-names)
+(define-property a-normal-form)
+(define-property lets-lifted)
+
+;;;; Stages
+
+(define-structure (stage safe-accessors)
+  name
+  execution-function
+  idempotent?)
+
+;;; I want a nice language for specifying stages.  For example,
+;;;
+;;; (define-stage scalar-replace-aggregates
+;;;   (execution-function raw-scalar-replace-aggregates)
+;;;   (requires type-correct unique-names a-normal-form)
+;;;   (preserves type-correct unique-names)
+;;;   (breaks a-normal-form lets-lifted)
+;;;   (idempotent))
+;;;
+;;; should define a stage named scalar-replace-aggregates, implemented
+;;; by the function raw-scalar-replace-aggregates, which would be
+;;; known to be idempotent and to require and preserve the indicated
+;;; properties.
+
+;;; This first step for a nice language is a macro to perform the
+;;; desired syntactic abstraction.
+
+(define-syntax define-stage
+  (syntax-rules ()
+    ((_ the-name (clause-head clause-arg ...) ...)
+     (define the-name
+       (parse-stage
+        `((,name the-name)
+          (,clause-head ,clause-arg ...) ...))))))
+
+;;; The above example expands into
+;;;
+;;; (define scalar-replace-aggregates
+;;;   (parse-stage
+;;;    `((,name ,scalar-replace-aggregates)
+;;;      (,execution-function ,raw-scalar-replace-aggregates)
+;;;      (,requires ,type-correct ,unique-names ,a-normal-form)
+;;;      (,preserves ,type-correct ,unique-names)
+;;;      (,breaks ,a-normal-form ,lets-lifted)
+;;;      (,idempotent))))
+
+;;; Now, the stage parser's job is to construct the data object
+;;; representing the stage from the clauses it is given.  It seemed
+;;; easiest to represent each clause type as a function (parameterized
+;;; by any clause arguments) that would mutate a partially-initialized
+;;; stage object.  This way I can extend the set of possible clauses
+;;; without changing the parser.  Note that the semantics of multiple
+;;; clause arguments are the same as separating them out into several
+;;; clauses of the same type.
+
+(define (parse-stage raw-stage features)
+  (define answer (make-stage raw-stage))
+  (for-each
+   (lambda (clause)
+     (if (not (null? (cdr clause)))
+         (for-each (lambda (adjust!)
+                     (adjust! answer))
+                   (map (car clause) (cdr clause)))
+         ((car clause) answer)))
+   features)
+  answer)
+
+;;; Now for the actual clause types.  There are simple clauses that
+;;; just set a field of the stage object:
+
+(define (name the-name)
   (lambda (stage)
-    (lambda (program)
-      (if (present? property program)
-          (stage program)
-          (stage ((property-generator property) program))))))
+    (set-stage-name! stage the-name)))
+
+(define (execution-function f)
+  (lambda (stage)
+    (set-stage-execution-function! stage f)))
+
+(define (idempotent stage)
+  (set-stage-idempotent?! stage #t))
+
+;;; In addition, there are clauses that modify the execution function
+;;; (once it's been set) by wrapping it in some wrapper that handles
+;;; some property annotation.
+
+(define (modify-exectution-function f)
+  (lambda (stage)
+    (set-stage-execution-function!
+     stage (f (stage-execution-function stage)))))
+
+(define (requires property)
+  (modify-exectution-function
+   (lambda (exec)
+     (lambda (program)
+       (if (present? property program)
+           (exec program)
+           (exec ((property-generator property) program)))))))
 
 (define (preserves property)
-  (lambda (stage)
-    (lambda (program)
-      (if (present? property program)
-          (present! property (stage program))
-          (stage program)))))
+  (modify-exectution-function
+   (lambda (exec)
+     (lambda (program)
+       (let ((val (property-value property program)))
+         (property-value! property val (exec program)))))))
 
 (define (generates property)
-  (lambda (stage)
-    (lambda (program)
-      (present! property (stage program)))))
+  (modify-exectution-function
+   (lambda (exec)
+     (lambda (program)
+       (present! property (exec program))))))
 
 (define (breaks property)
-  (lambda (stage) stage))
+  (modify-exectution-function
+   (lambda (exec) exec)))
 
-(define-stage scalar-replace-aggregates
-  (requires type-correct unique-names a-normal-form)
-  (preserves type-correct unique-names)
-  (breaks a-normal-form lets-lifted)
-  idempotent)
