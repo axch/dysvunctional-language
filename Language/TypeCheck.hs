@@ -65,6 +65,10 @@ data TCError
         Name
     | UndefinedProc
         Name
+    | ValuesBoundToVariable
+        Expr           -- surrounding LET expression
+        Name           -- variable name
+        Expr           -- offending expression
       deriving (Eq, Show)
 
 instance Pretty TCError where
@@ -132,6 +136,14 @@ instance Pretty TCError where
     pp (UndefinedProc name)
         = fsep [ text "Undefined procedure:"
                , pp name
+               ]
+    pp (ValuesBoundToVariable let_expr name rhs_expr)
+        = fsep [ text "Cannot bind expression"
+               , pp rhs_expr
+               , text "of shape VALUES to variable"
+               , pp name
+               , text "in expression"
+               , pp let_expr
                ]
 
 -- Type checker monad.
@@ -238,11 +250,17 @@ annExpr env e@(If p c a)
          if tc == ta
             then return (tc, AnnIf ann_p ann_c ann_a)
             else tcFail $ IfBranchesTypeMismatch e tc ta
-annExpr env (Let bindings body)
+annExpr env e@(Let bindings body)
     = do Bindings bs' <- Traversable.mapM (annExpr env) bindings
+         mapM_ check_binding_shape bs'
          let env' = [(x, t) | (x, (t, _)) <- bs']
          ann_body@(body_type, _) <- annExpr (env' ++ env) body
          return (body_type, AnnLet (Bindings bs') ann_body)
+    where
+      check_binding_shape (x, e'@(PrimTy (ValuesSh _), _))
+          = tcFail $ ValuesBoundToVariable e x (stripAnnExpr e')
+      check_binding_shape _
+          = return ()
 annExpr env (LetValues bindings body)
     = do Bindings bs' <- Traversable.mapM (annExpr env) bindings
          env' <- concatMapM destructure bs'
