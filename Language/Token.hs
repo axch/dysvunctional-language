@@ -30,7 +30,7 @@ scan (c:cs)
 -- There are two peculiar identifiers: + and -, which require special
 -- care.  They are peculiar in that they may be part of a real.
 scan ('+':c:cs)
-    | not (isDigit c)
+    | not (isDigitOrDot c)
     = TokSymbol "+" : scan (c:cs)
     | otherwise
     = TokReal (read cs' :: Real) : scan cs''
@@ -38,7 +38,7 @@ scan ('+':c:cs)
       (cs', cs'') = scanUnsignedReal (c:cs)
 scan ['+'] = [TokSymbol "+"]
 scan ('-':c:cs)
-    | not (isDigit c)
+    | not (isDigitOrDot c)
     = TokSymbol "-" : scan (c:cs)
     | otherwise
     = TokReal (negate (read cs' :: Real)) : scan cs''
@@ -47,7 +47,7 @@ scan ('-':c:cs)
 scan ['-'] = [TokSymbol "-"]
 
 scan s@(c:_)
-    | isDigit c
+    | isDigitOrDot c
     = TokReal (read cs' :: Real) : scan cs''
     where
       (cs', cs'') = scanUnsignedReal s
@@ -83,16 +83,28 @@ scanUnsignedReal cs = (integralPart ++ fractionalPart, cs'')
       (fractionalPart, cs'') = scanFractionalPart cs'
 
 scanIntegralPart :: String -> (String, String)
-scanIntegralPart = span isDigit
+scanIntegralPart cs = (ensureNonEmpty cs', cs'')
+    where
+      (cs', cs'') = span isDigit cs
 
 scanFractionalPart :: String -> (String, String)
-scanFractionalPart ('.':cs) = ('.':cs', cs'')
+scanFractionalPart ('.':cs) = ('.' : ensureNonEmpty cs', cs'')
     where
       (cs', cs'') = span isDigit cs
 scanFractionalPart cs = ([], cs)
+
+ensureNonEmpty :: String -> String
+ensureNonEmpty [] = "0"
+ensureNonEmpty s  = s
+
+isDot :: Char -> Bool
+isDot c = c == '.'
 
 isNewline :: Char -> Bool
 isNewline c = c == '\n'
 
 isWhitespace :: Char -> Bool
 isWhitespace c = isSpace c || isNewline c
+
+isDigitOrDot :: Char -> Bool
+isDigitOrDot c = isDigit c || isDot c
