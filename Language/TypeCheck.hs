@@ -66,12 +66,15 @@ data TCError
     | UndefinedProc
         Name
     | ValuesBoundToVariable
-        Expr           -- surrounding LET expression
+        Expr           -- enclosing LET expression
         Name           -- variable name
         Expr           -- offending expression
     | ValuesUsedAsProcArg
         Expr           -- procedure call
         Expr           -- offending argument
+    | NestedValues
+        Expr           -- enclosing VALUES expression
+        Expr           -- offending expression
       deriving (Eq, Show)
 
 instance Pretty TCError where
@@ -154,6 +157,12 @@ instance Pretty TCError where
                , nest 2 (pp arg)
                , text "of shape VALUES is used as an argument in procedure call"
                , nest 2 (pp proc_call)
+               ]
+    pp (NestedValues values_expr expr)
+        = fsep [ text "Expression"
+               , nest 2 (pp expr)
+               , text "of shape VALUES is nested inside VALUES expression"
+               , nest 2 (pp values_expr)
                ]
 
 -- Type checker monad.
@@ -309,10 +318,16 @@ annExpr env (Vector es)
     = do es' <- mapM (annExpr env) es
          ss  <- mapM (fromPrimTy . fst) es'
          return (PrimTy (VectorSh ss), AnnVector es')
-annExpr env (Values es)
+annExpr env e@(Values es)
     = do es' <- mapM (annExpr env) es
          ss  <- mapM (fromPrimTy . fst) es'
+         zipWithM_ check_shape ss es
          return (PrimTy (ValuesSh ss), AnnValues es')
+    where
+      check_shape (ValuesSh _) component
+          = tcFail $ NestedValues e component
+      check_shape _ _
+          = return ()
 annExpr env e@(ProcCall proc args)
     | Just proc_type@(ProcTy arg_shapes ret_shape) <- lookup proc env
     , let nargs       = length args
