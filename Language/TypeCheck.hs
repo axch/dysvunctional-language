@@ -78,6 +78,9 @@ data TCError
     | ValuesAsConstructorArg
         Expr           -- enclosing construction
         Expr           -- offending expression
+    | ValuesAsDeclProcArg
+        Defn           -- definition
+        Name           -- offending argument name
       deriving (Eq, Show)
 
 instance Pretty TCError where
@@ -173,6 +176,14 @@ instance Pretty TCError where
                , text "of shape VALUES is used as an argument in construction"
                , nest 2 (pp constr_expr)
                ]
+    pp (ValuesAsDeclProcArg defn arg_name)
+        = fsep [ hsep [ text "Argument"
+                      , pp arg_name
+                      , text "in procedure definition"
+                      ]
+               , nest 2 (pp defn)
+               , text "has declared shape VALUES"
+               ]
 
 -- Type checker monad.
 data TC a = TCError TCError | TCOk a deriving (Eq, Show)
@@ -252,13 +263,18 @@ annProg init_env (Prog defns expr)
 
 annDefn :: TyEnv -> Defn -> TC (AnnDefn Type)
 annDefn env defn@(Defn proc args body)
-    = do ann_body@(ret_type, _) <- annExpr (env' ++ env) body
+    = do mapM_ check_arg_shape args
+         ann_body@(ret_type, _) <- annExpr (env' ++ env) body
          if ret_type == PrimTy ret_shape
             then return (declProcType defn, AnnDefn proc args ann_body)
             else tcFail $ ProcReturnTypeMismatch proc_name ret_type ret_shape
     where
       (proc_name, ret_shape) = proc
       env' = [(arg_name, PrimTy arg_shape) | (arg_name, arg_shape) <- args]
+      check_arg_shape (arg_name, ValuesSh _)
+          = tcFail $ ValuesAsDeclProcArg defn arg_name
+      check_arg_shape _
+          = return ()
 
 annExpr :: TyEnv -> Expr -> TC (AnnExpr Type)
 annExpr env (Var x)
