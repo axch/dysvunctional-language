@@ -69,6 +69,9 @@ data TCError
         Expr           -- surrounding LET expression
         Name           -- variable name
         Expr           -- offending expression
+    | ValuesUsedAsProcArg
+        Expr           -- procedure call
+        Expr           -- offending argument
       deriving (Eq, Show)
 
 instance Pretty TCError where
@@ -144,6 +147,12 @@ instance Pretty TCError where
                , pp name
                , text "in expression"
                , pp let_expr
+               ]
+    pp (ValuesUsedAsProcArg proc_call arg)
+        = fsep [ text "Expression"
+               , pp arg
+               , text "of shape VALUES is used as an argument in procedure call"
+               , pp proc_call
                ]
 
 -- Type checker monad.
@@ -309,15 +318,19 @@ annExpr env e@(ProcCall proc args)
     , let narg_shapes = length arg_shapes
     = if nargs == narg_shapes
       then do ann_args <- mapM (annExpr env) args
-              zipWithM_ checkArgType arg_shapes ann_args
+              zipWithM_ check_arg_type arg_shapes ann_args
               return (PrimTy ret_shape, AnnProcCall proc ann_args)
       else tcFail $ ProcArgsNumMismatch proc proc_type nargs
     | otherwise
     = tcFail $ UndefinedProc proc
     where
-      checkArgType arg_shape ann_arg@(arg_type, _)
-          = unless (arg_type == PrimTy arg_shape)
-          $ tcFail
+      check_arg_type arg_shape ann_arg@(arg_type, _)
+          | PrimTy (ValuesSh _) <- arg_type
+          = tcFail $ ValuesUsedAsProcArg e (stripAnnExpr ann_arg)
+          | PrimTy arg_shape <- arg_type
+          = return ()
+          | otherwise
+          = tcFail
           $ ProcArgTypeMismatch e (stripAnnExpr ann_arg) arg_type arg_shape
 
 -- The declared type of a given procedure.
