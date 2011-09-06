@@ -151,9 +151,9 @@ instance Pretty TCError where
                ]
     pp (ValuesUsedAsProcArg proc_call arg)
         = fsep [ text "Expression"
-               , pp arg
+               , nest 2 (pp arg)
                , text "of shape VALUES is used as an argument in procedure call"
-               , pp proc_call
+               , nest 2 (pp proc_call)
                ]
 
 -- Type checker monad.
