@@ -75,7 +75,7 @@
 
 ;;;; Stages
 
-(define-structure (prim-stage-data safe-accessors)
+(define-structure (prim-stage-data safe-accessors (constructor make-prim-stage-data ()))
   (name #f)
   (execution-function #f)
   (idempotent? #f))
