@@ -12,38 +12,37 @@
 ;;; feedback-vertex-set.scm for discussion and implementation.
 
 (define (inline program)
-  (tidy-begin
-   (alpha-rename ; Duplicating code bodies may break binding uniqueness
-    (%inline program))))
+  (alpha-rename ; Duplicating code bodies may break binding uniqueness
+   (%inline program)))
 
 (define (inline-visibly program)
-  (tidy-begin
-   ((visible-stage alpha-rename)
-    ((visible-stage %inline)
-     program))))
+  ((visible-stage alpha-rename)
+   ((visible-stage %inline)
+    program)))
 
 (define (%inline program)
-  (if (begin-form? program)
-      (let ((procedure-bodies (inline-map program))
-            (walked-bodies (make-eq-hash-table)))
-        (define (inline? name)
-          (not (not (walked-body name))))
-        (define (not-inline? form)
-          (or (not (definition? form))
-              (not (inline? (definiendum form)))))
-        (define (walk expression)
-          ((on-subexpressions
-            (rule `((? name ,inline?) (?? args))
-                  (->let `(,(force (walked-body name)) ,@args))))
-           expression))
-        (define (walked-body name)
-          (hash-table/get walked-bodies name #f))
-        (for-each (lambda (datum)
-                    (hash-table/put! walked-bodies (car datum)
-                                     (delay (walk (cdr datum)))))
-                  procedure-bodies)
-        (walk (filter not-inline? program)))
-      program))
+  (tidy-begin
+   (if (begin-form? program)
+       (let ((procedure-bodies (inline-map program))
+             (walked-bodies (make-eq-hash-table)))
+         (define (inline? name)
+           (not (not (walked-body name))))
+         (define (not-inline? form)
+           (or (not (definition? form))
+               (not (inline? (definiendum form)))))
+         (define (walk expression)
+           ((on-subexpressions
+             (rule `((? name ,inline?) (?? args))
+                   (->let `(,(force (walked-body name)) ,@args))))
+            expression))
+         (define (walked-body name)
+           (hash-table/get walked-bodies name #f))
+         (for-each (lambda (datum)
+                     (hash-table/put! walked-bodies (car datum)
+                                      (delay (walk (cdr datum)))))
+                   procedure-bodies)
+         (walk (filter not-inline? program)))
+       program)))
 
 ;;; The inline map maps all procedure names to either the lambda
 ;;; expression that they are equivalent to if it was decided that they
