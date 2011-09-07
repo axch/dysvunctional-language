@@ -64,7 +64,8 @@
   (eq-get program property))
 
 (define (property-value! property value program)
-  (eq-put! program property value))
+  (eq-put! program property value)
+  program)
 
 (define (present? property program)
   (not (not (property-value property program))))
@@ -208,8 +209,19 @@
        (present! property (exec program))))))
 
 (define (breaks property)
+  ;; Breaking is the effective default in the underlying implementation
+  (lambda (stage) stage))
+
+;; The semantics of COMPUTES are that the execution function doesn't
+;; actually modify the program at all, it just computes the value that
+;; should be stored in the given property annotation.  This then
+;; implies preservation of all other properties.
+(define (computes property)
   (modify-execution-function
-   (lambda (exec) exec)))
+   (lambda (exec)
+     (lambda (program)
+       (let ((answer (exec program)))
+         (property-value! property answer program))))))
 
 ;;; I want to be able to uniformly change stage pipelines by mapping
 ;;; some wrapper over all the primitive stages in the pipeline.
