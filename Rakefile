@@ -16,10 +16,10 @@ end
 
 task :test => ["fol"] do sh <<EOF
 mit-scheme \
-  --compiler \
-  --batch-mode \
-  --no-init-file \
-  --eval '(set! load/suppress-loading-message? #t)' \
-  --eval '(begin (load "test/load") (show-time run-registered-tests) (newline) (flush-output) (%exit 0))'
+--compiler \
+--batch-mode \
+--no-init-file \
+--eval '(set! load/suppress-loading-message? #t)' \
+--eval '(begin (load "test/load") (show-time run-registered-tests) (newline) (flush-output) (%exit 0))'
 EOF
 end
