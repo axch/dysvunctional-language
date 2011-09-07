@@ -88,14 +88,15 @@
   (or (prim-stage-data? thing)
       (compound-stage-data? thing)))
 
-(define (stage-execution-function stage-data)
-  (if (prim-stage-data? stage-data)
-      (prim-stage-data-execution-function stage-data)
-      ((compound-stage-data-combinator stage-data)
-       (compound-stage-data-components stage-data))))
+(define (stage-execution-function stage)
+  (let ((stage-data (entity-extra stage)))
+    (if (prim-stage-data? stage-data)
+        (prim-stage-data-execution-function stage-data)
+        ((compound-stage-data-combinator stage-data)
+         (compound-stage-data-components stage-data)))))
 
-(define (execute-stage stage-data program)
-  ((stage-execution-function stage-data) program))
+(define (execute-stage stage program)
+  ((stage-execution-function stage) program))
 
 (define (stage? thing)
   (and (entity? thing) (stage-data? (entity-extra thing))))
