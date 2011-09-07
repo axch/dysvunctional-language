@@ -108,7 +108,7 @@
 ;;;   raw-scalar-replace-aggregates
 ;;;   (requires type-correct unique-names a-normal-form)
 ;;;   (preserves type-correct unique-names)
-;;;   (breaks a-normal-form lets-lifted)
+;;;   (destroys a-normal-form lets-lifted)
 ;;;   (idempotent))
 ;;;
 ;;; should define a stage named scalar-replace-aggregates, implemented
@@ -139,7 +139,7 @@
 ;;;       ,(lambda (program) (raw-scalar-replace-aggregates program)))
 ;;;      (,requires type-correct unique-names a-normal-form)
 ;;;      (,preserves type-correct unique-names)
-;;;      (,breaks a-normal-form lets-lifted)
+;;;      (,destroys a-normal-form lets-lifted)
 ;;;      (,idempotent))))
 
 ;;; Now, the stage parser's job is to construct the data object
@@ -208,7 +208,7 @@
      (lambda (program)
        (present! property (exec program))))))
 
-(define (breaks property)
+(define (destroys property)
   ;; Breaking is the effective default in the underlying implementation
   (lambda (stage) stage))
 
