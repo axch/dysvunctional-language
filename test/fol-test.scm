@@ -36,6 +36,29 @@
 ;;; Tests
 
 (define-external-fol-test
+  '(let ((addn (lambda (n)
+                 (lambda (x) (+ n x)))))
+     (let ((add5 (addn (real 5.))))
+       (add5 (real 3.)))))
+
+(define-external-fol-test
+  '(let ((double (lambda (x) (+ x x)))
+         (square (lambda (x) (* x x)))
+         (compose (lambda (f g)
+                    (lambda (x) (f (g x))))))
+     (cons ((compose double square) (real 2.))
+           ((compose square double) (real 2.)))))
+
+(define-external-fol-test
+  '(let ((cube (lambda (x) (* x (* x x)))))
+     (let ((enlarge-upto (lambda (bound)
+                           (lambda (x)
+                             (if (< x bound)
+                                 (cube x)
+                                 x)))))
+       ((enlarge-upto (real 20.)) (real 3.)))))
+
+(define-external-fol-test
   '(let ()
      (define (fact n)
        (if (= n 0)
