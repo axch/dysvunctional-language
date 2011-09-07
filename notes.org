@@ -236,3 +236,13 @@ and
 and by subsequently flushing the bindings for =y= and each of =yi=
 (replacing each occurrence of =y= resp. =yi= in the body of =let=
 resp. =let-values= by =x= resp. =xi=).
+
+Actually, I translated Alexey's code into Haskell and it seems to
+work.  It's not the code I'd like to write, though.  I have a vague
+idea to try to separate symbolic evaluation from CSE.  It looks a lot
+like evaluation with abstract values that are symbolic expressions.
+Maybe annotate each subexpression with its symbolic value, and then do
+CSE crunch storing in an environment canonical names of annotated
+expressions, with lookup that compares annotated expressions for
+equality by comparing annotations.  Symbolic expressions seems to
+serve as normal forms for ordinary expressions.
