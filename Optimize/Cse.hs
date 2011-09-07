@@ -43,6 +43,39 @@ isCanName, isNotCanName :: Expr -> Bool
 isCanName    = isJust    . maybeCanName
 isNotCanName = isNothing . maybeCanName
 
+data SymExpr = SymVar Name
+             | SymNil
+             | SymBool Bool
+             | SymReal Real
+             | SymIf SymExpr SymExpr SymExpr
+             | SymCar SymExpr
+             | SymCdr SymExpr
+             | SymVectorRef SymExpr Int
+             | SymCons SymExpr SymExpr
+             | SymVector [SymExpr]
+             | SymValues [SymExpr]
+             | SymProcCall Name [SymExpr]
+
+instance SymExpr :<: Expr where
+    inj (SymVar x)              = Var x
+    inj SymNil                  = Nil
+    inj (SymBool b)             = Bool b
+    inj (SymReal r)             = Real r
+    inj (SymIf p c a)           = If (inj p) (inj c) (inj a)
+    inj (SymCar e)              = Car (inj e)
+    inj (SymCdr e)              = Cdr (inj e)
+    inj (SymVectorRef e i)      = VectorRef (inj e) i
+    inj (SymCons e1 e2)         = Cons (inj e1) (inj e2)
+    inj (SymVector es)          = Vector (map inj es)
+    inj (SymValues es)          = Values (map inj es)
+    inj (SymProcCall proc args) = ProcCall proc (map inj args)
+
+instance CanName :<: SymExpr where
+    inj (CanVar x)  = SymVar x
+    inj CanNil      = SymNil
+    inj (CanBool b) = SymBool b
+    inj (CanReal r) = SymReal r
+
 cseExpr :: [(Expr, CanName)] -> Expr -> Expr
 cseExpr env e
     | Just a <- lookup e env
