@@ -51,10 +51,16 @@ isConstant _           = False
 
 type CseEnv = [(SymExpr, CanName)]
 
+canonical :: CseEnv -> SymExpr -> SymExpr
+canonical env s = if isInScope env c then c else s
+    where
+      c = fromMaybe s (inj <$> lookup s env)
+
 augmentEnv :: [SymExpr] -> [CanName] -> CseEnv -> (CseEnv, [Bool])
 augmentEnv ss ns env = (env' ++ env, map (isAcceptableAlias env) ss)
     where
-      env' = concat (zipWith bind ss ns)
+      cs = map (canonical env) ss
+      env' = concat (zipWith bind cs ns)
       bind s@(SymVar x) n
           | isInScope env s
           = [(inj n, CanVar x)]
