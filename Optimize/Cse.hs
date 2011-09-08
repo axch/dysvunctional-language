@@ -54,11 +54,13 @@ augmentEnv :: [SymExpr] -> [CanName] -> CseEnv -> (CseEnv, [Bool])
 augmentEnv ss ns env = (env' ++ env, map (isAcceptableAlias env) ss)
     where
       env' = concat (zipWith bind ss ns)
-      bind s@(SymVar _) n
+      bind s n
           | Just c <- lookup s env
           = [(inj n, c)]
-          | otherwise
+      bind (SymVar _) n
           = [(inj n, n)]
+      -- bind (SymVar x)  n
+      --     = [(inj n, CanVar x)]
       bind SymNil n
           = [(inj n, CanNil)]
       bind (SymBool b) n
