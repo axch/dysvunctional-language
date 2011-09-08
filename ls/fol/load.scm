@@ -28,6 +28,7 @@
    (load-relative-compiled file fol-environment))
  '("../support/utils"
    "../support/two-way-table"
+   "stages"
    "nomenclature"
    "syntax"
    "srfi-11"
