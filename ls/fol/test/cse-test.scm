@@ -34,6 +34,15 @@
           (let ((z (+ x 0)))
             (+ y z))))))
 
+   ;; Simplify (+ x 0)
+   (equal? '(let ((x (real 4))) x)
+           (intraprocedural-cse '(let ((x (real 4))) (+ x 0))))
+
+   ;; Even when the "x" is something hairy
+   (equal? '(let ((x (real 4))) x)
+           (intraprocedural-cse
+            '(+ (let ((x (real 4))) x) 0)))
+
    ;; TODO Abstract the test pattern "CSE didn't eliminate this thing
    ;; it shouldn't have eliminated"?
 

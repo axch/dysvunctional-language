@@ -296,9 +296,11 @@
        (let* ((symb-candidate
                (symbolic-application (car expr) args-symbolics env))
               (symbolic (cse-canonical env symb-candidate)))
-         (win (if (or (fol-var? symbolic) (fol-const? symbolic))
+         (win (if (or (and (fol-var? symbolic)
+                           (in-scope? symbolic env))
+                      (fol-const? symbolic))
                   symbolic
-                  `(,(car expr) ,@new-args))
+                  (simplify-arithmetic `(,(car expr) ,@new-args)))
               symbolic)))))
   (define (loop* exprs env win)
     (if (null? exprs)
