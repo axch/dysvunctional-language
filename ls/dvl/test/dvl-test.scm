@@ -169,7 +169,8 @@
        (check (equal? 4 (car tail)))
        (check (equal? 7 (car ((cdr tail) 3))))))
    (check (alpha-rename?
-           '(begin (define (loop accum)
+           '(begin
+              (define (loop accum)
                 (argument-types real escaping-function)
                 (lambda (inc)
                   (let ((new-accum (+ accum inc)))
