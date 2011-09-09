@@ -1,0 +1,145 @@
+                           On Callable DVL
+
+Assuming you know how standard DVL works, this essay describes how to
+modify the flow analysis to analyze programs that can produce
+functions that are callable by the outside world.  The same
+modification should apply to VL as well as DVL, but since VL is meant
+to be minimal and expository, this has not been implemented.
+
+Let there be a concept of "this object is given to the outside world"
+(otherwise known as 'escapes').  The return value of the initial
+program escapes.  What does it mean for a thing to escape?  If a real
+number escapes, we don't care (it just has to be in the standard wire
+format).  If a pair escapes, that just means both of its pieces
+escape.  When unions happen, if a union escapes, everything in the
+union escapes.
+
+If a function escapes, however, that means the world can call it, and
+have the return value escape.  Call it on what?  Well, the "real
+answer" is to allow it to call it on anything, or at least anything
+that is allowed to cross the DVL-World barrier.  That ought to include
+cons cells, real numbers, foreign functions, objects (including
+functions and gensyms) that have escaped in the past, perhaps a token
+for running the I/O monad and, if we want to treat this case specially,
+objects that have escaped from other, "separately compiled" DVL
+modules.
+
+In principle, all this stuff could come in as a great big union, and
+it should be possible to tear this union apart on the DVL side with
+appropriate type testing.  It would be possible to write some syntax
+that looks like a type signature that automatically installs the
+appropriate tearing apart, with some error behavior of it fails to
+tear.  It may also be appropriate to provide a mechanism for the
+outside world to promise to give things of a certain shape so that the
+type testing is not necessary.  Until support for union types (and
+foreign functions) is implemented, however, the present implementation
+settles for only accepting real numbers from the outside.  (We can
+still accept several by currying).
+
+That being said, what does DVL need to do to prepare for the
+possibility of a function being called by the outside world?  Well,
+when the flow analysis stabilizes, it needs to inspect all bindings
+marked as having their values escape and verify that appropriate
+additional bindings are present in the analysis.  That is, for every
+escaping function, an apply binding applying that abstract function
+value to the abstract real, whose return value also escapes.  If
+adding these bindings causes the queue to become non-empty, keep
+running the analysis.  (Once DVL starts accepting foreign functions,
+any abstract value passed to a foreign function also escapes, and
+also generates appropriate bindings.)
+
+The flow through escapes being analyzed, how to generate code to
+process escaping values?  You don't need to do anything special for
+reals that escape.  If a cons escapes, you just need to prepare
+everything inside it to escape and then rebuild the cons.  If a
+function escapes, however, you need to generate a lambda expression
+that closes over the closure record of that function, accepts the real
+number that escaping function accepts, and calls the operation that
+was produced by the apply binding of applying that function to its
+argument.  In order to be able to export self-calling constructs like
+streams, this lambda expression needs to be named.  Therefore, for
+every function that escapes, the DVL code generator emits a FOL
+definition like this:
+
+ (define (escaping-operation-2 the-closure)
+   (argument-types some-closure-type escaping-function)
+   (lambda (external-formal)
+     (let ((answer (operation-3 the-closure external-formal)))
+       ... prepare answer to escape)))
+
+where operation-3 is the operation implementing the call to this
+escaping function with a real argument.
+
+With those definitions available, code to allow a cons of a number and
+a function to escape would look like this:
+
+ (let ((answer (compute-the-escaping-cons)))
+    ;; Recur on cons
+    (cons
+     ;; Reals are just shared
+     (car answer)
+     ;; Closures are prepared with specific operations      
+     (escaping-operation-2 (cdr answer))))
+
+For a complete example, let's look at DVL exporting a simple counter.
+
+ (let loop ((state (real 0)))
+   (cons
+    state
+    (lambda (step)
+      (loop (+ state step)))))
+
+This is a stream with an argument: you get the current state and a
+function that, given the increment you want, will add it to the
+current state and return a pair of new state and like function closed
+over that new state.  It has all the considerations that need to be
+addressed: a cons containing a function escapes, and that function
+needs to be able to call itself back.
+
+After judicious simplification, the FOL generated for that example
+looks like this:
+
+ (begin
+   ;; The closure record for our escaping lambda
+   (define-typed-structure closure-6 (state real))
+
+   ;; The loop entry point produces the "stream" from the current
+   ;; state
+   (define (loop state)
+     (argument-types real (cons real closure-6))
+     (cons state (make-closure-6 state)))
+
+   ;; The lambda adds the increment to the stored state and returns
+   ;; the new state
+   (define (operation-4 the-closure step)
+     (argument-types closure-6 real (cons real closure-6))
+     (loop (+ (closure-6-state the-closure) step)))
+
+   ;; Preparing the procedure to escape captures its closure record in
+   ;; a lambda form.  Note that this function recursive because the
+   ;; escaping procedure, when called, returns (a structure
+   ;; containing) another procedure of the same shape.
+   (define (escaping-operation-3 the-closure)
+     (argument-types closure-6 escaping-function)
+     (lambda (external-formal)
+       (let ((answer (operation-4 the-closure external-formal)))
+         (cons (car answer) (escaping-operation-3 (cdr answer))))))
+
+   ;; The entry point initializes the stream state to 0.
+   (let ((answer (loop (real 0))))
+     (cons (car answer) (escaping-operation-3 (cdr answer)))))
+
+This displays all the components of code generation after analysing
+escaping procedures.  None of these idioms are special from the
+perspective of the FOL optimizer (the FOL language specification says
+that LAMBDA is a special form introducing exported procedures), so
+further optimization can proceed, yielding, ultimately:
+
+ (begin
+   (define (escaping-operation state)
+     (argument-types real escaping-function)
+     (lambda (step)
+       (let ((new-state (+ state step)))
+         (cons new-state (escaping-operation new-state)))))
+   (let ((start (real 0)))
+     (cons start (escaping-operation start))))
