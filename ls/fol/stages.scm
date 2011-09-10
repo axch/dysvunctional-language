@@ -79,6 +79,9 @@
 (define (present! property program)
   (property-value! property #t program))
 
+(define (absent! property program)
+  (property-value! property #f program))
+
 (define *property-generators* '())
 
 (define (lookup-generator property)
@@ -260,7 +263,13 @@
 
 (define (execution-function f)
   (lambda (stage-data)
-    (set-stage-data-execute! stage-data f)))
+    (set-stage-data-execute! stage-data (preserves-everything f))))
+
+(define (preserves-everything exec)
+  (lambda (program)
+    (let ((answer (exec program)))
+      (eq-clone! program answer)
+      answer)))
 
 ;;; The REQUIRES clause attaches a generator of the needed property as
 ;;; a dependency of this stage, and modifies the prepare of this stage
@@ -322,11 +331,14 @@
        (let ((val (property-value property program)))
          (property-value! property val (exec program)))))))
 
-;;; The DESTROYS clause doesn't actually need to do anything, because
-;;; not forwarding property annotations is the default.
+;;; The DESTROYS clause modifies the execution function to flush the
+;;; value of the given property.
 
 (define (destroys property)
-  (lambda (stage) stage))
+  (modify-execution-function
+   (lambda (exec)
+     (lambda (program)
+       (absent! property (exec program))))))
 
 ;; The semantics of COMPUTES are that the execution function doesn't
 ;; actually modify the program at all, it just computes the value that

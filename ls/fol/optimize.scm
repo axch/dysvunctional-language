@@ -49,16 +49,12 @@
 (define-stage alpha-rename
   %alpha-rename
   (generates unique-names)
-  (preserves a-normal-form lets-lifted type syntax-checked
-             fully-inlined aggregates-replaced no-common-subexpressions)
-  (preserves no-intraprocedural-dead-variables
-             no-interprocedural-dead-variables)
   (requires syntax-checked))
 
 (define-stage inline
   %inline
-  (preserves syntax-checked type a-normal-form   ; lets-lifted?
-             aggregates-replaced)
+  ;; Because of multiple procedure arguments
+  (destroys lets-lifted)
   ;; Because of copying procedure bodies
   (destroys unique-names no-common-subexpressions)
   ;; Because of removing procedure boundaries
@@ -71,10 +67,6 @@
 (define-stage a-normal-form
   approximate-anf
   (generates a-normal-form)
-  (preserves syntax-checked type unique-names
-             fully-inlined aggregates-replaced)
-  (preserves no-intraprocedural-dead-variables
-             no-interprocedural-dead-variables)
   (destroys lets-lifted) ; Because of multiple argument procedures
   ;; By naming new things that may be common
   (destroys no-common-subexpressions)
@@ -84,12 +76,8 @@
   %lift-lets
   (generates lets-lifted)
   ;; TODO Does it really preserve a-normal-form ?
-  (preserves syntax-checked type unique-names a-normal-form
-             fully-inlined aggregates-replaced)
-  (preserves no-intraprocedural-dead-variables
-             no-interprocedural-dead-variables)
-  ;; The last just because I'm lazy
-  (requires syntax-checked unique-names a-normal-form)
+  (requires syntax-checked unique-names)
+  (requires a-normal-form)   ; Just because I'm lazy
   ;; By splitting lets
   (destroys no-common-subexpressions))
 
@@ -106,7 +94,6 @@
 
 (define-stage scalar-replace-aggregates
   %scalar-replace-aggregates
-  (preserves syntax-checked type unique-names fully-inlined)
   ;; TODO Does it require unique-names?
   (requires syntax-checked a-normal-form)
   (generates aggregates-replaced)
@@ -122,25 +109,20 @@
 
 (define-stage intraprocedural-cse
   %intraprocedural-cse
-  (preserves syntax-checked type unique-names a-normal-form lets-lifted
-             fully-inlined aggregates-replaced)
   ;; The latter two requirements are not really requirements, but it
   ;; works much better this way.
   (requires syntax-checked unique-names a-normal-form lets-lifted)
   (generates no-common-subexpressions)
-  ;; By leaving some flushed aliases around
+  ;; By leaving some dead aliases around
   (destroys no-intraprocedural-dead-variables
             no-interprocedural-dead-variables))
 
 (define-stage eliminate-intraprocedural-dead-code
   eliminate-intraprocedural-dead-variables
-  ;; Does not preserve fully-inlined because it may alter the call
-  ;; graph
+  ;; Does not preserve fully-inlined in general because may alter the
+  ;; call graph, but on all current examples it does.
   ;; When there are union types, it may destroy aggregates-replaced
   ;; for the same reason.
-  (preserves syntax-checked type unique-names a-normal-form lets-lifted
-             aggregates-replaced no-common-subexpressions)
-  (preserves no-interprocedural-dead-variables)
   (generates no-intraprocedural-dead-variables)
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names))
@@ -153,9 +135,6 @@
   ;; fact, this criticism can be levelled against the composition
   ;; well, in general.
   interprocedural-dead-code-elimination
-  ;; Does not preserve fully-inlined because it may alter the call graph
-  (preserves syntax-checked type unique-names a-normal-form lets-lifted
-             aggregates-replaced no-common-subexpressions)
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
   (generates no-interprocedural-dead-variables)
@@ -164,10 +143,7 @@
 
 (define-stage reverse-anf
   %reverse-anf
-  (preserves syntax-checked type unique-names  ; lets-lifted?
-             fully-inlined aggregates-replaced no-common-subexpressions)
-  (preserves no-intraprocedural-dead-variables
-             no-interprocedural-dead-variables)
+  ;; TODO Does it really preserve lets-lifted?
   (destroys a-normal-form)
   (requires syntax-checked unique-names))
 
