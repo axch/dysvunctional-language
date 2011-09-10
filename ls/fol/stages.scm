@@ -126,15 +126,19 @@
    safe-accessors
    (constructor make-stage-data ())
    (constructor %make-stage-data
-                (name combinator dependencies idempotent?)))
+                (name prepare dependencies execute idempotent?)))
   (name #f)
-  (combinator #f)
+  (prepare (lambda (deps) (lambda (prog) prog)))
   (dependencies '())
+  (execute #f)
   (idempotent? #f))
 
 (define (stage-data->execution-function stage-data)
-  ((stage-data-combinator stage-data)
-   (stage-data-dependencies stage-data)))
+  (lambda (program)
+    ((stage-data-execute stage-data)
+     (((stage-data-prepare stage-data)
+       (stage-data-dependencies stage-data))
+      program))))
 
 ;;; Given this setup, here is how to wrap all stages in a stage
 ;;; composition with the same wrapper.
@@ -144,19 +148,18 @@
     (cond ((stage? stage)
            (stage-data->stage (loop (entity-extra stage))))
           ((stage-data? stage)
-           (how
-            (%make-stage-data
-             (stage-data-name stage)
-             (stage-data-combinator stage)
-             (map loop (stage-data-dependencies stage))
-             ;; Wrapping dependencies preserves idempotence
-             (stage-data-idempotent? stage))))
+           (%make-stage-data
+            (stage-data-name stage)
+            (stage-data-prepare stage)
+            (map loop (stage-data-dependencies stage))
+            (fmap-maybe (how stage) (stage-data-execute stage))
+            ;; Wrapping dependencies preserves idempotence
+            (stage-data-idempotent? stage)))
           ((pair? stage)
            ;; Alist entry
            (cons (car stage) (loop (cdr stage))))
           (else
-           ;; Raw execution function
-           stage))))
+           (error "Adjusting a non-stage" stage)))))
 
 ;;; The definition of a stage that is just a pipeline of other stages
 ;;; is easy too.
@@ -174,6 +177,7 @@
       `(composition ,@names)
       compose
       (map cons names substages)
+      #f
       #f))))
 
 ;;; I want a nice language for specifying stages.  For example,
@@ -242,7 +246,7 @@
    features)
   (stage-data->stage stage-data))
 
-;;; Now for the actual clause types.  There are two simple clauses
+;;; Now for the actual clause types.  There are three simple clauses
 ;;; that just set a field of the stage object:
 
 (define (name the-name)
@@ -252,24 +256,12 @@
 (define (idempotent stage-data)
   (set-stage-data-idempotent?! stage-data #t))
 
-;;; The EXECUTION-FUNCTION clause sets f as the raw execution function
-;;; of this stage.
-
 (define (execution-function f)
   (lambda (stage-data)
-    (set-stage-data-combinator!
-     stage-data
-     (lambda (dependencies)
-       (force-assq 'base dependencies)))
-    (attach-dependency! stage-data 'base f)))
-
-(define (attach-dependency! stage-data name object)
-  (set-stage-data-dependencies! stage-data
-   (cons (cons name object)
-         (stage-data-dependencies stage-data))))
+    (set-stage-data-execute! stage-data f)))
 
 ;;; The REQUIRES clause attaches a generator of the needed property as
-;;; a dependency of this stage, and modifies the combinator of this
+;;; a dependency of this stage, and modifies the prepare of this
 ;;; stage to make the execution function check whether the program
 ;;; actually has the given property, and pre-invoke the generator if
 ;;; it does not.
@@ -278,15 +270,20 @@
   (lambda (stage-data)
     (attach-dependency! stage-data property
      (lookup-generator property))
-    (set-stage-data-combinator! stage-data
-     (let ((combinator (stage-data-combinator stage-data)))
+    (set-stage-data-prepare! stage-data
+     (let ((preparer (stage-data-prepare stage-data)))
        (lambda (dependencies)
-         (let ((exec (combinator dependencies)))
+         (let ((prep (preparer dependencies)))
            (lambda (program)
              (if (present? property program)
-                 (exec program)
-                 (exec ((force-assq property dependencies)
+                 (prep program)
+                 (prep ((force-assq property dependencies)
                         program))))))))))
+
+(define (attach-dependency! stage-data name object)
+  (set-stage-data-dependencies! stage-data
+   (cons (cons name object)
+         (stage-data-dependencies stage-data))))
 
 ;;; The GENERATES clause modifies the execution function to tag the
 ;;; outgoing program as having the property, and registers the
@@ -304,21 +301,9 @@
 
 (define (modify-execution-function f)
   (lambda (stage-data)
-    (let ((combinator (stage-data-combinator stage-data)))
-      (set-stage-data-combinator!
-       stage-data
-       (lambda (dependencies)
-         (f (combinator dependencies)))))))
-
-;; TODO This is really what the word modify means in the Haskell
-;; setting
-(define (update-execution-function stage-data f)
-  (%make-stage-data
-   (stage-data-name stage-data)
-   (lambda (dependencies)
-     (f ((stage-data-combinator stage-data) dependencies)))
-   (stage-data-dependencies stage-data)
-   (stage-data-idempotent? stage-data)))
+    (set-stage-data-execute!
+     stage-data
+     (f (stage-data-execute stage-data)))))
 
 ;;; The PRESERVES clause just modifies the execution function to
 ;;; forward the value of the given property from the input to the

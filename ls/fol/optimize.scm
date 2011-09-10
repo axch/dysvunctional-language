@@ -148,22 +148,18 @@
    inline))
 
 (define (watching-annotations stage-data)
-  (update-execution-function
-   stage-data
-   (lambda (exec)
-     (lambda (program)
-       (display "(")
-       (pp (stage-data-name stage-data))
-       (let ((answer (exec program)))
-         (pp (hash-table/get eq-properties answer #f))
-         (display ")")
-         answer)))))
+  (lambda (exec)
+    (lambda (program)
+      (display "(")
+      (pp (stage-data-name stage-data))
+      (let ((answer (exec program)))
+        (pp (hash-table/get eq-properties answer #f))
+        (display ")")
+        answer))))
 
 (define (visibly stage-data)
-  (update-execution-function
-   stage-data
-   (lambda (exec)
-     (visible-named-stage exec (stage-data-name stage-data)))))
+  (lambda (exec)
+    (visible-named-stage exec (stage-data-name stage-data))))
 
 (define optimize-visibly
   (do-stages fol-optimize visibly))

@@ -138,3 +138,6 @@
     (if binding
         (cdr binding)
         (error "Did not find" key lst))))
+
+(define (fmap-maybe f object)
+  (if object (f object) #f))
