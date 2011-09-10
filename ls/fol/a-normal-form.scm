@@ -157,7 +157,7 @@
 ;;;     (let ((x 3))
 ;;;       (+ x y))))
 
-(define reverse-anf
+(define %reverse-anf
   (rule-simplifier
    (list
     (rule `(let ((?? bindings1)
@@ -169,6 +169,8 @@
                 `(let (,@bindings1
                        ,@bindings2)
                    ,@(replace-in-tree name exp body))))))))
+
+(define reverse-anf %reverse-anf)
 
 (define (unique-in-tree? thing tree)
   (define (walk tree count)
