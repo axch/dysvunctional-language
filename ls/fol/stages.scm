@@ -108,18 +108,23 @@
   (stage-data-name (entity-extra stage)))
 
 ;;; What information do we maintain about a stage?  There is the name,
-;;; and a flag about whether or not this stage is known to be
-;;; idempotent.  In order to be able to adjust all the stages involved
-;;; in some process, we also maintain the other stages this one may
-;;; depend on in the dependencies slot.  This slot is an a-list
-;;; mapping the key by which this stage knows its dependency to the
-;;; dependency in question (which should be a stage object, or just a
-;;; function).  In order for these adjustments to have any effect, the
-;;; action of the stage is represented not by a procedure that does
-;;; it, but by a combinator procedure that accepts the dependency
-;;; alist and computes the execution function from it.  An execution
-;;; function is a function that accepts a program and does the work of
-;;; the stage.
+;;; the actual execution procedure, and a flag about whether or not
+;;; this stage is known to be idempotent.  Stages may have
+;;; dependencies on other stages, so we have an alist of the stages
+;;; this one depends on, and a prepare procedure that accepts this
+;;; alist and the input program, and produces a massaged input program
+;;; suitable for the execution procedure.  This is separated out this
+;;; way to allow recursive walks of the stage-data structures to
+;;; modify all stages, including the dependencies of a given stage.
+;;; (Which would be impossible if those dependencies were hidden in a
+;;; closure).
+
+;;; Typologically, the dependencies slot is an a-list mapping the key
+;;; by which this stage knows its dependency to the dependency in
+;;; question (which should be a stage object).  The execution function
+;;; may be #f to indicate no execution function; for example, a stage
+;;; that is just a pipeline does all its work in the preparation step,
+;;; and has no execution function of its own.
 
 (define-structure
   (stage-data
@@ -143,7 +148,11 @@
       (if exec (exec prepared) prepared))))
 
 ;;; Given this setup, here is how to wrap all stages in a stage
-;;; composition with the same wrapper.
+;;; composition with the same wrapper.  The HOW argument is expected
+;;; to be a procedure that acepts a stage data object and returns a
+;;; procedure that accepts a stage execution function and returns a
+;;; (new) stage execution function.  The reason for passing the stage
+;;; data is that the wrapper may wish to read it.
 
 (define (do-stages stage how)
   (let loop ((stage stage))
@@ -163,8 +172,9 @@
           (else
            (error "Adjusting a non-stage" stage)))))
 
-;;; The definition of a stage that is just a pipeline of other stages
-;;; is easy too.
+;;; A stage that is just a pipeline of other stages has a prepare
+;;; operation that runs all of its dependencies, and does nothing in
+;;; its execution step.
 
 (define (stage-pipeline . substages)
   (define (compose substage-alist)
@@ -233,8 +243,7 @@
 ;;; stage-data object.  This way I can extend the set of possible
 ;;; clauses without changing the parser.  Note that the semantics of
 ;;; multiple clause arguments are the same as separating them out into
-;;; several clauses of the same type.  Note also that clause
-;;; specifications do not operationally commute.
+;;; several clauses of the same type.
 
 (define (parse-stage features)
   (define stage-data (make-stage-data))
@@ -263,10 +272,11 @@
     (set-stage-data-execute! stage-data f)))
 
 ;;; The REQUIRES clause attaches a generator of the needed property as
-;;; a dependency of this stage, and modifies the prepare of this
-;;; stage to make the execution function check whether the program
-;;; actually has the given property, and pre-invoke the generator if
-;;; it does not.
+;;; a dependency of this stage, and modifies the prepare of this stage
+;;; to make it check whether the program actually has the given
+;;; property, and pre-invoke the generator if it does not.  The fact
+;;; that generators are looked up here means that stages have to be
+;;; defined in dependency order.
 
 (define (requires property)
   (lambda (stage-data)
