@@ -72,6 +72,12 @@
              (present? 'a-normal-form program)
              (present? 'lets-lifted program))
         (check (equal? program (intraprocedural-cse program))))
+    (if (present? 'no-intraprocedural-dead-variables program)
+        (check (equal? program
+                       (eliminate-intraprocedural-dead-code program))))
+    (if (present? 'no-interprocedural-dead-variables program)
+        (check (equal? program
+                       (eliminate-interprocedural-dead-code program))))
     program)
   (lambda (exec)
     (lambda (program)

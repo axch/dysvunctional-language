@@ -33,6 +33,8 @@
 ;; fully-inlined  (for testing only)
 ;; aggregates-replaced (for testing only)
 ;; no-common-subexpressions (for testing only)
+;; no-intraprocedural-dead-variables (for testing only)
+;; no-interprocedural-dead-variables (for testing only)
 
 ;; The possible clause types are
 ;; requires
@@ -49,6 +51,8 @@
   %alpha-rename
   (generates unique-names)
   (preserves a-normal-form lets-lifted type syntax-checked fully-inlined aggregates-replaced no-common-subexpressions)
+  (preserves no-intraprocedural-dead-variables
+             no-interprocedural-dead-variables)
   (requires syntax-checked)
   (idempotent))
 
@@ -57,6 +61,10 @@
   (preserves syntax-checked type a-normal-form aggregates-replaced)  ; lets-lifted?
   ;; Because of copying procedure bodies
   (destroys unique-names no-common-subexpressions)
+  ;; Because of removing procedure boundaries
+  (destroys no-intraprocedural-dead-variables)
+  ;; Because of specializing to different places
+  (destroys no-interprocedural-dead-variables)
   (requires syntax-checked)
   (generates fully-inlined)
   (idempotent))                  ; not really, but on current examples
@@ -65,6 +73,8 @@
   approximate-anf
   (generates a-normal-form)
   (preserves syntax-checked type unique-names fully-inlined aggregates-replaced)
+  (preserves no-intraprocedural-dead-variables
+             no-interprocedural-dead-variables)
   (destroys lets-lifted) ; Because of multiple argument procedures
   ;; By naming new things that may be common
   (destroys no-common-subexpressions)
@@ -76,6 +86,8 @@
   (generates lets-lifted)
   ;; TODO Does it really preserve a-normal-form ?
   (preserves syntax-checked type unique-names a-normal-form fully-inlined aggregates-replaced)
+  (preserves no-intraprocedural-dead-variables
+             no-interprocedural-dead-variables)
   ;; The last just because I'm lazy
   (requires syntax-checked unique-names a-normal-form)
   ;; By splitting lets
@@ -103,7 +115,10 @@
   ;; Because of reconstruction and let-values simplification (?)
   (destroys lets-lifted)
   ;; By making aliases, and exposing structure slots to CSE
-  (destroys no-common-subexpressions))
+  (destroys no-common-subexpressions)
+  ;; By exposing structure slots as variables
+  (destroys no-intraprocedural-dead-variables
+            no-interprocedural-dead-variables))
 
 (define-stage intraprocedural-cse
   %intraprocedural-cse
@@ -112,6 +127,9 @@
   ;; works much better this way.
   (requires syntax-checked unique-names a-normal-form lets-lifted)
   (generates no-common-subexpressions)
+  ;; By leaving some flushed aliases around
+  (destroys no-intraprocedural-dead-variables
+            no-interprocedural-dead-variables)
   (idempotent))
 
 (define-stage eliminate-intraprocedural-dead-code
@@ -121,6 +139,8 @@
   ;; When there are union types, it may destroy aggregates-replaced
   ;; for the same reason.
   (preserves syntax-checked type unique-names a-normal-form lets-lifted aggregates-replaced no-common-subexpressions)
+  (preserves no-interprocedural-dead-variables)
+  (generates no-intraprocedural-dead-variables)
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
   (idempotent))
@@ -137,11 +157,16 @@
   (preserves syntax-checked type unique-names a-normal-form lets-lifted aggregates-replaced no-common-subexpressions)
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
+  (generates no-interprocedural-dead-variables)
+  ;; By running intraprocedural as a post-pass
+  (generates no-intraprocedural-dead-variables)
   (idempotent))
 
 (define-stage reverse-anf
   %reverse-anf
   (preserves syntax-checked type unique-names fully-inlined aggregates-replaced no-common-subexpressions) ; lets-lifted?
+  (preserves no-intraprocedural-dead-variables
+             no-interprocedural-dead-variables)
   (destroys a-normal-form)
   (requires syntax-checked unique-names)
   (idempotent))

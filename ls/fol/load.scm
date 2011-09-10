@@ -78,7 +78,10 @@
      lift-lets
      scalar-replace-aggregates
      intraprocedural-cse
+     ;; TODO Flush execution function from export list
      eliminate-intraprocedural-dead-variables
+     eliminate-intraprocedural-dead-code
+     eliminate-interprocedural-dead-code
      interprocedural-dead-code-elimination
      reverse-anf
 
