@@ -22,29 +22,7 @@
 
 ;;; See doc/architecture.txt for discussion.
 
-(define (fol-optimize program)
-  ((lambda (x) x) ; This makes the last stage show up in the stack sampler
-   (reverse-anf
-    (interprocedural-dead-code-elimination
-     (eliminate-intraprocedural-dead-variables
-      (intraprocedural-cse
-       (scalar-replace-aggregates
-        (inline                         ; includes ALPHA-RENAME
-         program))))))))
-
-;;; Watching the behavior of the optimizer
-
-(define (optimize-visibly program)
-  (report-size
-   ((visible-stage reverse-anf)
-    (interprocedural-dead-code-elimination-visibly
-     ((visible-stage eliminate-intraprocedural-dead-variables)
-      (intraprocedural-cse-visibly
-       (scalar-replace-aggregates-visibly
-        (inline-visibly                         ; includes ALPHA-RENAME
-         program))))))))
-
-;;; Using the stage machinery, the fol optimizer might look like this
+;;; Using the stage machinery, the fol optimizer looks like this
 
 ;; The properties are
 ;; syntax-checked
@@ -58,7 +36,7 @@
 ;; preserves generates destroys
 ;; computes
 ;; idempotent
-#|
+
 (define-stage check-fol-types
   check-program-types
   (computes type)
@@ -163,4 +141,3 @@
 
 (define optimize-visibly
   (do-stages fol-optimize visibly))
-|#

@@ -75,6 +75,7 @@
      inline
      approximate-anf
      approximate-anf?
+     lift-lets
      scalar-replace-aggregates
      intraprocedural-cse
      eliminate-intraprocedural-dead-variables
@@ -93,4 +94,7 @@
 
      ;; The FOL names subsystem (see nomenclature.scm).
      make-name name->symbol reset-fol-names!
+
+     ;; Stage manipulation TODO
+     do-stages present? property-value
      )))
