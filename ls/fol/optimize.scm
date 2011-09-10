@@ -30,7 +30,8 @@
 ;; unique-names
 ;; a-normal-form
 ;; lets-lifted
-;; fully-inlined
+;; fully-inlined  (for testing only)
+;; aggregates-replaced (for testing only)
 
 ;; The possible clause types are
 ;; requires
@@ -46,13 +47,13 @@
 (define-stage alpha-rename
   %alpha-rename
   (generates unique-names)
-  (preserves a-normal-form lets-lifted type syntax-checked fully-inlined)
+  (preserves a-normal-form lets-lifted type syntax-checked fully-inlined aggregates-replaced)
   (requires syntax-checked)
   (idempotent))
 
 (define-stage inline
   %inline
-  (preserves syntax-checked type a-normal-form)  ; lets-lifted?
+  (preserves syntax-checked type a-normal-form aggregates-replaced)  ; lets-lifted?
   (destroys unique-names)
   (requires syntax-checked)
   (generates fully-inlined)
@@ -61,7 +62,7 @@
 (define-stage a-normal-form
   approximate-anf
   (generates a-normal-form)
-  (preserves syntax-checked type unique-names fully-inlined)
+  (preserves syntax-checked type unique-names fully-inlined aggregates-replaced)
   (destroys lets-lifted) ; Because of multiple argument procedures
   (requires syntax-checked)
   (idempotent))
@@ -70,7 +71,7 @@
   %lift-lets
   (generates lets-lifted)
   ;; TODO Does it really preserve a-normal-form ?
-  (preserves syntax-checked type unique-names a-normal-form fully-inlined)
+  (preserves syntax-checked type unique-names a-normal-form fully-inlined aggregates-replaced)
   ;; The last just because I'm lazy
   (requires syntax-checked unique-names a-normal-form))
 
@@ -81,7 +82,8 @@
        (let ((val (property-value property program))
              (answer (exec program)))
          (if (memq (property-value 'type program) '(bool real))
-             (property-value! property val answer))
+             (property-value! property val answer)
+             (property-value! property #f answer))
          answer)))))
 
 (define-stage scalar-replace-aggregates
@@ -89,14 +91,15 @@
   (preserves syntax-checked type unique-names fully-inlined)
   ;; TODO Does it require unique-names?
   (requires syntax-checked a-normal-form)
+  (generates aggregates-replaced)
   ;; Because of the reconstruction
-  (sra-may-destroy a-normal-form)
-  ;; Because of let-values simplification (?)
+  (sra-may-destroy a-normal-form aggregates-replaced)
+  ;; Because of reconstruction and let-values simplification (?)
   (destroys lets-lifted))
 
 (define-stage intraprocedural-cse
   %intraprocedural-cse
-  (preserves syntax-checked type unique-names a-normal-form lets-lifted fully-inlined)
+  (preserves syntax-checked type unique-names a-normal-form lets-lifted fully-inlined aggregates-replaced)
   ;; The latter two requirements are not really requirements, but it
   ;; works much better this way.
   (requires syntax-checked unique-names a-normal-form lets-lifted)
@@ -104,8 +107,11 @@
 
 (define-stage eliminate-intraprocedural-dead-code
   eliminate-intraprocedural-dead-variables
-  ;; Does not preserve fully-inlined because it may alter the call graph
-  (preserves syntax-checked type unique-names a-normal-form lets-lifted)
+  ;; Does not preserve fully-inlined because it may alter the call
+  ;; graph
+  ;; When there are union types, it may destroy aggregates-replaced
+  ;; for the same reason.
+  (preserves syntax-checked type unique-names a-normal-form lets-lifted aggregates-replaced)
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
   (idempotent))
@@ -119,14 +125,14 @@
   ;; well, in general.
   interprocedural-dead-code-elimination
   ;; Does not preserve fully-inlined because it may alter the call graph
-  (preserves syntax-checked type unique-names a-normal-form lets-lifted)
+  (preserves syntax-checked type unique-names a-normal-form lets-lifted aggregates-replaced)
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
   (idempotent))
 
 (define-stage reverse-anf
   %reverse-anf
-  (preserves syntax-checked type unique-names fully-inlined) ; lets-lifted?
+  (preserves syntax-checked type unique-names fully-inlined aggregates-replaced) ; lets-lifted?
   (destroys a-normal-form)
   (requires syntax-checked unique-names)
   (idempotent))
