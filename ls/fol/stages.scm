@@ -135,10 +135,12 @@
 
 (define (stage-data->execution-function stage-data)
   (lambda (program)
-    ((stage-data-execute stage-data)
-     (((stage-data-prepare stage-data)
-       (stage-data-dependencies stage-data))
-      program))))
+    (let ((prepared
+           (((stage-data-prepare stage-data)
+             (stage-data-dependencies stage-data))
+            program))
+          (exec (stage-data-execute stage-data)))
+      (if exec (exec prepared) prepared))))
 
 ;;; Given this setup, here is how to wrap all stages in a stage
 ;;; composition with the same wrapper.
