@@ -21,7 +21,7 @@
   (and (pair? form)
        (eq? (car form) 'define-typed-structure)))
 
-(define (structure-definitions->vectors program)
+(define (%structure-definitions->vectors program)
   (if (begin-form? program)
       (let ((classify (structures-map program)))
         (define (accessor? name)

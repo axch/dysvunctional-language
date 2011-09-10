@@ -25,6 +25,7 @@
 ;;; Using the stage machinery, the fol optimizer looks like this
 
 ;; The properties are
+;; structures-as-vectors
 ;; syntax-checked
 ;; type
 ;; unique-names
@@ -41,10 +42,20 @@
 ;; preserves generates destroys
 ;; computes
 
+(define-stage structure-definitions->vectors
+  %structure-definitions->vectors
+  (preserves type) ; Because closures are never exported anyway
+  ;; Because different closure types may collapse
+  (destroys no-common-subexpressions)
+  ;; Because SRA (currently) operates only on vectors and conses
+  (destroys aggregates-replaced)
+  (generates structures-as-vectors))
+
 (define-stage check-fol-types
   check-program-types
   (computes type)
-  (generates syntax-checked))
+  (generates syntax-checked)
+  (requires structures-as-vectors))
 
 (define-stage alpha-rename
   %alpha-rename

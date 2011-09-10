@@ -42,6 +42,8 @@
 
 (define (carefully stage-data)
   (define (check-annotations program)
+    (if (present? 'structures-as-vectors program)
+        (check (equal? program (structure-definitions->vectors program))))
     (if (present? 'unique-names program)
         (check (unique-names? program)))
     (if (present? 'type program)
