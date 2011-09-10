@@ -68,7 +68,9 @@
   (eq-get program property))
 
 (define (property-value! property value program)
-  (eq-put! program property value)
+  (if value
+      (eq-put! program property value)
+      (eq-rem! property property))
   program)
 
 (define (present? property program)
