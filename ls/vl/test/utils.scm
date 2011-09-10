@@ -40,17 +40,6 @@
     (check (equal? `(begin ,answer) raw-fol))
     raw-fol))
 
-(define ((fol-carefully stage) fol-code)
-  (let ((done (stage fol-code)))
-    (if (eq? stage structure-definitions->vectors)
-        ;; TODO Argh!  The input to structure-definitions->vectors
-        ;; does not type check.
-        (check-program-types done)
-        (check (equal-type? (check-program-types done)
-                            (check-program-types fol-code))))
-    (check (equal? done (stage done)))
-    done))
-
 (define (carefully stage-data)
   (define (check-annotations program)
     (if (present? 'unique-names program)
@@ -81,12 +70,13 @@
     program)
   (lambda (exec)
     (lambda (program)
+      ;; TODO Also check counterfactual invariants:
+      ;; - Inlining commutes with ANF up to removal of aliases.  Why
+      ;;   aliases?  Because inlining saves ANF work by naming the
+      ;;   expressions that are arguments to inlined procedures.
+      ;; - Inlining preserves ANF
+      ;; - Inlining commutes with SRA+ANF up to aliases.
       (check-annotations (exec program)))))
-
-(define (((fol-meticulously answer) stage) fol-code)
-  (let ((done ((fol-carefully stage) fol-code)))
-    (check (equal? answer (fol-eval done)))
-    done))
 
 (define ((meticulously answer) stage-data)
   (lambda (exec)
@@ -102,87 +92,10 @@
          (raw-fol (meticulous-solved-generate kernel analysis answer)))
     answer))
 
-(define (optimizer how raw-fol)
-  (let* ((vectors-fol ((how structure-definitions->vectors) raw-fol))
-         (inlined ((how inline) vectors-fol))
-         (anf ((how approximate-anf) inlined))
-         (scalars (scalar-replace-aggregates anf)) ; SRA is not idempotent
-         (cse ((how intraprocedural-cse) scalars))
-         (variables ((how eliminate-intraprocedural-dead-variables) cse))
-         (more-variables ((how interprocedural-dead-code-elimination) variables))
-         (opt-fol ((how reverse-anf) more-variables))
-         (type (check-program-types opt-fol)))
-    ;; SRA emits sane code
-    (check-program-types scalars)
-; TODO    (check (equal? answer (fol-eval scalars)))
-
-    ;; INLINE alpha renames; alpha renaming is preserved thereafter
-    (check (unique-names? inlined))
-    (check (unique-names? anf))
-    (check (unique-names? scalars))
-    (check (unique-names? cse))
-    (check (unique-names? variables))
-    (check (unique-names? more-variables))
-    (check (unique-names? opt-fol))
-
-    ;; The state of being maximally inlined is preserved (until
-    ;; possibly dead code elimination)
-    (check (equal? anf (inline anf)))
-    (check (equal? scalars (inline scalars)))
-    (check (equal? cse (inline cse)))
-
-    ;; Except for reconstruction of the structure that the outside
-    ;; world expects, SRA and subsequent stages (except REVERSE-ANF)
-    ;; preserve ANF.
-    (if (symbol? type)
-        (begin
-          (check (approximate-anf? scalars))
-          (check (approximate-anf? cse))
-          (check (approximate-anf? variables))
-          (check (approximate-anf? more-variables))))
-
-    ;; Except for reconstruction of the structure that the outside
-    ;; world expects, SRA is idempotent and subsequent ANF-preserving
-    ;; stages do not introduce new work for it.
-    (if (symbol? type)
-        (begin
-          (check (equal? scalars (scalar-replace-aggregates scalars)))
-          (check (equal? cse (scalar-replace-aggregates cse)))
-          (check (equal? variables (scalar-replace-aggregates variables)))
-          (check (equal? more-variables
-                         (scalar-replace-aggregates more-variables)))))
-
-    (define anf-then-inline (inline (approximate-anf (alpha-rename vectors-fol))))
-
-    ;; Inlining commutes with ANF up to removal of aliases.  Why
-    ;; aliases?  Because inlining saves ANF work by naming the
-    ;; expressions that are arguments to inlined procedures.
-    (check (alpha-rename? (intraprocedural-cse anf)
-                          (intraprocedural-cse anf-then-inline)))
-
-    ;; Inlining also preserves ANF
-    (check (approximate-anf? anf-then-inline))
-
-    ;; Likewise, inlining commutes with the ANF-SRA pair.
-    (check (alpha-rename?
-            (intraprocedural-cse scalars)
-            (intraprocedural-cse
-             (inline
-              (scalar-replace-aggregates
-               (approximate-anf (alpha-rename vectors-fol)))))))
-
-    ;; Dead variable elimination does not introduce new common
-    ;; subexpressions.
-    (check (equal? variables (intraprocedural-cse variables)))
-    (check (equal? more-variables (intraprocedural-cse more-variables)))
-
-    opt-fol))
-
 (define (compile-carefully program)
   (let* ((kernel (careful-macroexpand program))
          (analysis (analyze kernel))
          (raw-fol (generate kernel analysis)))
-    #;(optimizer fol-carefully raw-fol)
     ((do-stages fol-optimize carefully)
      (structure-definitions->vectors raw-fol))))
 
@@ -191,7 +104,6 @@
          (answer (interpret kernel))
          (analysis (analyze kernel))
          (raw-fol (meticulous-generate kernel analysis answer)))
-    #;(optimizer (fol-meticulously answer) raw-fol)
     ((do-stages fol-optimize (meticulously answer))
      (structure-definitions->vectors raw-fol))))
 
