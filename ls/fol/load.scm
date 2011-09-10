@@ -80,7 +80,6 @@
      intraprocedural-cse
      eliminate-intraprocedural-dead-code
      eliminate-interprocedural-dead-code
-     interprocedural-dead-code-elimination
      reverse-anf
 
      ;; Visualizations
