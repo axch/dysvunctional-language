@@ -63,6 +63,8 @@
         (check (approximate-anf? program)))
     (if (present? 'lets-lifted program)
         (check (equal? program (lift-lets program))))
+    (if (present? 'fully-inlined program)
+        (check (equal? program (inline program))))
     program)
   (lambda (exec)
     (lambda (program)

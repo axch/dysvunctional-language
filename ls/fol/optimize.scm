@@ -30,6 +30,7 @@
 ;; unique-names
 ;; a-normal-form
 ;; lets-lifted
+;; fully-inlined
 
 ;; The possible clause types are
 ;; requires
@@ -45,7 +46,7 @@
 (define-stage alpha-rename
   %alpha-rename
   (generates unique-names)
-  (preserves a-normal-form lets-lifted type syntax-checked)
+  (preserves a-normal-form lets-lifted type syntax-checked fully-inlined)
   (requires syntax-checked)
   (idempotent))
 
@@ -54,12 +55,13 @@
   (preserves syntax-checked type a-normal-form)  ; lets-lifted?
   (destroys unique-names)
   (requires syntax-checked)
+  (generates fully-inlined)
   (idempotent))                  ; not really, but on current examples
 
 (define-stage a-normal-form
   approximate-anf
   (generates a-normal-form)
-  (preserves syntax-checked type unique-names)
+  (preserves syntax-checked type unique-names fully-inlined)
   (destroys lets-lifted)
   (requires syntax-checked)
   (idempotent))
@@ -68,20 +70,20 @@
   %lift-lets
   (generates lets-lifted)
   ;; TODO Does it really preserve a-normal-form ?
-  (preserves syntax-checked type unique-names a-normal-form)
+  (preserves syntax-checked type unique-names a-normal-form fully-inlined)
   ;; The last just because I'm lazy
   (requires syntax-checked unique-names a-normal-form))
 
 (define-stage scalar-replace-aggregates
   %scalar-replace-aggregates
-  (preserves syntax-checked type unique-names)
+  (preserves syntax-checked type unique-names fully-inlined)
   ;; TODO Does it require unique-names?
   (requires syntax-checked a-normal-form)
   (destroys a-normal-form lets-lifted)) ; because of the reconstruction
 
 (define-stage intraprocedural-cse
   %intraprocedural-cse
-  (preserves syntax-checked type unique-names a-normal-form lets-lifted)
+  (preserves syntax-checked type unique-names a-normal-form lets-lifted fully-inlined)
   ;; The latter two requirements are not really requirements, but it
   ;; works much better this way.
   (requires syntax-checked unique-names a-normal-form lets-lifted)
@@ -89,6 +91,7 @@
 
 (define-stage eliminate-intraprocedural-dead-code
   eliminate-intraprocedural-dead-variables
+  ;; Does not preserve fully-inlined because it may alter the call graph
   (preserves syntax-checked type unique-names a-normal-form lets-lifted)
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
@@ -102,6 +105,7 @@
   ;; fact, this criticism can be levelled against the composition
   ;; well, in general.
   interprocedural-dead-code-elimination
+  ;; Does not preserve fully-inlined because it may alter the call graph
   (preserves syntax-checked type unique-names a-normal-form lets-lifted)
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
@@ -109,7 +113,7 @@
 
 (define-stage reverse-anf
   %reverse-anf
-  (preserves syntax-checked type unique-names) ; lets-lifted?
+  (preserves syntax-checked type unique-names fully-inlined) ; lets-lifted?
   (destroys a-normal-form)
   (requires syntax-checked unique-names)
   (idempotent))
