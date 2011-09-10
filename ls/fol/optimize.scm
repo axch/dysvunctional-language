@@ -62,7 +62,7 @@
   approximate-anf
   (generates a-normal-form)
   (preserves syntax-checked type unique-names fully-inlined)
-  (destroys lets-lifted)
+  (destroys lets-lifted) ; Because of multiple argument procedures
   (requires syntax-checked)
   (idempotent))
 
@@ -74,12 +74,25 @@
   ;; The last just because I'm lazy
   (requires syntax-checked unique-names a-normal-form))
 
+(define (sra-may-destroy property)
+  (modify-execution-function
+   (lambda (exec)
+     (lambda (program)
+       (let ((val (property-value property program))
+             (answer (exec program)))
+         (if (memq (property-value 'type program) '(bool real))
+             (property-value! property val answer))
+         answer)))))
+
 (define-stage scalar-replace-aggregates
   %scalar-replace-aggregates
   (preserves syntax-checked type unique-names fully-inlined)
   ;; TODO Does it require unique-names?
   (requires syntax-checked a-normal-form)
-  (destroys a-normal-form lets-lifted)) ; because of the reconstruction
+  ;; Because of the reconstruction
+  (sra-may-destroy a-normal-form)
+  ;; Because of let-values simplification (?)
+  (destroys lets-lifted))
 
 (define-stage intraprocedural-cse
   %intraprocedural-cse
