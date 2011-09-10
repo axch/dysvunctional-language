@@ -310,6 +310,16 @@
        (lambda (dependencies)
          (f (combinator dependencies)))))))
 
+;; TODO This is really what the word modify means in the Haskell
+;; setting
+(define (update-execution-function stage-data f)
+  (%make-stage-data
+   (stage-data-name stage-data)
+   (lambda (dependencies)
+     (f ((stage-data-combinator stage-data) dependencies)))
+   (stage-data-dependencies stage-data)
+   (stage-data-idempotent? stage-data)))
+
 ;;; The PRESERVES clause just modifies the execution function to
 ;;; forward the value of the given property from the input to the
 ;;; output.
