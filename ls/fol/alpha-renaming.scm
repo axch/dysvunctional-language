@@ -17,7 +17,7 @@
 ;;; global uniqueness is necessary because various later operations
 ;;; may change the scopes of bound names.
 
-(define (alpha-rename program)
+(define (%alpha-rename program)
   (define stack (make-eq-hash-table))
   (define (ever-bound? name)
     (hash-table/get stack name #f))

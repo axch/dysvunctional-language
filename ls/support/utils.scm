@@ -132,3 +132,12 @@
       (display " pairs of type annotations")
       (newline))
   program)
+
+(define (force-assq key lst)
+  (let ((binding (assq key lst)))
+    (if binding
+        (cdr binding)
+        (error "Did not find" key lst))))
+
+(define (fmap-maybe f object)
+  (if object (f object) #f))

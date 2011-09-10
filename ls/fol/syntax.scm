@@ -125,7 +125,7 @@
              (let-values ((,names ,exp))
                ,@body))))))
 
-(define (lift-lets program)
+(define (%lift-lets program)
   (if (begin-form? program)
       `(begin
          ,@(map lift-lets-definition (except-last-pair (cdr program)))

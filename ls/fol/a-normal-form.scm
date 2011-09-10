@@ -157,7 +157,7 @@
 ;;;     (let ((x 3))
 ;;;       (+ x y))))
 
-(define reverse-anf
+(define %reverse-anf
   (rule-simplifier
    (list
     (rule `(let ((?? bindings1)

@@ -104,7 +104,7 @@
    ;; Elimination should not get confused by procedures that return
    ;; multiple things only one of which is needed.
    (check-program-types
-    (eliminate-intraprocedural-dead-variables
+    (%eliminate-intraprocedural-dead-code
      '(begin
         (define (foo)
           (argument-types (values real real))
@@ -114,7 +114,7 @@
 
    (equal?
     '(lambda (x) (+ x 1))
-    (eliminate-intraprocedural-dead-variables
+    (%eliminate-intraprocedural-dead-code
      '(let ((x (real 3)))
         (lambda (x)
           (+ x 1)))))

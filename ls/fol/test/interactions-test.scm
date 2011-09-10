@@ -80,19 +80,20 @@
    ;; ANF helps CSE because more subexpressions get names.
    (define program '(let ((x (real 4)))
                       (+ (+ x 1) (+ x 1))))
-   (check (equal? program (intraprocedural-cse program)))
+   (check (equal? program (%intraprocedural-cse program)))
    (check
     (alpha-rename?
      '(let ((x (real 4)))
-        (let ((y (+ x 1)))
+        (let ((y (+ x 1))
+              (z (+ x 1)))
           (+ y y)))
-     (intraprocedural-cse (approximate-anf program))))
+     (%intraprocedural-cse (approximate-anf program))))
    (check
     (alpha-rename?
      '(let ((x (real 4)))
         (let ((y (+ x 1)))              ; Gone
           (+ y y)))
      (interprocedural-dead-code-elimination
-      (intraprocedural-cse (approximate-anf program))))))
+      (%intraprocedural-cse (approximate-anf program))))))
 
  )

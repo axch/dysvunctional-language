@@ -28,6 +28,7 @@
    (load-relative-compiled file fol-environment))
  '("../support/utils"
    "../support/two-way-table"
+   "stages"
    "nomenclature"
    "syntax"
    "srfi-11"
@@ -74,10 +75,11 @@
      inline
      approximate-anf
      approximate-anf?
+     lift-lets
      scalar-replace-aggregates
      intraprocedural-cse
-     eliminate-intraprocedural-dead-variables
-     interprocedural-dead-code-elimination
+     eliminate-intraprocedural-dead-code
+     eliminate-interprocedural-dead-code
      reverse-anf
 
      ;; Visualizations
@@ -92,4 +94,7 @@
 
      ;; The FOL names subsystem (see nomenclature.scm).
      make-name name->symbol reset-fol-names!
+
+     ;; Stage manipulation TODO
+     do-stages present? property-value
      )))
