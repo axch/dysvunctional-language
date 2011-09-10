@@ -22,8 +22,30 @@
 
 ;;; See doc/architecture.txt for discussion.
 
+(define (fol-optimize program)
+  ((lambda (x) x) ; This makes the last stage show up in the stack sampler
+   (reverse-anf
+    (interprocedural-dead-code-elimination
+     (eliminate-intraprocedural-dead-variables
+      (intraprocedural-cse
+       (scalar-replace-aggregates
+        (inline                         ; includes ALPHA-RENAME
+         program))))))))
+
+;;; Watching the behavior of the optimizer
+
+(define (optimize-visibly program)
+  (report-size
+   ((visible-stage reverse-anf)
+    (interprocedural-dead-code-elimination-visibly
+     ((visible-stage eliminate-intraprocedural-dead-variables)
+      (intraprocedural-cse-visibly
+       (scalar-replace-aggregates-visibly
+        (inline-visibly                         ; includes ALPHA-RENAME
+         program))))))))
+
 #|
-;; Stage definitions might look like this
+;;; Using the stage machinery, the fol optimizer might look like this
 
 ;; The properties are
 ;; syntax-checked
@@ -37,9 +59,6 @@
 ;; preserves generates destroys
 ;; computes
 ;; idempotent
-
-;; TODO get property-generator to work
-;; TODO get the autowrappers to wrap the property generators
 
 (define-stage check-fol-types
   check-program-types
@@ -70,8 +89,8 @@
 
 (define-stage lift-lets
   %lift-lets
-  ;; The latter just because I'm lazy
-  (requires syntax-checked a-normal-form)
+  ;; The last just because I'm lazy
+  (requires syntax-checked unique-names a-normal-form)
   (generates lets-lifted)
   ;; TODO Does it really preserve a-normal-form ?
   (preserves syntax-checked type unique-names a-normal-form))
@@ -110,26 +129,36 @@
   (requires syntax-checked unique-names)
   (preserves syntax-checked type unique-names a-normal-form lets-lifted)
   (idempotent))
+
+(define-stage reverse-anf
+  %reverse-anf
+  (requires syntax-checked unique-names)
+  (preserves syntax-checked type unique-names) ; lets-lifted?
+  (destroys a-normal-form)
+  (idempotent))
+
+(define fol-optimize
+  (stage-pipeline
+   reverse-anf
+   eliminate-interprocedural-dead-code
+   eliminate-intraprocedural-dead-code
+   intraprocedural-cse
+   scalar-replace-aggregates
+   eliminate-intraprocedural-dead-code
+   intraprocedural-cse
+   inline))
+
+(define (visibly stage-data)
+  (update-execution-function
+   stage-data
+   (lambda (exec)
+     (lambda (program)
+       (display "(")
+       (pp (stage-data-name stage-data))
+       (let ((answer (exec program)))
+         (display ")")
+         answer)))))
+
+(define optimize-visibly
+  (do-stages fol-optimize visibly))
 |#
-
-(define (fol-optimize program)
-  ((lambda (x) x) ; This makes the last stage show up in the stack sampler
-   (reverse-anf
-    (interprocedural-dead-code-elimination
-     (eliminate-intraprocedural-dead-variables
-      (intraprocedural-cse
-       (scalar-replace-aggregates
-        (inline                         ; includes ALPHA-RENAME
-         program))))))))
-
-;;; Watching the behavior of the optimizer
-
-(define (optimize-visibly program)
-  (report-size
-   ((visible-stage reverse-anf)
-    (interprocedural-dead-code-elimination-visibly
-     ((visible-stage eliminate-intraprocedural-dead-variables)
-      (intraprocedural-cse-visibly
-       (scalar-replace-aggregates-visibly
-        (inline-visibly                         ; includes ALPHA-RENAME
-         program))))))))
