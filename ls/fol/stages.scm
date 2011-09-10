@@ -162,7 +162,7 @@
 ;;; is easy too.
 
 (define (stage-pipeline . substages)
-  (define (compose . substage-alist)
+  (define (compose substage-alist)
     (let loop ((fs (map cdr substage-alist)))
       (if (null? fs)
           (lambda (x) x)
