@@ -129,7 +129,7 @@
             no-interprocedural-dead-variables))
 
 (define-stage eliminate-intraprocedural-dead-code
-  eliminate-intraprocedural-dead-variables
+  %eliminate-intraprocedural-dead-code
   ;; Does not preserve fully-inlined in general because may alter the
   ;; call graph, but on all current examples it does.
   ;; When there are union types, it may destroy aggregates-replaced

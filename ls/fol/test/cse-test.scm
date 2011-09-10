@@ -213,7 +213,7 @@
    ;; occurrence of (car x), but if you do ANF first, it will.
    (equal?
     1
-    (eliminate-intraprocedural-dead-variables
+    (%eliminate-intraprocedural-dead-code
      (%intraprocedural-cse
       (approximate-anf
        '(let ((x (cons 1 (read-real))))

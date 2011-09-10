@@ -62,7 +62,7 @@
 ;;; elimination on those variables.  I may revisit this decision when
 ;;; I add union types.
 
-(define (eliminate-intraprocedural-dead-variables program)
+(define (%eliminate-intraprocedural-dead-code program)
   (define eliminate-in-definition
     (rule `(define ((? name ,fol-var?) (?? formals))
              (argument-types (?? stuff) (? return))
@@ -375,12 +375,12 @@
      rewritten)))
 
 (define (interprocedural-dead-code-elimination program)
-  (eliminate-intraprocedural-dead-variables ; TODO Check for absence of tombstones
+  (%eliminate-intraprocedural-dead-code ; TODO Check for absence of tombstones
    (%interprocedural-dead-code-elimination
     program)))
 
 (define (interprocedural-dead-code-elimination-visibly program)
-  ((visible-stage eliminate-intraprocedural-dead-variables) ; TODO Check for absence of tombstones
+  ((visible-stage %eliminate-intraprocedural-dead-code) ; TODO Check for absence of tombstones
    ((visible-stage %interprocedural-dead-code-elimination)
     program)))
 
