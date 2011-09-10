@@ -46,8 +46,8 @@
   (computes type)
   (generates syntax-checked))
 
-(define-stage unique-rename
-  alpha-rename
+(define-stage alpha-rename
+  %alpha-rename
   (requires syntax-checked)
   (generates unique-names)
   (preserves a-normal-form lets-lifted type syntax-checked)

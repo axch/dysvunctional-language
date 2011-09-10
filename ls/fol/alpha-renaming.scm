@@ -17,7 +17,7 @@
 ;;; global uniqueness is necessary because various later operations
 ;;; may change the scopes of bound names.
 
-(define (alpha-rename program)
+(define (%alpha-rename program)
   (define stack (make-eq-hash-table))
   (define (ever-bound? name)
     (hash-table/get stack name #f))
@@ -59,6 +59,8 @@
                  (loop (cdr exp))))
           (else exp)))
   (loop program))
+
+(define alpha-rename %alpha-rename)
 
 ;;; Checking whether two programs are alpha-renamings of each other is
 ;;; also a recursive traversal.
