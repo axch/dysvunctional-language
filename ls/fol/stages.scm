@@ -60,6 +60,10 @@
 
 ;;;; Properties
 
+;;; A property is just a marker (compared by eq?).  Programs may have
+;;; properties with various values; also, properties can be generated,
+;;; so we need to track what can generate any particular property.
+
 (define (property-value property program)
   (eq-get program property))
 
@@ -73,33 +77,105 @@
 (define (present! property program)
   (property-value! property #t program))
 
+(define *property-generators* '())
+
+(define (lookup-generator property)
+  (force-assq property *property-generators*))
+
+(define (register-generator! property generator)
+  (set! *property-generators*
+        (cons (cons property generator)
+              *property-generators*)))
+
 ;;;; Stages
+
+;;; A stage is an executable program transformation about which we
+;;; have some information.  In typology, a stage is an entity whose
+;;; entity-extra is the information we know about that stage, and
+;;; which can be applied to a program to do whatever operation that
+;;; stage does.
+
+(define (stage? thing)
+  (and (entity? thing) (stage-data? (entity-extra thing))))
+
+(define (stage-data->stage stage-data)
+  (make-entity execute-stage stage-data))
+
+(define (execute-stage stage program)
+  ((stage-data->execution-function (entity-extra stage)) program))
+
+(define (stage-name stage)
+  (stage-data-name (entity-extra stage)))
+
+;;; What information do we maintain about a stage?  There is the name,
+;;; and a flag about whether or not this stage is known to be
+;;; idempotent.  In order to be able to adjust all the stages involved
+;;; in some process, we also maintain the other stages this one may
+;;; depend on in the dependencies slot.  This slot is an a-list
+;;; mapping the key by which this stage knows its dependency to the
+;;; dependency in question (which should be a stage object, or just a
+;;; function).  In order for these adjustments to have any effect, the
+;;; action of the stage is represented not by a procedure that does
+;;; it, but by a combinator procedure that accepts the dependency
+;;; alist and computes the execution function from it.  An execution
+;;; function is a function that accepts a program and does the work of
+;;; the stage.
 
 (define-structure
   (stage-data
    safe-accessors
    (constructor make-stage-data ())
-   (constructor %make-stage-data (name combinator dependencies idempotent?)))
+   (constructor %make-stage-data
+                (name combinator dependencies idempotent?)))
   (name #f)
   (combinator #f)
   (dependencies '())
   (idempotent? #f))
 
-(define (stage-execution-function stage)
-  (let ((stage-data (entity-extra stage)))
-    ((stage-data-combinator stage-data)
-     (stage-data-dependencies stage-data))))
+(define (stage-data->execution-function stage)
+  ((stage-data-combinator stage-data)
+   (stage-data-dependencies stage-data)))
 
-(define (execute-stage stage program)
-  ((stage-execution-function stage) program))
+;;; Given this setup, here is how to wrap all stages in a stage
+;;; composition with the same wrapper.
 
-(define (stage? thing)
-  (and (entity? thing) (stage-data? (entity-extra thing))))
+(define (do-stages stage how)
+  (let loop ((stage stage))
+    (cond ((stage? stage)
+           (make-entity execute-stage
+                        (loop (stage-data stage))))
+          ((stage-data? stage)
+           (how
+            (%make-stage-data
+             (stage-data-name stage)
+             (stage-data-combinator stage)
+             (map loop (stage-data-dependencies stage))
+             ;; Wrapping dependencies preserves idempotence
+             (stage-data-idempotent? stage))))
+          ((pair? stage)
+           ;; Alist entry
+           (cons (car stage) (loop (cdr stage))))
+          (else
+           ;; Raw execution function
+           stage))))
 
-(define stage-data entity-extra)
+;;; The definition of a stage that is just a pipeline of other stages
+;;; is easy too.
 
-(define (stage-data->stage stage-data)
-  (make-entity execute-stage stage-data))
+(define (stage-pipeline . substages)
+  (define (compose . substage-alist)
+    (let loop ((fs (map cdr substage-alist)))
+      (if (null? fs)
+          (lambda (x) x)
+          (lambda (x)
+            ((car fs) ((loop (cdr fs)) x))))))
+  (let ((names (map stage-name substages)))
+    (stage-data->stage
+     (%make-stage-data
+      `(composition ,@names)
+      compose
+      (map cons names substages)
+      #f))))
 
 ;;; I want a nice language for specifying stages.  For example,
 ;;;
@@ -245,30 +321,3 @@
     (register-generator! property
      (stage-data->stage stage-data))))
 
-;;; I want to be able to uniformly change stage pipelines by mapping
-;;; some wrapper over all the primitive stages in the pipeline.
-
-(define (do-stages stage how)
-  (let loop ((stage stage))
-    (cond ((pair? stage)
-           ;; alist entry
-           (cons (car stage) (loop (cdr stage))))
-          ((stage? stage)
-           (make-entity execute-stage
-                        (loop (stage-data stage))))
-          ((stage-data? stage)
-           (how
-            (%make-stage-data
-             (stage-data-name stage)
-             (stage-data-combinator stage)
-             (map loop (stage-data-dependencies stage))
-             ;; Wrapping dependencies preserves idempotence
-             (stage-data-idempotent? stage)))))))
-
-(define (stage-pipeline . substages)
-  (define (compose . fs)
-    (if (null? fs)
-        (lambda (x) x)
-        (lambda (x)
-          ((car fs) ((compose (cdr fs)) x)))))
-  (%make-stage-data 'composition compose substages #f))
