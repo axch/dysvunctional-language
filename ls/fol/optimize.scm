@@ -49,14 +49,16 @@
 (define-stage alpha-rename
   %alpha-rename
   (generates unique-names)
-  (preserves a-normal-form lets-lifted type syntax-checked fully-inlined aggregates-replaced no-common-subexpressions)
+  (preserves a-normal-form lets-lifted type syntax-checked
+             fully-inlined aggregates-replaced no-common-subexpressions)
   (preserves no-intraprocedural-dead-variables
              no-interprocedural-dead-variables)
   (requires syntax-checked))
 
 (define-stage inline
   %inline
-  (preserves syntax-checked type a-normal-form aggregates-replaced)  ; lets-lifted?
+  (preserves syntax-checked type a-normal-form   ; lets-lifted?
+             aggregates-replaced)
   ;; Because of copying procedure bodies
   (destroys unique-names no-common-subexpressions)
   ;; Because of removing procedure boundaries
@@ -69,7 +71,8 @@
 (define-stage a-normal-form
   approximate-anf
   (generates a-normal-form)
-  (preserves syntax-checked type unique-names fully-inlined aggregates-replaced)
+  (preserves syntax-checked type unique-names
+             fully-inlined aggregates-replaced)
   (preserves no-intraprocedural-dead-variables
              no-interprocedural-dead-variables)
   (destroys lets-lifted) ; Because of multiple argument procedures
@@ -81,7 +84,8 @@
   %lift-lets
   (generates lets-lifted)
   ;; TODO Does it really preserve a-normal-form ?
-  (preserves syntax-checked type unique-names a-normal-form fully-inlined aggregates-replaced)
+  (preserves syntax-checked type unique-names a-normal-form
+             fully-inlined aggregates-replaced)
   (preserves no-intraprocedural-dead-variables
              no-interprocedural-dead-variables)
   ;; The last just because I'm lazy
@@ -118,7 +122,8 @@
 
 (define-stage intraprocedural-cse
   %intraprocedural-cse
-  (preserves syntax-checked type unique-names a-normal-form lets-lifted fully-inlined aggregates-replaced)
+  (preserves syntax-checked type unique-names a-normal-form lets-lifted
+             fully-inlined aggregates-replaced)
   ;; The latter two requirements are not really requirements, but it
   ;; works much better this way.
   (requires syntax-checked unique-names a-normal-form lets-lifted)
@@ -133,7 +138,8 @@
   ;; graph
   ;; When there are union types, it may destroy aggregates-replaced
   ;; for the same reason.
-  (preserves syntax-checked type unique-names a-normal-form lets-lifted aggregates-replaced no-common-subexpressions)
+  (preserves syntax-checked type unique-names a-normal-form lets-lifted
+             aggregates-replaced no-common-subexpressions)
   (preserves no-interprocedural-dead-variables)
   (generates no-intraprocedural-dead-variables)
   ;; TODO Does it really require unique names?
@@ -148,7 +154,8 @@
   ;; well, in general.
   interprocedural-dead-code-elimination
   ;; Does not preserve fully-inlined because it may alter the call graph
-  (preserves syntax-checked type unique-names a-normal-form lets-lifted aggregates-replaced no-common-subexpressions)
+  (preserves syntax-checked type unique-names a-normal-form lets-lifted
+             aggregates-replaced no-common-subexpressions)
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
   (generates no-interprocedural-dead-variables)
@@ -157,7 +164,8 @@
 
 (define-stage reverse-anf
   %reverse-anf
-  (preserves syntax-checked type unique-names fully-inlined aggregates-replaced no-common-subexpressions) ; lets-lifted?
+  (preserves syntax-checked type unique-names  ; lets-lifted?
+             fully-inlined aggregates-replaced no-common-subexpressions)
   (preserves no-intraprocedural-dead-variables
              no-interprocedural-dead-variables)
   (destroys a-normal-form)
