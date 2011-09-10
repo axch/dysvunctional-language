@@ -142,8 +142,7 @@
 (define (do-stages stage how)
   (let loop ((stage stage))
     (cond ((stage? stage)
-           (make-entity execute-stage
-                        (loop (stage-data stage))))
+           (stage-data->stage (loop (entity-extra stage))))
           ((stage-data? stage)
            (how
             (%make-stage-data
