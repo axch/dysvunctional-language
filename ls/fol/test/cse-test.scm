@@ -91,7 +91,7 @@
          (values (+ a b) (- a b)))
        (let-values (((x y) (op 1 2)))
          (+ x y)))
-    (intraprocedural-cse
+    (%intraprocedural-cse
      '(begin
         (define (op a b)
           (argument-types real real (values real real))
@@ -108,7 +108,7 @@
                  (values (+ x 1) (+ x 4))
                  (values (+ x 1) (+ x 3)))))
          (* something (+ x+1 x+1))))
-    (intraprocedural-cse
+    (%intraprocedural-cse
      '(let ((x (real 3)))
         (let-values (((x+1 something)
                       (if (> (real 2) 1)
