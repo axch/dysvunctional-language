@@ -40,7 +40,6 @@
 ;; requires
 ;; preserves generates destroys
 ;; computes
-;; idempotent
 
 (define-stage check-fol-types
   check-program-types
@@ -53,8 +52,7 @@
   (preserves a-normal-form lets-lifted type syntax-checked fully-inlined aggregates-replaced no-common-subexpressions)
   (preserves no-intraprocedural-dead-variables
              no-interprocedural-dead-variables)
-  (requires syntax-checked)
-  (idempotent))
+  (requires syntax-checked))
 
 (define-stage inline
   %inline
@@ -66,8 +64,7 @@
   ;; Because of specializing to different places
   (destroys no-interprocedural-dead-variables)
   (requires syntax-checked)
-  (generates fully-inlined)
-  (idempotent))                  ; not really, but on current examples
+  (generates fully-inlined))                  ; not really, but on current examples
 
 (define-stage a-normal-form
   approximate-anf
@@ -78,8 +75,7 @@
   (destroys lets-lifted) ; Because of multiple argument procedures
   ;; By naming new things that may be common
   (destroys no-common-subexpressions)
-  (requires syntax-checked)
-  (idempotent))
+  (requires syntax-checked))
 
 (define-stage lift-lets
   %lift-lets
@@ -129,8 +125,7 @@
   (generates no-common-subexpressions)
   ;; By leaving some flushed aliases around
   (destroys no-intraprocedural-dead-variables
-            no-interprocedural-dead-variables)
-  (idempotent))
+            no-interprocedural-dead-variables))
 
 (define-stage eliminate-intraprocedural-dead-code
   eliminate-intraprocedural-dead-variables
@@ -142,8 +137,7 @@
   (preserves no-interprocedural-dead-variables)
   (generates no-intraprocedural-dead-variables)
   ;; TODO Does it really require unique names?
-  (requires syntax-checked unique-names)
-  (idempotent))
+  (requires syntax-checked unique-names))
 
 (define-stage eliminate-interprocedural-dead-code
   ;; TODO Do I want to split this into the pure-interprocedural part
@@ -159,8 +153,7 @@
   (requires syntax-checked unique-names)
   (generates no-interprocedural-dead-variables)
   ;; By running intraprocedural as a post-pass
-  (generates no-intraprocedural-dead-variables)
-  (idempotent))
+  (generates no-intraprocedural-dead-variables))
 
 (define-stage reverse-anf
   %reverse-anf
@@ -168,8 +161,7 @@
   (preserves no-intraprocedural-dead-variables
              no-interprocedural-dead-variables)
   (destroys a-normal-form)
-  (requires syntax-checked unique-names)
-  (idempotent))
+  (requires syntax-checked unique-names))
 
 (define fol-optimize
   (stage-pipeline
