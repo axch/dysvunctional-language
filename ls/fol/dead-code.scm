@@ -379,11 +379,6 @@
    (%interprocedural-dead-code-elimination
     program)))
 
-(define (interprocedural-dead-code-elimination-visibly program)
-  ((visible-stage %eliminate-intraprocedural-dead-code) ; TODO Check for absence of tombstones
-   ((visible-stage %interprocedural-dead-code-elimination)
-    program)))
-
 ;;; The dependency-map is the structure built by steps 1-3 above.  It
 ;;; maps every procedure name to a list of boolean lists.  The outer
 ;;; list is parallel to the values that the procedure returns, each
