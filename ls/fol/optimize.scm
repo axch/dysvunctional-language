@@ -32,6 +32,7 @@
 ;; lets-lifted
 ;; fully-inlined  (for testing only)
 ;; aggregates-replaced (for testing only)
+;; no-common-subexpressions (for testing only)
 
 ;; The possible clause types are
 ;; requires
@@ -47,14 +48,15 @@
 (define-stage alpha-rename
   %alpha-rename
   (generates unique-names)
-  (preserves a-normal-form lets-lifted type syntax-checked fully-inlined aggregates-replaced)
+  (preserves a-normal-form lets-lifted type syntax-checked fully-inlined aggregates-replaced no-common-subexpressions)
   (requires syntax-checked)
   (idempotent))
 
 (define-stage inline
   %inline
   (preserves syntax-checked type a-normal-form aggregates-replaced)  ; lets-lifted?
-  (destroys unique-names)
+  ;; Because of copying procedure bodies
+  (destroys unique-names no-common-subexpressions)
   (requires syntax-checked)
   (generates fully-inlined)
   (idempotent))                  ; not really, but on current examples
@@ -64,6 +66,8 @@
   (generates a-normal-form)
   (preserves syntax-checked type unique-names fully-inlined aggregates-replaced)
   (destroys lets-lifted) ; Because of multiple argument procedures
+  ;; By naming new things that may be common
+  (destroys no-common-subexpressions)
   (requires syntax-checked)
   (idempotent))
 
@@ -73,7 +77,9 @@
   ;; TODO Does it really preserve a-normal-form ?
   (preserves syntax-checked type unique-names a-normal-form fully-inlined aggregates-replaced)
   ;; The last just because I'm lazy
-  (requires syntax-checked unique-names a-normal-form))
+  (requires syntax-checked unique-names a-normal-form)
+  ;; By splitting lets
+  (destroys no-common-subexpressions))
 
 (define (sra-may-destroy property)
   (modify-execution-function
@@ -95,7 +101,9 @@
   ;; Because of the reconstruction
   (sra-may-destroy a-normal-form aggregates-replaced)
   ;; Because of reconstruction and let-values simplification (?)
-  (destroys lets-lifted))
+  (destroys lets-lifted)
+  ;; By making aliases, and exposing structure slots to CSE
+  (destroys no-common-subexpressions))
 
 (define-stage intraprocedural-cse
   %intraprocedural-cse
@@ -103,6 +111,7 @@
   ;; The latter two requirements are not really requirements, but it
   ;; works much better this way.
   (requires syntax-checked unique-names a-normal-form lets-lifted)
+  (generates no-common-subexpressions)
   (idempotent))
 
 (define-stage eliminate-intraprocedural-dead-code
@@ -111,7 +120,7 @@
   ;; graph
   ;; When there are union types, it may destroy aggregates-replaced
   ;; for the same reason.
-  (preserves syntax-checked type unique-names a-normal-form lets-lifted aggregates-replaced)
+  (preserves syntax-checked type unique-names a-normal-form lets-lifted aggregates-replaced no-common-subexpressions)
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
   (idempotent))
@@ -125,14 +134,14 @@
   ;; well, in general.
   interprocedural-dead-code-elimination
   ;; Does not preserve fully-inlined because it may alter the call graph
-  (preserves syntax-checked type unique-names a-normal-form lets-lifted aggregates-replaced)
+  (preserves syntax-checked type unique-names a-normal-form lets-lifted aggregates-replaced no-common-subexpressions)
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
   (idempotent))
 
 (define-stage reverse-anf
   %reverse-anf
-  (preserves syntax-checked type unique-names fully-inlined aggregates-replaced) ; lets-lifted?
+  (preserves syntax-checked type unique-names fully-inlined aggregates-replaced no-common-subexpressions) ; lets-lifted?
   (destroys a-normal-form)
   (requires syntax-checked unique-names)
   (idempotent))
