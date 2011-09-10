@@ -70,7 +70,7 @@
 (define (property-value! property value program)
   (if value
       (eq-put! program property value)
-      (eq-rem! property property))
+      (eq-rem! program property))
   program)
 
 (define (present? property program)
