@@ -130,16 +130,6 @@
 ;;; all lets are lifted, because then previously computed
 ;;; subexpressions will spend more time in scope.
 
-(define (intraprocedural-cse program)
-  (%intraprocedural-cse
-   (lift-lets
-    program)))
-
-(define (intraprocedural-cse-visibly program)
-  ((visible-stage %intraprocedural-cse)
-   ((visible-stage lift-lets)
-    program)))
-
 (define (%intraprocedural-cse program)
   (define (cse-entry-point expression)
     (cse-expression expression (empty-cse-env)))

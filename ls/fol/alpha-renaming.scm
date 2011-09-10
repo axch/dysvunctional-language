@@ -60,8 +60,6 @@
           (else exp)))
   (loop program))
 
-(define alpha-rename %alpha-rename)
-
 ;;; Checking whether two programs are alpha-renamings of each other is
 ;;; also a recursive traversal.
 

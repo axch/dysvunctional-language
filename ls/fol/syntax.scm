@@ -132,8 +132,6 @@
          ,(lift-lets-expression (last program)))
       (lift-lets-expression program)))
 
-(define lift-lets %lift-lets)
-
 (define lift-lets-definition
   (rule `(define (? formals)
            (argument-types (?? stuff))

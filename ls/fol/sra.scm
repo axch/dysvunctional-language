@@ -43,20 +43,10 @@
 ;;; decided by finding a feedback vertex set in the type reference
 ;;; graph.
 
-(define (scalar-replace-aggregates program)
-  (%scalar-replace-aggregates (approximate-anf program)))
-
-(define (scalar-replace-aggregates-visibly program)
-  ((visible-stage %scalar-replace-aggregates)
-   ((visible-stage approximate-anf)
-    program)))
-
-;;; The actual implementation of SRA makes its bookkeeping easier by
-;;; first converting its input to approximate A-normal form with
-;;; APPROXIMATE-ANF (see a-normal-form.scm).  As it happens, the
-;;; output remains in approximate A-normal form (TODO except for the
-;;; influence of RECONSTRUCT-PRE-SRA-SHAPE), but no other stage cares
-;;; about this.
+;;; For ease of bookkeeping, this implementation of SRA requires its
+;;; input to be in approximate A-normal form, as produced by
+;;; APPROXIMATE-ANF (see a-normal-form.scm, and the stage definition
+;;; in optimize.scm).
 
 ;;; The FOL grammar accepted by the SRA algorithm replaces the
 ;;; standard FOL <expression>, <access>, and <construction> with

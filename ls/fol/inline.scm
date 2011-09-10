@@ -11,15 +11,6 @@
 ;;; removal makes acyclic) of the static call graph.  See
 ;;; feedback-vertex-set.scm for discussion and implementation.
 
-(define (inline program)
-  (alpha-rename ; Duplicating code bodies may break binding uniqueness
-   (%inline program)))
-
-(define (inline-visibly program)
-  ((visible-stage alpha-rename)
-   ((visible-stage %inline)
-    program)))
-
 (define (%inline program)
   (tidy-begin
    (if (begin-form? program)
