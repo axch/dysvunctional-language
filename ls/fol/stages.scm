@@ -132,7 +132,7 @@
   (dependencies '())
   (idempotent? #f))
 
-(define (stage-data->execution-function stage)
+(define (stage-data->execution-function stage-data)
   ((stage-data-combinator stage-data)
    (stage-data-dependencies stage-data)))
 
