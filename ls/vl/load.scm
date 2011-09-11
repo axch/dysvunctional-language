@@ -35,6 +35,6 @@
 (define (vl-run-file filename)
   (let* ((forms (read-source filename))
          (program `(let () ,@forms))
-         (compiled-program (compile-to-scheme program))
+         (compiled-program (compile-to-fol program))
          (compiled-answer (fol-eval compiled-program)))
     (pp compiled-answer)))

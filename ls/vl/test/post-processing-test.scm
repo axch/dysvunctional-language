@@ -16,7 +16,7 @@
          (if (= n-25 1)
              1
              (* n-25 (operation-2 (- n-25 1))))))
-    (compile-to-scheme
+    (compile-to-fol
      '(let ()
         (define (fact n)
           (if (= n 1)
@@ -31,7 +31,7 @@
            (let ((x2 (+ z2 z2)))
              (cons (+ x1 x1)
                    (* x2 x2))))))
-    (compile-to-scheme
+    (compile-to-fol
      '(let ((double (lambda (x) (+ x x)))
             (square (lambda (x) (* x x)))
             (compose (lambda (f g) (lambda (x) (f (g x))))))
@@ -58,7 +58,7 @@
                   (operation-2 the-formals-64
                                anf-152
                                (/ (+ anf-152 (/ the-formals-64 anf-152)) 2))))))))
-    (compile-to-scheme
+    (compile-to-fol
      '(let ()
         (define (heron-step x)
           (lambda (guess)

@@ -88,7 +88,7 @@
 
 (define (dvl-run-file filename)
   (let* ((program (dvl-read-file filename))
-         (compiled-program (compile-to-scheme program)))
+         (compiled-program (compile-to-fol program)))
     (let ((scm-file (->namestring (pathname-new-type filename #f))))
       (fol->floating-mit-scheme compiled-program scm-file)
       (fluid-let ((load/suppress-loading-message? #t))

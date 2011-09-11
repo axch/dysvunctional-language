@@ -338,8 +338,6 @@
 (define (compile-to-fol program)
   (fol-optimize (compile-to-raw-fol program)))
 
-(define compile-to-scheme compile-to-fol) ; Backward compatibility.  TODO Flush.
-
 (define (analyze-and-generate-visibly program)
   (let ((analysis ((visible-stage analyze) program)))
     (display "Stage generate on ")

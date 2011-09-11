@@ -15,4 +15,4 @@
 ===> 0.2500002594080783
 
 ; (define program (dvl-read-file "examples.scm"))
-; (define done (with-stack-sampling 20 (lambda () (show-time (lambda () (compile-to-scheme program))))))
+; (define done (with-stack-sampling 20 (lambda () (show-time (lambda () (compile-to-fol program))))))
