@@ -96,5 +96,11 @@
      make-name name->symbol reset-fol-names!
 
      ;; Stage manipulation TODO
-     do-stages present? property-value
-     )))
+     stage-pipeline do-stages visibly parse-stage
+     present? property-value
+     name execution-function
+     reads computes generates preserves destroys
+     ))
+  (environment-define-macro
+   client-environment 'define-stage
+   (environment-lookup-macro fol-environment 'define-stage)))

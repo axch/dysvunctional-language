@@ -328,31 +328,26 @@
             #f
             analysis)))
 
-(define (analyze-and-generate program)
-  (generate program (analyze program)))
+(define-stage analyze-stage
+  analyze
+  (computes analysis))
 
-(define (compile-to-raw-fol program)
-  (structure-definitions->vectors
-   (analyze-and-generate program)))
+(define-stage generate-stage
+  generate
+  (reads analysis)
+  ;; Because it transforms the program into a new language
+  (destroys analysis))
 
-(define (compile-to-fol program)
-  (fol-optimize (compile-to-raw-fol program)))
+(define analyze-and-generate
+  (stage-pipeline generate-stage analyze-stage))
 
-(define (analyze-and-generate-visibly program)
-  (let ((analysis ((visible-stage analyze) program)))
-    (display "Stage generate on ")
-    (display (length (analysis-bindings analysis)))
-    (display " bindings")
-    (newline)
-    (flush-output)
-    (let ((answer (show-time (lambda () (generate program analysis)))))
-      (newline)
-      answer)))
+(define compile-to-raw-fol
+  (stage-pipeline structure-definitions->vectors analyze-and-generate))
 
-(define (compile-visibly program)
-  (optimize-visibly
-   ((visible-stage structure-definitions->vectors)
-    (let ((raw-fol (analyze-and-generate-visibly
-                    program)))
-      (clear-name-caches!)
-      raw-fol))))
+(define compile-to-fol
+  (stage-pipeline fol-optimize analyze-and-generate))
+
+;; TODO clear-name-caches
+;; TODO Teach visibly to count the analysis bindings
+(define compile-visibly
+  (do-stages compile-to-fol visibly))

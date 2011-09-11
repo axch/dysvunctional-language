@@ -340,3 +340,8 @@
           (property-value! property answer program)))))
    (register-generator! property)))
 
+(define (reads property)
+  (modify-execution-function
+   (lambda (exec)
+     (lambda (program . extra)
+       (apply exec program (property-value property program) extra)))))
