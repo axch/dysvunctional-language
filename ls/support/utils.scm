@@ -129,6 +129,12 @@
     (flush-output)
     (let ((answer (show-time (lambda () (stage input)))))
       (newline)
+      (if (eq? name 'generate-stage)
+          ;; TODO This was done only in visibly mode the old world
+          ;; order, presumably because it explicitly invokes the GC,
+          ;; which would make the test suite too slow if it were done
+          ;; after every code generation.
+          (clear-name-caches!))
       answer)))
 
 (define (report-size program)

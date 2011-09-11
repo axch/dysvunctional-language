@@ -348,6 +348,5 @@
   (stage-pipeline fol-optimize analyze-and-generate))
 
 ;; TODO clear-name-caches
-;; TODO Teach visibly to count the analysis bindings
 (define compile-visibly
   (do-stages compile-to-fol visibly))
