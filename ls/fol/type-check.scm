@@ -285,9 +285,8 @@
          (cdr program))
         'ok)
     (define (lookup-type name)
-      (let ((answer (hash-table/get type-map name #f)))
-        (or answer
-            (error "Looking up unknown name" name))))
+      (or (hash-table/get type-map name #f)
+          (error "Looking up unknown name" name)))
     lookup-type))
 
 (define (equal-type? type1 type2)
