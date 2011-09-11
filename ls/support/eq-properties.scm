@@ -55,6 +55,8 @@
 	     (hash-table/put! eq-properties node
 			      (delq! vcell plist))))))
    properties)
+  (if (null? (hash-table/get eq-properties node '()))
+      (hash-table/remove! eq-properties node))
   node)
 
 
@@ -69,8 +71,8 @@
     (if plist (cons node plist) #f)))
 
 (define (eq-clone! source target)
-  (hash-table/put! eq-properties target
-    (hash-table/get eq-properties source '())))
+  (let ((plist (hash-table/get eq-properties source #f)))
+    (if plist (hash-table/put! eq-properties target plist))))
 
 ;;; Path names are built with properties.
 
