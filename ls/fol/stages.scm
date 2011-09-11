@@ -253,9 +253,9 @@
 
 (define (preserves-everything exec)
   (lambda (program . extra)
-    (let ((answer (apply exec program extra)))
-      (eq-clone! program answer)
-      answer)))
+    (abegin1
+     (apply exec program extra)
+     (eq-clone! program it))))
 
 ;;; The REQUIRES clause attaches a generator of the needed property as
 ;;; a dependency of this stage, and modifies the prepare of this stage

@@ -6,9 +6,9 @@
             alist))
 
 (define (alist->eq-hash-table alist)
-  (let ((answer (make-eq-hash-table)))
-    (hash-table/put-alist! answer alist)
-    answer))
+  (abegin1
+   (make-eq-hash-table)
+   (hash-table/put-alist! it alist)))
 
 ;; TODO Backwards compatibility:
 (define hash-table-types-available?
@@ -163,3 +163,14 @@
      (let ((answer form1))
        form ...
        answer))))
+
+(define-syntax abegin1
+  (sc-macro-transformer
+   (lambda (exp env)
+     (let ((object (close-syntax (cadr exp) env))
+	   (forms (map (lambda (form)
+                         (make-syntactic-closure env '(it) form))
+                       (cddr exp))))
+       `(let ((it ,object))
+	  ,@forms
+          it)))))

@@ -93,9 +93,7 @@
     (hash-table/lookup cache x
      (lambda (datum) datum)
      (lambda ()
-       (let ((answer (f x)))
-         (hash-table/put! cache x answer)
-         answer)))))
+       (abegin1 (f x) (hash-table/put! cache x it))))))
 
 (define free-variables
   (memoize (make-eq-hash-table)

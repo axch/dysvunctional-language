@@ -13,9 +13,9 @@
 ;;;   FOL compilation preserves syntactic and type correctness stepwise
 
 (define (careful-macroexpand program)
-  (let ((answer (macroexpand program)))
-    (check (equal? answer (macroexpand answer)))
-    answer))
+  (abegin1
+   (macroexpand program)
+   (check (equal? it (macroexpand it)))))
 
 (define (meticulous-solved-analyze kernel-program answer)
   (let ((analysis (analyze kernel-program)))

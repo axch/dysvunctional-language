@@ -411,16 +411,16 @@
                   (arg-types (primitive-type primitive))))))
     (alist->eq-hash-table
      (map needs-all *primitives*)))
-  (let ((answer (primitive-dependency-map)))
-    (for-each
-     (rule `(define ((? name) (?? args))
-              (argument-types (?? stuff) (? return))
-              (? body))
-           (hash-table/put! answer name
-            (map (lambda (item) (map (lambda (x) #f) args))
-                 (desirable-slot-list return))))
-     defns)
-    answer))
+  (abegin1
+   (primitive-dependency-map)
+   (for-each
+    (rule `(define ((? name) (?? args))
+             (argument-types (?? stuff) (? return))
+             (? body))
+          (hash-table/put! it name
+           (map (lambda (item) (map (lambda (x) #f) args))
+                (desirable-slot-list return))))
+    defns)))
 
 (define (improve-dependency-map defn dependency-map)
   ;; This loop is like the one in ELIMINATE-IN-EXPRESSION, except that
@@ -569,16 +569,15 @@
   (eq-put! thing 'changed #t))
 
 (define (initial-liveness-map defns)
-  (let ((answer
-         (alist->eq-hash-table
-          (map (rule `(define ((? name) (?? args))
-                        (argument-types (?? stuff) (? return))
-                        (? body))
-                     (cons name
-                           (map (lambda (x) #f) (desirable-slot-list return))))
-               defns))))
-    (hash-table/put! answer (definiendum (last defns)) (list #t))
-    answer))
+  (abegin1
+   (alist->eq-hash-table
+    (map (rule `(define ((? name) (?? args))
+                  (argument-types (?? stuff) (? return))
+                  (? body))
+               (cons name
+                     (map (lambda (x) #f) (desirable-slot-list return))))
+         defns))
+   (hash-table/put! it (definiendum (last defns)) (list #t))))
 
 (define (improve-liveness-map! dependency-map liveness-map defn)
   ;; This loop is identical with the one in ELIMINATE-IN-EXPRESSION,
