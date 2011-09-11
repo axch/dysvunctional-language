@@ -189,4 +189,4 @@
         (check (equal? value (loose-union-free-answer program *compilation-results-wallp* #t))))
       (define-test
         ;; At least check that interpret and compile-to-scheme agree
-        (fast-union-free-answer program *compilation-results-wallp*))))
+        (loose-union-free-answer program *compilation-results-wallp*))))
