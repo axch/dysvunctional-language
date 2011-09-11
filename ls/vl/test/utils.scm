@@ -188,7 +188,7 @@
 (define (define-fast-union-free-example-test program #!optional value)
   (if (not (default-object? value))
       (define-test
-        (check (equal? value (fast-union-free-answer program *compilation-results-wallp* #t))))
+        (check (equal? value (loose-union-free-answer program *compilation-results-wallp* #t))))
       (define-test
         ;; At least check that interpret and compile-to-scheme agree
         (fast-union-free-answer program *compilation-results-wallp*))))
