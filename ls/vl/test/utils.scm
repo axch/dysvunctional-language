@@ -133,7 +133,6 @@
 
 (define union-free-answer (union-free-answerer compile-meticulously))
 (define loose-union-free-answer (union-free-answerer compile-carefully))
-(define fast-union-free-answer (union-free-answerer compile-to-scheme))
 
 (define (analyzed-answer program)
   (let ((full-prog (macroexpand program)))
