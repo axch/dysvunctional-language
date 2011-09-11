@@ -127,13 +127,13 @@
   (execute #f))
 
 (define (stage-data->execution-function stage-data)
-  (lambda (program)
+  (lambda (program . extra)
     (let ((prepared
            (((stage-data-prepare stage-data)
              (stage-data-dependencies stage-data))
             program))
           (exec (stage-data-execute stage-data)))
-      (if exec (exec prepared) prepared))))
+      (if exec (apply exec prepared extra) prepared))))
 
 ;;; Given this setup, here is how to wrap all stages in a stage
 ;;; composition with the same wrapper.  The HOW argument is expected
@@ -205,7 +205,7 @@
         `((,name the-name)
           (,execution-function
            ;; Layer of indirection sees changes zapped at the REPL.
-           ,(lambda (program) (exec program)))
+           ,(lambda args (apply exec args)))
           (,clause-head clause-arg ...) ...))))))
 
 ;;; The above example expands into
@@ -252,8 +252,8 @@
     (set-stage-data-execute! stage-data (preserves-everything f))))
 
 (define (preserves-everything exec)
-  (lambda (program)
-    (let ((answer (exec program)))
+  (lambda (program . extra)
+    (let ((answer (apply exec program extra)))
       (eq-clone! program answer)
       answer)))
 
@@ -291,8 +291,8 @@
   (both
    (modify-execution-function
     (lambda (exec)
-      (lambda (program)
-        (present! property (exec program)))))
+      (lambda (program . extra)
+        (present! property (apply exec program extra)))))
    (register-generator! property)))
 
 (define (both f g)
@@ -313,9 +313,9 @@
 (define (preserves property)
   (modify-execution-function
    (lambda (exec)
-     (lambda (program)
+     (lambda (program . extra)
        (let ((val (property-value property program)))
-         (property-value! property val (exec program)))))))
+         (property-value! property val (apply exec program extra)))))))
 
 ;;; The DESTROYS clause modifies the execution function to flush the
 ;;; value of the given property.
@@ -323,8 +323,8 @@
 (define (destroys property)
   (modify-execution-function
    (lambda (exec)
-     (lambda (program)
-       (absent! property (exec program))))))
+     (lambda (program . extra)
+       (absent! property (apply exec program extra))))))
 
 ;; The semantics of COMPUTES are that the execution function doesn't
 ;; actually modify the program at all, it just computes the value that
@@ -335,8 +335,8 @@
   (both
    (modify-execution-function
     (lambda (exec)
-      (lambda (program)
-        (let ((answer (exec program)))
+      (lambda (program . extra)
+        (let ((answer (apply exec program extra)))
           (property-value! property answer program)))))
    (register-generator! property)))
 
