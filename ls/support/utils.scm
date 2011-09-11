@@ -106,7 +106,7 @@
      (visible-named-stage name 'name))))
 
 (define (visible-named-stage stage name)
-  (lambda (input)
+  (lambda (input . extra)
     (if (eq? name 'generate-stage)
         ;; The generate stage wants to display different stats
         (let ((analysis (property-value 'analysis input)))
@@ -127,7 +127,7 @@
           (display " pairs of type annotations")))
     (newline)
     (flush-output)
-    (let ((answer (show-time (lambda () (stage input)))))
+    (let ((answer (show-time (lambda () (apply stage input extra)))))
       (newline)
       (if (eq? name 'generate-stage)
           ;; TODO This was done only in visibly mode the old world

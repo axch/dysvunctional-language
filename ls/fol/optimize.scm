@@ -171,10 +171,10 @@
 
 (define (watching-annotations stage-data)
   (lambda (exec)
-    (lambda (program)
+    (lambda (program . extra)
       (display "(")
       (pp (stage-data-name stage-data))
-      (let ((answer (exec program)))
+      (let ((answer (apply exec program extra)))
         (pp (hash-table/get eq-properties answer #f))
         (display ")")
         answer))))
