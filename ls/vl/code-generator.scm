@@ -330,13 +330,15 @@
 
 (define-stage analyze-stage
   analyze
+  (name analyze)
   (computes analysis))
 
 (define-stage generate-stage
   generate
   (reads analysis)
   ;; Because it transforms the program into a new language
-  (destroys analysis))
+  (destroys analysis)
+  (name generate))
 
 (define analyze-and-generate
   (stage-pipeline generate-stage analyze-stage))
