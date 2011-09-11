@@ -196,7 +196,7 @@
                    define-union-free-example-test)
 
  (define-test (tangent-of-function)
-   (check (equal? 1 (fast-union-free-answer
+   (check (equal? 1 (loose-union-free-answer
                      (dvl-prepare
                       '(let ()
                          (define (adder n)
