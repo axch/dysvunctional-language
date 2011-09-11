@@ -206,14 +206,14 @@
 
  (for-each-example "../../slad/essential-examples.scm"
   (lambda (program #!optional value)
-    (define-fast-union-free-example-test
+    (define-loose-union-free-example-test
       (dvl-prepare (vlad->dvl program)) value)))
 #;
  (for-each
   (lambda (file)
     (for-each-example file
      (lambda (program #!optional value)
-       (define-fast-union-free-example-test
+       (define-loose-union-free-example-test
          (dvl-prepare (vlad->dvl program)) value))))
   '("../examples/amazing-bug.dvl"
     "../examples/amazing-bug-2.dvl"
