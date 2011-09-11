@@ -30,15 +30,15 @@
             (else (loop (cdr bindings)))))))
 
 (define (meticulous-generate program analysis answer)
-  (let ((raw-fol (generate program analysis)))
-    (check (equal? answer (fol-eval raw-fol)))
-    raw-fol))
+  (abegin1
+   (generate program analysis)
+   (check (equal? answer (fol-eval it)))))
 
 (define (meticulous-solved-generate program analysis answer)
-  (let ((raw-fol (strip-argument-types
-                  (meticulous-generate program analysis answer))))
-    (check (equal? `(begin ,answer) raw-fol))
-    raw-fol))
+  (abegin1
+   (strip-argument-types
+    (meticulous-generate program analysis answer))
+   (check (equal? `(begin ,answer) it))))
 
 (define (carefully stage-data)
   (define (check-annotations program)
@@ -83,9 +83,9 @@
 (define ((meticulously answer) stage-data)
   (lambda (exec)
     (lambda (program)
-      (let ((done (((carefully stage-data) exec) program)))
-        (check (equal? answer (fol-eval done)))
-        done))))
+      (abegin1
+       (((carefully stage-data) exec) program)
+       (check (equal? answer (fol-eval it)))))))
 
 (define (determined-answer program)
   (let* ((kernel (careful-macroexpand program))
