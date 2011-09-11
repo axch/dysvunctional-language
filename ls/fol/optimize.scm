@@ -174,10 +174,10 @@
     (lambda (program . extra)
       (display "(")
       (pp (stage-data-name stage-data))
-      (let ((answer (apply exec program extra)))
-        (pp (hash-table/get eq-properties answer #f))
-        (display ")")
-        answer))))
+      (begin1
+       (apply exec program extra)
+       (pp (hash-table/get eq-properties answer #f))
+       (display ")")))))
 
 (define (visibly stage-data)
   (lambda (exec)

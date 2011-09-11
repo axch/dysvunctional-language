@@ -100,9 +100,9 @@
 (define (analysis-queue-pop! analysis)
   (if (null? (analysis-queue analysis))
       (internal-error "Popping an empty queue")
-      (let ((answer (car (analysis-queue analysis))))
-        (set-analysis-queue! analysis (cdr (analysis-queue analysis)))
-        answer)))
+      (begin1
+       (car (analysis-queue analysis))
+       (set-analysis-queue! analysis (cdr (analysis-queue analysis))))))
 
 (define (show-analysis analysis)
   (display analysis)

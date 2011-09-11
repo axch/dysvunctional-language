@@ -127,15 +127,15 @@
           (display " pairs of type annotations")))
     (newline)
     (flush-output)
-    (let ((answer (show-time (lambda () (apply stage input extra)))))
-      (newline)
-      (if (eq? name 'generate-stage)
-          ;; TODO This was done only in visibly mode the old world
-          ;; order, presumably because it explicitly invokes the GC,
-          ;; which would make the test suite too slow if it were done
-          ;; after every code generation.
-          (clear-name-caches!))
-      answer)))
+    (begin1
+     (show-time (lambda () (apply stage input extra)))
+     (newline)
+     (if (eq? name 'generate-stage)
+         ;; TODO This was done only in visibly mode the old world
+         ;; order, presumably because it explicitly invokes the GC,
+         ;; which would make the test suite too slow if it were done
+         ;; after every code generation.
+         (clear-name-caches!)))))
 
 (define (report-size program)
   (let ((size (count-pairs program))
@@ -156,3 +156,10 @@
 
 (define (fmap-maybe f object)
   (if object (f object) #f))
+
+(define-syntax begin1
+  (syntax-rules ()
+    ((_ form1 form ...)
+     (let ((answer form1))
+       form ...
+       answer))))
