@@ -109,9 +109,12 @@
     ((do-stages fol-optimize (meticulously answer))
      (structure-definitions->vectors raw-fol))))
 
-(define ((union-free-answerer compile) program #!optional wallpaper?)
+(define ((union-free-answerer compile) program
+         #!optional wallpaper? no-gensyms?)
   (if (default-object? wallpaper?)
       (set! wallpaper? #f))
+  (if (default-object? no-gensyms?)
+      (set! no-gensyms? #f))
   (if wallpaper?
       (begin
         (display "***NEW PROGRAM ***")
@@ -124,6 +127,9 @@
     (check (not (occurs-in-tree? 'car opt-fol)))
     (check (not (occurs-in-tree? 'cdr opt-fol)))
     (check (not (occurs-in-tree? 'vector-ref opt-fol)))
+
+    (if no-gensyms?
+        (check (not (occurs-in-tree? 'gensym opt-fol))))
 
     (fol-eval opt-fol)))
 
@@ -174,7 +180,7 @@
 (define (define-union-free-example-test program #!optional value)
   (if (not (default-object? value))
       (define-test
-        (check (equal? value (union-free-answer program *compilation-results-wallp*))))
+        (check (equal? value (union-free-answer program *compilation-results-wallp* #t))))
       (define-test
         ;; At least check that interpret and compile-to-scheme agree
         (union-free-answer program *compilation-results-wallp*))))
@@ -182,7 +188,7 @@
 (define (define-fast-union-free-example-test program #!optional value)
   (if (not (default-object? value))
       (define-test
-        (check (equal? value (fast-union-free-answer program *compilation-results-wallp*))))
+        (check (equal? value (fast-union-free-answer program *compilation-results-wallp* #t))))
       (define-test
         ;; At least check that interpret and compile-to-scheme agree
         (fast-union-free-answer program *compilation-results-wallp*))))
