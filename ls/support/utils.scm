@@ -110,21 +110,15 @@
     (if (eq? name 'generate)
         ;; The generate stage wants to display different stats
         (let ((analysis (property-value 'analysis input)))
-          (display "Stage generate on ")
-          (display
-           (length
-            ((access analysis-bindings user-initial-environment) ;; TODO I need a real module system!
-             analysis)))
-          (display " bindings"))
+          (format #t "Stage generate on ~A bindings"
+                  (length
+                   ;; TODO I need a real module system!
+                   ((access analysis-bindings user-initial-environment)
+                    analysis))))
         (let ((size (count-pairs input))
               (stripped-size (count-pairs (strip-argument-types input))))
-          (display "Stage ")
-          (display name)
-          (display " on ")
-          (display stripped-size)
-          (display " pairs + ")
-          (display (- size stripped-size))
-          (display " pairs of type annotations")))
+          (format #t "Stage ~A on ~A pairs + ~A pairs of type annotations"
+                  name stripped-size (- size stripped-size))))
     (newline)
     (flush-output)
     (begin1
@@ -140,12 +134,9 @@
 (define (report-size program)
   (let ((size (count-pairs program))
         (stripped-size (count-pairs (strip-argument-types program))))
-      (display "Final output has ")
-      (display stripped-size)
-      (display " pairs + ")
-      (display (- size stripped-size))
-      (display " pairs of type annotations")
-      (newline))
+    (format #t "Final output has ~A pairs + ~A pairs of type annotations"
+            stripped-size (- size stripped-size))
+    (newline))
   program)
 
 (define (force-assq key lst)
