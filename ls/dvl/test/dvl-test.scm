@@ -226,6 +226,8 @@
     "../examples/amazing-bug-5.dvl"
     "../examples/non-bug.dvl"
     ))
+
+;; TODO This one is just slow (2 seconds on moria on Sep 12, 2011)
 #;
  (define-test (executable-entry-point)
    (check
@@ -233,5 +235,5 @@
      ".2500002594080783\n"
      (with-output-to-string
        (lambda ()
-         (dvl-run-file "examples/sqrt.dvl"))))))
+         (pp (dvl-run-file "examples/sqrt.dvl")))))))
  )
