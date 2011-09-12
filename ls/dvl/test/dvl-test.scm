@@ -49,23 +49,23 @@
     '(if (= (real 10) 0)
          #t
          #f)
-    (compile-meticulously
+    (compile-carefully
      (in-and-loop '(gensym= (gensym) (gensym)))))
 
    (equal? #t
-    (union-free-answer
+    (loose-union-free-answer
      (in-and-loop '(gensym= x (if (> (real 2) (real 1)) x (gensym))))))
 
    (equal? #f
-    (union-free-answer
+    (loose-union-free-answer
      (in-and-loop '(gensym= x (if (< (real 2) (real 1)) x (gensym))))))
 
    (equal? #f
-    (union-free-answer
+    (loose-union-free-answer
      (in-and-loop '(gensym= (gensym) (if (< (real 2) (real 1)) x (gensym))))))
 
    (equal? #f
-    (union-free-answer
+    (loose-union-free-answer
      (in-and-loop '(gensym= (gensym) (if (> (real 2) (real 1)) x (gensym))))))
 
    ;; TODO These two break the analysis because it replicates the loop
@@ -92,27 +92,27 @@
             (loop (- count 1) (if (> (real 2) 1) (gensym) y))))))
 
    (equal? #f
-    (union-free-answer
+    (loose-union-free-answer
      (in-frobnicating-loop '(gensym= x (frobnicate (gensym))))))
 
    (equal? #t
-    (union-free-answer ;; TODO Actually determined, except for sweeping out dead cruft
+    (loose-union-free-answer ;; TODO Actually determined, except for sweeping out dead cruft
      (in-frobnicating-loop '(gensym= x (frobnicate x)))))
 
    (equal? #t
-    (union-free-answer
+    (loose-union-free-answer
      (in-frobnicating-loop '(let ((y (gensym)))
                               (gensym= y (frobnicate y))))))
 
    (equal? #f
-    (union-free-answer
+    (loose-union-free-answer
      (in-frobnicating-loop '(let ((y (gensym)))
                               (gensym= y (frobnicate (gensym)))))))
 
    (equal? '(if (= (real 10) 0)
                 #t
                 #f)
-    (compile-meticulously
+    (compile-carefully
      (in-frobnicating-loop '(let ((y (gensym)))
                               (let ((z (gensym)))
                                 (gensym= z (frobnicate y)))))))
