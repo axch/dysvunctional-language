@@ -337,10 +337,11 @@
       (let ((piece-names (invent-names-for-parts 'receipt shape)))
         (tidy-let-values
          `(let-values ((,piece-names ,new-expr))
-            ,(walk shape piece-names
-                   (lambda (shape new-names)
-                     (assert (null? new-names))
-                     shape)))))))
+            ,(approximate-anf
+              (walk shape piece-names
+                    (lambda (shape new-names)
+                      (assert (null? new-names))
+                      shape))))))))
 
 ;;; SRA supporting procedures
 

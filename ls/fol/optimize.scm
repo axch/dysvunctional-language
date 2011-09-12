@@ -109,7 +109,7 @@
   (requires syntax-checked a-normal-form)
   (generates aggregates-replaced)
   ;; Because of the reconstruction
-  (sra-may-destroy a-normal-form aggregates-replaced)
+  (sra-may-destroy aggregates-replaced)
   ;; Because of reconstruction and let-values simplification (?)
   (destroys lets-lifted)
   ;; By making aliases, and exposing structure slots to CSE
