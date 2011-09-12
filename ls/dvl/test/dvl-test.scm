@@ -49,7 +49,7 @@
     '(if (= (real 10) 0)
          #t
          #f)
-    (compile-to-fol
+    (compile-meticulously
      (in-and-loop '(gensym= (gensym) (gensym)))))
 
    (equal? #t
@@ -112,7 +112,7 @@
    (equal? '(if (= (real 10) 0)
                 #t
                 #f)
-    (compile-to-fol
+    (compile-meticulously
      (in-frobnicating-loop '(let ((y (gensym)))
                               (let ((z (gensym)))
                                 (gensym= z (frobnicate y)))))))
@@ -177,7 +177,7 @@
                     (cons new-accum (loop new-accum)))))
               (let ((start (real 0)))
                 (cons start (loop start))))
-           (compile-to-fol program))))
+           (compile-carefully program))))
 
  (define-test (same-function-escapes-and-is-used-internally)
    (define program
