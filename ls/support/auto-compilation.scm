@@ -8,8 +8,12 @@
       (compiler:compiled-code-pathname-type)))
 
 (define (cf-conditionally filename #!optional environment)
+  (define (default-environment)
+    (if (current-eval-unit #f)
+        (current-load-environment)
+        (nearest-repl/environment)))
   (if (default-object? environment)
-      (set! environment (nearest-repl/environment)))
+      (set! environment (default-environment)))
   (fluid-let ((sf/default-syntax-table environment))
     (sf-conditionally filename))
   (if (cf-seems-necessary? filename)
