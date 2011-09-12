@@ -208,6 +208,10 @@
   (lambda (program #!optional value)
     (define-loose-union-free-example-test
       (dvl-prepare (vlad->dvl program)) value)))
+
+;; TODO These are commented out because they are still slow (as of Sep
+;; 12, 2011) and have rounding error disagreements.  They also use
+;; large but finite amounts of stack space (e.g. --stack 2000 is ok).
 #;
  (for-each
   (lambda (file)
