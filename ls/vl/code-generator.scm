@@ -349,6 +349,5 @@
 (define compile-to-fol
   (stage-pipeline fol-optimize analyze-and-generate))
 
-;; TODO clear-name-caches
-(define compile-visibly
-  (do-stages compile-to-fol visibly))
+(define (compile-visibly program)
+  (compile-to-fol program visibly))

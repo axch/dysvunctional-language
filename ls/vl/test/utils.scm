@@ -98,14 +98,14 @@
   (let* ((kernel (careful-macroexpand program))
          (analysis (analyze kernel))
          (raw-fol (generate kernel analysis)))
-    ((do-stages fol-optimize carefully) raw-fol)))
+    (fol-optimize raw-fol carefully)))
 
 (define (compile-meticulously program)
   (let* ((kernel (careful-macroexpand program))
          (answer (interpret kernel))
          (analysis (analyze kernel))
          (raw-fol (meticulous-generate kernel analysis answer)))
-    ((do-stages fol-optimize (meticulously answer)) raw-fol)))
+    (fol-optimize raw-fol (meticulously answer))))
 
 (define ((union-free-answerer compile) program
          #!optional wallpaper? no-gensyms?)

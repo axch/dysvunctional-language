@@ -93,8 +93,12 @@
 (define (stage-data->stage stage-data)
   (make-entity execute-stage stage-data))
 
-(define (execute-stage stage program)
-  ((stage-data->execution-function (entity-extra stage)) program))
+;;; A stage also accepts any number of optional arguments for how to
+;;; do it, wherewith it wraps all its constituent stages.
+(define (execute-stage stage program . how)
+  (if (null? how)
+      ((stage-data->execution-function (entity-extra stage)) program)
+      (apply execute-stage (do-stages stage (car how)) program (cdr how))))
 
 (define (stage-name stage)
   (stage-data-name (entity-extra stage)))

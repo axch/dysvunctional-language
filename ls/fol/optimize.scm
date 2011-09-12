@@ -185,5 +185,5 @@
   (lambda (exec)
     (visible-named-stage exec (stage-data-name stage-data))))
 
-(define optimize-visibly
-  (do-stages fol-optimize visibly))
+(define (optimize-visibly program)
+  (fol-optimize program visibly))
