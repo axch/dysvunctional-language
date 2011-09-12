@@ -50,25 +50,23 @@ isConstant _           = False
 
 type CseEnv = [(SymExpr, CanName)]
 
-augmentEnv :: [SymExpr] -> [CanName] -> CseEnv -> (CseEnv, [Bool])
+augmentEnv :: [SymExpr] -> [Name] -> CseEnv -> (CseEnv, [Bool])
 augmentEnv ss ns env = (env' ++ env, map (isAcceptableAlias env) ss)
     where
       env' = concat (zipWith bind ss ns)
       bind s n
           | Just c <- lookup s env
-          = [(inj n, c)]
+          = [(SymVar n, c)]
       bind (SymVar _) n
-          = [(inj n, n)]
-      -- bind (SymVar x)  n
-      --     = [(inj n, CanVar x)]
+          = [(SymVar n, CanVar n)]
       bind SymNil n
-          = [(inj n, CanNil)]
+          = [(SymVar n, CanNil)]
       bind (SymBool b) n
-          = [(inj n, CanBool b)]
+          = [(SymVar n, CanBool b)]
       bind (SymReal r) n
-          = [(inj n, CanReal r)]
+          = [(SymVar n, CanReal r)]
       bind s n
-          = [(inj n, n), (s, n)]
+          = [(SymVar n, CanVar n), (s, CanVar n)]
 
 isAcceptableAlias :: CseEnv -> SymExpr -> Bool
 isAcceptableAlias env s = isConstant s || (isVariable s && isInScope env s)
@@ -96,7 +94,7 @@ cseExpr env (Let (Bindings bs) body)
     where
       (xs, es) = unzip bs
       (ss, es') = unzip $ map (cseExpr env) es
-      (env', dead) = augmentEnv ss (map CanVar xs) env
+      (env', dead) = augmentEnv ss xs env
       (sbody, body') = cseExpr env' body
       bs' = [(x, e') | (x, False, e') <- zip3 xs dead es']
 cseExpr env (LetValues (Bindings bs) body)
@@ -107,7 +105,7 @@ cseExpr env (LetValues (Bindings bs) body)
       sss = zipWith destructure xss ss
       destructure _ (SymValues syms) = syms
       destructure xs s = [SymValuesRef s i | i <- [1..length xs]]
-      (env', dead) = augmentEnv (concat sss) (map CanVar (concat xss)) env
+      (env', dead) = augmentEnv (concat sss) (concat xss) env
       (sbody, body') = cseExpr env' body
       bs'| any not dead = zip xss es'
          | otherwise    = []
