@@ -17,11 +17,8 @@
     (lambda (state object)
       (with-current-unparser-state state
         (lambda (port)
-          (display "(-> " port)
-          (write (arg-types object) port)
-          (display " " port)
-          (write (return-type object) port)
-          (display ")" port))))))
+          (format port "(-> ~S ~S)"
+                  (arg-types object) (return-type object)))))))
   args
   return)
 
