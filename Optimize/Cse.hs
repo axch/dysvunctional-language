@@ -50,6 +50,13 @@ isConstant _           = False
 
 type CseEnv = [(SymExpr, CanName)]
 
+canonicalize :: CseEnv -> SymExpr -> SymExpr
+canonicalize env s
+    | Just c <- lookup s env, let s' = inj c, isAcceptableAlias env s'
+    = s'
+    | otherwise
+    = s
+
 augmentEnv :: [SymExpr] -> [Name] -> CseEnv -> (CseEnv, [Bool])
 augmentEnv ss ns env = (env' ++ env, map (isAcceptableAlias env) ss)
     where
@@ -109,26 +116,33 @@ cseExpr env (LetValues (Bindings bs) body)
       (sbody, body') = cseExpr env' body
       bs'| any not dead = zip xss es'
          | otherwise    = []
-cseExpr env (Car e)              = (SymCar se, Car e')
+cseExpr env (Car e)
+    = (canonicalize env (SymCar se), Car e')
     where
       (se, e') = cseExpr env e
-cseExpr env (Cdr e)              = (SymCdr se, Cdr e')
+cseExpr env (Cdr e)
+    = (canonicalize env (SymCdr se), Cdr e')
     where
       (se, e') = cseExpr env e
-cseExpr env (VectorRef e i)      = (SymVectorRef se i, VectorRef e' i)
+cseExpr env (VectorRef e i)
+    = (canonicalize env (SymVectorRef se i), VectorRef e' i)
     where
       (se, e') = cseExpr env e
-cseExpr env (Cons e1 e2)         = (SymCons se1 se2, Cons e1' e2')
+cseExpr env (Cons e1 e2)
+    = (canonicalize env (SymCons se1 se2), Cons e1' e2')
     where
       (se1, e1') = cseExpr env e1
       (se2, e2') = cseExpr env e2
-cseExpr env (Vector es)          = (SymVector ses, Vector es')
+cseExpr env (Vector es)
+    = (canonicalize env (SymVector ses), Vector es')
     where
       (ses, es') = unzip (map (cseExpr env) es)
-cseExpr env (Values es)          = (SymValues ses, Values es')
+cseExpr env (Values es)
+    = (canonicalize env (SymValues ses), Values es')
     where
       (ses, es') = unzip (map (cseExpr env) es)
-cseExpr env (ProcCall proc args) = (SymProcCall proc sargs, ProcCall proc args')
+cseExpr env (ProcCall proc args)
+    = (canonicalize env (SymProcCall proc sargs), ProcCall proc args')
     where
       (sargs, args') = unzip (map (cseExpr env) args)
 
