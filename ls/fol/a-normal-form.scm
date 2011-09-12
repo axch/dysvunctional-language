@@ -174,6 +174,10 @@
   (define (walk tree count)
     (cond ((equal? thing tree)
            (+ count 1))
+          ((lambda-form? tree)
+           (if (>= (walk (caddr tree) 0) 1)
+               2 ; A binding in a lambda is not unique
+               count))
           ((pair? tree)
            (let ((left-count (walk (car tree) count)))
              (if (<= left-count 1)

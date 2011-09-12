@@ -198,4 +198,13 @@
         (let-values (((x one) (foo 5)))
           (cons x one)))))
 
+   ;; Do not inline bindings into lambdas
+   (equal?
+    '(let ((x (real 3)))
+       (lambda (foo)
+         (+ foo x)))
+    (reverse-anf
+     '(let ((x (real 3)))
+        (lambda (foo)
+          (+ foo x)))))
    ))
