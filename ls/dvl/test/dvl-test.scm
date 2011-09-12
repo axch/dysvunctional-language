@@ -227,6 +227,16 @@
     "../examples/non-bug.dvl"
     ))
 
+ (define-test (executable-entry-point-from-vl)
+   (check
+    (equal?
+     "(-9.223456610994083e-3 . 1.0078886869645214)\n"
+     (with-output-to-string
+       (lambda ()
+         (fluid-let ((sf:noisy? #f)
+                     (compiler:noisy? #f))
+           (pp (dvl-run-file "../vl/euler-integral.scm"))))))))
+
 ;; TODO This one is just slow (2 seconds on moria on Sep 12, 2011)
 #;
  (define-test (executable-entry-point)
