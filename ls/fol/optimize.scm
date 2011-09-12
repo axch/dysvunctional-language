@@ -120,9 +120,11 @@
 
 (define-stage intraprocedural-cse
   %intraprocedural-cse
-  ;; The latter two requirements are not really requirements, but it
-  ;; works much better this way.
-  (requires syntax-checked unique-names a-normal-form lets-lifted)
+  (requires syntax-checked)
+  (requires unique-names) ; Because it does some internal let-lifting
+  ;; These two requirements are not really requirements, but it works
+  ;; much better this way.
+  (requires a-normal-form lets-lifted)
   (generates no-common-subexpressions)
   ;; By leaving some dead aliases around
   (destroys no-intraprocedural-dead-variables
