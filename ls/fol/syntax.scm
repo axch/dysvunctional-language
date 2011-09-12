@@ -266,6 +266,21 @@
       (cadr exp)
       exp))
 
+;;; Measurements
+#;
+(define (print-fol-statistics program)
+  (define defn-statistics
+    (rule `(define ((? name) (?? formals))
+             (argument-types (?? etc))
+             (? body))
+          (make-defn-statistics
+           1 (length formals))))
+  (let ((size (count-pairs program))
+        (stripped-size (count-pairs (strip-argument-types program)))
+        (defn-count (if (begin-form? program)
+                        (length (filter definition? program))
+                        0)))))
+
 ;;; Flushing type signatures
 
 ;; Flushing type signatures is only useful for viewing a program, as
