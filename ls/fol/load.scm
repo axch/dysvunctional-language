@@ -23,6 +23,8 @@
 
 (load-relative "../support/rule-system/load" fol-environment)
 
+(load-option 'format)
+
 (for-each
  (lambda (file)
    (load-relative-compiled file fol-environment))
@@ -96,7 +98,7 @@
      make-name name->symbol reset-fol-names!
 
      ;; Stage manipulation TODO
-     stage-pipeline do-stages visibly parse-stage
+     stage-pipeline do-stages visibly volubly parse-stage
      present? property-value
      name execution-function
      reads computes generates preserves destroys

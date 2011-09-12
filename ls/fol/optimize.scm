@@ -185,5 +185,14 @@
   (lambda (exec)
     (visible-named-stage exec (stage-data-name stage-data))))
 
+(define (volubly stage-data)
+  (lambda (exec)
+    (lambda (program . extra)
+      (format #t "Stage ~A on " (stage-data-name stage-data))
+      (print-fol-statistics program)
+      (begin1
+       (show-time (lambda () (apply exec program extra)))
+       (newline)))))
+
 (define (optimize-visibly program)
   (fol-optimize program visibly))

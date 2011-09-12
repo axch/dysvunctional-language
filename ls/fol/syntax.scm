@@ -267,19 +267,41 @@
       exp))
 
 ;;; Measurements
-#;
+
 (define (print-fol-statistics program)
   (define defn-statistics
     (rule `(define ((? name) (?? formals))
-             (argument-types (?? etc))
+             (? arg-types)
              (? body))
-          (make-defn-statistics
-           1 (length formals))))
-  (let ((size (count-pairs program))
-        (stripped-size (count-pairs (strip-argument-types program)))
-        (defn-count (if (begin-form? program)
-                        (length (filter definition? program))
-                        0)))))
+          (list
+           (length formals) (count-pairs body) (count-pairs arg-types))))
+  (define (display-list-statistics items description)
+    (if (not (null? items))
+        (let ((sorted (sort items >)))
+          (let ((mean (list-ref sorted (quotient (length items) 2)))
+                (top (take sorted (min 10 (length sorted)))))
+            (format #t "mode ~A: ~A\ntop ~As: ~A\n"
+                    description mean description top)))))
+  (let* ((size (count-pairs program))
+         (stripped-size (count-pairs (strip-argument-types program)))
+         (program (if (begin-form? program)
+                      program
+                      `(begin ,program)))
+         (defns (filter definition? program))
+         (defn-count (length defns))
+         (defn-stats (map defn-statistics defns))
+         (body-sizes (cons (count-pairs (last program))
+                           (map cadr defn-stats)))
+         (formal-lengths (map car defn-stats))
+         (type-decl-sizes (map caddr defn-stats))
+         )
+    (format #t (string-append "~A pairs + ~A pairs of type annotations\n"
+                              "~A procedure definitions\n")
+            size (- size stripped-size) defn-count)
+    (display-list-statistics body-sizes "expression size")
+    (display-list-statistics formal-lengths "formal length")
+    (display-list-statistics type-decl-sizes "type annotation size")
+    (flush-output)))
 
 ;;; Flushing type signatures
 
