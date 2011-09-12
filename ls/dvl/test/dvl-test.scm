@@ -191,9 +191,10 @@
      (check (equal? 7 (proc 2)))
      (check (equal? 0 (proc -5)))))
 
- (for-each-example "../../vl/examples.scm" define-union-free-example-test)
+ (for-each-example "../../vl/examples.scm"
+                   define-loose-union-free-example-test)
  (for-each-example "../../vl/test/test-vl-programs.scm"
-                   define-union-free-example-test)
+                   define-loose-union-free-example-test)
 
  (define-test (tangent-of-function)
    (check (equal? 1 (loose-union-free-answer
