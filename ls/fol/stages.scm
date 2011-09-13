@@ -209,7 +209,9 @@
         `((,name the-name)
           (,execution-function
            ;; Layer of indirection sees changes zapped at the REPL.
-           ,(lambda args (apply exec args)))
+           ,(named-lambda (the-name . args)
+              ;; Defeat of tail recursion shows up in the stack sampler.
+              (begin1 (apply exec args))))
           (,clause-head clause-arg ...) ...))))))
 
 ;;; The above example expands into
