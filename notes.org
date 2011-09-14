@@ -101,7 +101,13 @@ My approach follows more or less that of Alexey.  The definition of
 "Scrap Your Boilerplate" might be successfully applied here.
 
 ** TODO Study SYB papers.  Does the SYB approach apply here?
-** TODO Write a test suite for my FOL implementation.
+   Uniplate by Neil Mitchell does.
+** DONE Write a test suite for my FOL implementation.
+   - State "DONE"       from "TODO"       [2011-09-13 Tue 14:58]
+     Not exactly how I envisioned, but it is better than nothing.  The
+     test suit uses my optimizer to optimize some FOL program and then
+     runs them in Scheme using =fol-eval= and compares the result to
+     the result of running the unoptimized version of the same program.
    Testing alpha-renamer can be fully automated:
    - take a DVL program,
    - compile it to raw FOL,
@@ -110,6 +116,19 @@ My approach follows more or less that of Alexey.  The definition of
    - check the result against Alexey's FOL using =alpha-rpename?=).
    What about inlining?  Is there a fully automatic way to test it?
 
+
+Alexey wants me to implement a "smart" inliner.  "Smart" means the
+following:
+- compute a feedback vertex set of the call graph
+- compute the call graph again, omitting the feedback set and giving
+  each edge a weight: an edge from procedure =p1= to procedure =p2=
+  has weight =n= if =p2= is called =n= times in the body of =p1=.
+- For each vertex of the call graph (for each procedure not in the
+  feedback vertex set), answer the question: if I inline this
+  procedure, how much will the code size increase (say, in terms of
+  the number of nodes of AST)?  Each inlined procedure call will be
+  replaced with the body of the procedure (wrapped into a LET binding
+  the formals to arguments, which we neglect).
 * Type checker
 
 I would like to implement a type checker for FOL.  Because FOL is a
