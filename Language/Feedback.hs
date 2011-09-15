@@ -92,7 +92,7 @@ mkNodeMap graph = compose (map insert_vertex graph) initial_node_map
           = compose (map (attachEdge name) neighbors)
 
 inlineCost :: Node a -> Int
-inlineCost node = size node * totalInDegree node
+inlineCost node = size node * (totalInDegree node - 1)
 
 acceptableInlinees :: Ord a => Int -> Graph a -> [a]
 acceptableInlinees threshold = prune [] 0 . mkNodeMap
