@@ -18,9 +18,9 @@ data Node a = Node { outEdges :: Map a Int
 multiplicity :: Ord a => a -> Map a Int -> Int
 multiplicity name = fromMaybe 0 . Map.lookup name
 
-outDegree, inDegree :: Ord a => a -> Node a -> Int
-outDegree name = multiplicity name . outEdges
-inDegree  name = multiplicity name . inEdges
+outMultiplicity, inMultiplicity :: Ord a => a -> Node a -> Int
+outMultiplicity name = multiplicity name . outEdges
+inMultiplicity  name = multiplicity name . inEdges
 
 totalDegree :: Map a Int -> Int
 totalDegree = Map.fold (+) 0
@@ -105,7 +105,7 @@ acceptableInlinees threshold = prune [] 0 . mkNodeMap
           | otherwise
           = is
           where
-            isInlinable name node = outDegree name node == 0
+            isInlinable name node = outMultiplicity name node == 0
             inlinable = Map.filterWithKey isInlinable node_map
             (candidate_name, candidate_cost) = findMinWith inlineCost inlinable
             new_total_cost = old_total_cost + candidate_cost
