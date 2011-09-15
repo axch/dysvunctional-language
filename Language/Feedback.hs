@@ -15,12 +15,12 @@ data Node a = Node { outEdges :: Map a Int
                    , size     :: Int
                    }
 
-degree :: Ord a => a -> Map a Int -> Int
-degree name = fromMaybe 0 . Map.lookup name
+multiplicity :: Ord a => a -> Map a Int -> Int
+multiplicity name = fromMaybe 0 . Map.lookup name
 
 outDegree, inDegree :: Ord a => a -> Node a -> Int
-outDegree name = degree name . outEdges
-inDegree  name = degree name . inEdges
+outDegree name = multiplicity name . outEdges
+inDegree  name = multiplicity name . inEdges
 
 totalDegree :: Map a Int -> Int
 totalDegree = Map.fold (+) 0
@@ -57,7 +57,7 @@ inlineNode' scrutinee_name (Node o i s) node_map
               inEdges = Map.unionWith (+) new_in_edges old_in_edges
             }
           where
-            d = degree neighbor_name o
+            d = multiplicity neighbor_name o
             old_in_edges = Map.delete scrutinee_name (inEdges neighbor_node)
             new_in_edges = Map.map (* d) i
 
@@ -68,7 +68,7 @@ inlineNode' scrutinee_name (Node o i s) node_map
             , size = size neighbor_node + d * s
             }
           where
-            d = degree neighbor_name i
+            d = multiplicity neighbor_name i
             old_out_edges = Map.delete scrutinee_name (outEdges neighbor_node)
             new_out_edges = Map.map (* d) o
 
