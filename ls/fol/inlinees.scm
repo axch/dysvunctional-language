@@ -10,7 +10,7 @@
 
 (define (hash-table/fold procedure initial hash-table)
   (hash-table/fold-with-key
-   (lambda (key value result)
+   (lambda (_ value result)
      (procedure value result))
    initial
    hash-table))
@@ -42,16 +42,18 @@
   (if (null? list)
       (error "empty list")
       (let* ((x0 (car list))
-             (c0 (cost x0)))
-        (for-each
-         (lambda (x)
-           (let ((c (cost x)))
-             (if (< c c0)
-                 (begin
-                   (set! x0 x)
-                   (set! c0 c)))))
-         (cdr list))
-        x0)))
+             (c0 (cost x0))
+             (xs (cdr list)))
+        (let loop ((x0 x0)
+                   (c0 c0)
+                   (xs xs))
+          (if (null? xs)
+              x0
+              (let* ((x (car xs))
+                     (c (cost x)))
+                (if (< c c0)
+                    (loop x c (cdr xs))
+                    (loop x0 c0 (cdr xs)))))))))
 
 (define (inlinees threshold graph)
   ;; NODE-MAP is a hash-table mapping names (symbols) to node objects.
@@ -181,7 +183,7 @@
   (define (prune inlinees-list old-total-cost)
     (define (inlinable? name node)
       (zero? (out-multiplicity name node)))
-    (let (inlinable)
+    (let ((inlinable '()))
       (hash-table/for-each
        node-map
        (lambda (name node)
