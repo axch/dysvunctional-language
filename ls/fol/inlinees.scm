@@ -136,8 +136,8 @@
 
   (define (inline-node! name)
     (hash-table/lookup
-     name
      node-map
+     name
      (lambda (node)
        (%inline-node! name node))
      (lambda () #f)))
