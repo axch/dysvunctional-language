@@ -46,14 +46,14 @@
                            (cons (definiendum defn) defn))
                          definitions)))
          (call-graph
-          (map cons definitions
-               (map (lambda (defn)
-                      ((unique strong-eq-hash-table-type)
-                       (filter-map-tree (lambda (leaf)
-                                          (hash-table/get defn-map leaf #f))
-                                        (definiens defn))))
-                    definitions)))
-         (non-inlinees (feedback-vertex-set call-graph))
-         (inlinees (lset-difference eq? definitions non-inlinees)))
+          (map (lambda (defn)
+                 (cons defn
+                       (cons (count-pairs (definiendum defn))
+                             (filter-map-tree (lambda (leaf)
+                                                (hash-table/get defn-map leaf #f))
+                                              (definiens defn)))))
+               definitions))
+         (inlinees (acceptable-inlinees (count-pairs program) call-graph))
+         (non-inlinees (lset-difference eq? definitions inlinees)))
     (map cons (map definiendum inlinees)
          (map definiens (map remove-defn-argument-types inlinees)))))
