@@ -40,6 +40,7 @@
    "structs"
    "type-check"
    "feedback-vertex-set"
+   "inlinees"
    "inline"
    "a-normal-form"
    "sra"
