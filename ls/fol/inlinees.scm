@@ -182,7 +182,7 @@
      update-in-neighbor!
      (hash-table/key-list (node-in-edges node))))
 
-  (define (prune inlinees old-total-cost)
+  (define (prune inlinees old-cost-increase)
     (define (inlinable? name node)
       (zero? (out-multiplicity name node)))
     (let ((inlinable '()))
@@ -200,12 +200,12 @@
            inlinable
            (lambda (candidate candidate-cost)
              (let ((candidate-name (car candidate))
-                   (new-total-cost (+ old-total-cost
+                   (new-cost-increase (+ old-cost-increase
                                       candidate-cost)))
-               (if (<= new-total-cost threshold)
+               (if (<= new-cost-increase threshold)
                    (begin
                      (inline-node! candidate-name)
                      (prune (cons candidate-name inlinees)
-                            new-total-cost))
+                            new-cost-increase))
                    inlinees)))))))
   (prune '() 0))
