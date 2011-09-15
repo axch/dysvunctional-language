@@ -48,7 +48,7 @@
          (call-graph
           (map (lambda (defn)
                  (cons defn
-                       (cons (count-pairs (definiendum defn))
+                       (cons (count-pairs (definiens defn))
                              (filter-map-tree (lambda (leaf)
                                                 (hash-table/get defn-map leaf #f))
                                               (definiens defn)))))
