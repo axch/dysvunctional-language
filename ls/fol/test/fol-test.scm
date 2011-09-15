@@ -207,4 +207,16 @@
      '(let ((x (real 3)))
         (lambda (foo)
           (+ foo x)))))
+
+   ;; TODO The fol optimizer should get rid of unused procedures, even
+   ;; if they call themselves.
+   #;
+   (equal? 1 (fol-optimize
+              '(begin
+                 (define (fact n)
+                   (argument-types real real)
+                   (if (= n 1)
+                       1
+                       (* n (fact (- n 1)))))
+                 1)))
    ))
