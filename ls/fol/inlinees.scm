@@ -109,14 +109,16 @@
   (define (add-out-edge! name1 name2)
     (hash-table/adjust!
      (lambda (node1)
-       (hash-table/insert-with! + name2 1 (node-out-edges node1)))
+       (hash-table/insert-with! + name2 1 (node-out-edges node1))
+       node1)
      name1
      node-map))
 
   (define (add-in-edge! name1 name2)
     (hash-table/adjust!
      (lambda (node1)
-       (hash-table/insert-with! + name2 1 (node-in-edges node1)))
+       (hash-table/insert-with! + name2 1 (node-in-edges node1))
+       node1)
      name1
      node-map))
 
