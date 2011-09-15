@@ -152,26 +152,28 @@
         (hash-table/remove! (node-in-edges neighbor-node) name)
         (hash-table/for-each
          (node-in-edges node)
-         (lambda (in-node-name in-multiplicity)
+         (lambda (in-node-name in-node-multiplicity)
            (hash-table/insert-with!
             +
             in-node-name
-            (* d in-multiplicity)
-            (node-in-edges neighbor-node))))))
+            (* d in-node-multiplicity)
+            (node-in-edges neighbor-node))))
+        neighbor-node))
     (define (%update-in-neighbor! neighbor-name neighbor-node)
       (let ((d (multiplicity neighbor-name (node-in-edges node))))
         (hash-table/remove! (node-out-edges neighbor-node) name)
         (hash-table/for-each
-         (node-out-edge node)
-         (lambda (out-node-name out-multiplicity)
+         (node-out-edges node)
+         (lambda (out-node-name out-node-multiplicity)
            (hash-table/insert-with!
             +
             out-node-name
-            (* d out-multiplicity)
+            (* d out-node-multiplicity)
             (node-out-edges neighbor-node))))
         (set-node-size! neighbor-node
                         (+ (node-size neighbor-node)
-                           (* d (node-size node))))))
+                           (* d (node-size node))))
+        neighbor-node))
     (hash-table/remove! node-map name)
     (for-each
      update-out-neighbor!
@@ -180,7 +182,7 @@
      update-in-neighbor!
      (hash-table/key-list (node-in-edges node))))
 
-  (define (prune inlinees-list old-total-cost)
+  (define (prune inlinees old-total-cost)
     (define (inlinable? name node)
       (zero? (out-multiplicity name node)))
     (let ((inlinable '()))
@@ -188,20 +190,22 @@
        node-map
        (lambda (name node)
          (if (inlinable? name node)
-             (set! inlinalble (cons (cons name node) inlinable)))))
-      (if (null inlinable)
-          inlinees-list
-          (let* ((candidate
-                  (minimum-by
-                   (lambda (name.node)
-                     (inline-cost (cdr name.node)))
-                   inlinable))
-                 (candidate-name (car candidate))
-                 (candidate-cost (inline-cost (cdr candidate))))
-            (if (<= new-total-cost threshold)
-                (begin
-                  (inline-node! candidate-name)
-                  (prune (cons candidate-name inlinees-list)
-                         new-total-cost))
-                inlinees-list)))))
+             (set! inlinable
+                   (cons (cons name (inline-cost node))
+                         inlinable)))))
+      (if (null? inlinable)
+          inlinees
+          (minimum-by
+           cdr
+           inlinable
+           (lambda (candidate candidate-cost)
+             (let ((candidate-name (car candidate))
+                   (new-total-cost (+ old-total-cost
+                                      candidate-cost)))
+               (if (<= new-total-cost threshold)
+                   (begin
+                     (inline-node! candidate-name)
+                     (prune (cons candidate-name inlinees)
+                            new-total-cost))
+                   inlinees)))))))
   (prune '() 0))
