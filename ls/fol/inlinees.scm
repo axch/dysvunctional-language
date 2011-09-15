@@ -126,7 +126,11 @@
 
   (define (inline-cost node)
     (* (node-size node)
-       (- (total-in-degree node) 1)))
+       ;; If NODE has no incoming edges (i.e., nobody calls the
+       ;; corresponding procedure), give NODE inline cost 0. Or
+       ;; should we give it infinite cost and never consider it
+       ;; for inlining?
+       (max 0 (- (total-in-degree node) 1))))
 
   (define (inline-node! name)
     (hash-table/lookup
