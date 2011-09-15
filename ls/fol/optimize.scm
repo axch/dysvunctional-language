@@ -169,7 +169,9 @@
    scalar-replace-aggregates
    eliminate-intraprocedural-dead-code
    intraprocedural-cse
-   inline))
+   inline
+   eliminate-intraprocedural-dead-code
+   intraprocedural-cse))
 
 (define (watching-annotations stage-data)
   (lambda (exec)

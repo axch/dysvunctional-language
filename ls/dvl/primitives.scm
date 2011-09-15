@@ -65,7 +65,8 @@
                abstract-answer
                (base first second))
            (dvl-error "Bad argument" name
-                      (error-irritant/noise " expects two reals, given") first second))))))
+                      (error-irritant/noise " expects two reals, given")
+                      first second))))))
 
 ;;; Type predicates need to take care to respect the possible abstract
 ;;; types.
@@ -260,9 +261,20 @@
                   (else
                    abstract-boolean)))
           (dvl-error "Bad argument" 'gensym=
-                      (error-irritant/noise " expects two gensyms, given") first second))))))
+                     (error-irritant/noise " expects two gensyms, given")
+                     first second))))))
 
 (define-primitive-type-predicate gensym?)
+
+;;;; User detection of errors
+
+(add-primitive!
+ (simple-primitive 'error 0
+  (lambda (arg)
+    (error "DVL user error" arg))
+  (lambda (arg)
+    ;; TODO Add support for strings as error messages
+    (dvl-error "DVL user error" arg))))
 
 (define (initial-user-env)
   (make-env

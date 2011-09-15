@@ -1,0 +1,74 @@
+(define (((naive-euler state-deriv) step) state)
+  (+ state (* step (state-deriv state))))
+
+(define (((manual-rk4 state-deriv) step) state)
+  (let* ((k1 (* step (state-deriv state)))
+         (k2 (* step (state-deriv (+ state (* 1/2 k1)))))
+         (k3 (* step (state-deriv (+ state (* 1/2 k2)))))
+         (k4 (* step (state-deriv (+ state k3)))))
+    (+ state (* 1/6 (+ k1 (+ (* 2 k2) (+ (* 2 k3) k4)))))))
+
+;; A tableau is a matrix of coefficients for the various steps
+(define ((((rk-by-tableau tableau) state-deriv) step) state)
+  (let loop ((state-deltas '())
+             (derivatives '())
+             (coeff-lists (map reverse tableau)))
+    (if (null? coeff-lists)
+        ;; TODO Should check for null state-deltas (which would have
+        ;; meant a null tableau) but need an error system for that.
+        (+ state (car state-deltas))
+        (let* ((new-state-delta
+                (sum (map2 * (car coeff-lists) derivatives)))
+               (new-derivative
+                (* step (state-deriv (+ state new-state-delta)))))
+          (loop (cons new-state-delta state-deltas)
+                (cons new-derivative derivatives)
+                (cdr coeff-lists))))))
+
+
+;; Things I wish the system would (effectively) deduce by itself
+;; 1) naive-euler is 
+;;    0 |
+;;      | 1
+;;    heun's method, RK4, midpoint method, etc.
+;; 2) RK4 reduces to the simpson rule for quadrature when f(t,y)
+;;    doesn't depend on y.
+
+(define naive-euler-again
+  (rk-by-tableau
+   '(()
+     (1))))
+
+(define rk4-again
+  (rk-by-tableau
+   '(()
+     (1/2)
+     (0   1/2)
+     (0   0   1)
+     (1/6 1/3 1/3 1/6))))
+
+(define (exp-state-deriv (cons t y))
+  (cons 1 y))
+
+(define exp-init (cons (real 0) (real 1)))
+
+(define (sin-state-deriv (list t y y-prime))
+  (list 1 y-prime (- 0 y)))
+
+(define sin-init (list (real 0) (real 0) (real 1)))
+
+(define (step-stream method state-deriv init-state)
+  (let loop ((state init-state))
+    (cons state
+          (lambda (step)
+            (loop (((method state-deriv) step) state))))))
+
+(define euler (step-stream naive-euler-again sin-state-deriv sin-init))
+(define rk4   (step-stream rk4-again sin-state-deriv sin-init))
+
+;; I have verified that rk4-exp and rk4-exp-2 compile to the same code
+;; up to algebraic manipulations (e.g. multiplying by 1/3 instead of
+;; multiplying by 2 and then by 1/6), by symbolically evaluating them
+;; both in ScmUtils.
+
+;(list euler rk4)
