@@ -51,6 +51,8 @@
               (if (< c c0)
                   (loop x c (cdr xs))
                   (loop x0 c0 (cdr xs))))))))
+
+(define (acceptable-inlinees threshold graph)
   (define-structure (node safe-accessors)
     out-edges
     in-edges
@@ -93,6 +95,30 @@
   (define (attach-edge! name1 name2)
     (add-out-edge! name1 name2)
     (add-in-edge!  name2 name1))
+
+  ;; NODE-MAP is a hash-table mapping names (symbols) to NODE objects.
+  (define node-map (make-eq-hash-table))
+  ;; RECORD is of the shape (NAME . (SIZE . NEIGHBORS)).
+  (define (insert-vertex! record)
+    (let ((name      (car  record))
+          (neighbors (cddr record)))
+      (for-each
+       (lambda (neighbor)
+         (attach-edge! name neighbor))
+       neighbors)))
+  (for-each
+   (lambda (record)
+     (let ((name (car  record))
+           (size (cadr record)))
+       (hash-table/put!
+        node-map
+        name
+        (make-node
+         (make-eq-hash-table)
+         (make-eq-hash-table)
+         size))))
+   graph)
+  (for-each insert-vertex! graph)
 
   (define (inline-cost node)
     (* (node-size node)
