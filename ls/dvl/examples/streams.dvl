@@ -1,0 +1,30 @@
+;; A poor man's stream library
+
+(define (promise thunk)
+  thunk)
+
+(define (force promise)
+  (promise))
+
+(define ((iterate f) state)
+  (promise
+   (lambda ()
+     (cons state ((iterate f) (f state))))))
+
+(define ((drop n) stream)
+  (if (<= n 0)
+      stream
+      ((drop (- n 1))
+       (cdr (force stream)))))
+
+(define ((downsample period) stream)
+  (promise
+   (lambda ()
+     (let (((cons x xs) (force stream)))
+       (cons x ((drop (- period 1)) xs))))))
+
+(define (stream-map f stream)
+  (promise
+   (lambda ()
+     (let (((cons x xs) (force stream)))
+       (cons (f x) ((stream-map f) xs))))))

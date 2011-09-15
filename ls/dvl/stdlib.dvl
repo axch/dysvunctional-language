@@ -158,6 +158,15 @@
 
 (define (length l) (if (null? l) 0 (+ (length (cdr l)) 1)))
 
+(define (reverse l)
+  (let loop ((l l)
+             (answer '()))
+    (if (null? l)
+        answer
+        (loop (cdr l) (cons (car l) answer)))))
+
+(define (map f l) (if (null? l) '() (cons (f (car l)) (map f (cdr l)))))
+
 (define (map2 f l1 l2)
  (if (null? l1)
      '()
@@ -241,12 +250,12 @@
   (lambda (thing1 thing2)
     (f (primal* thing1) (primal* thing2))))
 
-(define (g:+ args) ((lift-real*real->real + (lambda (x1 x2) 1) (lambda (x1 x2) 1)) args))
-(define (g:- args) ((lift-real*real->real - (lambda (x1 x2) 1) (lambda (x1 x2) -1)) args))
-(define (g:* args) ((lift-real*real->real * (lambda (x1 x2) x2) (lambda (x1 x2) x1)) args))
+(define (g:+ args) ((lift-real*real->real v:+ (lambda (x1 x2) 1) (lambda (x1 x2) 1)) args))
+(define (g:- args) ((lift-real*real->real v:- (lambda (x1 x2) 1) (lambda (x1 x2) -1)) args))
+(define (g:* args) ((lift-real*real->real v:* (lambda (x1 x2) x2) (lambda (x1 x2) x1)) args))
 (define (g:/ args)
   ((lift-real*real->real
-    / (lambda (x1 x2) (g:/ 1 x2)) (lambda (x1 x2) (g:- 0 (g:/ x1 (g:* x2 x2))))) args))
+    v:/ (lambda (x1 x2) (g:/ 1 x2)) (lambda (x1 x2) (g:- 0 (g:/ x1 (g:* x2 x2))))) args))
 (define (g:sqrt args) ((lift-real->real sqrt (lambda (x) (g:/ 1 (g:* 2 (g:sqrt x))))) args))
 (define (g:exp args) ((lift-real->real exp (lambda (x) (g:exp x))) args))
 (define (g:log args) ((lift-real->real log (lambda (x) (g:/ 1 x))) args))
@@ -270,3 +279,76 @@
   (if (g:negative? x)
       (g:- 0 x)
       x))
+
+(define (pointwise f obj)
+  (cond ((real? obj)
+         (f obj))
+        ((pair? obj)
+         (cons (f (car obj)) (f (cdr obj))))
+        ((procedure? obj)
+         (lambda (x) (f (obj x))))
+        (else
+         obj)))
+
+(define (equal? x y)
+ (or
+  (and (null? x) (null? y))
+  (and (boolean? x) (boolean? y) (or (and x y) (and (not x) (not y))))
+  (and (real? x) (real? y) (= x y))
+  (and (pair? x) (pair? y) (equal? (car x) (car y)) (equal? (cdr x) (cdr y)))
+  (and (gensym? x) (gensym? y) (gensym= x y))))
+
+(define (pointwise2 f obj1 obj2)
+  (cond ((and (real? obj1) (real? obj2))
+         (f obj1 obj2))
+        ((and (pair? obj1) (pair? obj2))
+         (cons (f (car obj1) (car obj2))
+               (f (cdr obj1) (cdr obj2))))
+        ((and (procedure? obj1) (procedure? obj2))
+         (lambda (z)
+           (f (obj1 z) (obj2 z))))
+        ((equal? obj1 obj2)
+         obj1)
+        (else (error)) ; TODO Error string "Object shape mismatch"
+        ))
+
+(define (v:+ x y)
+  (cond ((universal-zero? x) y)
+        ((universal-zero? y) x)
+        ((and (real? x) (real? y))
+         (+ x y))
+        (else
+         (pointwise2 g:+ x y))))
+
+(define (v:- x y)
+  (v:+ x (g:* -1 y)))
+
+(define (v:* obj1 obj2)
+  (if (real? obj1)
+      (if (real? obj2)
+          (* obj1 obj2)
+          (pointwise (lambda (x) (g:* obj1 x)) obj2))
+      (if (real? obj2)
+          (pointwise (lambda (x) (g:* x obj2)) obj1)
+          (error)) ; TODO Error string "Multiplication mismatch"
+      ))
+
+(define (v:/ obj1 obj2)
+  (if (real? obj2)
+      (if (real? obj1)
+          (/ obj1 obj2)
+          (pointwise (lambda (x) (g:/ x obj2)) obj1))
+      (error) ; TODO Error string "Dividing by a non-real"
+      ))
+
+(define zero (gensym))
+
+(define (universal-zero? thing)
+  (and (gensym? thing)
+       (gensym= thing zero)))
+
+(define ((reduce f i) l)
+  (if (null? l) i (f (car l) ((reduce f i) (cdr l)))))
+
+(define sum (reduce g:+ zero))
+(define product (reduce g:* 1))
