@@ -38,51 +38,19 @@
    key
    hash-table))
 
-(define (minimum-by cost list)
+(define (minimum-by cost list win)
   (if (null? list)
       (error "empty list")
-      (let* ((x0 (car list))
-             (c0 (cost x0))
-             (xs (cdr list)))
-        (let loop ((x0 x0)
-                   (c0 c0)
-                   (xs xs))
-          (if (null? xs)
-              x0
-              (let* ((x (car xs))
-                     (c (cost x)))
-                (if (< c c0)
-                    (loop x c (cdr xs))
-                    (loop x0 c0 (cdr xs)))))))))
-
-(define (inlinees threshold graph)
-  ;; NODE-MAP is a hash-table mapping names (symbols) to NODE objects.
-  (define node-map (make-eq-hash-table))
-  ;; RECORD is of the shape (NAME . (SIZE . NEIGHBORS)).
-  (define (insert-vertex! record)
-    (let ((name      (car  record))
-          (neighbors (cddr record)))
-      (for-each
-       (lambda (neighbor)
-         (attach-edge! name neighbor))
-       neighbors)))
-  (for-each
-   (lambda (record)
-     (let ((name (car  record))
-           (size (cadr record)))
-       (hash-table/put!
-        node-map
-        name
-        (make-node
-         (make-eq-hash-table)
-         (make-eq-hash-table)
-         size))))
-   graph)
-  (for-each
-   (lambda (record)
-     (insert-vertex! record))
-   graph)
-
+      (let loop ((x0 (car list))
+                 (c0 (cost (car list)))
+                 (xs (cdr list)))
+        (if (null? xs)
+            (win x0 c0)
+            (let* ((x (car xs))
+                   (c (cost x)))
+              (if (< c c0)
+                  (loop x c (cdr xs))
+                  (loop x0 c0 (cdr xs))))))))
   (define-structure (node safe-accessors)
     out-edges
     in-edges
