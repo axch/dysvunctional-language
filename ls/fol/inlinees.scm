@@ -56,7 +56,7 @@
                     (loop x0 c0 (cdr xs)))))))))
 
 (define (inlinees threshold graph)
-  ;; NODE-MAP is a hash-table mapping names (symbols) to node objects.
+  ;; NODE-MAP is a hash-table mapping names (symbols) to NODE objects.
   (define node-map (make-eq-hash-table))
   ;; RECORD is of the shape (NAME . (SIZE . NEIGHBORS)).
   (define (insert-vertex! record)
@@ -201,8 +201,7 @@
             (if (<= new-total-cost threshold)
                 (begin
                   (inline-node! candidate-name)
-                  (prune (cons candidate-name
-                               inlinees-list)
+                  (prune (cons candidate-name inlinees-list)
                          new-total-cost))
                 inlinees-list)))))
   (prune '() 0))
