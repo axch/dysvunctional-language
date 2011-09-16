@@ -85,16 +85,31 @@
                (replace-in-tree thing new (cdr tree))))
         (else tree)))
 
+;; filter-tree :: (a -> Bool) x (cons-tree a) -> [a]
+;; filter-tree does not preserve the tree structure of the input.
+(define (filter-tree pred tree)
+  (let walk ((tree tree) (answer '()))
+    (cond ((pair? tree)
+           (walk (car tree) (walk (cdr tree) answer)))
+          ((null? tree)
+           answer)
+          ((pred tree)
+           (cons tree answer))
+          (else answer))))
+
 ;; filter-map-tree :: (a -> b) x (cons-tree a) -> [b]
 ;; filter-map-tree does not preserve the tree structure of the input.
- (define (filter-map-tree proc tree)
+(define (filter-map-tree proc tree)
   (let walk ((tree tree) (answer '()))
-    (if (pair? tree)
-        (walk (car tree) (walk (cdr tree) answer))
-        (let ((elt (proc tree)))
-          (if elt
-              (cons elt answer)
-              answer)))))
+    (cond ((pair? tree)
+           (walk (car tree) (walk (cdr tree) answer)))
+          ((null? tree)
+           answer)
+          (else
+           (let ((elt (proc tree)))
+             (if elt
+                 (cons elt answer)
+                 answer))))))
 
 (define (assert pred)
   (if (not pred)
