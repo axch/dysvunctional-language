@@ -56,7 +56,6 @@
                        (cons (count-pairs (definiens defn))
                              (filter-tree lookup (definiens defn)))))
                definitions))
-         (inlinees (map lookup (acceptable-inlinees size-increase-threshold call-graph)))
-         (non-inlinees (lset-difference eq? definitions inlinees)))
+         (inlinees (map lookup (acceptable-inlinees size-increase-threshold call-graph))))
     (map cons (map definiendum inlinees)
          (map definiens (map remove-defn-argument-types inlinees)))))
