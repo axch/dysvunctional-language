@@ -45,9 +45,11 @@
 (define (inline-map size-increase-threshold program)
   (let* ((lookup (definition-map program))
          (call-graph (call-graph program))
-         (inlinees (map lookup (acceptable-inlinees size-increase-threshold call-graph))))
-    (map cons (map definiendum inlinees)
-         (map definiens (map remove-defn-argument-types inlinees)))))
+         (inlinee-names (acceptable-inlinees size-increase-threshold call-graph)))
+    (map cons inlinee-names
+         (map definiens
+              (map remove-defn-argument-types
+                   (map lookup inlinee-names))))))
 
 (define (definition-map program)
   (define defn-map
