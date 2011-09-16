@@ -90,8 +90,11 @@
         `(let-values ((,names ,exp))
            ,@body)))
 
-(define tidy-empty-let
-  (rule `(let () (? body)) body))
+(define (tidy-empty-let form)
+  (if (and (let-form? form)
+           (null? (cadr form)))
+      (caddr form)
+      form))
 
 ;; Lifting lets is safe assuming the program has unique bound names; if not,
 ;; can break because of
