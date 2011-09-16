@@ -12,9 +12,12 @@
 ;;; feedback-vertex-set.scm for discussion and implementation.
 
 (define (%inline program)
+  (%%inline (count-pairs program) program))
+
+(define (%%inline size-increase-threshold program)
   (tidy-begin
    (if (begin-form? program)
-       (let ((procedure-bodies (inline-map program))
+       (let ((procedure-bodies (inline-map size-increase-threshold program))
              (walked-bodies (make-eq-hash-table)))
          (define (inline? name)
            (not (not (walked-body name))))
@@ -39,7 +42,7 @@
 ;;; expression that they are equivalent to if it was decided that they
 ;;; should be inlined, or #f if it was decided that they should not.
 
-(define (inline-map program)
+(define (inline-map size-increase-threshold program)
   (let* ((definitions (filter definition? program))
          (defn-map (alist->eq-hash-table
                     (map (lambda (defn)
@@ -53,7 +56,7 @@
                                                 (hash-table/get defn-map leaf #f))
                                               (definiens defn)))))
                definitions))
-         (inlinees (acceptable-inlinees (count-pairs program) call-graph))
+         (inlinees (acceptable-inlinees size-increase-threshold call-graph))
          (non-inlinees (lset-difference eq? definitions inlinees)))
     (map cons (map definiendum inlinees)
          (map definiens (map remove-defn-argument-types inlinees)))))
