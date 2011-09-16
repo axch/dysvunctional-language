@@ -208,6 +208,18 @@
         (lambda (foo)
           (+ foo x)))))
 
+   ;; Dead code elimination should not barf on unused procedures.
+   (equal?
+    '(begin (define (fact) (argument-types (values)) (values)) 1)
+    (interprocedural-dead-code-elimination
+     '(begin
+        (define (fact n)
+          (argument-types real real)
+          (if (= n 1)
+              1
+              (* n (fact (- n 1)))))
+        1)))
+
    ;; TODO The fol optimizer should get rid of unused procedures, even
    ;; if they call themselves.
    #;
