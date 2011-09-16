@@ -703,10 +703,10 @@
            (all-ins-needed? (every (lambda (x) x) needed-inputs))
            (all-outs-needed? (every (lambda (x) x) needed-outputs)))
       (define new-return-type
-        (if (or all-outs-needed? (not (values-form? return)))
-            return
-            (tidy-values
-             `(values ,@(select-masked needed-outputs (cdr return))))))
+        (tidy-values
+         `(values ,@(select-masked needed-outputs (if (values-form? return)
+                                                      (cdr return)
+                                                      (list return))))))
       `(define (,name ,@(select-masked needed-inputs args))
          (argument-types ,@(select-masked needed-inputs arg-types)
                          ,new-return-type)
