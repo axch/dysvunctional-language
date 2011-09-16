@@ -61,9 +61,16 @@
     (hash-table/get defn-map name #f)))
 
 (define (call-graph program)
+  (define (defn-inline-cost defn)
+    (+ (count-pairs
+        (definiens (remove-defn-argument-types defn)))
+       ;; Let bindings, being a list of two-element lists, take a
+       ;; little more space than an apply with an explicit lambda,
+       ;; because that is two parallel lists.
+       (length (cdr (cadr defn)))))
   (let ((defined-name? (definition-map program)))
     (map (lambda (defn)
            (cons (definiendum defn)
-                 (cons (count-pairs (definiens defn))
+                 (cons (defn-inline-cost defn)
                        (filter-tree defined-name? (definiens defn)))))
          (filter definition? program))))
