@@ -1,15 +1,5 @@
 (declare (usual-integrations))
 
-(define (hash-table/put-alist! table alist)
-  (for-each (lambda (k.v)
-              (hash-table/put! table (car k.v) (cdr k.v)))
-            alist))
-
-(define (alist->eq-hash-table alist)
-  (abegin1
-   (make-eq-hash-table)
-   (hash-table/put-alist! it alist)))
-
 ;; TODO Backwards compatibility:
 (define hash-table-types-available?
   (not (lexical-unbound? (the-environment) 'hash-table-entry-type:strong)))

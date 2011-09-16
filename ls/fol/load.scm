@@ -29,6 +29,7 @@
  (lambda (file)
    (load-relative-compiled file fol-environment))
  '("../support/utils"
+   "../support/hash-tables"
    "../support/two-way-table"
    "stages"
    "nomenclature"
