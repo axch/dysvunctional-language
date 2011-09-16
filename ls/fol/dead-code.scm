@@ -700,7 +700,6 @@
     (let* ((needed-outputs (hash-table/get liveness-map name #f))
            (i/o-map (hash-table/get dependency-map name #f))
            (needed-inputs (find-needed-inputs needed-outputs i/o-map))
-           (all-ins-needed? (every (lambda (x) x) needed-inputs))
            (all-outs-needed? (every (lambda (x) x) needed-outputs)))
       (define new-return-type
         (tidy-values
@@ -713,14 +712,12 @@
          ,(let* ((body (rewrite-call-sites
                         the-type-map dependency-map liveness-map body))
                  (the-body
-                  (if all-ins-needed?
-                      body
-                      (tidy-empty-let
-                       `(let ,(map (lambda (name)
-                                     `(,name ,(make-tombstone)))
-                                   (select-masked
-                                    (map not needed-inputs) args))
-                          ,body)))))
+                  (tidy-empty-let
+                   `(let ,(map (lambda (name)
+                                 `(,name ,(make-tombstone)))
+                               (select-masked
+                                (map not needed-inputs) args))
+                      ,body))))
             (if all-outs-needed?
                 the-body ; All the outs of the entry point will always be needed
                 (let ((output-names
