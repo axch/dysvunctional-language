@@ -43,19 +43,25 @@
 ;;; should be inlined, or #f if it was decided that they should not.
 
 (define (inline-map size-increase-threshold program)
-  (let* ((definitions (filter definition? program))
-         (defn-map (alist->eq-hash-table
-                    (map (lambda (defn)
-                           (cons (definiendum defn) defn))
-                         definitions)))
-         (lookup (lambda (name)
-                   (hash-table/get defn-map name #f)))
-         (call-graph
-          (map (lambda (defn)
-                 (cons (definiendum defn)
-                       (cons (count-pairs (definiens defn))
-                             (filter-tree lookup (definiens defn)))))
-               definitions))
+  (let* ((lookup (definition-map program))
+         (call-graph (call-graph program))
          (inlinees (map lookup (acceptable-inlinees size-increase-threshold call-graph))))
     (map cons (map definiendum inlinees)
          (map definiens (map remove-defn-argument-types inlinees)))))
+
+(define (definition-map program)
+  (define defn-map
+    (alist->eq-hash-table
+     (map (lambda (defn)
+            (cons (definiendum defn) defn))
+          (filter definition? program))))
+  (lambda (name)
+    (hash-table/get defn-map name #f)))
+
+(define (call-graph program)
+  (let ((defined-name? (definition-map program)))
+    (map (lambda (defn)
+           (cons (definiendum defn)
+                 (cons (count-pairs (definiens defn))
+                       (filter-tree defined-name? (definiens defn)))))
+         (filter definition? program))))
