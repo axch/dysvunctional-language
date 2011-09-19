@@ -141,6 +141,6 @@
 (step-stream
  rk4-again
  state-derivative
- (cons (real 0) (list sun jupiter ; saturn uranus neptune
+ (cons (real 0) (list sun jupiter saturn uranus neptune
                       )))
 

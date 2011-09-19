@@ -29,6 +29,7 @@
  (lambda (file)
    (load-relative-compiled file fol-environment))
  '("../support/utils"
+   "../support/hash-tables"
    "../support/two-way-table"
    "stages"
    "nomenclature"
@@ -40,6 +41,7 @@
    "structs"
    "type-check"
    "feedback-vertex-set"
+   "inlinees"
    "inline"
    "a-normal-form"
    "sra"

@@ -12,9 +12,12 @@
 ;;; feedback-vertex-set.scm for discussion and implementation.
 
 (define (%inline program)
+  (%%inline (count-pairs program) program))
+
+(define (%%inline size-increase-threshold program)
   (tidy-begin
    (if (begin-form? program)
-       (let ((procedure-bodies (inline-map program))
+       (let ((procedure-bodies (inline-map size-increase-threshold program))
              (walked-bodies (make-eq-hash-table)))
          (define (inline? name)
            (not (not (walked-body name))))
@@ -39,21 +42,44 @@
 ;;; expression that they are equivalent to if it was decided that they
 ;;; should be inlined, or #f if it was decided that they should not.
 
-(define (inline-map program)
-  (let* ((definitions (filter definition? program))
-         (defn-map (alist->eq-hash-table
-                    (map (lambda (defn)
-                           (cons (definiendum defn) defn))
-                         definitions)))
-         (call-graph
-          (map cons definitions
-               (map (lambda (defn)
-                      ((unique strong-eq-hash-table-type)
-                       (filter-map-tree (lambda (leaf)
-                                          (hash-table/get defn-map leaf #f))
-                                        (definiens defn))))
-                    definitions)))
-         (non-inlinees (feedback-vertex-set call-graph))
-         (inlinees (lset-difference eq? definitions non-inlinees)))
-    (map cons (map definiendum inlinees)
-         (map definiens (map remove-defn-argument-types inlinees)))))
+(define (inline-map size-increase-threshold program)
+  (let* ((lookup (definition-map program))
+         (call-graph (call-graph program))
+         (inlinee-names (acceptable-inlinees size-increase-threshold call-graph)))
+    (map cons inlinee-names
+         (map definiens
+              (map remove-defn-argument-types
+                   (map lookup inlinee-names))))))
+
+(define (definition-map program)
+  (define defn-map
+    (alist->eq-hash-table
+     (map (lambda (defn)
+            (cons (definiendum defn) defn))
+          (filter definition? program))))
+  (lambda (name)
+    (hash-table/get defn-map name #f)))
+
+(define (call-graph program)
+  (define (defn-inline-cost defn)
+    (+ (count-pairs
+        (definiens (remove-defn-argument-types defn)))
+       ;; Let bindings, being a list of two-element lists, take a
+       ;; little more space than an apply with an explicit lambda,
+       ;; because that is two parallel lists.
+       (length (cdr (cadr defn)))))
+  (define (make-record id cost out-neighbors)
+    (cons id (cons cost out-neighbors)))
+  (let ((defined-name? (definition-map program)))
+    (cons
+     (let ((entry-point-name (make-name '%%main)))
+       (make-record
+        entry-point-name 0
+        (cons entry-point-name ; Entry point is not inlinable
+              (filter-tree defined-name? (entry-point program)))))
+     (map (lambda (defn)
+            (make-record
+             (definiendum defn)
+             (defn-inline-cost defn)
+             (filter-tree defined-name? (definiens defn))))
+          (filter definition? program)))))
