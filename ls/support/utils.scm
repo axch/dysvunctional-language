@@ -133,11 +133,6 @@
   (if (not pred)
       (error "Assertion failed")))
 
-(define-syntax visible-stage
-  (syntax-rules ()
-    ((_ name)
-     (visible-named-stage name 'name))))
-
 (define (visible-named-stage stage name)
   (lambda (input . extra)
     (format #t "Stage ~A on " name)
