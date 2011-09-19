@@ -71,9 +71,15 @@
   (define (make-record id cost out-neighbors)
     (cons id (cons cost out-neighbors)))
   (let ((defined-name? (definition-map program)))
-    (map (lambda (defn)
-           (make-record
-            (definiendum defn)
-            (defn-inline-cost defn)
-            (filter-tree defined-name? (definiens defn))))
-         (filter definition? program))))
+    (cons
+     (let ((entry-point-name (make-name '%%main)))
+       (make-record
+        entry-point-name 0
+        (cons entry-point-name ; Entry point is not inlinable
+              (filter-tree defined-name? (entry-point program)))))
+     (map (lambda (defn)
+            (make-record
+             (definiendum defn)
+             (defn-inline-cost defn)
+             (filter-tree defined-name? (definiens defn))))
+          (filter definition? program)))))

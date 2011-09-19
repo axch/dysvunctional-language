@@ -14,6 +14,11 @@
       (cadr form)
       form))
 
+(define (entry-point program)
+  (if (begin-form? program)
+      (last program)
+      program))
+
 ;;; Define
 
 (define definition? (tagged-list? 'define))
