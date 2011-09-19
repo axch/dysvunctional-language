@@ -22,7 +22,7 @@
 (define ((plot-objects window) state)
   (for-each (plot-object window) (cdr state)))
 
-(define win (frame -6 6 -6 6))
+(define window (frame -60 60 -60 60))
 
 (define (stream-take count stream)
   (if (= count 0)
@@ -30,9 +30,10 @@
       (stream-take (- count 1) (force (cdr stream)))))
 
 ;; Compile the DVL program with
-(fol->mit-scheme (compile-visibly (dvl-read-file "examples/celestial.dvl")))
+;(fol->mit-scheme (compile-visibly (dvl-read-file "examples/celestial.dvl")))
 
 ;; Then run with
+#;
 (stream-take
  1000
  (stream-for-each

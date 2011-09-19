@@ -181,18 +181,44 @@
        (pp (hash-table/get eq-properties answer #f))
        (display ")")))))
 
+(define (report-stage-progress stage name show-program)
+  (lambda (program . extra)
+    (format #t "Stage ~A on " name)
+    (show-program program)
+    (abegin1 (show-time (lambda () (apply stage program extra)))
+      (newline)
+      (when (eq? name 'generate)
+        ;; TODO This was done only in visibly mode in the old world
+        ;; order, presumably because it explicitly invokes the GC,
+        ;; which would make the test suite too slow if it were done
+        ;; after every code generation.
+        ;; TODO I need a real module system!
+        ((access clear-name-caches! user-initial-environment)))
+      (when (eq? name 'reverse-anf)
+        (display "Final output has ")
+        (show-program it)))))
+
 (define (visibly stage-data)
   (lambda (exec)
-    (visible-named-stage exec (stage-data-name stage-data))))
+    (report-stage-progress exec (stage-data-name stage-data)
+     (lambda (program)
+       (if (eq? (stage-data-name stage-data) 'generate)
+           ;; The generate stage wants to display different stats
+           (format #t "~A bindings\n"
+                   (length
+                    ((access analysis-bindings user-initial-environment)
+                     (property-value 'analysis program))))
+           (print-fol-size program))))))
 
 (define (volubly stage-data)
   (lambda (exec)
-    (lambda (program . extra)
-      (format #t "Stage ~A on " (stage-data-name stage-data))
-      (print-fol-statistics program)
-      (begin1
-       (show-time (lambda () (apply exec program extra)))
-       (newline)))))
+    (report-stage-progress exec (stage-data-name stage-data)
+     (lambda (program)
+       (if (eq? (stage-data-name stage-data) 'generate)
+           ;; The generate stage wants to display different stats
+           (format #t "analysis of size ~A"
+                   (estimate-space-usage (property-value 'analysis program)))
+           (print-fol-statistics program))))))
 
 (define (optimize-visibly program)
   (fol-optimize program visibly))

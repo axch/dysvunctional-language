@@ -1,15 +1,5 @@
 (declare (usual-integrations))
 
-(define (hash-table/put-alist! table alist)
-  (for-each (lambda (k.v)
-              (hash-table/put! table (car k.v) (cdr k.v)))
-            alist))
-
-(define (alist->eq-hash-table alist)
-  (abegin1
-   (make-eq-hash-table)
-   (hash-table/put-alist! it alist)))
-
 ;; TODO Backwards compatibility:
 (define hash-table-types-available?
   (not (lexical-unbound? (the-environment) 'hash-table-entry-type:strong)))
@@ -71,6 +61,34 @@
          (count-pairs (cdr thing)))
       0))
 
+(define (record-fields record)
+  (let ((type (record-type-descriptor record)))
+    (map (lambda (field-name)
+           ((record-accessor type field-name) record))
+         (record-type-field-names type))))
+
+(define (estimate-space-usage thing)
+  (define (sum lst) (apply + lst))
+  (define seen-table (make-strong-eq-hash-table))
+  (define (seen? thing)
+    (hash-table/get seen-table thing #f))
+  (define (seen! thing)
+    (hash-table/put! seen-table thing #t))
+  (let loop ((thing thing))
+    (cond ((seen? thing) 1) ; For the incoming pointer
+          ((pair? thing)
+           (seen! thing)
+           (+ 1 (loop (car thing))
+              (loop (cdr thing))))
+          ((vector? thing)
+           (seen! thing)
+           (+ 1 (sum (map loop (vector->list thing)))))
+          ((record? thing)
+           (seen! thing)
+           ;; Records appear to have an overhead of 2
+           (+ 1 2 (sum (map loop (record-fields thing)))))
+          (else 1))))
+
 (define (occurs-in-tree? thing tree)
   (cond ((equal? thing tree) #t)
         ((pair? tree)
@@ -85,59 +103,35 @@
                (replace-in-tree thing new (cdr tree))))
         (else tree)))
 
+;; filter-tree :: (a -> Bool) x (cons-tree a) -> [a]
+;; filter-tree does not preserve the tree structure of the input.
+(define (filter-tree pred tree)
+  (let walk ((tree tree) (answer '()))
+    (cond ((pair? tree)
+           (walk (car tree) (walk (cdr tree) answer)))
+          ((null? tree)
+           answer)
+          ((pred tree)
+           (cons tree answer))
+          (else answer))))
+
 ;; filter-map-tree :: (a -> b) x (cons-tree a) -> [b]
 ;; filter-map-tree does not preserve the tree structure of the input.
- (define (filter-map-tree proc tree)
+(define (filter-map-tree proc tree)
   (let walk ((tree tree) (answer '()))
-    (if (pair? tree)
-        (walk (car tree) (walk (cdr tree) answer))
-        (let ((elt (proc tree)))
-          (if elt
-              (cons elt answer)
-              answer)))))
+    (cond ((pair? tree)
+           (walk (car tree) (walk (cdr tree) answer)))
+          ((null? tree)
+           answer)
+          (else
+           (let ((elt (proc tree)))
+             (if elt
+                 (cons elt answer)
+                 answer))))))
 
 (define (assert pred)
   (if (not pred)
       (error "Assertion failed")))
-
-(define-syntax visible-stage
-  (syntax-rules ()
-    ((_ name)
-     (visible-named-stage name 'name))))
-
-(define (visible-named-stage stage name)
-  (lambda (input . extra)
-    (if (eq? name 'generate)
-        ;; The generate stage wants to display different stats
-        (let ((analysis (property-value 'analysis input)))
-          (format #t "Stage generate on ~A bindings"
-                  (length
-                   ;; TODO I need a real module system!
-                   ((access analysis-bindings user-initial-environment)
-                    analysis))))
-        (let ((size (count-pairs input))
-              (stripped-size (count-pairs (strip-argument-types input))))
-          (format #t "Stage ~A on ~A pairs + ~A pairs of type annotations"
-                  name stripped-size (- size stripped-size))))
-    (newline)
-    (flush-output)
-    (begin1
-     (show-time (lambda () (apply stage input extra)))
-     (newline)
-     (if (eq? name 'generate)
-         ;; TODO This was done only in visibly mode in the old world
-         ;; order, presumably because it explicitly invokes the GC,
-         ;; which would make the test suite too slow if it were done
-         ;; after every code generation.
-         ((access clear-name-caches! user-initial-environment))))))
-
-(define (report-size program)
-  (let ((size (count-pairs program))
-        (stripped-size (count-pairs (strip-argument-types program))))
-    (format #t "Final output has ~A pairs + ~A pairs of type annotations"
-            stripped-size (- size stripped-size))
-    (newline))
-  program)
 
 (define (force-assq key lst)
   (let ((binding (assq key lst)))
@@ -165,3 +159,15 @@
        `(let ((it ,object))
 	  ,@forms
           it)))))
+
+(define-syntax when
+  (syntax-rules ()
+    ((_ test form ...)
+     (if test
+         (let () form ...)))))
+
+(define-syntax unless
+  (syntax-rules ()
+    ((_ test form ...)
+     (if (not test)
+         (let () form ...)))))
