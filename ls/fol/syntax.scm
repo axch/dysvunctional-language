@@ -298,9 +298,7 @@
                 (top (take sorted (min 10 (length sorted)))))
             (format #t "mode ~A: ~A\ntop ~As: ~A\n"
                     description mean description top)))))
-  (let* ((size (count-pairs program))
-         (stripped-size (count-pairs (strip-argument-types program)))
-         (program (if (begin-form? program)
+  (let* ((program (if (begin-form? program)
                       program
                       `(begin ,program)))
          (defns (filter definition? program))
@@ -309,11 +307,9 @@
          (body-sizes (cons (count-pairs (last program))
                            (map cadr defn-stats)))
          (formal-lengths (map car defn-stats))
-         (type-decl-sizes (map caddr defn-stats))
-         )
-    (format #t (string-append "~A pairs + ~A pairs of type annotations\n"
-                              "~A procedure definitions\n")
-            stripped-size (- size stripped-size) defn-count)
+         (type-decl-sizes (map caddr defn-stats)))
+    (print-fol-size program)
+    (format #t "~A procedure definitions\n" defn-count)
     (display-list-statistics body-sizes "expression size")
     (display-list-statistics formal-lengths "formal length")
     (display-list-statistics type-decl-sizes "type annotation size")
