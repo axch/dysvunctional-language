@@ -68,9 +68,12 @@
        ;; little more space than an apply with an explicit lambda,
        ;; because that is two parallel lists.
        (length (cdr (cadr defn)))))
+  (define (make-record id cost out-neighbors)
+    (cons id (cons cost out-neighbors)))
   (let ((defined-name? (definition-map program)))
     (map (lambda (defn)
-           (cons (definiendum defn)
-                 (cons (defn-inline-cost defn)
-                       (filter-tree defined-name? (definiens defn)))))
+           (make-record
+            (definiendum defn)
+            (defn-inline-cost defn)
+            (filter-tree defined-name? (definiens defn))))
          (filter definition? program))))
