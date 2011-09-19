@@ -189,10 +189,17 @@
   (lambda (exec)
     (lambda (program . extra)
       (format #t "Stage ~A on " (stage-data-name stage-data))
-      (print-fol-statistics program)
-      (begin1
+      (if (eq? (stage-data-name stage-data) 'generate)
+          (format #t "analysis of size ~A"
+                  (estimate-space-usage (property-value 'analysis program)))
+          (print-fol-statistics program))
+      (abegin1
        (show-time (lambda () (apply exec program extra)))
-       (newline)))))
+       (newline)
+       (if (eq? (stage-data-name stage-data) 'reverse-anf)
+           (begin
+             (display "Final output has")
+             (print-fol-statistics it)))))))
 
 (define (optimize-visibly program)
   (fol-optimize program visibly))
