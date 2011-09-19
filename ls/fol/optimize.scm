@@ -198,7 +198,7 @@
        (newline)
        (if (eq? (stage-data-name stage-data) 'reverse-anf)
            (begin
-             (display "Final output has")
+             (display "Final output has ")
              (print-fol-statistics it)))))))
 
 (define (optimize-visibly program)
