@@ -196,10 +196,9 @@
       (abegin1
        (show-time (lambda () (apply exec program extra)))
        (newline)
-       (if (eq? (stage-data-name stage-data) 'reverse-anf)
-           (begin
-             (display "Final output has ")
-             (print-fol-statistics it)))))))
+       (when (eq? (stage-data-name stage-data) 'reverse-anf)
+         (display "Final output has ")
+         (print-fol-statistics it))))))
 
 (define (optimize-visibly program)
   (fol-optimize program visibly))

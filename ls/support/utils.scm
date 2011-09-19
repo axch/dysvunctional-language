@@ -198,3 +198,15 @@
        `(let ((it ,object))
 	  ,@forms
           it)))))
+
+(define-syntax when
+  (syntax-rules ()
+    ((_ test form ...)
+     (if test
+         (let () form ...)))))
+
+(define-syntax unless
+  (syntax-rules ()
+    ((_ test form ...)
+     (if (not test)
+         (let () form ...)))))
