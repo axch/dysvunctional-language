@@ -315,6 +315,9 @@
   ;; For some warnings, see doc/simplification.txt
   ;;
   ;; TODO Do I want to notice that (+ 2 x) is the same as (+ x 2)?
+  ;; TODO (* -1 (* -1 x)) -> x appears in celestial.dvl
+  ;; TODO (+ x (* -1 y)) -> (- x y) appears in celestial.dvl
+  ;; TODO (/ (* x stuff) (* x other stuff)) should appear in celestial.dvl
   (rule-simplifier
    (list
     (rule `(+ 0 (? thing)) thing)
