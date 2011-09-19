@@ -305,7 +305,7 @@
          )
     (format #t (string-append "~A pairs + ~A pairs of type annotations\n"
                               "~A procedure definitions\n")
-            size (- size stripped-size) defn-count)
+            stripped-size (- size stripped-size) defn-count)
     (display-list-statistics body-sizes "expression size")
     (display-list-statistics formal-lengths "formal length")
     (display-list-statistics type-decl-sizes "type annotation size")
