@@ -276,6 +276,14 @@
 
 ;;; Measurements
 
+(define (print-fol-size program)
+  (let ((size (count-pairs program))
+        (stripped-size (count-pairs (strip-argument-types program))))
+    (format #t "~A pairs + ~A pairs of type annotations"
+            stripped-size (- size stripped-size))
+    (newline))
+  program)
+
 (define (print-fol-statistics program)
   (define defn-statistics
     (rule `(define ((? name) (?? formals))

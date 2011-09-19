@@ -140,19 +140,15 @@
 
 (define (visible-named-stage stage name)
   (lambda (input . extra)
+    (format #t "Stage ~A on " name)
     (if (eq? name 'generate)
         ;; The generate stage wants to display different stats
-        (let ((analysis (property-value 'analysis input)))
-          (format #t "Stage generate on ~A bindings"
-                  (length
-                   ;; TODO I need a real module system!
-                   ((access analysis-bindings user-initial-environment)
-                    analysis))))
-        (let ((size (count-pairs input))
-              (stripped-size (count-pairs (strip-argument-types input))))
-          (format #t "Stage ~A on ~A pairs + ~A pairs of type annotations"
-                  name stripped-size (- size stripped-size))))
-    (newline)
+        (format #t "~A bindings\n"
+                (length
+                 ;; TODO I need a real module system!
+                 ((access analysis-bindings user-initial-environment)
+                  (property-value 'analysis input))))
+        (print-fol-size input))
     (flush-output)
     (begin1
      (show-time (lambda () (apply stage input extra)))
@@ -163,14 +159,6 @@
          ;; which would make the test suite too slow if it were done
          ;; after every code generation.
          ((access clear-name-caches! user-initial-environment))))))
-
-(define (report-size program)
-  (let ((size (count-pairs program))
-        (stripped-size (count-pairs (strip-argument-types program))))
-    (format #t "Final output has ~A pairs + ~A pairs of type annotations"
-            stripped-size (- size stripped-size))
-    (newline))
-  program)
 
 (define (force-assq key lst)
   (let ((binding (assq key lst)))
