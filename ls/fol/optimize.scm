@@ -181,24 +181,34 @@
        (pp (hash-table/get eq-properties answer #f))
        (display ")")))))
 
+(define (report-stage-progress stage name show-program)
+  (lambda (program . extra)
+    (format #t "Stage ~A on " name)
+    (show-program program)
+    (abegin1 (show-time (lambda () (apply stage program extra)))
+      (newline)
+      (when (eq? name 'generate)
+        ;; TODO This was done only in visibly mode in the old world
+        ;; order, presumably because it explicitly invokes the GC,
+        ;; which would make the test suite too slow if it were done
+        ;; after every code generation.
+        ((access clear-name-caches! user-initial-environment)))
+      (when (eq? name 'reverse-anf)
+        (display "Final output has ")
+        (show-program it)))))
+
 (define (visibly stage-data)
   (lambda (exec)
     (visible-named-stage exec (stage-data-name stage-data))))
 
 (define (volubly stage-data)
   (lambda (exec)
-    (lambda (program . extra)
-      (format #t "Stage ~A on " (stage-data-name stage-data))
-      (if (eq? (stage-data-name stage-data) 'generate)
-          (format #t "analysis of size ~A"
-                  (estimate-space-usage (property-value 'analysis program)))
-          (print-fol-statistics program))
-      (abegin1
-       (show-time (lambda () (apply exec program extra)))
-       (newline)
-       (when (eq? (stage-data-name stage-data) 'reverse-anf)
-         (display "Final output has ")
-         (print-fol-statistics it))))))
+    (report-stage-progress exec (stage-data-name stage-data)
+     (lambda (program)
+       (if (eq? (stage-data-name stage-data) 'generate)
+           (format #t "analysis of size ~A"
+                   (estimate-space-usage (property-value 'analysis program)))
+           (print-fol-statistics program))))))
 
 (define (optimize-visibly program)
   (fol-optimize program visibly))
