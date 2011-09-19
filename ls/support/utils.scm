@@ -133,28 +133,6 @@
   (if (not pred)
       (error "Assertion failed")))
 
-(define (visible-named-stage stage name)
-  (lambda (input . extra)
-    (format #t "Stage ~A on " name)
-    (if (eq? name 'generate)
-        ;; The generate stage wants to display different stats
-        (format #t "~A bindings\n"
-                (length
-                 ;; TODO I need a real module system!
-                 ((access analysis-bindings user-initial-environment)
-                  (property-value 'analysis input))))
-        (print-fol-size input))
-    (flush-output)
-    (begin1
-     (show-time (lambda () (apply stage input extra)))
-     (newline)
-     (if (eq? name 'generate)
-         ;; TODO This was done only in visibly mode in the old world
-         ;; order, presumably because it explicitly invokes the GC,
-         ;; which would make the test suite too slow if it were done
-         ;; after every code generation.
-         ((access clear-name-caches! user-initial-environment))))))
-
 (define (force-assq key lst)
   (let ((binding (assq key lst)))
     (if binding
