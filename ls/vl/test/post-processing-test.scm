@@ -12,10 +12,7 @@
          (if (= n 1)
              1
              (* n (operation-2 (- n 1)))))
-       (let ((n-25 (real 5)))
-         (if (= n-25 1)
-             1
-             (* n-25 (operation-2 (- n-25 1))))))
+       (operation-2 (real 5)))
     (compile-meticulously
      '(let ()
         (define (fact n)
@@ -40,24 +37,26 @@
 
    (alpha-rename?
     '(begin
-       (define (operation-2 the-closure the-formals-215 the-formals-216)
-         (argument-types real real real real)
-         (if (< (abs (- the-formals-215 the-formals-216)) .00001)
-             the-formals-216
-             (operation-2 the-closure
-                          the-formals-216
-                          (/ (+ the-formals-216 (/ the-closure the-formals-216))
-                             2))))
-       (let ((the-formals-64 (real 2)))
-         (let ((anf-170 (real 1.)))
-           (let ((anf-152 (/ (+ anf-170 (/ the-formals-64 anf-170)) 2)))
-             (cons
-              1.4142135623730951
-              (if (< (abs (- anf-170 anf-152)) .00001)
-                  anf-152
-                  (operation-2 the-formals-64
-                               anf-152
-                               (/ (+ anf-152 (/ the-formals-64 anf-152)) 2))))))))
+       (define (operation-5 the-closure-149
+                            the-closure-150
+                            the-formals-151
+                            the-formals-152)
+         (argument-types real real real real real)
+         (if (< (abs (- the-formals-151 the-formals-152)) .00001)
+             the-formals-152
+             (operation-5
+              the-closure-150
+              the-closure-150
+              the-formals-152
+              (/ (+ the-formals-152 (/ the-closure-149 the-formals-152)) 2))))
+       (let ((the-formals-94 (real 2)))
+         (let ((anf-80 (real 1.)))
+           (cons
+            1.4142135623730951
+            (operation-5 the-formals-94
+                         the-formals-94 ; TODO Interprocedural alias
+                         anf-80
+                         (/ (+ anf-80 (/ the-formals-94 anf-80)) 2))))))
     (compile-meticulously
      '(let ()
         (define (heron-step x)
