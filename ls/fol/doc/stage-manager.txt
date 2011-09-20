@@ -1,0 +1,256 @@
+                          FOL Stage Manager
+
+
+Motivation / Purpose
+
+The FOL compiler is a staged system: do this, then do that, then do
+the other thing.  The default way to represent such sequencing of
+actions in Scheme would be to write a procedure that does this, then
+that, then the other thing.  Doing so suffers from three material
+drawbacks, however:
+
+1) There are several different ways one may wish to do each step in
+   FOL, for example writing or not writing progress reports, or
+   checking or not checking intermediate invariants.  If each way
+   is to be a procedure, keeping them all in sync becomes a burden.
+
+2) The possible set of sequencings of the actions is restricted by
+   constraints, such as dependencies some steps have on some other
+   steps (such as format normalizations) being done beforehand.  It
+   would therefore be nice to specify only a high-level order, and
+   fill those details in automatically.
+
+3) The sequencings of the major stages should remain flexible to
+   interactive modification and experimentation, while respecting
+   both of the above desiderata.
+
+The FOL Stages system is intended to address these issues.
+
+
+Architectural Overview
+
+The basic architectural assumption of the FOL stage manager is that
+each stage accepts a single input (the program being operated on) and
+produces a single output (the result of doing that stage's job to it).
+The program object is also annotated with extra information, called
+properties, that the stages use to communicate with each other.  (A
+property may have a value of any type, not just Boolean.)
+
+Each stage is a procedure (actually an MIT Scheme ENTITY) that will
+accept the program to operate on, gather information from its
+properties, do the job the stage does, and then annotate the resulting
+program with properties appropriate for the output of this stage.  In
+many cases, this consists of forwarding properties from the input to
+the output, because the stage's job preserves them (for example,
+inlining does not require its input to be in approximate a-normal
+form, but preserves this feature if it is).
+
+Objective 2 above is achieved by the stage procedures being willing to
+call other stages to preprocess their input.  For example, scalar
+replacement of aggregates requires its input to be in approximate
+a-normal form, so the SRA stage will check to see whether the input is
+annotated as being in this form, and invoke the approximate-anf stage
+as a preprocessor if it is not (but refrain from this invocation if
+the input is so annotated, to avoid repeating work).
+
+Objective 1 is achieved by the stages accepting an adverb as an
+optional second argument.  If supplied, the adverb must be an
+appropriate procedure that will be mapped over all the jobs this stage
+will execute (including substages and preprocessors) so that it can
+systematically modify them.  For example, there are adverbs for
+printing progress reports of varying verbosity (for interactive use)
+and checking invariants with varying diligence (for use in the unit
+test suite).
+
+Objective 3 is achieved because the stage procedures can now be strung
+together in any order dynamically at will, and will automatically
+ensure that dependencies are met and adverbs are respected.
+
+FOL also exports the stage system, and VL/DVL integrate with it, so
+the complete end-to-end compilation may be modified by adverbs, etc.
+
+
+Using Existing Stages and Adverbs
+
+All the exposed entry points into the compiler (namely FOL-OPTIMIZE,
+ANALYZE-AND-GENERATE, COMPILE-TO-FOL, INTRAPROCEDURAL-CSE, etc) are
+actually stages.  You can use them as though they were just
+procedures, and they will work (and normalize their inputs according
+to their needs).  You can also pass them adverbs as optional arguments
+to adjust their behavior.  For example,
+
+  (compile-to-fol (dvl-source "examples/celestial.dvl"))
+
+will compile the given DVL program to FOL (and return it); whereas
+
+  (compile-to-fol (dvl-source "examples/celestial.dvl") visibly)
+
+will do the same but also print a two-line status report for every
+stage, giving the name of the stage, the size of the input to that
+stage, and the amount of time that stage took to run.  You can also
+
+  (compile-to-fol (dvl-source "examples/celestial.dvl") volubly)
+
+which will print longer, more detailed progress reports for each
+stage.  The available adverbs are
+
+  visibly     print short progress reports
+
+  volubly     print longer progress reports
+
+  carefully   check that annotations are correct between every stage
+
+  (meticulously answer)
+              like carefully, and also run the program between every
+              stage and check that it produces answer
+
+The latter two are intended for debugging and are only available
+if you load vl/test/load or dvl/test/load.
+
+If you want to experiment with different stage orders, etc, you can
+just string the stages together any way you like interactively; each
+will be sure to run any preprocessing it needs.  You can also compose
+them using STAGE-PIPELINE, to automatically make a new stage object
+that behaves like the existing ones.  For example, as of this writing,
+FOL-OPTIMIZE is defined as
+
+  (define fol-optimize
+    (stage-pipeline
+     reverse-anf
+     eliminate-interprocedural-dead-code
+     eliminate-intraprocedural-dead-code
+     intraprocedural-cse
+     scalar-replace-aggregates
+     eliminate-intraprocedural-dead-code
+     intraprocedural-cse
+     inline))
+
+(Note: the last argument to STAGE-PIPELINE is the stage that is
+executed first in the pipeline).
+
+
+Defining New Stages
+
+The FOL Stages system comes with a pleasant stage definition
+minilanguage introduced by the macro DEFINE-STAGE.  A DEFINE-STAGE
+form has the following syntax:
+
+  (define-stage <stage-name>
+    <primitive-execution-function>
+    <clause> ...)
+
+  <clause> = (<clause-type> <property-affected> ...)
+
+For example,
+
+  (define-stage intraprocedural-cse
+    %intraprocedural-cse
+    (requires syntax-checked)
+    (requires unique-names) ; Because it does some internal let-lifting
+    ;; These two requirements are not really requirements, but it works
+    ;; much better this way.
+    (requires a-normal-form lets-lifted)
+    (generates no-common-subexpressions)
+    ;; By leaving some dead aliases around
+    (destroys no-intraprocedural-dead-variables
+              no-interprocedural-dead-variables))
+
+defines the variable INTRAPROCEDURAL-CSE to be a stage whose name is
+`intraprocedural-cse', whose execution function is the procedure
+%INTRAPROCEDURAL-CSE, and that interacts with the given properties in
+the given ways.  Specifically, it requires the four properties
+`syntax-checked', `unique-names', `a-normal-form', and `lets-lifted',
+which means that when you invoke the stage, it will check that each of
+those properties is a true value, and if not, will run a stage that is
+known to produce that property; it generates the property
+`no-common-subexpressions', which means that it will give its output
+the value #t in the `no-common-subexpressions' property, and register
+itself as a stage to run if some other stage should require this
+property; and it destroys the properties
+`no-intraprocedural-dead-variables' and
+`no-interprocedural-dead-variables', which means that it will remove
+those properties from its output.  The default behavior is that the
+stage preserves (namely, copies from input to output) all properties
+that its definition does not mention.
+
+The possible clauses are
+
+  generates
+    will annotate its output with the value #t in the given property.
+    Also will register itself as a generator of that property.
+
+  preserves
+    will annotate its output with whatever value (or lack of value)
+    its input had in the given property(ies).  This is the default,
+    but can also be specified explicitly.
+
+  destroys
+    will remove the given property(ies) from its output even if
+    they were present in the input.
+
+  requires
+    will preprocess its input to produce the given properties.  Stages
+    that `generates' those properties must have already been defined.
+
+  computes
+    will forward its input to its output unchanged except for
+    annotations, and will make the value of the given property be
+    the return value of the execution function.  For example, the
+    type checking stage does not alter the program, but `computes'
+    its type.
+
+  reads
+    will grab the value of the given property from the input and
+    pass it to the execution function as an additional argument.
+    For example, the generate stage in VL/DVL `reads' the analysis
+    property of its input.
+
+  name
+    override the default name for this stage with the given symbol.
+
+Clauses are processed in order; clauses specified later in a stage
+definition will take precedence over those specified earlier.
+
+When defining a new stage, you should consider its interactions with
+all currently extant properties, and confirm that the default
+assumption of preservation is correct.  As of the present writing, the
+properties in use by the system are
+
+  analysis (in VL/DVL only)
+  structures-as-vectors
+  syntax-checked
+  type
+  unique-names
+  a-normal-form
+  lets-lifted
+  fully-inlined  (for testing only)
+  aggregates-replaced (for testing only)
+  no-common-subexpressions (for testing only)
+  no-intraprocedural-dead-variables (for testing only)
+  no-interprocedural-dead-variables (for testing only)
+
+The properties `analysis' and `type' are computed by ANALYZE and
+CHECK-FOL-TYPES, respectively.  The others are all flags that the
+corresponding stage will not modify the program if run again.
+
+When defining a new stage, you should also consider whether you should
+defining additional properties relating to that stage (for example, if
+the stage is idempotent, a marker saying that running it again would
+be ineffectual), and what effect each other stage will have on them.
+A new property is just the appearance of a symbol in some stage
+definition -- no special step need be taken except starting to use it.
+
+The current stages are defined in fol/optimize.scm and
+vl/code-generator.scm.
+
+
+Extending the Stage System
+
+The FOL Stages system was designed to be extensible with additional
+primitive stages, additional properties, additional clauses in the
+primitive stage definition language, additional types of compound
+stages (besides STAGE-PIPELINE), and additional adverbs.  This
+document described the first two types of extensions; read the sources
+in fol/stages.scm and usage examples in fol/optimize.scm to learn how
+to make extensions of the other kinds.  Then update this guide if
+you've added anything!
