@@ -98,7 +98,7 @@
 (define (execute-stage stage program . how)
   (if (null? how)
       ((stage-data->execution-function (entity-extra stage)) program)
-      (apply execute-stage (do-stages stage (car how)) program (cdr how))))
+      (apply execute-stage (do-substages stage (car how)) program (cdr how))))
 
 (define (stage-name stage)
   (stage-data-name (entity-extra stage)))
@@ -146,7 +146,7 @@
 ;;; (new) stage execution function.  The reason for passing the stage
 ;;; data is that the wrapper may wish to read it.
 
-(define (do-stages stage how)
+(define (do-substages stage how)
   (let loop ((stage stage))
     (cond ((stage? stage)
            (stage-data->stage (loop (entity-extra stage))))
