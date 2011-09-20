@@ -1,5 +1,11 @@
 (declare (usual-integrations))
 
+;;;; FOL Stage Manager
+
+;;; See fol/doc/stage-manager.txt for motivation, overview, and basic
+;;; usage instructions.  Read on for how it works and how to implement
+;;; sophisticated extensions.
+
 ;;; In addition to the functions that define each primitive pass of
 ;;; the FOL compiler, we want to define and manipulate explicit stage
 ;;; objects that record information about the stages.  We also
@@ -19,12 +25,14 @@
 ;;; - Common subexpressions have been eliminated
 ;;; - Dead code has been eliminated intraprocedurally
 ;;; - Dead code has been eliminated interprocedurally
+;;; - The flow analysis of a VL/DVL program is passed a property too
 
 ;;; For each stage, I want to know the following information:
 ;;; - Does it create, preserve, or break each property (default preserve)?
 ;;;   (The fourth option is toggle, but that doesn't happen in this system)
 ;;; - Does it require each property?
 ;;; - check-program-types computes the type of the entry point
+;;; - generate reads the analysis of its program
 
 ;;; Given this, we arrange for each stage to inspect the annotations
 ;;; and precede itself with whatever processing it requires if it
@@ -33,16 +41,14 @@
 ;;; We also express the toplevel compiler as an explicit composition
 ;;; of stages, so that it can be automatically augmented to
 ;;; - Report per-stage statistics on input size, time, etc.
-;;;   - This automates optimize-visibly
 ;;; - Check that all annotations are true
 ;;;   - This automates much of the invariant checking in
 ;;;     vl/test/utils.scm
 
-;;; When the smart inliner comes online, it should be possible to
-;;; express the idea "Make this darn thing much smaller and then I
-;;; might inline it some more" as an annotation, and write the loop
-;;; that does inline-CSE-dead-code until convergence as a stage
-;;; combinator.
+;;; It should be possible to express the idea "Make this darn thing
+;;; much smaller and then I might inline it some more" as an
+;;; annotation, and write the loop that does inline-CSE-dead-code
+;;; until convergence as a stage combinator.
 
 ;;;; Properties
 
@@ -155,6 +161,7 @@
             (stage-data-name stage)
             (stage-data-prepare stage)
             (map loop (stage-data-dependencies stage))
+            ;; Do not try to wrap nonexistent execution functions
             (fmap-maybe (how stage) (stage-data-execute stage))))
           ((pair? stage)
            ;; Alist entry
@@ -181,7 +188,7 @@
       (map cons names substages)
       #f))))
 
-;;; I want a nice language for specifying stages.  For example,
+;;; We define a nice language for specifying stages.  For example,
 ;;;
 ;;; (define-stage scalar-replace-aggregates
 ;;;   raw-scalar-replace-aggregates
@@ -229,7 +236,7 @@
 ;;; implementing the stage from the clauses it is given.  It seemed
 ;;; easiest to represent each clause type as a function (parameterized
 ;;; by any clause arguments) that would mutate a partially-initialized
-;;; stage-data object.  This way I can extend the set of possible
+;;; stage-data object.  This way one can extend the set of possible
 ;;; clauses without changing the parser.  Note that the semantics of
 ;;; multiple clause arguments are the same as separating them out into
 ;;; several clauses of the same type.
@@ -332,10 +339,10 @@
      (lambda (program . extra)
        (absent! property (apply exec program extra))))))
 
-;; The semantics of COMPUTES are that the execution function doesn't
-;; actually modify the program at all, it just computes the value that
-;; should be stored in the given property annotation.  This then
-;; implies preservation of all other properties.
+;;; The semantics of COMPUTES are that the execution function doesn't
+;;; actually modify the program at all, it just computes the value that
+;;; should be stored in the given property annotation.  This then
+;;; implies preservation of all other properties.
 
 (define (computes property)
   (both
@@ -345,6 +352,11 @@
         (let ((answer (apply exec program extra)))
           (property-value! property answer program)))))
    (register-generator! property)))
+
+;;; The semantics of READS are that the underlying execution function
+;;; accepts an additional argument besides the program (see GENERATE
+;;; in vl/code-generator.scm) which should be fetched from the named
+;;; property.
 
 (define (reads property)
   (modify-execution-function
