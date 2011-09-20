@@ -1,18 +1,26 @@
 (declare (usual-integrations))
 
-(define (minimum-by cost list win)
-  (if (null? list)
-      (error "empty list")
-      (let loop ((x0 (car list))
-                 (c0 (cost (car list)))
-                 (xs (cdr list)))
-        (if (null? xs)
-            (win x0 c0)
-            (let* ((x (car xs))
-                   (c (cost x)))
-              (if (< c c0)
-                  (loop x c (cdr xs))
-                  (loop x0 c0 (cdr xs))))))))
+;;; Given the static call graph of a program, we seek to compute a
+;;; good set of procedures to inline, subject to the limitation that
+;;; the increase from inlining in the size of the program not exceed
+;;; the given threshold.
+
+;;; The input is a graph, in the form of a list of records of shape
+;;;   (procedure-name inline-cost . callee-names)
+;;; The given cost is the size increase per call site from inlining
+;;; this procedure.  The list of names of callees may have duplicates,
+;;; indicating multiple calls.
+
+;;; Given this this graph, we can compute the total cost of inlining
+;;; each procedure by multiplying its per-call-site inline cost by the
+;;; number of times it is called (less one, to approximate the savings
+;;; from removing the definition of the procedure).  If we choose to
+;;; inline a procedure, we must update the graph, by multiplying out
+;;; all the callers of the inlined procedure by all the procedures it
+;;; itself calls.  We can iterate greedily picking the cheapest
+;;; procedure to inline (that doesn't directly call itself) until the
+;;; threshold is exceeded.  Note that the total inline cost of a
+;;; procedure that is not called will be negative.
 
 (define (acceptable-inlinees threshold graph)
   (define-structure (node safe-accessors)
@@ -172,3 +180,17 @@
                             new-cost-increase))
                    inlinees)))))))
   (prune '() 0))
+
+(define (minimum-by cost list win)
+  (if (null? list)
+      (error "empty list")
+      (let loop ((x0 (car list))
+                 (c0 (cost (car list)))
+                 (xs (cdr list)))
+        (if (null? xs)
+            (win x0 c0)
+            (let* ((x (car xs))
+                   (c (cost x)))
+              (if (< c c0)
+                  (loop x c (cdr xs))
+                  (loop x0 c0 (cdr xs))))))))
