@@ -52,7 +52,7 @@
 ;;; multiplicity of its edges and with the per-call-site code size
 ;;; increase from inlining each procedure, and then greedily choose to
 ;;; inline the procedures that give the smallest overall increase
-;;; until the size hits a threshold.
+;;; until the proposed increase hits a threshold.
 
 ;;; This annotated call graph is represented as a list of records of
 ;;; the form
@@ -103,6 +103,14 @@
         (acceptable-inlinees
          size-increase-threshold (call-graph program)))
        program)))
+
+;;; It is worth noting that with a threshold based on the current
+;;; program size, this procedure is not idempotent.  Moreover, even if
+;;; we were to target a fixed absolute size for the resulting program,
+;;; compositions of this with CSE or dead code elimination would still
+;;; not be idempotent, because those stages can shrink the size of a
+;;; program and/or some of its constituent procedures (in the
+;;; celestial mechanics example, by as much as 100x).
 
 ;;; Historical note: in the previous world order, the set of vertices
 ;;; not to inline was chosen as a feedback vertex set (set of vertices
