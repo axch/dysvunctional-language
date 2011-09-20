@@ -49,7 +49,8 @@
    "dead-code"
    "optimize"
    "mit-scheme"
-   "stalin"))
+   "stalin"
+   "common-lisp"))
 
 ;;; Exports
 
