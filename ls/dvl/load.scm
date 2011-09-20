@@ -86,6 +86,8 @@
 (define (dvl-read-file filename)
   (dvl-prepare (vlad->dvl `(let () ,@(read-source filename)))))
 
+(define dvl-source dvl-read-file)
+
 (define (dvl-run-file filename)
   (let* ((program (dvl-read-file filename))
          (compiled-program (compile-to-fol program)))
