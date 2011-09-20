@@ -38,9 +38,10 @@
 ;; no-interprocedural-dead-variables (for testing only)
 
 ;; The possible clause types are
-;; requires
 ;; preserves generates destroys
-;; computes
+;; requires
+;; computes reads
+;; name
 
 (define-stage structure-definitions->vectors
   %structure-definitions->vectors
