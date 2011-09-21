@@ -22,7 +22,7 @@
 ;;; grammar, but instead of learning (or writing) a tool for doing
 ;;; that I put some basic syntax checks into this program.
 
-(define (check-program-types program)
+(define (check-program-types program #!optional inferred-type-map)
   (define (check-definition-syntax definition)
     (if (not (definition? definition))
         (error "Non-definition in a non-terminal program position"
@@ -65,20 +65,22 @@
                 body
                 (augment-type-env (empty-type-env) (cdr formals)
                                   (arg-types (lookup-type (car formals))))
-                lookup-type)))
+                lookup-type
+                inferred-type-map)))
           (if (not (equal? (last types) body-type))
               (error "Return type declaration doesn't match"
                      definition (last types) body-type))
           body-type)))
     (define (check-entry-point-types expression)
-      (check-expression-types expression (empty-type-env) lookup-type))
+      (check-expression-types
+       expression (empty-type-env) lookup-type inferred-type-map))
     (if (begin-form? program)
         (begin
           (for-each check-definition-types (except-last-pair (cdr program)))
           (check-entry-point-types (last program)))
         (check-entry-point-types program))))
 
-(define (check-expression-types expr env global-type)
+(define (check-expression-types expr env global-type #!optional inferred-type-map)
   ;; A type environment maps every bound local name to its type.  The
   ;; global-type procedure returns the (function) type of any global
   ;; name passed to it.  CHECK-EXPRESSION-TYPES either returns the
@@ -90,6 +92,11 @@
     (and (pair? expr)
          (memq (car expr) '(cons vector values))))
   (define (loop expr env)
+    (let ((type (%loop expr env)))
+      (if (not (default-object? inferred-type-map))
+          (hash-table/put! inferred-type-map expr type))
+      type))
+  (define (%loop expr env)
     (cond ((fol-var? expr) (lookup-type expr env))
           ((number? expr) 'real)
           ((boolean? expr) 'bool)
