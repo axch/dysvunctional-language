@@ -1,0 +1,24 @@
+Desiderata:
+- Semantic match (e.g., garbage collected)
+  - Makes it easy to generate for
+- Mature, robust, supportd, Free
+- Profilable
+- Useful facilities for e.g., plotting
+- Good FFI
+- High quality output
+  - unboxed floating point
+  - take advantage of large basic blocks?
+  - portable to further platforms?
+
+Candidates:
+- Scheme (RkRS)
+- Specific Scheme
+  - MIT Scheme, Stalin, Racket, Gambit, Chicken, Ikarus, Bigloo?
+- Common Lisp (the standard)
+- Specific Common Lisp
+  - SBCL, Allegro, etc
+- ML (SML/NJ, MLton, the standard)
+- Haskell (Core?)
+- Java (the language, or the bytecodes, or Scala, or Clojure...)
+- C, or C--, or LLVM
+- Others? .NET?
