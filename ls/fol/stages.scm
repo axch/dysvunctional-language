@@ -25,7 +25,7 @@
 ;;; - Common subexpressions have been eliminated
 ;;; - Dead code has been eliminated intraprocedurally
 ;;; - Dead code has been eliminated interprocedurally
-;;; - The flow analysis of a VL/DVL program is passed a property too
+;;; - The flow analysis of a VL/DVL program is passed as a property too
 
 ;;; For each stage, I want to know the following information:
 ;;; - Does it create, preserve, or break each property (default preserve)?
