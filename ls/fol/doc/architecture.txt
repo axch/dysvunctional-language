@@ -33,6 +33,22 @@ the program's form for the convenience of the main stages:
 
 Main Stages
 
+As of the present writing, the optimizer runs its main stages in the
+following order:
+
+  Inline
+  CSE
+  Dead code (intraprocedural)
+  SRA
+  CSE
+  Dead code (intraprocedural)
+  Dead code (interprocedural)
+  Reverse ANF
+
+The bulk of the present document explains the considerations and
+interrelationships that led to this choice of orders; though FOL is
+structured to admit easy reordering.
+
 Any stage is valid at any point, so the order and frequency of calling
 them is a question of their idempotence, what opportunities they
 expose for each other, whether they give each other any excess work,
@@ -188,6 +204,14 @@ doing anything useful.
 Reverse-ANF then reverse-ANF: Reverse-ANF is idempotent.
 
 Reverse-ANF then others: No effect.
+
+As a consequence, the stage order as it stands first runs a pass of
+inline, CSE, dead code to get the input program down small enough that
+SRA can be applied to it without blowing the compiler's memory.  Then
+it applies SRA to expose more opportunities, and does the same pass
+again (without inlining) to take advantage of them.  Finally, there is
+a pass of interprocedural dead code elimination at the end, and
+cleanup with reverse-anf.
 
 
 Form Normalization
