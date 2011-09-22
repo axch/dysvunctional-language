@@ -1,10 +1,12 @@
 Desiderata:
 - Semantic match (e.g., garbage collected)
   - Makes it easy to generate for
-- Mature, robust, supportd, Free
+- Mature, robust, supported, Free
 - Profilable
 - Useful facilities for e.g., plotting
 - Good FFI
+  - It's pretty easy to get FOL to interoperate with its host backend,
+    but a good FFI beyond that would be good too.
 - High quality output
   - unboxed floating point
   - take advantage of large basic blocks?
@@ -20,5 +22,7 @@ Candidates:
 - ML (SML/NJ, MLton, the standard)
 - Haskell (Core?)
 - Java (the language, or the bytecodes, or Scala, or Clojure...)
+  - The gcc implemetation of Java might be both garbage collected and
+    have good treatment of floats.
 - C, or C--, or LLVM
 - Others? .NET?

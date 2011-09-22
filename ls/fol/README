@@ -523,9 +523,10 @@ include:
 - Compiling to and running on the JVM or on .NET.
 - Compiling FOL to/with LLVM.
 - Translating FOL to C (or C--) and compiling with, e.g., gcc.
-This process will be undertaken as VL, DVL, and FOL scale to examples
-that are too slow to interpret, or too big to implement directly in
-the VL or DVL source languages without foreign libraries.
+See also doc/backends.txt.  This process will be undertaken as VL,
+DVL, and FOL scale to examples that are too slow to interpret, or too
+big to implement directly in the VL or DVL source languages without
+foreign libraries.
 
 Finally, the current state of FOL is also open to some improvements
 that don't affect its interface, for instance implementing
