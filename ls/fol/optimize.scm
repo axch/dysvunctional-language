@@ -2,23 +2,34 @@
 ;;;; Optimization toplevel
 
 ;;; The FOL optimizer consists of several stages:
-;;; - ALPHA-RENAME
-;;;   Uniquify local variable names.
 ;;; - INLINE
 ;;;   Inline non-recursive function definitions.
+;;; - INTRAPROCEDURAL-CSE
+;;;   Eliminate common subexpressions (including redundant variables that
+;;;   are just aliases of other variables or constants).
+;;;   Perform some algebraic simplification during CSE.
+;;; - ELIMINATE-INTRAPROCEDURAL-DEAD-CODE
+;;;   Eliminate dead code.
 ;;; - SCALAR-REPLACE-AGGREGATES
 ;;;   Replace aggregates with scalars.
-;;; - INTRAPROCEDURAL-CSE
-;;;   Eliminate common subexpressions (including redundant variables
-;;;   that are just aliases of other variables or constants).
-;;;   Perform some algebraic simplification during CSE.
-;;; - ELIMINATE-INTRAPROCEDURAL-DEAD-VARIABLES
-;;;   Eliminate dead code.
-;;; - INTERPROCEDURAL-DEAD-VARIABLE-ELIMINATION
+;;; - ELIMINATE-INTERPROCEDURAL-DEAD-CODE
 ;;;   Eliminate dead code across procedure boundaries.
 ;;; - REVERSE-ANF
-;;;   Inline bindings of variables that are only used once, to make
-;;;   the output easier to read.
+;;;   Inline bindings of variables that are only used once, to make the
+;;;   output easier to read.
+
+;;; The FOL optimizer also uses several supporting procedures to massage
+;;; the program's form for the convenience of the main stages:
+;;; - STRUCTURE-DEFINITIONS->VECTORS
+;;;   Replace named records and accessors with vectors and vector-refs.
+;;; - CHECK-FOL-TYPES
+;;;   Syntax check, type check, and compute the type of the entry point.
+;;; - ALPHA-RENAME
+;;;   Uniquify local variable names.
+;;; - APPROXIMATE-ANF
+;;;   Name all intermediate values.
+;;; - LIFT-LETS
+;;;   Increase variable scopes.
 
 ;;; See doc/architecture.txt for discussion.
 
@@ -42,6 +53,8 @@
 ;; requires
 ;; computes reads
 ;; name
+
+;;; Form normalizers
 
 (define-stage structure-definitions->vectors
   %structure-definitions->vectors
@@ -79,6 +92,8 @@
   (requires a-normal-form)   ; Just because I'm lazy
   ;; By splitting lets
   (destroys no-common-subexpressions))
+
+;;; Main stages
 
 (define-stage inline
   %inline
@@ -161,6 +176,8 @@
   (destroys a-normal-form)
   (requires syntax-checked unique-names))
 
+;;; Standard ordering
+
 (define fol-optimize
   (stage-pipeline
    reverse-anf
@@ -171,6 +188,8 @@
    eliminate-intraprocedural-dead-code
    intraprocedural-cse
    inline))
+
+;;; Adverbs
 
 (define (watching-annotations stage-data)
   (lambda (exec)
