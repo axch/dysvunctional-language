@@ -156,3 +156,6 @@
     ;; nested LETs.
     (win expr null))
   (loop expr build))
+
+(define (lets-lifted? expr)
+  (equal? expr (%lift-lets expr)))

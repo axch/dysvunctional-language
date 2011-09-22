@@ -242,6 +242,10 @@ which the FOL stages know whether to run a given normalization or not.
   whether and when something is computed.  This is useful for CSE
   because computed values remain in scope longer.
 
+(lets-lifted? <program>)
+  Returns #t if the given program already has all its lets lifted, and
+  #f otherwise.
+
 
 In addition to the optimizer and its individual stages, FOL also
 provides some legibility aids.  On one side, there is a utility to

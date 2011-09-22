@@ -82,6 +82,7 @@
      approximate-anf
      approximate-anf?
      lift-lets
+     lets-lifted?
      scalar-replace-aggregates
      intraprocedural-cse
      eliminate-intraprocedural-dead-code
