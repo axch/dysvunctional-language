@@ -528,7 +528,5 @@ that are too slow to interpret, or too big to implement directly in
 the VL or DVL source languages without foreign libraries.
 
 Finally, the current state of FOL is also open to some improvements
-that don't affect its interface, namely implementing interprocedural
-common subexpression elimination, and better understanding the nature
-of what the rule-based tidier does to implement it directly in
-algorithms (as that stands to improve its asymptotic complexity).
+that don't affect its interface, for instance implementing
+interprocedural common subexpression elimination.
