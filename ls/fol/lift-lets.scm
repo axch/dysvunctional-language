@@ -1,0 +1,132 @@
+(declare (usual-integrations))
+
+;; Lifting lets is safe assuming the program has unique bound names; if not,
+;; can break because of
+#;
+ (let ((x 3))
+   (let ((y (let ((x 4)) x)))
+     x))
+;; Unfortunately, mere lack of shadowing is not enough, as this can
+;; introduce shadowing because of
+#;
+ (let ((x (let ((y 3)) y)))
+   (let ((y 4))
+     y))
+
+(define lift-lets
+  (rule-simplifier
+   (list
+    (rule `(let ((?? bindings1)
+                 ((? name ,fol-var?) ((? bind ,binder-tag?) (? inner-bindings) (? exp)))
+                 (?? bindings2))
+             (?? body))
+          `(,bind ,inner-bindings
+             (let (,@bindings1
+                   (,name ,exp)
+                   ,@bindings2)
+               ,@body)))
+
+    (rule `(let-values (((? names) ((? bind ,binder-tag?) (? inner-bindings) (? exp))))
+             (?? body))
+          `(,bind ,inner-bindings
+             (let-values ((,names ,exp))
+               ,@body))))))
+
+(define (%lift-lets program)
+  (if (begin-form? program)
+      `(begin
+         ,@(map lift-lets-definition (except-last-pair (cdr program)))
+         ,(lift-lets-expression (last program)))
+      (lift-lets-expression program)))
+
+(define lift-lets-definition
+  (rule `(define (? formals)
+           (argument-types (?? stuff))
+           (? body))
+        `(define ,formals
+           (argument-types ,@stuff)
+           ,(lift-lets-expression body))))
+
+(define (lift-lets-expression expr)
+  ;; This is written in continuation passing style because the
+  ;; recursive call returns two things: the rewritten expression, and
+  ;; the list of bindings that this expression seeks to introduce.
+  ;; The bindings lists are represented as functions that will wrap a
+  ;; given expression in that binding list, for fast appending.
+  (define null (lambda (expr) expr))
+  (define (singleton var exp)
+    (lambda (expr)
+      `(let ((,var ,exp))
+         ,expr)))
+  (define (values-singleton names exp)
+    (lambda (expr)
+      `(let-values ((,names ,exp))
+         ,expr)))
+  (define (append lst1 lst2)
+    (lambda (expr)
+      (lst1 (lst2 expr))))
+  (define (build expr lst)
+    (lst expr))
+  (define (loop expr win)
+    (cond ((or (fol-var? expr)
+               (fol-const? expr))
+           (win expr null))
+          ((if-form? expr)
+           (lift-lets-from-if expr win))
+          ((let-form? expr)
+           (lift-lets-from-let expr win))
+          ((let-values-form? expr)
+           (lift-lets-from-let-values expr win))
+          ((lambda-form? expr)
+           (lift-lets-from-lambda expr win))
+          (else ;; general application
+           (lift-lets-from-application expr win))))
+  (define (lift-lets-from-if expr win)
+    (let ((predicate (cadr expr))
+          (consequent (caddr expr))
+          (alternate (cadddr expr)))
+      (loop predicate
+            (lambda (new-pred pred-binds)
+              (win `(if ,new-pred
+                        ,(lift-lets-expression consequent)
+                        ,(lift-lets-expression alternate))
+                   pred-binds)))))
+  (define (lift-lets-from-let expr win)
+    (let ((body (caddr expr)))
+      (let per-binding ((bindings (cadr expr))
+                        (done null))
+        (if (null? bindings)
+            (loop body (lambda (new-body body-binds)
+                         (win new-body (append done body-binds))))
+            (let ((binding (car bindings)))
+              (loop (cadr binding)
+                    (lambda (new-exp exp-binds)
+                      (per-binding
+                       (cdr bindings)
+                       (append done
+                               (append exp-binds
+                                       (singleton
+                                        (car binding) new-exp)))))))))))
+  (define (lift-lets-from-let-values expr win)
+    ;; TODO Abstract the commonalities with LET forms?
+    (let ((binding (caadr expr))
+          (body (caddr expr)))
+      (let ((names (car binding))
+            (sub-exp (cadr binding)))
+        (loop sub-exp
+         (lambda (new-sub-expr sub-exp-binds)
+           (loop body
+            (lambda (new-body body-binds)
+              (win new-body
+                   (append sub-exp-binds
+                           (append (values-singleton names new-sub-expr)
+                                   body-binds))))))))))
+  (define (lift-lets-from-lambda expr win)
+    (win `(lambda ,(cadr expr)
+            ,(lift-lets-expression (caddr expr)))
+         null))
+  (define (lift-lets-from-application expr win)
+    ;; In ANF, anything that looks like an application can't have
+    ;; nested LETs.
+    (win expr null))
+  (loop expr build))

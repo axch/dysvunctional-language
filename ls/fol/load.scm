@@ -34,6 +34,7 @@
    "stages"
    "nomenclature"
    "syntax"
+   "lift-lets"
    "srfi-11"
    "runtime"
    "primitives"
