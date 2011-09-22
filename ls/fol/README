@@ -132,7 +132,7 @@ optimize it separately.
   DVL define compile-to-raw-fol routines) and generates unoptimized
   FOL that does the same job.
 
-(check-program-types <program>)
+(check-fol-types <program>)
   Verifies that the given FOL program is syntactically correct and
   well typed.  If so, returns the type returned by the entry point; if
   not, signals an appropriate error.
