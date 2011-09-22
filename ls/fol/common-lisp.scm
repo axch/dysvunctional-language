@@ -7,7 +7,7 @@
       (check-program-types program inferred-type-map)
       (define (lookup-inferred-type expr)
         (or (hash-table/get inferred-type-map expr #f)
-            (error "Looking up unknow expression" expr)))
+            (error "Looking up unknown expression" expr)))
       (define compile-definition
         (rule `(define ((? name ,fol-var?) (?? formals))
                  (argument-types (?? formal-types) (? return-type))
