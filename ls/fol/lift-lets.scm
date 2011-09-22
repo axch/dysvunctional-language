@@ -1,17 +1,35 @@
 (declare (usual-integrations))
 
-;; Lifting lets is safe assuming the program has unique bound names; if not,
-;; can break because of
-#;
- (let ((x 3))
-   (let ((y (let ((x 4)) x)))
-     x))
-;; Unfortunately, mere lack of shadowing is not enough, as lifting lets can
-;; introduce shadowing because of
-#;
- (let ((x (let ((y 3)) y)))
-   (let ((y 4))
-     y))
+;;; The purpose of lifting lets is to increase the scopes of variables
+;;; without affecting when and whether their values are computed.
+;;; This is useful for common subexpression elimination, because
+;;; previously computed expressions remain available longer.
+
+;;; The action of lifting lets is to find LET expressions that occur
+;;; in strict contexts and to lift the LET binding outside the
+;;; context, but leave the LET body in place.  For example, since the
+;;; binding of an outer LET is a strict context, we get
+;;;
+;;; (let ((x (let ((y 4)) y)))
+;;;   x)
+;;; ===>
+;;; (let ((y 4))
+;;;   (let ((x y))
+;;;     x))
+
+;;; Lifting lets is safe assuming the program has unique bound names;
+;;; if not, it can break because of
+;;;
+;;; (let ((x 3))
+;;;   (let ((y (let ((x 4)) x)))
+;;;     x))
+;;;
+;;; Unfortunately, mere lack of shadowing is not enough, as lifting
+;;; lets can introduce shadowing because of
+;;;
+;;; (let ((x (let ((y 3)) y)))
+;;;   (let ((y 4))
+;;;     y))
 
 (define (%lift-lets program)
   (if (begin-form? program)
