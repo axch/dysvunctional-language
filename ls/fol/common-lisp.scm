@@ -1,8 +1,8 @@
 (declare (usual-integrations))
 ;;;; Simplistic FOL to Common Lisp compiler.
 
-(define (compile-program program)
-  (define (%compile-program program)
+(define (prepare-for-common-lisp program)
+  (define (compile-program program)
     (let ((inferred-type-map (make-eq-hash-table)))
       (check-program-types program inferred-type-map)
       (define (lookup-inferred-type expr)
