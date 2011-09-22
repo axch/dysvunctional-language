@@ -74,7 +74,7 @@
 
      ;; Form checkers and converters
      structure-definitions->vectors
-     check-program-types
+     check-fol-types
      alpha-rename
      unique-names?
      alpha-rename?
@@ -94,6 +94,9 @@
      ;; Visualizations
      strip-argument-types
      let->let*
+
+     ;; The underlying type checker
+     check-program-types ;; TODO For testing
 
      ;; The FOL runtime system.  It is exported because it is part of
      ;; the implementation of VL and DVL (the concrete implementations
