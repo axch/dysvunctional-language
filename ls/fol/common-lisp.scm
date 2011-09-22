@@ -2,29 +2,32 @@
 ;;;; Simplistic FOL to Common Lisp compiler.
 
 (define (compile-program program)
-  (let ((inferred-type-map (make-eq-hash-table)))
-    (check-program-types program inferred-type-map)
-    (define (lookup-inferred-type expr)
-      (or (hash-table/get inferred-type-map expr #f)
-          (error "Looking up unknow expression" expr)))
-    (define compile-definition
-      (rule `(define ((? name ,fol-var?) (?? formals))
-               (argument-types (?? formal-types) (? return-type))
-               (? body))
-            `(defun ,name (,@formals)
-               (declare ,@(map (lambda (formal-type formal)
-                                 `(type ,(fol-shape->type-specifier formal-type)
-                                        ,formal))
-                               formal-types
-                               formals))
-               ,(compile-expression body lookup-inferred-type))))
-    (if (begin-form? program)
-        `(progn
-          ,@prelude
-          ,@(map compile-definition
-                 (cdr (except-last-pair program)))
-          ,(compile-expression (last program) lookup-inferred-type))
-        (compile-expression program lookup-inferred-type))))
+  (define (%compile-program program)
+    (let ((inferred-type-map (make-eq-hash-table)))
+      (check-program-types program inferred-type-map)
+      (define (lookup-inferred-type expr)
+        (or (hash-table/get inferred-type-map expr #f)
+            (error "Looking up unknow expression" expr)))
+      (define compile-definition
+        (rule `(define ((? name ,fol-var?) (?? formals))
+                 (argument-types (?? formal-types) (? return-type))
+                 (? body))
+              `(defun ,name (,@formals)
+                 (declare ,@(map (lambda (formal-type formal)
+                                   `(type ,(fol-shape->type-specifier formal-type)
+                                          ,formal))
+                                 formal-types
+                                 formals))
+                 ,(compile-expression body lookup-inferred-type))))
+      (if (begin-form? program)
+          `(progn
+            (declaim (optimize (speed 3) (safety 0)))
+            ,@prelude
+            ,@(map compile-definition
+                   (cdr (except-last-pair program)))
+            ,(compile-expression (last program) lookup-inferred-type))
+          (compile-expression program lookup-inferred-type))))
+  (%compile-program (alpha-rename program)))
 
 (define (fol-shape->type-specifier shape)
   (cond ((eq? 'real shape)
