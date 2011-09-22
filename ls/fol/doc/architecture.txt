@@ -30,6 +30,9 @@ the program's form for the convenience of the main stages:
 - LIFT-LETS
   Increase variable scopes.
 
+
+Main Stages
+
 Any stage is valid at any point, so the order and frequency of calling
 them is a question of their idempotence, what opportunities they
 expose for each other, whether they give each other any excess work,
@@ -185,3 +188,36 @@ doing anything useful.
 Reverse-ANF then reverse-ANF: Reverse-ANF is idempotent.
 
 Reverse-ANF then others: No effect.
+
+
+Form Normalization
+
+Each FOL stage will ensure that its input is in the form it needs, by
+preprocessing it with the appropriate form converter if necessary.
+Many stages preserve many of the normal forms, so they annotate the
+program with markers as to which forms it's in to avoid duplicating
+the normalization work.  For the what and how of that process, see
+doc/stages.txt; the thing that's interesting here is which stages
+require and perserve which forms.  That data is specified in
+optimize.scm, and reproduced here as two tables.
+
+|           | Vectors | Types | Rename | ANF    | Lets   |
+|-----------+---------+-------+--------+--------+--------|
+| Inline    | Needs   | Needs |        |        |        |
+| CSE       | Needs   | Needs | Needs  | Needs  | Needs  |
+| Dead code | Needs   | Needs | Needs  |        |        |
+| SRA       | Needs   | Needs | Needs  |        |        |
+| Un-ANF    | Needs   | Needs |        |        |        |
+
+|           | Vectors | Types | Rename | ANF    | Lets   |
+|-----------+---------+-------+--------+--------+--------|
+| Inline    |         |       | Breaks |        | Breaks |
+| CSE       |         |       |        |        |        |
+| Dead code |         |       |        |        |        |
+| SRA       |         |       |        |        | Breaks |
+| Un-ANF    |         |       |        | Breaks |        |
+
+Except as noted, every stage preserves all the forms.  Not all of the
+needs clauses are essential; some are implementation artifacts, and
+some stated requirements are just playing it safe from not having
+thought about the question yet.
