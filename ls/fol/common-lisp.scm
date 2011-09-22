@@ -94,7 +94,7 @@
            (compile-application expr))))
   (define (compile-const expr)
     (cond ((number? expr)
-           `(coerce ,expr 'double-float))
+           (if (exact? expr) (exact->inexact expr) expr))
           ((boolean? expr)
            (if expr 't 'nil))
           (else
