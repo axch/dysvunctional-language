@@ -75,8 +75,8 @@
 (define (compile-expression expr lookup-inferred-type)
   (define (%compile-expression expr)
     `(the ,(fol-shape->type-specifier (lookup-inferred-type expr))
-          ,(%%compile-expression expr)))
-  (define (%%compile-expression expr)
+          ,(loop expr)))
+  (define (loop expr)
     (cond ((fol-var? expr) expr)
           ((fol-const? expr)
            (compile-const expr))
@@ -117,9 +117,8 @@
   (define compile-let-values
     (rule `(let-values ((?? names) (? expr))
              (? body))
-          `(muliple-values-bind (,@names)
-                                ,(%compile-expression expr)
-                                ,(%compile-expression body))))
+          `(muliple-values-bind (,@names) ,(%compile-expression expr)
+             ,(%compile-expression body))))
   (define compile-lambda
     (rule `(lambda ((? var))
              (? body))
