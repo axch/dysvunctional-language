@@ -72,7 +72,6 @@
      check-program-types
      equal-type? ; TODO
      fol-optimize
-     optimize-visibly
 
      ;; Individual stages
      alpha-rename

@@ -239,6 +239,3 @@
            (format #t "analysis of size ~A"
                    (estimate-space-usage (property-value 'analysis program)))
            (print-fol-statistics program))))))
-
-(define (optimize-visibly program)
-  (fol-optimize program visibly))
