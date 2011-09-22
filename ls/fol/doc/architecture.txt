@@ -1,99 +1,92 @@
+                           FOL Architecture
+
 The FOL optimizer consists of several stages:
-- ALPHA-RENAME
-  Uniquify local variable names.
 - INLINE
   Inline non-recursive function definitions.
-- SCALAR-REPLACE-AGGREGATES
-  Replace aggregates with scalars.
 - INTRAPROCEDURAL-CSE
   Eliminate common subexpressions (including redundant variables that
   are just aliases of other variables or constants).
   Perform some algebraic simplification during CSE.
-- ELIMINATE-INTRAPROCEDURAL-DEAD-VARIABLES
+- ELIMINATE-INTRAPROCEDURAL-DEAD-CODE
   Eliminate dead code.
-- INTERPROCEDURAL-DEAD-VARIABLE-ELIMINATION
+- SCALAR-REPLACE-AGGREGATES
+  Replace aggregates with scalars.
+- ELIMINATE-INTERPROCEDURAL-DEAD-CODE
   Eliminate dead code across procedure boundaries.
 - REVERSE-ANF
   Inline bindings of variables that are only used once, to make the
   output easier to read.
 
-The stages have the following structure and interrelationships:
+The FOL optimizer also uses several supporting procedures to massage
+the program's form for the convenience of the main stages:
+- STRUCTURE-DEFINITIONS->VECTORS
+  Replace named records and accessors with vectors and vector-refs.
+- CHECK-FOL-TYPES
+  Syntax check, type check, and compute the type of the entry point.
+- ALPHA-RENAME
+  Uniquify local variable names.
+- APPROXIMATE-ANF
+  Name all intermediate values.
+- LIFT-LETS
+  Increase variable scopes.
 
-Almost all stages, with the notable exception of INLINE, depend on but
-also preserve uniqueness of variable names, so ALPHA-RENAME should be
-done first.  The definition of FOL-OPTIMIZE above bums this by noting
-that INLINE is called first anyway and relying on the ALPHA-RENAME
-inside it.
+Any stage is valid at any point, so the order and frequency of calling
+them is a question of their idempotence, what opportunities they
+expose for each other, whether they give each other any excess work,
+and what effect they have on the size of the intermediate program.
+The following table summarizes these relationships.
 
-Other than that, any stage is valid at any point, so the order and
-frequency of calling them is a question of their idempotence, what
-opportunities they expose for each other, and whether they give each
-other any excess work.  The following table summarizes these
-relationships.
-
-|          | Inline        | SRA         | CSE       | dead var  | un-anf |
-|----------+---------------+-------------+-----------+-----------+--------|
-| Inline   | almost idem   | no effect   | expose    | expose    | expose |
-| SRA      | extra aliases | almost idem | expose    | expose    | fight  |
-| CSE      | ~ expose      | no effect   | idem      | expose    | mixed  |
-| dead var | ~ expose      | no effect   | no effect | idem      | expose |
-| un-anf   | no effect     | form fight  | no effect | no effect | idem   |
+|          | Size | Inline        | CSE       | dead var  | SRA         | un-anf |
+|----------+------+---------------+-----------+-----------+-------------+--------|
+| Inline   | tune | almost idem   | expose    | expose    | no effect   | expose |
+| CSE      | --   | ~ expose      | idem      | expose    | no effect   | mixed  |
+| dead var | -    | ~ expose      | no effect | idem      | no effect   | expose |
+| SRA      | ++   | extra aliases | expose    | expose    | almost idem | fight  |
+| un-anf   | 0    | no effect     | no effect | no effect | form fight  | idem   |
 
 Each cell in the table says what effect doing the stage on the left
-first has on subsequently doing the stage above.  "Expose" means that
-the stage on the left exposes opportunities for the stage above to be
-more effective.  "Idem" means the stage is idempotent, that is that
-repeating it twice in a row is no better than doing it once.  "~
-expose" means it exposes opportunities in principle, but the current
-set of examples has not yet motivated me to try to take advantage of
-this.  I explain each cell individually below.
+first has on program size or on subsequently doing the stage above.
+"Expose" means that the stage on the left exposes opportunities for
+the stage above to be more effective.  "Idem" means the stage is
+idempotent, that is that repeating it twice in a row is no better than
+doing it once.  "~ expose" means it exposes opportunities in
+principle, but the current set of examples has not yet motivated me to
+try to take advantage of this.  I explain each cell individually
+below.
 
-Scalar replacement of aggregates pre-converts its input into
-approximate A-normal form, and does not attempt to undo this
-conversion.  This means other stages may have interesting commutators
-with SCALAR-REPLACE-AGGREGATES through their effect on ANF.
+Inlining can decrease the program size by removing unused procedures,
+and by removing type annotations (procedures are annotated as to type,
+but body expressions are not).  Inlining can also increase the program
+size by replicating the bodies of procedures that are called more than
+once.  The latter can lead to a combinatorial explosion of cide size,
+so the current inliner computes a threshold for itself that controls
+how large of a program size increase it is willing to commit before it
+stops inlining.
 
-Inline then Inline: Inlining is not idempotent in theory (see
-discussion in feedback-vertex-set.scm) but is idempotent on the extant
-examples.
+Inline then Inline: Inlining is not idempotent because of the effects
+of recomputing the expansion threshold, but all examples in the test
+suite are small enough that they are inlined all the way anyway.
 
 Inline then SRA: Inlining commutes with SRA up to removal of aliases
-(see explanation in SRA then Inline below).  I think inlining also
-makes SRA go faster because it reduces the number of procedure
-boundaries.
+(see explanation in SRA then Inline below).
 
 Inline then others: Inlining exposes some interprocedural aliases,
 common subexpressions, dead code, and one-use variables to
-intraprocedural methods by collapsing some procedure boundaries.  I do
-not know whether interprocedural-dead-code-elimination is good enough
-to get away without this aid in principle, but in practice inlining
-first greatly accelerates it.
+intraprocedural methods by collapsing some procedure boundaries.  It
+also exposes additional opportunities for such by cloning procedures
+so they can be separately optimized against each specific context
+where they are used (e.g., an output may be dead for some callers but
+not for others).
 
-SRA then Inline: Inlining gives explicit names (former formal
-parameters) to the argument expressions of the procedure calls that
-are inlined, whether those expressions are compound or not.  The ANF
-pre-filter of SRA synthesizes explicit names for any compound
-expression, including arguments of procedures that are up for
-inlining.  Therefore, doing SRA first creates extra names that just
-become aliases after inlining.  Up to removal of aliases, however, SRA
-and inlining commute.
-
-SRA then SRA: SRA is idempotent except in the case when the entry
-point returns a structured object (see sra.scm for why).  When support
-for union types is added, SRA will also become non-idempotent for the
-same reason that inlining is not idempotent.
-
-SRA then others: SRA converts structure slots to variables, thereby
-exposing any aliases, common subexpressions, dead code, or instances
-of single use over those structure slots to the other stages, which
-focus exclusively on variables.
+CSE decreases the code size by removing redundant copies of
+expressions for computing the same thing more than once and by
+removing the definitions of aliases.  On the celestial mechanics
+example, this can be worth around 50x.
 
 CSE then inline: CSE may delete edges in the call graph by collapsing
 (* 0 (some-proc foo bar baz)) to 0 or by collapsing (if (some-proc
-foo) bar bar) into bar.
-
-CSE then SRA: CSE does not introduce SRA opportunities, though because
-it does algebraic simplifications it could in the non-union-free case.
+foo) bar bar) into bar.  Shrinking the size of the program may also
+allow more inlining opportunities to fit into a desired size cap.
 
 CSE then CSE: CSE is idempotent.
 
@@ -107,7 +100,12 @@ it does leave a few around to be cleaned up by dead variable
 elimination, in the case where some names bound by a multiple value
 binding form are dead but others are not.  CSE also exposes dead code
 opportunities by doing algebraic simplifications, including (* 0 foo)
--> 0 and (if foo bar bar) -> bar.
+-> 0, (car (cons foo bar)) -> foo, and (if foo bar bar) -> bar.
+
+CSE then SRA: CSE does not introduce SRA opportunities, though because
+it does algebraic simplifications it could in the non-union-free case.
+By simplifying (car (cons foo bar)) -> foo, however, CSE mitigates the
+code size explosion that SRA causes.
 
 CSE then undo ANF: CSE does some of the work of reverse ANF by
 eliminating variables that are used only once and are also aliases.
@@ -117,14 +115,15 @@ may increase the number of use sites of variables that are chosen as
 the canonical representatives of some computed expression, thereby
 preventing them from being inlined.
 
+Dead variable elimination decreases program size by eliminating
+expressions that compute results that are not used.  On the celestial
+mechanics example, this can be worth a further 30x after CSE.
+
 Eliminate then inline: Dead variable elimination may delete edges in
 the call graph (if the result of a called procedure turned out not to
-be used); and may thus open inlining opportunities.
-
-Eliminate then SRA: Dead variable elimination does not create SRA
-opportunities (though it could in the non-union-free case if I
-eliminated dead structures or structure slots and were willing to
-change the type graph accordingly).
+be used); and may thus open inlining opportunities.  Shrinking the
+size of the program may also allow more inlining opportunities to fit
+into a desired size cap.
 
 Eliminate then CSE: Dead variable elimination does not expose common
 subexpressions.
@@ -134,9 +133,48 @@ The intraprocedural version is run first because it's faster and
 reduces the amount of work the interprocedural version would do while
 deciding what's dead and what isn't.
 
+Eliminate then SRA: Dead variable elimination does not create SRA
+opportunities (though it could in the non-union-free case if I
+eliminated dead structures or structure slots and were willing to
+change the type graph accordingly).  It does, however, mitigate the
+code size explosion that SRA causes by eliminating unused access
+expressions and construction expressions (particularly those that CSE
+leaves around after simplifying the corresponding accesses).
+
 Eliminate then undo ANF: Dead variable elimination reduces the number
 of use sites of variables that are used to compute things that are not
 needed, thus possibly making them singletons.
+
+SRA increases program size, possibly a great deal, because it converts
+the use and passing of single variables that hold structures into the
+use and passing of parallel lists of variables that hold the
+components of that structure.  If the structure had many components
+and was often passed (including as a slot in a still larger
+structure), the result is to multiply two large numbers.
+
+SRA then Inline: Inlining gives explicit names (former formal
+parameters) to the argument expressions of the procedure calls that
+are inlined, whether those expressions are compound or not.  The ANF
+pre-filter that SRA requires synthesizes explicit names for any
+compound expression, including arguments of procedures that are up for
+inlining.  Therefore, doing SRA first creates extra names that just
+become aliases after inlining.  Up to removal of aliases, however, SRA
+and inlining commute.
+
+SRA then SRA: SRA is idempotent except in the case when the entry
+point returns a structured object (see sra.scm for why).  When support
+for union types is added, SRA will also become non-idempotent for the
+reason discussed in feedback-vertex-set.scm.
+
+SRA then others: SRA converts structure slots to variables, thereby
+exposing any aliases, common subexpressions, dead code, or instances
+of single use over those structure slots to the other stages, which
+focus exclusively on variables (with the important exception of the
+(car (cons foo bar)) -> foo simplification that CSE does).
+
+Reverse-ANF slightly decreases program size, because it eliminates the
+bindings (but not the bound expressions) of variables that are used
+only once.
 
 Reverse-ANF then SRA: Reverse-ANF does not create SRA opportunities.
 It does, however, undo some of the work of ANF conversion.

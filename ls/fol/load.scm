@@ -79,7 +79,7 @@
      unique-names?
      alpha-rename?
      inline
-     approximate-anf
+     approximate-anf ; TODO The stage is called a-normal-form, but that's wrong
      approximate-anf?
      lift-lets
      lets-lifted?
