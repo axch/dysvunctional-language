@@ -31,6 +31,33 @@
 ;;;   (let ((y 4))
 ;;;     y))
 
+;;; The grammar of a FOL program whose LETs have been lifted is the
+;;; same as the normal FOL grammar, except for replacing the
+;;; <expression>, <access>, and <construction> nonterminals with the
+;;; following:
+;;;
+;;; expression = <non-let>
+;;;            | (let ((<data-var> <non-let>) ...) <expression>)
+;;;            | (let-values (((<data-var> <data-var> <data-var> ...) <non-let>))
+;;;                <expression>)
+;;;
+;;; non-let = <data-var> | <number> | <boolean> | ()
+;;;         | (if <non-let> <expression> <expression>)
+;;;         | (lambda (<data-var>) <expression>)  ; for escape only
+;;;         | <access>
+;;;         | <construction>
+;;;         | (values <non-let> <non-let> <non-let> ...)
+;;;         | (<proc-var> <non-let> ...)
+;;;
+;;; access = (car <non-let>)
+;;;        | (cdr <non-let>)
+;;;        | (vector-ref <non-let> <integer>)
+;;;
+;;; construction = (cons <non-let> <non-let>)
+;;;              | (vector <non-let> ...)
+
+;;; TODO Describe the algorithm.
+
 (define (%lift-lets program)
   (if (begin-form? program)
       `(begin
