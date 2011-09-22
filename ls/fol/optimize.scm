@@ -63,19 +63,6 @@
   (generates unique-names)
   (requires syntax-checked))
 
-(define-stage inline
-  %inline
-  ;; Because of multiple procedure arguments
-  (destroys lets-lifted)
-  ;; Because of copying procedure bodies
-  (destroys unique-names no-common-subexpressions)
-  ;; Because of removing procedure boundaries
-  (destroys no-intraprocedural-dead-variables)
-  ;; Because of specializing to different places
-  (destroys no-interprocedural-dead-variables)
-  (requires syntax-checked)
-  (generates fully-inlined))                  ; not really, but on current examples
-
 (define-stage a-normal-form
   approximate-anf
   (generates a-normal-form)
@@ -92,6 +79,19 @@
   (requires a-normal-form)   ; Just because I'm lazy
   ;; By splitting lets
   (destroys no-common-subexpressions))
+
+(define-stage inline
+  %inline
+  ;; Because of multiple procedure arguments
+  (destroys lets-lifted)
+  ;; Because of copying procedure bodies
+  (destroys unique-names no-common-subexpressions)
+  ;; Because of removing procedure boundaries
+  (destroys no-intraprocedural-dead-variables)
+  ;; Because of specializing to different places
+  (destroys no-interprocedural-dead-variables)
+  (requires syntax-checked)
+  (generates fully-inlined))                  ; not really, but on current examples
 
 (define (sra-may-destroy property)
   (modify-execution-function
