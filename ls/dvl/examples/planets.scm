@@ -81,7 +81,7 @@
 
 #|
 On moria, July 24, 2011:
-(define opt-fol (compile-visibly (dvl-read-file "examples/planets.scm")))
+(define opt-fol (compile-to-fol (dvl-read-file "examples/planets.scm") visibly))
 Stage analyze-and-generate on 2905 pairs
 ;process time: 11110 (7200 RUN + 3910 GC); real time: 11118
 Stage structure-definitions->vectors on 46377 pairs
@@ -104,7 +104,7 @@ Final output has 394 pairs
 
 #|
 On arrakis, July 24, 2011
-(define opt-fol (compile-visibly (dvl-read-file "examples/planets.scm")))
+(define opt-fol (compile-to-fol (dvl-read-file "examples/planets.scm") visibly))
 Stage analyze-and-generate on 2905 pairs
 ;process time: 2980 (2830 RUN + 150 GC); real time: 2991
 Stage structure-definitions->vectors on 46377 pairs

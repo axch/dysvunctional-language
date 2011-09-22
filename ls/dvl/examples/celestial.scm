@@ -30,7 +30,7 @@
       (stream-take (- count 1) (force (cdr stream)))))
 
 ;; Compile the DVL program with
-;(fol->mit-scheme (compile-visibly (dvl-read-file "examples/celestial.dvl")))
+;(fol->mit-scheme (compile-to-fol (dvl-read-file "examples/celestial.dvl") visibly))
 
 ;; Then run with
 #;
