@@ -6,31 +6,12 @@
  (let ((x 3))
    (let ((y (let ((x 4)) x)))
      x))
-;; Unfortunately, mere lack of shadowing is not enough, as this can
+;; Unfortunately, mere lack of shadowing is not enough, as lifting lets can
 ;; introduce shadowing because of
 #;
  (let ((x (let ((y 3)) y)))
    (let ((y 4))
      y))
-
-(define lift-lets
-  (rule-simplifier
-   (list
-    (rule `(let ((?? bindings1)
-                 ((? name ,fol-var?) ((? bind ,binder-tag?) (? inner-bindings) (? exp)))
-                 (?? bindings2))
-             (?? body))
-          `(,bind ,inner-bindings
-             (let (,@bindings1
-                   (,name ,exp)
-                   ,@bindings2)
-               ,@body)))
-
-    (rule `(let-values (((? names) ((? bind ,binder-tag?) (? inner-bindings) (? exp))))
-             (?? body))
-          `(,bind ,inner-bindings
-             (let-values ((,names ,exp))
-               ,@body))))))
 
 (define (%lift-lets program)
   (if (begin-form? program)
