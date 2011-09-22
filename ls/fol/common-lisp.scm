@@ -1,6 +1,20 @@
 (declare (usual-integrations))
 ;;;; Simplistic FOL to Common Lisp compiler.
 
+(define (fol->common-lisp program #!optional base)
+  (if (default-object? base)
+      (set! base "comozzle"))
+  (let ((code (prepare-for-common-lisp program))
+        (file (pathname-new-type base "lisp")))
+    (with-output-to-file file
+      (lambda ()
+        (fluid-let ((flonum-unparser-cutoff '(normal 0 scientific)))
+          (write code))))
+    (run-shell-command
+     (format #f
+      "sbcl --eval '(progn (compile-file ~S :verbose t :print t) (quit))'"
+      (->namestring file)))))
+
 (define (prepare-for-common-lisp program)
   (define (compile-program program)
     (let ((inferred-type-map (make-eq-hash-table)))
