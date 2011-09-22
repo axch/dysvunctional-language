@@ -458,16 +458,22 @@ cost-model.txt      About the assumed cost model of FOL execution
 intermediate-representation.txt  FOL compared to other representations
 
 optimize.scm        Toplevel
-type-check.scm      Type checker
-structs.scm         structure-definitions->vectors
+stages.scm          Stage management system
+  stages.txt        Architecture and user documentation thereof
+
 inline.scm          Inliner
   feedback-vertex-set.scm  Graph algorithm supporting inlining
-alpha-remaing.scm   Uniquifying bound names
-a-normal-form.scm   Conversion to and from A-normal form
-sra.scm             Scalar replacement of aggregates
+  inlinees.scm      Other graph algorithm supporting inlining
 cse.scm             Common subexpression elimination
   simplification.txt  Issues with simplifying algebra in a compiler
 dead-code.scm       Dead variable elimination
+sra.scm             Scalar replacement of aggregates
+
+type-check.scm      Type checker
+structs.scm         structure-definitions->vectors
+alpha-remaing.scm   Uniquifying bound names
+a-normal-form.scm   Conversion to and from A-normal form
+lift-lets.scm       Lifting lets
 
 nomenclature.scm    Representation of FOL names
 syntax.scm          Low-level support; FOL syntax
@@ -475,6 +481,7 @@ srfi-11.scm         Reference implementation of SRFI 11
 runtime.scm         FOL runtime system
 primitives.scm      Primitives available to FOL programs
 mit-scheme.scm      Compilation to machine code with MIT Scheme
+stalin.scm          Compilation to machine code with Stalin
 load.scm            Entry point; namespace management
 
 The FOL compiler makes extensive use of a pattern matching and
