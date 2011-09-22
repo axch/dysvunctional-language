@@ -293,12 +293,13 @@ if that helps you read them.
 
 Machine code from FOL
 
-FOL includes a compiler to machine code via the MIT Scheme compiler.
+FOL includes a compiler to machine code via the MIT Scheme compiler,
+and an experimental backed via the Stalin compiler.
 
 (fol->mit-scheme <program> [<basename>])
-  Dumps the given FOL program into <basename>.fol-scm and compile that
-  with MIT Scheme.  The result can be executed by loading it into an
-  environment that already contains the FOL runtime.  The basename
+  Dumps the given FOL program into <basename>.fol-scm and compiles
+  that with MIT Scheme.  The result can be executed by loading it into
+  an environment that already contains the FOL runtime.  The basename
   defaults to `frobnozzle', local to the current directory.
 
 (fol->floating-mit-scheme <program> [<basename>])
@@ -317,6 +318,10 @@ FOL includes a compiler to machine code via the MIT Scheme compiler.
   loading it into a fresh MIT Scheme.  Do not use `run-mit-scheme' on
   the output of this; the redefinition of the runtime will cause
   problems.
+
+(fol->stalin <program> [<basename>])
+  Dumps the given FOL program into <basename>.sc and compiles that
+  with Stalin.  The result is a standalone executable.
 
 
 Writing FOL
