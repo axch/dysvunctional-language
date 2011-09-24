@@ -25,4 +25,6 @@ Candidates:
   - The gcc implemetation of Java might be both garbage collected and
     have good treatment of floats.
 - C, or C--, or LLVM
+- Fortran
+  - Gerry says it has actually gotten quite nice over the years
 - Others? .NET?
