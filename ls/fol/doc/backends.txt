@@ -28,3 +28,16 @@ Candidates:
 - Fortran
   - Gerry says it has actually gotten quite nice over the years
 - Others? .NET?
+
+
+On MIT Scheme unboxing floats, Taylor says
+> LIAR does not unbox variables.  The best you can do is
+>
+> (let ((x (flo:+ y z)))
+>  (declare (integrate x))   ;***
+>  (let ((y (flo:* x x)))
+>    ...))
+>
+> and hope the RTL CSE takes care of the code duplication (which it
+> usually does, although it may not be happy about exponential explosion
+> of code if you do this for a lot of variables in a big procedure).
