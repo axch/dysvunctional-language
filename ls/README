@@ -63,8 +63,9 @@ VL.  Gensyms are sufficient to implement forward mode AD correctly by
 operator overloading; the flow analysis suffices to migrate all the
 boxing, tagging, dispatching, and unboxing that this normally entails
 to compile time.  DVL still falls short of Stalingrad's feature set
-because is not union-free (not almost-), and because it does not
-support reverse-mode AD.
+because it is union-free (not almost-), and because it does not
+support reverse-mode AD.  On the other hand, DVL has a rudimentary
+foreign interface.
 
 4) SLAD was an attempt to implement an interpter for a language with
 AD by performing Stalingrad-like source-to-source transformations at

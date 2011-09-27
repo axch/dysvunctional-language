@@ -92,15 +92,47 @@ aggressively replaces aggregates with corresponding collections of
 scalars, and aggressively eliminates dead and redundant code.
 
 The standard use case of COMPILE-TO-FOL emits FOL with all these
-optimizations already performed, but you can also get the output from
-the code generator, examine it, and optimize it separately.
+optimizations already performed.
+
+(compile-to-fol <vl-or-dvl>)
+(compile-to-fol <vl-or-dvl> <adverb> ...)
+  Performs flow analysis on the given VL or DVL program (both VL and
+  DVL define compile-to-fol routines), then generates and optimizes
+  FOL that does the same job, and returns the result.  Any adverbs
+  passed modify how each step is performed.
+
+You can modify the compilation process by passing COMPILE-TO-FOL an
+adverb for how to do the job.  For example, calling
+
+  (compile-to-fol (dvl-source "examples/celestial.dvl") visibly)
+
+will do the same compilation process as plain compile-to-fol, but also
+print out a two-line status report for every stage of compilation,
+noting the size of the input it was given and the amount of time it
+took to complete.  The available adverbs are
+
+visibly
+  Print short progress reports, with stage name, input size, and time
+  to completion.
+
+volubly
+  Print longer progress reports, with stage name, size and several
+  statistics about the input, and time to completion.
+
+All the subsequent procedures in this section accept adverb arguments,
+except the ones that just check whether a particular property holds of
+the program or not (namely, unique-names?, alpha-rename?,
+approximate-anf?, strip-argument-types, let->let*).
+
+You can also get the output from the code generator, examine it, and
+optimize it separately.
 
 (compile-to-raw-fol <vl-or-dvl>)
   Performs flow analysis on the given VL or DVL program (both VL and
   DVL define compile-to-raw-fol routines) and generates unoptimized
   FOL that does the same job.
 
-(check-program-types <program>)
+(check-fol-types <program>)
   Verifies that the given FOL program is syntactically correct and
   well typed.  If so, returns the type returned by the entry point; if
   not, signals an appropriate error.
@@ -110,36 +142,51 @@ the code generator, examine it, and optimize it separately.
 
 FOL Optimization proceeds as a cascade of stages, which you can also
 run one by one to see their effect.  The stages are all
-self-contained, except that most of them assume unique variable names;
-you should alpha-rename the program first, but then you can run the
-remaining stages as much as you like, in any order.
+self-contained, in that you can run them in any order.  Some stages
+rely on the program being normalized in one way or another; they will
+preprocess it into the needed form before proceeding (if you are
+watching with visibly or volubly, this may cause you to see multiple
+stages execute even though you only asked for one).  The stages try to
+be smart about knowing which stages preserve which properties and thus
+not repeating normalization work, but may sometimes do more than is
+strictly necessary.  If you are curious about this, see optimize.scm.
 
-(alpha-rename <program>)
-  Renames variables in the given program so that no local variable
-  binding binds the same name as any other, and returns the result.
-
-(unique-names? <program>)
-  Returns #t if all local variable names in the program are unique,
-  and #f otherwise.
-
-(alpha-rename? <program> <program>)
-  Checks whether the two given programs are equal up to names of bound
-  variables.
+These are the individual FOL stages:
 
 (inline <program>)
   Inlines as many procedures in the given FOL program as possible and
-  returns the result.  Inlining might break alpha-renaming (by
-  duplicating code bodies), so INLINE runs ALPHA-RENAME as a
-  post-filter.
+  returns the result.  A procedure may not be inlined if it calls
+  itself, or if inlining it would lead to too large of an increase in
+  the size of the program.
 
-(approximate-anf <program>)
-  Converts the given program into approximate A-normal form, where all
-  procedure calls operate on variables or constants, and returns the
-  result.  This is used for scalar replacement of aggregates, below.
+(intraprocedural-cse <program>)
+  Eliminates common subexpressions inside procedure bodies and returns
+  the result (this automatically also propagates constants and
+  copies).  As suggested by its name, this does not do full
+  interprocedural CSE, and does not detect circumstances where some
+  formal parameters to some procedure are reliably always given the
+  same value.
 
-(approximate-anf? <program>)
-  Returns #t if the given program is already in approximate A-normal
-  form, and #f otherwise.
+  The definition of "common subexpression" includes simple
+  equivalences of the form
+
+    (car (cons x y)) -> x
+    (+ 0 x) -> x
+    (* 1 x) -> x
+    (* 0 x) -> 0
+
+  The first of these eliminates a great many of the structure accesses
+  that VL and DVL leave around, permitting dead code elimination to
+  get rid of a great deal of consing.  The last of these also has
+  significant effects on the code size and speed, because it chains
+  and may allow elimination of x.  It is not, however, floating-safe,
+  because x might have been a NaN or an infinity.
+
+(eliminate-intraprocedural-dead-code <program>)
+  Eliminates dead code inside procedure bodies and returns the result.
+  As suggested by the name, this does not detect circumstances where
+  some variable is passed around from one user-defined procedure to
+  another but then never used.
 
 (scalar-replace-aggregates <program>)
   Performs scalar replacement of aggregates and returns the resulting
@@ -150,45 +197,55 @@ remaining stages as much as you like, in any order.
   for the construction of the final answer that is returned from the
   entry point, should that be a structure.
 
-  The SRA algorithm requires its input to be in approximate A-normal
-  form, so SCALAR-REPLACE-AGGREGATES preprocesses its input program
-  with APPROXIMATE-ANF.
-
-(intraprocedural-cse <program>)
-  Eliminates common subexpressions inside procedure bodies and returns
-  the result (this automatically also propagates constants and
-  copies).  This step is very important because between them A-normal
-  form conversion and scalar replacement of aggregates end up
-  generating lots of aliases.  As suggested by its name, this does not
-  do full interprocedural CSE, and does not detect circumstances where
-  some formal parameters to some procedure are reliably always given
-  the same value.
-
-  Also performs some algebraic simplifications to discover
-  semantically identical subexpressions.  Specifically, collapses IFs
-  with identical branches, and converts (+ 0 foo) to foo, (* 1 foo) to
-  foo, and (* 0 foo) to 0.  The last of these is not floating-safe,
-  because foo might have been a NaN or an infinity.
-
-(eliminate-intraprocedural-dead-variables <program>)
-  Eliminates dead code inside procedure bodies and returns the result.
-  As suggested by the name, this does not detect circumstances where
-  some variable is passed around from one user-defined procedure to
-  another but then never used.
-
-(interprocedural-dead-variable-elimination <program>)
+(eliminate-interprocedural-dead-code <program>)
   Detects circumstances when some value is passed around from one
   procedure to another but never used, and flushes the computation and
-  storage of those values.
+  storage of those values.  Includes elimination of intraprocedural
+  dead code.
 
 (reverse-anf <program>)
   Inlines the definitions of variables that are used only once.  This
   is useless to the compiler, but clarifies the output.
 
-(optimize-visibly <program>)
-  Like `fol-optimize' but prints progress messages as it moves from
-  stage to stage, so you can see how much work each stage does and how
-  much time it takes.
+In addition to running the stages proper, you can also run the
+normalization procedures that the stages use.  The checking procedures
+listed here are correct and expensive; this is not the mechanism by
+which the FOL stages know whether to run a given normalization or not.
+
+(alpha-rename <program>)
+  Renames variables in the given program so that no local variable
+  binding binds the same name as any other, and returns the result.
+  This is useful all over the place because it allows the system not
+  to worry about scoping rules.
+
+(unique-names? <program>)
+  Returns #t if all local variable names in the program are unique,
+  and #f otherwise.
+
+(alpha-rename? <program> <program>)
+  Checks whether the two given programs are equal up to names of bound
+  variables.
+
+(approximate-anf <program>)
+  Converts the given program into approximate A-normal form, where all
+  procedure calls operate on variables or constants, and returns the
+  result.  This is useful for CSE and SRA because it gives names to
+  intermediate results, and information can be associated with those
+  names.
+
+(approximate-anf? <program>)
+  Returns #t if the given program is already in approximate A-normal
+  form, and #f otherwise.
+
+(lift-lets <program>)
+  Expands the scopes of variables as much as possible without changing
+  whether and when something is computed.  This is useful for CSE
+  because computed values remain in scope longer.
+
+(lets-lifted? <program>)
+  Returns #t if the given program already has all its lets lifted, and
+  #f otherwise.
+
 
 In addition to the optimizer and its individual stages, FOL also
 provides some legibility aids.  On one side, there is a utility to
@@ -205,21 +262,23 @@ MIT Scheme, and may be easier to read.
 As a legibility aid on the opposite end of the spectrum, you can also
 ask VL or DVL to generate FOL with a stronger type system.  Instead of
 using Scheme vectors for everything, this variant of FOL uses Scheme
-record types (introduced with DEFINE-STRUCTURE), which may improve
-legibility.
+record types (introduced with a typed variant of DEFINE-STRUCTURE),
+which may improve legibility.
 
 (analyze-and-generate <vl-or-dvl>)
   Performs flow analysis on the given VL or DVL program (both VL and
   DVL define analyze-and-generate routines) and generates FOL with
-  DEFINE-STRUCTURE forms that does the same job.
+  DEFINE-TYPED-STRUCTURE forms that does the same job.
 
-The optimizer does not understand DEFINE-STRUCTURE, so you have to get
-rid of them before invoking any of the stages.
+The optimizer accepts this FOL variant as input, but since it does not
+understand DEFINE-TYPED-STRUCTURE natively, it just converts
+everything to vectors in a prepass.  You can do that manually as well,
+if you wish:
 
 (structure-definitions->vectors <program>)
   Replaces Scheme record types with Scheme vectors in a FOL program
-  and returns the result.  Said result has no DEFINE-STRUCTURE forms,
-  and is suitable for optimization.
+  and returns the result.  Said result has no DEFINE-TYPED-STRUCTURE
+  forms.
 
 The simpler-to-use COMPILE-TO-RAW-FOL could be defined as
 ANALYZE-AND-GENERATE followed by STRUCTURE-DEFINITIONS->VECTORS.
@@ -234,12 +293,13 @@ if that helps you read them.
 
 Machine code from FOL
 
-FOL includes a compiler to machine code via the MIT Scheme compiler.
+FOL includes a compiler to machine code via the MIT Scheme compiler,
+and an experimental backed via the Stalin compiler.
 
 (fol->mit-scheme <program> [<basename>])
-  Dumps the given FOL program into <basename>.fol-scm and compile that
-  with MIT Scheme.  The result can be executed by loading it into an
-  environment that already contains the FOL runtime.  The basename
+  Dumps the given FOL program into <basename>.fol-scm and compiles
+  that with MIT Scheme.  The result can be executed by loading it into
+  an environment that already contains the FOL runtime.  The basename
   defaults to `frobnozzle', local to the current directory.
 
 (fol->floating-mit-scheme <program> [<basename>])
@@ -258,6 +318,10 @@ FOL includes a compiler to machine code via the MIT Scheme compiler.
   loading it into a fresh MIT Scheme.  Do not use `run-mit-scheme' on
   the output of this; the redefinition of the runtime will cause
   problems.
+
+(fol->stalin <program> [<basename>])
+  Dumps the given FOL program into <basename>.sc and compiles that
+  with Stalin.  The result is a standalone executable.
 
 
 Writing FOL
@@ -399,16 +463,22 @@ cost-model.txt      About the assumed cost model of FOL execution
 intermediate-representation.txt  FOL compared to other representations
 
 optimize.scm        Toplevel
-type-check.scm      Type checker
-structs.scm         structure-definitions->vectors
+stages.scm          Stage management system
+  stages.txt        Architecture and user documentation thereof
+
 inline.scm          Inliner
   feedback-vertex-set.scm  Graph algorithm supporting inlining
-alpha-remaing.scm   Uniquifying bound names
-a-normal-form.scm   Conversion to and from A-normal form
-sra.scm             Scalar replacement of aggregates
+  inlinees.scm      Other graph algorithm supporting inlining
 cse.scm             Common subexpression elimination
   simplification.txt  Issues with simplifying algebra in a compiler
 dead-code.scm       Dead variable elimination
+sra.scm             Scalar replacement of aggregates
+
+type-check.scm      Type checker
+structs.scm         structure-definitions->vectors
+alpha-remaing.scm   Uniquifying bound names
+a-normal-form.scm   Conversion to and from A-normal form
+lift-lets.scm       Lifting lets
 
 nomenclature.scm    Representation of FOL names
 syntax.scm          Low-level support; FOL syntax
@@ -416,6 +486,7 @@ srfi-11.scm         Reference implementation of SRFI 11
 runtime.scm         FOL runtime system
 primitives.scm      Primitives available to FOL programs
 mit-scheme.scm      Compilation to machine code with MIT Scheme
+stalin.scm          Compilation to machine code with Stalin
 load.scm            Entry point; namespace management
 
 The FOL compiler makes extensive use of a pattern matching and
@@ -452,12 +523,11 @@ include:
 - Compiling to and running on the JVM or on .NET.
 - Compiling FOL to/with LLVM.
 - Translating FOL to C (or C--) and compiling with, e.g., gcc.
-This process will be undertaken as VL, DVL, and FOL scale to examples
-that are too slow to interpret, or too big to implement directly in
-the VL or DVL source languages without foreign libraries.
+See also doc/backends.txt.  This process will be undertaken as VL,
+DVL, and FOL scale to examples that are too slow to interpret, or too
+big to implement directly in the VL or DVL source languages without
+foreign libraries.
 
 Finally, the current state of FOL is also open to some improvements
-that don't affect its interface, namely implementing interprocedural
-common subexpression elimination, and better understanding the nature
-of what the rule-based tidier does to implement it directly in
-algorithms (as that stands to improve its asymptotic complexity).
+that don't affect its interface, for instance implementing
+interprocedural common subexpression elimination.

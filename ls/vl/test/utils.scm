@@ -53,7 +53,7 @@
     (if (present? 'a-normal-form program)
         (check (approximate-anf? program)))
     (if (present? 'lets-lifted program)
-        (check (equal? program (lift-lets program))))
+        (check (lets-lifted? program)))
     (if (present? 'fully-inlined program)
         (check (equal? program (inline program))))
     (if (and (present? 'aggregates-replaced program)

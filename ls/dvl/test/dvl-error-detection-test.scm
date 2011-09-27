@@ -28,7 +28,7 @@
        (define-test (test-name)
          (expect-dvl-error
           (lambda ()
-            (check-program-types
+            (check-fol-types
              (compile-to-raw-fol 'program))))) ...))))
 
 (in-test-group

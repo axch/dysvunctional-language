@@ -348,6 +348,3 @@
 
 (define compile-to-fol
   (stage-pipeline fol-optimize analyze-and-generate))
-
-(define (compile-visibly program)
-  (compile-to-fol program visibly))

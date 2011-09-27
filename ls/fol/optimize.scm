@@ -2,23 +2,34 @@
 ;;;; Optimization toplevel
 
 ;;; The FOL optimizer consists of several stages:
-;;; - ALPHA-RENAME
-;;;   Uniquify local variable names.
 ;;; - INLINE
 ;;;   Inline non-recursive function definitions.
+;;; - INTRAPROCEDURAL-CSE
+;;;   Eliminate common subexpressions (including redundant variables that
+;;;   are just aliases of other variables or constants).
+;;;   Perform some algebraic simplification during CSE.
+;;; - ELIMINATE-INTRAPROCEDURAL-DEAD-CODE
+;;;   Eliminate dead code.
 ;;; - SCALAR-REPLACE-AGGREGATES
 ;;;   Replace aggregates with scalars.
-;;; - INTRAPROCEDURAL-CSE
-;;;   Eliminate common subexpressions (including redundant variables
-;;;   that are just aliases of other variables or constants).
-;;;   Perform some algebraic simplification during CSE.
-;;; - ELIMINATE-INTRAPROCEDURAL-DEAD-VARIABLES
-;;;   Eliminate dead code.
-;;; - INTERPROCEDURAL-DEAD-VARIABLE-ELIMINATION
+;;; - ELIMINATE-INTERPROCEDURAL-DEAD-CODE
 ;;;   Eliminate dead code across procedure boundaries.
 ;;; - REVERSE-ANF
-;;;   Inline bindings of variables that are only used once, to make
-;;;   the output easier to read.
+;;;   Inline bindings of variables that are only used once, to make the
+;;;   output easier to read.
+
+;;; The FOL optimizer also uses several supporting procedures to massage
+;;; the program's form for the convenience of the main stages:
+;;; - STRUCTURE-DEFINITIONS->VECTORS
+;;;   Replace named records and accessors with vectors and vector-refs.
+;;; - CHECK-FOL-TYPES
+;;;   Syntax check, type check, and compute the type of the entry point.
+;;; - ALPHA-RENAME
+;;;   Uniquify local variable names.
+;;; - APPROXIMATE-ANF
+;;;   Name all intermediate values.
+;;; - LIFT-LETS
+;;;   Increase variable scopes.
 
 ;;; See doc/architecture.txt for discussion.
 
@@ -43,6 +54,8 @@
 ;; computes reads
 ;; name
 
+;;; Form normalizers
+
 (define-stage structure-definitions->vectors
   %structure-definitions->vectors
   (preserves type) ; Because closures are never exported anyway
@@ -63,19 +76,6 @@
   (generates unique-names)
   (requires syntax-checked))
 
-(define-stage inline
-  %inline
-  ;; Because of multiple procedure arguments
-  (destroys lets-lifted)
-  ;; Because of copying procedure bodies
-  (destroys unique-names no-common-subexpressions)
-  ;; Because of removing procedure boundaries
-  (destroys no-intraprocedural-dead-variables)
-  ;; Because of specializing to different places
-  (destroys no-interprocedural-dead-variables)
-  (requires syntax-checked)
-  (generates fully-inlined))                  ; not really, but on current examples
-
 (define-stage a-normal-form
   approximate-anf
   (generates a-normal-form)
@@ -92,6 +92,21 @@
   (requires a-normal-form)   ; Just because I'm lazy
   ;; By splitting lets
   (destroys no-common-subexpressions))
+
+;;; Main stages
+
+(define-stage inline
+  %inline
+  ;; Because of multiple procedure arguments
+  (destroys lets-lifted)
+  ;; Because of copying procedure bodies
+  (destroys unique-names no-common-subexpressions)
+  ;; Because of removing procedure boundaries
+  (destroys no-intraprocedural-dead-variables)
+  ;; Because of specializing to different places
+  (destroys no-interprocedural-dead-variables)
+  (requires syntax-checked)
+  (generates fully-inlined))                  ; not really, but on current examples
 
 (define (sra-may-destroy property)
   (modify-execution-function
@@ -161,6 +176,8 @@
   (destroys a-normal-form)
   (requires syntax-checked unique-names))
 
+;;; Standard ordering
+
 (define fol-optimize
   (stage-pipeline
    reverse-anf
@@ -171,6 +188,8 @@
    eliminate-intraprocedural-dead-code
    intraprocedural-cse
    inline))
+
+;;; Adverbs
 
 (define (watching-annotations stage-data)
   (lambda (exec)
@@ -220,6 +239,3 @@
            (format #t "analysis of size ~A"
                    (estimate-space-usage (property-value 'analysis program)))
            (print-fol-statistics program))))))
-
-(define (optimize-visibly program)
-  (fol-optimize program visibly))

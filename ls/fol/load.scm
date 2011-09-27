@@ -34,6 +34,7 @@
    "stages"
    "nomenclature"
    "syntax"
+   "lift-lets"
    "srfi-11"
    "runtime"
    "primitives"
@@ -68,29 +69,34 @@
      fol->stalin
 
      ;; Optimization
-     check-program-types
      equal-type? ; TODO
      fol-optimize
-     optimize-visibly
 
-     ;; Individual stages
+     ;; Form checkers and converters
+     structure-definitions->vectors
+     check-fol-types
      alpha-rename
      unique-names?
      alpha-rename?
-     inline
-     approximate-anf
+     approximate-anf ; TODO The stage is called a-normal-form, but that's wrong
      approximate-anf?
      lift-lets
-     scalar-replace-aggregates
+     lets-lifted?
+
+     ;; Individual stages
+     inline
      intraprocedural-cse
      eliminate-intraprocedural-dead-code
+     scalar-replace-aggregates
      eliminate-interprocedural-dead-code
      reverse-anf
 
      ;; Visualizations
      strip-argument-types
      let->let*
-     structure-definitions->vectors
+
+     ;; The underlying type checker
+     check-program-types ;; TODO For testing
 
      ;; The FOL runtime system.  It is exported because it is part of
      ;; the implementation of VL and DVL (the concrete implementations
