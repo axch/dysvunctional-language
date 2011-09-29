@@ -68,7 +68,7 @@
          (record-type-field-names type))))
 
 (define (estimate-space-usage thing)
-  (define (sum lst) (apply + lst))
+  (define (sum lst) (reduce + 0 lst))
   (define seen-table (make-strong-eq-hash-table))
   (define (seen? thing)
     (hash-table/get seen-table thing #f))
