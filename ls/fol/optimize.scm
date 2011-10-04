@@ -105,7 +105,7 @@
   (destroys no-intraprocedural-dead-variables)
   ;; Because of specializing to different places
   (destroys no-interprocedural-dead-variables)
-  (requires syntax-checked)
+;  (requires syntax-checked) ; Commenting this is a hack to cut down in IEB from s-d->v
   (generates fully-inlined))                  ; not really, but on current examples
 
 (define (sra-may-destroy property)
