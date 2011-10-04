@@ -236,6 +236,18 @@
      (lambda (program)
        (if (eq? (stage-data-name stage-data) 'generate)
            ;; The generate stage wants to display different stats
-           (format #t "analysis of size ~A"
-                   (estimate-space-usage (property-value 'analysis program)))
+           (format #t "~A bindings\n"
+                   (length
+                    ((access analysis-bindings user-initial-environment)
+                     (property-value 'analysis program))))
            (print-fol-statistics program))))))
+
+(define (watching-memory stage-data)
+  (lambda (exec)
+    (lambda (program . extra)
+      (if (eq? (stage-data-name stage-data) 'generate)
+          (format #t "analysis of size ~A\n"
+                  (estimate-space-usage (property-value 'analysis program)))
+          (format #t "program of size ~A\n" (estimate-space-usage program)))
+      (format #t "~A free words\n" (gc-flip))
+      (apply exec program extra))))

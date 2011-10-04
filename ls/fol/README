@@ -119,6 +119,11 @@ volubly
   Print longer progress reports, with stage name, size and several
   statistics about the input, and time to completion.
 
+watching-memory
+  Produce reports about total size of arguments and system memory use.
+  When intermediate structures are large, this can take time
+  comparable to the compilation itself.
+
 All the subsequent procedures in this section accept adverb arguments,
 except the ones that just check whether a particular property holds of
 the program or not (namely, unique-names?, alpha-rename?,

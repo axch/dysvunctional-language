@@ -107,7 +107,7 @@
      make-name name->symbol reset-fol-names!
 
      ;; Stage manipulation TODO
-     stage-pipeline visibly volubly parse-stage
+     stage-pipeline visibly volubly watching-memory parse-stage
      present? property-value
      name execution-function
      reads computes generates preserves destroys
