@@ -92,162 +92,148 @@
   ;; recursive call needs to return two things.  The win continuation
   ;; accepts the transformed expression and the set of variables that
   ;; it needs to compute its live results.
-  (define (loop expr live-out win)
+  (define (loop expr live-out)
     (cond ((fol-var? expr)
-           (win expr (single-used-var expr)))
+           (values expr (single-used-var expr)))
           ((fol-const? expr)
-           (win expr (no-used-vars)))
+           (values expr (no-used-vars)))
           ((if-form? expr)
-           (eliminate-in-if expr live-out win))
+           (eliminate-in-if expr live-out))
           ((let-form? expr)
-           (eliminate-in-let expr live-out win))
+           (eliminate-in-let expr live-out))
           ((let-values-form? expr)
-           (eliminate-in-let-values expr live-out win))
+           (eliminate-in-let-values expr live-out))
           ((lambda-form? expr)
-           (eliminate-in-lambda expr live-out win))
+           (eliminate-in-lambda expr live-out))
           ;; If used post SRA, there may be constructions to build the
           ;; answer for the outside world, but there should be no
           ;; accesses.
           ((construction? expr)
-           (eliminate-in-construction expr live-out win))
+           (eliminate-in-construction expr live-out))
           ((accessor? expr)
-           (eliminate-in-access expr live-out win))
+           (eliminate-in-access expr live-out))
           ((values-form? expr)
-           (eliminate-in-values expr live-out win))
+           (eliminate-in-values expr live-out))
           (else ; general application
-           (eliminate-in-application expr live-out win))))
-  (define (eliminate-in-if expr live-out win)
+           (eliminate-in-application expr live-out))))
+  (define (eliminate-in-if expr live-out)
     (let ((predicate (cadr expr))
           (consequent (caddr expr))
           (alternate (cadddr expr)))
-      (loop predicate #t
-       (lambda (new-predicate pred-needs)
-         (loop consequent live-out
-          (lambda (new-consequent cons-needs)
-            (loop alternate live-out
-             (lambda (new-alternate alt-needs)
-               (win `(if ,new-predicate
-                         ,new-consequent
-                         ,new-alternate)
-                    (var-set-union
-                     pred-needs (var-set-union cons-needs alt-needs)))))))))))
-  (define (eliminate-in-let expr live-out win)
+      (let-values (((new-predicate pred-needs) (loop predicate #t))
+                   ((new-consequent cons-needs) (loop consequent live-out))
+                   ((new-alternate alt-needs) (loop alternate live-out)))
+        (values `(if ,new-predicate
+                     ,new-consequent
+                     ,new-alternate)
+                (var-set-union
+                 pred-needs (var-set-union cons-needs alt-needs))))))
+  (define (eliminate-in-let expr live-out)
     (let ((bindings (cadr expr))
           (body (caddr expr)))
-      (loop body live-out
-       (lambda (new-body body-needs)
-         (let ((new-bindings
-                (filter (lambda (binding)
-                          (var-used? (car binding) body-needs))
-                        bindings)))
-           (loop* (map cadr new-bindings)
-            (lambda (new-exprs exprs-need)
-              (let ((used (var-set-union* exprs-need)))
-                (win (tidy-empty-let
-                      `(let ,(map list (map car new-bindings)
-                                  new-exprs)
-                         ,new-body))
-                     (var-set-union
-                      (var-set-difference
-                       body-needs (map car bindings))
-                      used))))))))))
-  (define (eliminate-in-let-values expr live-out win)
+      (receive (new-body body-needs) (loop body live-out)
+        (let ((new-bindings
+               (filter (lambda (binding)
+                         (var-used? (car binding) body-needs))
+                       bindings)))
+          (receive (new-exprs exprs-need) (loop* (map cadr new-bindings))
+            (let ((used (var-set-union* exprs-need)))
+              (values (tidy-empty-let
+                       `(let ,(map list (map car new-bindings)
+                                   new-exprs)
+                          ,new-body))
+                      (var-set-union
+                       (var-set-difference
+                        body-needs (map car bindings))
+                       used))))))))
+  (define (eliminate-in-let-values expr live-out)
     (let ((binding (caadr expr))
           (body (caddr expr)))
       (let ((names (car binding))
             (sub-expr (cadr binding)))
-        (loop body live-out
-         (lambda (new-body body-needs)
-           (define (slot-used? name)
-             (or (and (ignore? name)
-                      ;; Ignored names are a hack for when the source
-                      ;; of the values is a procedure call.
-                      ;; Interprocedural dead code elimination may
-                      ;; replace such a call with a further let or
-                      ;; let-values, in which case the ignore
-                      ;; instruction is out of date.
-                      (not (or (let-form? sub-expr)
-                               (let-values-form? sub-expr))))
-                 (and (var-used? name body-needs)
-                      #t)))
-           (let ((sub-expr-live-out (map slot-used? names)))
-             (if (any (lambda (x) x) sub-expr-live-out)
-                 (loop sub-expr sub-expr-live-out
-                  (lambda (new-sub-expr sub-expr-needs)
-                    (win (tidy-let-values
-                          `(let-values ((,(filter slot-used? names)
-                                         ,new-sub-expr))
-                             ,new-body))
-                         (var-set-union
-                          sub-expr-needs
-                          (var-set-difference body-needs names)))))
-                 (win new-body body-needs))))))))
-  (define (eliminate-in-lambda expr live-out win)
+        (receive (new-body body-needs) (loop body live-out)
+          (define (slot-used? name)
+            (or (and (ignore? name)
+                     ;; Ignored names are a hack for when the source
+                     ;; of the values is a procedure call.
+                     ;; Interprocedural dead code elimination may
+                     ;; replace such a call with a further let or
+                     ;; let-values, in which case the ignore
+                     ;; instruction is out of date.
+                     (not (or (let-form? sub-expr)
+                              (let-values-form? sub-expr))))
+                (and (var-used? name body-needs)
+                     #t)))
+          (let ((sub-expr-live-out (map slot-used? names)))
+            (if (any (lambda (x) x) sub-expr-live-out)
+                (receive (new-sub-expr sub-expr-needs) (loop sub-expr sub-expr-live-out)
+                  (values (tidy-let-values
+                           `(let-values ((,(filter slot-used? names)
+                                          ,new-sub-expr))
+                              ,new-body))
+                          (var-set-union
+                           sub-expr-needs
+                           (var-set-difference body-needs names))))
+                (values new-body body-needs)))))))
+  (define (eliminate-in-lambda expr live-out)
     (let ((formal (cadr expr))
           (body (caddr expr)))
-      (loop body #t ; Nothing that escapes can be dead
-       (lambda (new-body body-needs)
-         (win `(lambda ,formal
-                 ,new-body)
-              (var-set-difference body-needs formal))))))
+      (receive (new-body body-needs) (loop body #t) ; Nothing that escapes can be dead
+        (values `(lambda ,formal
+                   ,new-body)
+                (var-set-difference body-needs formal)))))
   ;; Given that I decided not to do proper elimination of dead
   ;; structure slots, I will say that if a structure is needed then
   ;; all of its slots are needed, and any access to any slot of a
   ;; structure causes the entire structure to be needed.
-  (define (eliminate-in-construction expr live-out win)
-    (loop* (cdr expr)
-     (lambda (new-args args-need)
-       (win `(,(car expr) ,@new-args)
-            (var-set-union* args-need)))))
-  (define (eliminate-in-access expr live-out win)
-    (loop (cadr expr) #t
-     (lambda (new-accessee accessee-uses)
-       (win `(,(car expr) ,new-accessee ,@(cddr expr))
-            accessee-uses))))
-  (define (eliminate-in-values expr live-out win)
+  (define (eliminate-in-construction expr live-out)
+    (receive (new-args args-need) (loop* (cdr expr))
+      (values `(,(car expr) ,@new-args)
+              (var-set-union* args-need))))
+  (define (eliminate-in-access expr live-out)
+    (receive (new-accessee accessee-uses) (loop (cadr expr) #t)
+      (values `(,(car expr) ,new-accessee ,@(cddr expr))
+              accessee-uses)))
+  (define (eliminate-in-values expr live-out)
     (assert (list? live-out))
     (let ((wanted-elts (filter-map (lambda (wanted? elt)
                                      (and wanted? elt))
                                    live-out
                                    (cdr expr))))
-      (loop* wanted-elts
-       (lambda (new-elts elts-need)
-         (win (if (= 1 (length new-elts))
-                  (car new-elts)
-                  `(values ,@new-elts))
-              (var-set-union* elts-need))))))
-  (define (eliminate-in-application expr live-out win)
-    (loop* (cdr expr)
-     (lambda (new-args args-need)
-       (define (all-wanted? live-out)
-         (or (equal? live-out #t)
-             (every (lambda (x) x) live-out)))
-       (define (invent-name wanted?)
-         (if wanted?
-             (make-name 'receipt)
-             (make-name '_)))
-       (let ((simple-new-call `(,(car expr) ,@new-args)))
-         (let ((new-call
-                (if (all-wanted? live-out)
-                    simple-new-call
-                    (let* ((receipt-names (map invent-name live-out))
-                           (useful-names (filter (lambda (x) (not (ignore? x)))
-                                                 receipt-names)))
-                      `(let-values ((,receipt-names ,simple-new-call))
-                         ,(if (> (length useful-names) 1)
-                              `(values ,@useful-names)
-                              (car useful-names)))))))
-           (win new-call (var-set-union* args-need)))))))
-  (define (loop* exprs win)
+      (receive (new-elts elts-need) (loop* wanted-elts)
+        (values (if (= 1 (length new-elts))
+                    (car new-elts)
+                    `(values ,@new-elts))
+                (var-set-union* elts-need)))))
+  (define (eliminate-in-application expr live-out)
+    (receive (new-args args-need) (loop* (cdr expr))
+      (define (all-wanted? live-out)
+        (or (equal? live-out #t)
+            (every (lambda (x) x) live-out)))
+      (define (invent-name wanted?)
+        (if wanted?
+            (make-name 'receipt)
+            (make-name '_)))
+      (let ((simple-new-call `(,(car expr) ,@new-args)))
+        (let ((new-call
+               (if (all-wanted? live-out)
+                   simple-new-call
+                   (let* ((receipt-names (map invent-name live-out))
+                          (useful-names (filter (lambda (x) (not (ignore? x)))
+                                                receipt-names)))
+                     `(let-values ((,receipt-names ,simple-new-call))
+                        ,(if (> (length useful-names) 1)
+                             `(values ,@useful-names)
+                             (car useful-names)))))))
+          (values new-call (var-set-union* args-need))))))
+  (define (loop* exprs)
     (if (null? exprs)
-        (win '() '())
-        (loop (car exprs) #t
-         (lambda (new-expr expr-needs)
-           (loop* (cdr exprs)
-            (lambda (new-exprs exprs-need)
-              (win (cons new-expr new-exprs)
-                   (cons expr-needs exprs-need))))))))
-  (loop expr live-out (lambda (new-expr used-vars) new-expr)))
+        (values '() '())
+        (let-values (((new-expr expr-needs) (loop (car exprs) #t))
+                     ((new-exprs exprs-need) (loop* (cdr exprs))))
+          (values (cons new-expr new-exprs)
+                  (cons expr-needs exprs-need)))))
+  (receive (new-expr used-vars) (loop expr live-out) new-expr))
 
 (define (no-used-vars) '())
 
