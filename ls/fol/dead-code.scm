@@ -88,10 +88,9 @@
   ;; is a LET-VALUES, in which case it will indicate which of those
   ;; multiple values are needed.  If I were eliminating dead structure
   ;; slots as well, this would be hairier.
-  ;; This is written in continuation passing style because the
-  ;; recursive call needs to return two things.  The win continuation
-  ;; accepts the transformed expression and the set of variables that
-  ;; it needs to compute its live results.
+  ;; The recursive call returns two things: the transformed expression
+  ;; and the set of variables that it needs to compute its live
+  ;; results.
   (define (loop expr live-out)
     (cond ((fol-var? expr)
            (values expr (single-used-var expr)))
@@ -413,8 +412,8 @@
   ;; 1) It accumulates a more detailed answer structure (namely one
   ;;    mapping all the possible outputs to which variables are needed
   ;;    to compute each one).
-  ;; 2) It does not rewrite the expression, so it can be written in
-  ;;    direct style.
+  ;; 2) It does not rewrite the expression, so it returns only one
+  ;;    value.
   ;; 3) It is always interested in all return values, so it needn't
   ;;    pass down a LIVE-OUT list.
   (define (loop expr)
@@ -568,8 +567,8 @@
 (define (improve-liveness-map! dependency-map liveness-map defn)
   ;; This loop is identical with the one in ELIMINATE-IN-EXPRESSION,
   ;; except that
-  ;; 1) It doesn't rewrite the expression (so can be in direct style)
-  ;; 2) It refers to the given DEPENDENCY-MAP for what callees need
+  ;; 1) It doesn't rewrite the expression (so returns one value).
+  ;; 2) It refers to the given DEPENDENCY-MAP for what callees need.
   ;; 3) When it encounters a procedure call, it updates the
   ;;    LIVENESS-MAP with a side effect.
   (define (loop expr live-out)
