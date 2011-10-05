@@ -75,25 +75,18 @@
                    `(,(rename 'let) ((,lose-name (,(rename 'lambda) () ,(loop (cdr clauses)))))
                      ,(parse-clause (car clauses) lose-name))))))))))
 
-(define-integrable (pair thing win lose)
-  (if (pair? thing)
-      (win (car thing) (cdr thing))
-      (lose)))
+(define-syntax define-algebraic-matcher
+  (syntax-rules ()
+    ((_ matcher predicate accessor ...)
+     (define-integrable (matcher thing win lose)
+       (if (predicate thing)
+           (win (accessor thing) ...)
+           (lose))))))
 
-(define-integrable (null thing win lose)
-  (if (null? thing)
-      (win)
-      (lose)))
-
-(define-integrable (boolean thing win lose)
-  (if (boolean? thing)
-      (win)
-      (lose)))
-
-(define-integrable (number thing win lose)
-  (if (number? thing)
-      (win)
-      (lose)))
+(define-algebraic-matcher pair pair? car cdr)
+(define-algebraic-matcher null null?)
+(define-algebraic-matcher boolean boolean?)
+(define-algebraic-matcher number number?)
 
 
 (define (test-it thing count)
@@ -106,4 +99,4 @@
              (my-do-it2 thing)
              (loop (- count 1))))))))
 
-;; TODO Unit tests, performance tests, good error messages if syntax is wrong
+;; TODO good error messages if syntax is wrong; define all needed matchers
