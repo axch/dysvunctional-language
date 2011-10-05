@@ -167,144 +167,130 @@
   ;; the returned CSE'd expression, except that the symbolic
   ;; expression elides LET forms.  Uniqueness of names and care about
   ;; scopes ensure this elision causes no trouble.
-  (define (loop expr env win)
+  (define (loop expr env)
     (cond ((fol-var? expr)
-           (cse-fol-var expr env win))
+           (cse-fol-var expr env))
           ((fol-const? expr)
-           (win expr expr))
+           (values expr expr))
           ((if-form? expr)
-           (cse-if expr env win))
+           (cse-if expr env))
           ((let-form? expr)
-           (cse-let expr env win))
+           (cse-let expr env))
           ((let-values-form? expr)
-           (cse-let-values expr env win))
+           (cse-let-values expr env))
           ((lambda-form? expr)
-           (cse-lambda expr env win))
+           (cse-lambda expr env))
           ((values-form? expr)
-           (cse-values expr env win))
+           (cse-values expr env))
           (else ; general application
-           (cse-application expr env win))))
-  (define (cse-fol-var expr env win)
+           (cse-application expr env))))
+  (define (cse-fol-var expr env)
     (forward-lookup env expr
      (lambda (canonical)
-       (win canonical canonical))
+       (values canonical canonical))
      (lambda ()
        (error "Trying to cse an unbound variable" expr env))))
-  (define (cse-if expr env win)
-    (loop (cadr expr) env
-     (lambda (new-pred symbolic-pred)
-       (loop (caddr expr) env
-        (lambda (new-cons symbolic-cons)
-          (loop (cadddr expr) env
-           (lambda (new-alt symbolic-alt)
-             ;; TODO SYMBOLIC-IF detects cases where both branches of
-             ;; the IF are equal.  Do I want to simplify the returned
-             ;; IF expression in that case?
-             (win `(if ,new-pred ,new-cons ,new-alt)
-                  (symbolic-if symbolic-pred symbolic-cons symbolic-alt)))))))))
-  (define (cse-let expr env win)
+  (define (cse-if expr env)
+    (let-values (((new-pred symbolic-pred) (loop (cadr expr) env))
+                 ((new-cons symbolic-cons) (loop (caddr expr) env))
+                 ((new-alt  symbolic-alt ) (loop (cadddr expr) env)))
+      ;; TODO SYMBOLIC-IF detects cases where both branches of
+      ;; the IF are equal.  Do I want to simplify the returned
+      ;; IF expression in that case?
+      (values `(if ,new-pred ,new-cons ,new-alt)
+              (symbolic-if symbolic-pred symbolic-cons symbolic-alt))))
+  (define (cse-let expr env)
     (let ((bindings (cadr expr))
           (body (caddr expr)))
-      (loop* (map cadr bindings) env
-       (lambda (new-bind-expressions bound-symbolics)
-         (augment-cse-env env (map car bindings) bound-symbolics
-          (lambda (env dead-bindings)
-            (loop body env
-             (lambda (new-body body-symbolic)
-               (degment-cse-env! env (map car bindings))
-               (win (tidy-empty-let
-                     `(let ,(filter-map
-                             (lambda (name dead? expr)
-                               (and (not dead?)
-                                    (list name expr)))
-                             (map car bindings)
-                             dead-bindings
-                             new-bind-expressions)
-                        ,new-body))
-                    body-symbolic)))))))))
-  (define (cse-let-values expr env win)
+      (let*-values (((new-bind-expressions bound-symbolics) (loop* (map cadr bindings) env))
+                    ((env dead-bindings) (augment-cse-env env (map car bindings) bound-symbolics))
+                    ((new-body body-symbolic) (loop body env)))
+        (degment-cse-env! env (map car bindings))
+        (values (tidy-empty-let
+                 `(let ,(filter-map
+                         (lambda (name dead? expr)
+                           (and (not dead?)
+                                (list name expr)))
+                         (map car bindings)
+                         dead-bindings
+                         new-bind-expressions)
+                    ,new-body))
+                body-symbolic))))
+  (define (cse-let-values expr env)
     (let* ((binding (caadr expr))
            (names (car binding))
            (subexpr (cadr binding))
            (body (caddr expr)))
-      (loop subexpr env
-       (lambda (new-subexpr subexpr-symbolic)
-         (augment-cse-env env names
-          (cond ((values-form? subexpr-symbolic)
-                 (cdr subexpr-symbolic))
-                ;; If the symbolic expression is not a values form, it
-                ;; must be a procedure call that returns multiple
-                ;; values.  I can still represent the operation of
-                ;; destructuring it, on the off chance that the same
-                ;; procedure may be called again.  This is only safe
-                ;; if the procedure is known to be pure.
-                ((not (unique-expression? subexpr-symbolic))
-                 (map (lambda (i)
-                        `(values-ref ,subexpr-symbolic ,i))
-                      (iota (length names))))
-                (else
-                 ;; If the subexpression is unique, so are all the
-                 ;; variables being bound now.
-                 (make-list (length names) unique-expression)))
-          (lambda (env dead-bindings)
-            (loop body env
-             (lambda (new-body body-symbolic)
-               ;; DEAD-BINDINGS tells me which of these bindings
-               ;; are guaranteed to be dead because the variables
-               ;; being bound are aliases and have already been
-               ;; replaced in the new body.  I could eliminate them,
-               ;; but that would require traversing subexpr again to
-               ;; look for the VALUES that supplies the corresponding
-               ;; values.  For now, I will just kill the whole
-               ;; let-values if it is useless.
-               (degment-cse-env! env names)
-               (win (if (any not dead-bindings)
-                        `(let-values ((,names ,new-subexpr))
-                           ,new-body)
-                        new-body)
-                    body-symbolic)))))))))
-  (define (cse-lambda expr env win)
+      (let*-values (((new-subexpr subexpr-symbolic) (loop subexpr env))
+                    ((env dead-bindings)
+                     (augment-cse-env env names
+                       (cond ((values-form? subexpr-symbolic)
+                              (cdr subexpr-symbolic))
+                             ;; If the symbolic expression is not a values form, it
+                             ;; must be a procedure call that returns multiple
+                             ;; values.  I can still represent the operation of
+                             ;; destructuring it, on the off chance that the same
+                             ;; procedure may be called again.  This is only safe
+                             ;; if the procedure is known to be pure.
+                             ((not (unique-expression? subexpr-symbolic))
+                              (map (lambda (i)
+                                     `(values-ref ,subexpr-symbolic ,i))
+                                   (iota (length names))))
+                             (else
+                              ;; If the subexpression is unique, so are all the
+                              ;; variables being bound now.
+                              (make-list (length names) unique-expression)))))
+                    ((new-body body-symbolic) (loop body env)))
+        ;; DEAD-BINDINGS tells me which of these bindings
+        ;; are guaranteed to be dead because the variables
+        ;; being bound are aliases and have already been
+        ;; replaced in the new body.  I could eliminate them,
+        ;; but that would require traversing subexpr again to
+        ;; look for the VALUES that supplies the corresponding
+        ;; values.  For now, I will just kill the whole
+        ;; let-values if it is useless.
+        (degment-cse-env! env names)
+        (values (if (any not dead-bindings)
+                    `(let-values ((,names ,new-subexpr))
+                       ,new-body)
+                    new-body)
+                body-symbolic))))
+  (define (cse-lambda expr env)
     (let ((formal (cadr expr))
           (body (caddr expr)))
-      (augment-cse-env env formal (list unique-expression)
-       (lambda (env dead-bindings)
-         (loop body env
-          (lambda (new-body body-symbolic)
-            (degment-cse-env! env formal)
-            (win `(lambda ,formal
-                    ,new-body)
-                 ;; TODO With more work, I could try to collapse
-                 ;; identical exported functions, but why bother?
-                 unique-expression)))))))
-  (define (cse-values expr env win)
-    (loop* (cdr expr) env
-     (lambda (exprs symbolics)
-       (win `(values ,@exprs) `(values ,@symbolics)))))
-  (define (cse-application expr env win)
-    (loop* (cdr expr) env
-     (lambda (new-args args-symbolics)
-       (let* ((symb-candidate
-               (symbolic-application (car expr) args-symbolics env))
-              (symbolic (cse-canonical env symb-candidate)))
-         (win (if (or (and (fol-var? symbolic)
-                           (in-scope? symbolic env))
-                      (fol-const? symbolic))
-                  symbolic
-                  (simplify-arithmetic `(,(car expr) ,@new-args)))
-              symbolic)))))
-  (define (loop* exprs env win)
+      (let*-values (((env dead-bindings) (augment-cse-env env formal (list unique-expression)))
+                    ((new-body body-symbolic) (loop body env)))
+        (degment-cse-env! env formal)
+        (values `(lambda ,formal
+                   ,new-body)
+                ;; TODO With more work, I could try to collapse
+                ;; identical exported functions, but why bother?
+                unique-expression))))
+  (define (cse-values expr env)
+    (receive (exprs symbolics) (loop* (cdr expr) env)
+      (values `(values ,@exprs) `(values ,@symbolics))))
+  (define (cse-application expr env)
+    (receive (new-args args-symbolics) (loop* (cdr expr) env)
+      (let* ((symb-candidate
+              (symbolic-application (car expr) args-symbolics env))
+             (symbolic (cse-canonical env symb-candidate)))
+        (values (if (or (and (fol-var? symbolic)
+                             (in-scope? symbolic env))
+                        (fol-const? symbolic))
+                    symbolic
+                    (simplify-arithmetic `(,(car expr) ,@new-args)))
+                symbolic))))
+  (define (loop* exprs env)
     (if (null? exprs)
-        (win '() '())
-        (loop (car exprs) env
-         (lambda (new-expr expr-symbolic)
-           (loop* (cdr exprs) env
-            (lambda (new-exprs expr-symbolics)
-              (win (cons new-expr new-exprs)
-                   (cons expr-symbolic expr-symbolics))))))))
-  (loop expr env (lambda (new-expr symbolic)
-                   ;; The symbolic expression might be useful to an
-                   ;; interprocedural CSE crunch.
-                   new-expr)))
+        (values '() '())
+        (let-values (((new-expr expr-symbolic) (loop (car exprs) env))
+                     ((new-exprs expr-symbolics) (loop* (cdr exprs) env)))
+          (values (cons new-expr new-exprs)
+                  (cons expr-symbolic expr-symbolics)))))
+  (receive (new-expr symbolic) (loop expr env)
+    ;; The symbolic expression might be useful to an
+    ;; interprocedural CSE crunch.
+    new-expr))
 
 (define simplify-arithmetic
   ;; There are lots of possibilities for simplification here,
@@ -420,11 +406,10 @@
      (not (fol-var? key)))))
 
 (define (fresh-cse-env names)
-  (augment-cse-env (empty-cse-env) names names
-   (lambda (env dead-bindings)
-     env)))
+  (receive (env dead-bindings) (augment-cse-env (empty-cse-env) names names)
+     env))
 
-(define (augment-cse-env env names symbolics win)
+(define (augment-cse-env env names symbolics)
   (define (acceptable-alias? symbolic)
     (or (fol-const? symbolic)
         (and (fol-var? symbolic)
@@ -459,7 +444,7 @@
                  (two-way-put! env symbolic name))))))
    names
    symbolics)
-  (win env (map acceptable-alias? symbolics)))
+  (values env (map acceptable-alias? symbolics)))
 
 (define (degment-cse-env! env names)
   (for-each (lambda (name)
