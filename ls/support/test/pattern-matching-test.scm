@@ -4,8 +4,8 @@
 
 (define (test-pattern thing)
   (case* thing
-         ((pair (pair a d) dd) (+ a d dd))
-         ((pair a d) (+ a d))))
+    ((pair (pair a d) dd) (+ a d dd))
+    ((pair a d) (+ a d))))
 
 ;; This version is too fast because it avoids doing the topmost pair?
 ;; test twice.
@@ -26,8 +26,8 @@
 
 (define (test-pattern2 thing)
   (case* thing
-   ((pair _ (pair _ d :as subthing)) (+ d (car subthing)))
-   (_ thing)))
+    ((pair _ (pair _ d :as subthing)) (+ d (car subthing)))
+    (_ thing)))
 
 (define (my-test-pattern2 thing)
   (if (pair? thing)
@@ -39,9 +39,9 @@
 
 (define (test-pattern3 thing)
   (case* thing
-   ((null) 'null)
-   (pair => (lambda (a d) (* a d)))
-   (_ 'other)))
+    ((null) 'null)
+    (pair => (lambda (a d) (* a d)))
+    (_ 'other)))
 
 (define (my-test-pattern3 thing)
   (cond ((null? thing) 'null)
@@ -101,10 +101,10 @@
      (check (equal? 1
                     (case* (begin (set! count (+ count 1))
                                   count)
-                           ((pair _ _) 'pair)
-                           ((null) 'null)
-                           ((boolean :as bool) bool)
-                           ((number :as num) num))))))
+                      ((pair _ _) 'pair)
+                      ((null) 'null)
+                      ((boolean :as bool) bool)
+                      ((number :as num) num))))))
 
  (define-each-test
    (same-speed test-pattern my-test-pattern (cons (cons 1 2) 3) 100000000)
