@@ -15,6 +15,14 @@
               (compare (rename '=>) (cadr clause))))
        (define (ignore? thing)
          (compare thing (rename '_)))
+       (define (as-pattern pattern win lose)
+         (let loop ((pattern pattern) (skipped '()))
+           (cond ((not (pair? pattern)) (lose))
+                 ((null? (cdr pattern)) (lose))
+                 ((and (null? (cddr pattern))
+                       (compare (car pattern) (rename ':as)))
+                  (win (reverse skipped) (cadr pattern)))
+                 (else (loop (cdr pattern) (cons (car pattern) skipped))))))
        (define (parse-clause clause lose-name)
          (define (arrow-clause matcher procedure)
            `(,matcher ,expr-name ,procedure ,lose-name))
@@ -24,10 +32,15 @@
                (let loop ((subpatterns (cdr pattern)))
                  (cond ((null? subpatterns) (values '() body))
                        ((pair? (car subpatterns))
-                        (let ((variable (generate-uninterned-symbol 'part-)))
+                        (receive (true-subpattern variable)
+                          (as-pattern (car subpatterns)
+                           values
+                           (lambda ()
+                             (values (car subpatterns)
+                                     (generate-uninterned-symbol 'part-))))
                           (receive (variables body) (loop (cdr subpatterns))
                             (values (cons variable variables)
-                                    (list (standard-pattern variable (car subpatterns) body))))))
+                                    (list (standard-pattern variable true-subpattern body))))))
                        ;; Assume identifier
                        ((ignore? (car subpatterns))
                         (let ((variable (generate-uninterned-symbol 'dead-)))
@@ -75,14 +88,14 @@
 
 (define (do-it2 thing)
   (case* thing
-   ((pair _ (pair _ d)) d)
+   ((pair _ (pair _ d :as subthing)) (+ d (car subthing)))
    (_ thing)))
 
 (define (my-do-it2 thing)
   (if (pair? thing)
       (let ((d (cdr thing)))
         (if (pair? d)
-            (cdr d)
+            (+ (car d) (cdr d))
             thing))
       thing))
 
@@ -93,7 +106,5 @@
        (if (= count 0)
            'ok
            (begin
-             (do-it2 thing)
+             (my-do-it2 thing)
              (loop (- count 1))))))))
-
-;; TODO as patterns
