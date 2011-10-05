@@ -21,8 +21,7 @@
        (fiction 4)))
 
    (equal?
-    '(begin
-       (vector-ref (vector 1 2) 0))
+    '(vector-ref (vector 1 2) 0)
     (structure-definitions->vectors
      '(begin
         (define-typed-structure foo (bar real) (baz real))

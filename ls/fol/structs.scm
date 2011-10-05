@@ -23,25 +23,26 @@
 
 (define (%structure-definitions->vectors program)
   (if (begin-form? program)
-      (let ((classify (structures-map program)))
-        (define (accessor? name)
-          (integer? (classify name)))
-        (define (constructor? name)
-          (eq? (classify name) 'constructor))
-        (define (type? name)
-          (and (classify name)
-               (not (accessor? name))
-               (not (constructor? name))))
-        ((on-subexpressions
-          (rule `(? name ,type?)
-                (classify name)))
+      (tidy-begin
+       (let ((classify (structures-map program)))
+         (define (accessor? name)
+           (integer? (classify name)))
+         (define (constructor? name)
+           (eq? (classify name) 'constructor))
+         (define (type? name)
+           (and (classify name)
+                (not (accessor? name))
+                (not (constructor? name))))
          ((on-subexpressions
-           (rule `((? operator ,accessor?) (? operand))
-                 `(vector-ref ,operand ,(classify operator))))
+           (rule `(? name ,type?)
+                 (classify name)))
           ((on-subexpressions
-            (rule `(? name ,constructor?) 'vector))
-           (filter (lambda (x) (not (structure-definition? x)))
-                   program)))))
+            (rule `((? operator ,accessor?) (? operand))
+                  `(vector-ref ,operand ,(classify operator))))
+           ((on-subexpressions
+             (rule `(? name ,constructor?) 'vector))
+            (filter (lambda (x) (not (structure-definition? x)))
+                    program))))))
       program))
 
 ;;; A structures map needs to say, for every name, whether it is a
