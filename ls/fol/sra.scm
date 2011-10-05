@@ -293,30 +293,25 @@
 ;;; with the fringe of the shape.
 
 (define (reconstruct-pre-sra-shape new-expr shape)
-  (define (walk shape names win)
+  (define (walk shape names)
     (cond ((primitive-shape? shape)
-           (win (car names) (cdr names)))
+           (values (car names) (cdr names)))
           ((null? shape)
-           (win '() names))
+           (values '() names))
           ((eq? 'cons (car shape))
-           (walk (cadr shape) names
-            (lambda (car-expr names-left)
-              (walk (caddr shape) names-left
-               (lambda (cdr-expr names-left)
-                 (win `(cons ,car-expr ,cdr-expr)
-                      names-left))))))
+           (receive (car-expr names-left) (walk (cadr shape) names)
+             (receive (cdr-expr names-left) (walk (caddr shape) names-left)
+               (values `(cons ,car-expr ,cdr-expr) names-left))))
           ((eq? 'vector (car shape))
-           (let walk* ((args-left (cdr shape))
-                       (names-left names)
-                       (win (lambda (new-args names-left)
-                              (win `(vector ,@new-args) names-left))))
-             (if (null? args-left)
-                 (win '() names-left)
-                 (walk (car args-left) names-left
-                  (lambda (new-arg names-left)
-                    (walk* (cdr args-left) names-left
-                     (lambda (new-args names-left)
-                       (win (cons new-arg new-args) names-left))))))))
+           (receive (new-args names-left)
+             (let walk* ((args-left (cdr shape))
+                         (names-left names))
+               (if (null? args-left)
+                   (values '() names-left)
+                   (receive (new-arg names-left) (walk (car args-left) names-left)
+                     (receive (new-args names-left) (walk* (cdr args-left) names-left)
+                       (values (cons new-arg new-args) names-left)))))
+             (values `(vector ,@new-args) names-left)))
           (else
            (error "Weird shape" shape))))
   (if (primitive-shape? shape)
@@ -325,10 +320,9 @@
         (tidy-let-values
          `(let-values ((,piece-names ,new-expr))
             ,(approximate-anf
-              (walk shape piece-names
-                    (lambda (shape new-names)
-                      (assert (null? new-names))
-                      shape))))))))
+              (receive (shape new-names) (walk shape piece-names)
+                (assert (null? new-names))
+                shape)))))))
 
 ;;; SRA supporting procedures
 
