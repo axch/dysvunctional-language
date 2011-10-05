@@ -124,130 +124,117 @@
   ;; by SRA to hold its primitive parts.  The list is parallel to the
   ;; fringe of the shape.  Note that the compound structure (vector)
   ;; has an empty list of primitive parts.
-  ;; This is written in continuation passing style because I need two
-  ;; pieces of information from the recursive call.  The win
-  ;; continuation accepts the new, SRA'd expression, and the shape of
-  ;; the value it used to return before SRA.
+  ;; I need two pieces of information from the recursive call: the
+  ;; new, SRA'd expression, and the shape of the value it used to
+  ;; return before SRA.
   ;; For this purpose, a VALUES is the same as any other construction.
   (define (construction? expr)
     (and (pair? expr)
          (memq (car expr) '(cons vector values))))
-  (define (loop expr env win)
+  (define (loop expr env)
     (cond ((fol-var? expr)
-           (win (tidy-values `(values ,@(get-names expr env)))
-                (get-shape expr env)))
+           (values (tidy-values `(values ,@(get-names expr env)))
+                   (get-shape expr env)))
           ((number? expr)
-           (win expr 'real))
+           (values expr 'real))
           ((boolean? expr)
-           (win expr 'bool))
+           (values expr 'bool))
           ((null? expr)
-           (win `(values) '()))
+           (values `(values) '()))
           ((if-form? expr)
-           (sra-if expr env win))
+           (sra-if expr env))
           ((let-form? expr)
-           (sra-let expr env win))
+           (sra-let expr env))
           ((let-values-form? expr)
-           (sra-let-values expr env win))
+           (sra-let-values expr env))
           ((lambda-form? expr)
-           (sra-lambda expr env win))
+           (sra-lambda expr env))
           ((accessor? expr)
-           (sra-access expr env win))
+           (sra-access expr env))
           ((construction? expr)
-           (sra-construction expr env win))
+           (sra-construction expr env))
           (else ;; general application
-           (sra-application expr env win))))
-  (define (sra-if expr env win)
-    (loop (cadr expr) env
-     (lambda (new-pred pred-shape)
-       (assert (eq? 'bool pred-shape))
-       (loop (caddr expr) env
-        (lambda (new-cons cons-shape)
-          (loop (cadddr expr) env
-           (lambda (new-alt alt-shape)
-             ;; TODO cons-shape and alt-shape better be the same
-             ;; (or at least compatible)
-             (win `(if ,new-pred ,new-cons ,new-alt)
-                  cons-shape))))))))
-  (define (sra-let expr env win)
+           (sra-application expr env))))
+  (define (sra-if expr env)
+    (let-values (((new-pred pred-shape) (loop (cadr expr) env))
+                 ((new-cons cons-shape) (loop (caddr expr) env))
+                 ((new-alt   alt-shape) (loop (cadddr expr) env)))
+      (assert (eq? 'bool pred-shape))
+      ;; TODO cons-shape and alt-shape better be the same
+      ;; (or at least compatible)
+      (values `(if ,new-pred ,new-cons ,new-alt)
+              cons-shape)))
+  (define (sra-let expr env)
     (let ((bindings (cadr expr))
           (body (caddr expr)))
-      (loop* (map cadr bindings) env
-       (lambda (new-bind-expressions bind-shapes)
-         (let ((new-name-sets
-                (map invent-names-for-parts
-                     (map car bindings) bind-shapes)))
-           (loop body (augment-env
-                       env (map car bindings)
-                       new-name-sets bind-shapes)
-            (lambda (new-body body-shape)
-              (win (if (every (lambda (set)
-                                (= 1 (length set)))
-                              new-name-sets)
-                       ;; Opportunistically preserve parallel LET with
-                       ;; non-structured expressions.
-                       `(let ,(map list (map car new-name-sets)
-                                   new-bind-expressions)
-                          ,new-body)
-                       (tidy-let-values
-                        `(let-values ,(map list new-name-sets
-                                           new-bind-expressions)
-                           ,new-body)))
-                   body-shape))))))))
-  (define (sra-let-values expr env win)
+      (receive (new-bind-expressions bind-shapes) (loop* (map cadr bindings) env)
+        (let ((new-name-sets
+               (map invent-names-for-parts
+                    (map car bindings) bind-shapes)))
+          (receive (new-body body-shape)
+            (loop body (augment-env env (map car bindings) new-name-sets bind-shapes))
+            (values (if (every (lambda (set)
+                                 (= 1 (length set)))
+                               new-name-sets)
+                        ;; Opportunistically preserve parallel LET with
+                        ;; non-structured expressions.
+                        `(let ,(map list (map car new-name-sets)
+                                    new-bind-expressions)
+                           ,new-body)
+                        (tidy-let-values
+                         `(let-values ,(map list new-name-sets
+                                            new-bind-expressions)
+                            ,new-body)))
+                    body-shape))))))
+  (define (sra-let-values expr env)
     (let* ((binding (caadr expr))
            (body (caddr expr))
            (names (car binding))
            (exp (cadr binding)))
-      (loop exp env
-       (lambda (new-exp exp-shape)
-         (let ((new-name-sets
-                (map invent-names-for-parts names (sra-parts exp-shape))))
-           ;; The previous line is not idempotent because it renames
-           ;; all the bindings, even those that used to hold
-           ;; non-structured values.
-           (loop body (augment-env env names new-name-sets (sra-parts exp-shape))
-            (lambda (new-body body-shape)
-              (win (tidy-let-values
-                    `(let-values ((,(apply append new-name-sets) ,new-exp))
-                       ,new-body))
-                   body-shape))))))))
-  (define (sra-lambda expr env win)
+      (receive (new-exp exp-shape) (loop exp env)
+        (let ((new-name-sets
+               (map invent-names-for-parts names (sra-parts exp-shape))))
+          ;; The previous line is not idempotent because it renames
+          ;; all the bindings, even those that used to hold
+          ;; non-structured values.
+          (receive (new-body body-shape)
+            (loop body (augment-env env names new-name-sets (sra-parts exp-shape)))
+            (values (tidy-let-values
+                     `(let-values ((,(apply append new-name-sets) ,new-exp))
+                        ,new-body))
+                    body-shape))))))
+  (define (sra-lambda expr env)
     (let ((formal (cadr expr))
           (body (caddr expr)))
       ;; TODO Generalize to arg types other than real
-      (loop body (augment-env env formal (list formal) (list 'real))
-       (lambda (new-body body-shape)
-         (win `(lambda ,formal
-                 ,(reconstruct-pre-sra-shape new-body body-shape))
-              #;(function-type 'real body-shape)
-              'escaping-function)))))
-  (define (sra-access expr env win)
-    (loop (cadr expr) env
-     (lambda (new-cadr cadr-shape)
-       (win (slice-values-by-access new-cadr cadr-shape expr)
-            (select-from-shape-by-access cadr-shape expr)))))
-  (define (sra-construction expr env win)
-    (loop* (cdr expr) env
-     (lambda (new-terms terms-shapes)
-       (win (append-values new-terms)
-            (construct-shape terms-shapes expr)))))
-  (define (sra-application expr env win)
-    (loop* (cdr expr) env
-     (lambda (new-args args-shapes)
-       ;; The type checker should have ensured this
-       ;(assert (every equal? args-shapes (arg-types (lookup-type (car expr))))
-       (win `(,(car expr) ,@(smart-values-subforms (append-values new-args)))
-            (return-type (lookup-type (car expr)))))))
-  (define (loop* exprs env win)
+      (receive (new-body body-shape)
+        (loop body (augment-env env formal (list formal) (list 'real)))
+        (values `(lambda ,formal
+                   ,(reconstruct-pre-sra-shape new-body body-shape))
+                #;(function-type 'real body-shape)
+                'escaping-function))))
+  (define (sra-access expr env)
+    (receive (new-cadr cadr-shape) (loop (cadr expr) env)
+      (values (slice-values-by-access new-cadr cadr-shape expr)
+              (select-from-shape-by-access cadr-shape expr))))
+  (define (sra-construction expr env)
+    (receive (new-terms terms-shapes) (loop* (cdr expr) env)
+      (values (append-values new-terms)
+              (construct-shape terms-shapes expr))))
+  (define (sra-application expr env)
+    (receive (new-args args-shapes) (loop* (cdr expr) env)
+      ;; The type checker should have ensured this
+      ;(assert (every equal? args-shapes (arg-types (lookup-type (car expr))))
+      (values `(,(car expr) ,@(smart-values-subforms (append-values new-args)))
+              (return-type (lookup-type (car expr))))))
+  (define (loop* exprs env)
     (if (null? exprs)
-        (win '() '())
-        (loop (car exprs) env
-         (lambda (new-expr expr-shape)
-           (loop* (cdr exprs) env
-            (lambda (new-exprs expr-shapes)
-              (win (cons new-expr new-exprs)
-                   (cons expr-shape expr-shapes))))))))
-  (loop expr env (lambda (new-expr shape) (win new-expr shape))))
+        (values '() '())
+        (let-values (((new-expr expr-shape) (loop (car exprs) env))
+                     ((new-exprs expr-shapes) (loop* (cdr exprs) env)))
+          (values (cons new-expr new-exprs)
+                  (cons expr-shape expr-shapes)))))
+  (receive (new-expr shape) (loop expr env) (win new-expr shape)))
 
 ;;; The following post-processor is necessary for compatibility with
 ;;; MIT Scheme semantics for multiple value returns (namely that a
