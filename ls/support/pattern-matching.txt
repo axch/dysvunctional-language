@@ -1,0 +1,421 @@
+                        Schemely Destructuring
+                             Alexey Radul
+
+
+Introduction
+
+Chris Hanson told me once
+
+  If you return a boolean from your function, the only thing the
+  client can do with it is dispatch.  Why not accept the two ways the
+  client might go, and do the dispatch yourself?  This way you never
+  separate the boolean from its meaning.
+
+It occurred to me recently that this philosophy can be applied
+fruitfully to the basic type testers of the programming language.
+After all, what can one do with the result of pair? except branch?
+And what does one always want from the pair in the "yes" branch?
+
+
+Linguistics
+
+Why not replace the traditional pair? with a pair?*, say, whose
+interface is
+
+(pair?* thing
+ (lambda (the-car the-cdr) ...)
+ (lambda () ...))
+
+This can be added to an existing system as
+
+(define (pair?* thing win lose)
+  (if (pair? thing)
+      (win (car thing) (cdr thing))
+      (lose)))
+
+whereas taking pair?* as primitive costs nothing in expressive power
+because you can always get your booleans back with
+
+(define (pair? thing)
+  (pair?* thing (lambda (a d) #t) (lambda () #f)))
+
+The advantages are that you keep the booleans together with their
+meanings, and you combine destructuring with dispatch.  No more
+
+(if (frob? thing)
+    (let ((nozzle (frob-nozzle thing))
+          (nitz   (frob-nitz thing))
+          (botz   (frob-botz thing))
+          ...)
+      stuff)
+    ...)
+
+The main deal-breaking objection one might raise is that typing out
+all those lambdas will get tedious.  But this is what macros are for.
+Given a suite of primitive destructurers such as the above, cloning
+Haskell-style destructuring into Scheme is just one macro definition
+away, and has the nice benefit that the destructuring becomes
+Schemeier while we're at it.  I should mention, at this point, that I
+think destructuring is one of the main reasons why Haskell code is so
+much more compact than Scheme code.  (The others are automatic
+currying, a good standard library of function combinators like
+compose, user-definable infix operators, and the ability to dispatch
+on the type one is expected to return, in that order).
+
+The macro in question, called case* say, should have the following
+behavior:
+
+(case* thing
+ ((foo x y) body1)
+ ((bar y z) body2))
+===>
+(foo thing
+ (lambda (x y) body1)
+ (lambda ()
+  (bar thing
+   (lambda (y z) body2)
+   (lambda () <case failed>))))
+
+A syntactic construct that looks like a pattern match expands into a
+bunch of calls to procedures that take an object and a pair of
+continuations, the first of which they are to call if the object
+matches and the second if not, supplying to the first appropriate
+pieces of the object.  For example,
+
+(define (map f lst)
+  (case* lst
+   ((pair?* x xs) (cons (f x) (map f xs)))
+   (else lst)))
+
+will expand (given an appropriate hack for ELSE, of course) into
+
+(define (map f lst)
+  (pair?* lst
+   (lambda (x xs)
+    (cons (f x) (map f xs)))
+   (lambda () lst)))
+
+and behave like map.
+
+The case* macro can be extended to handle nested patterns properly:
+
+(case* thing
+ ((foo (bar x y) z) body1)
+ ...)
+===>
+(let ((fail (lambda () (case* thing ...))))
+  (foo thing
+   (lambda (gensym-42 z)
+    (bar gensym-42
+     (lambda (x y)
+      body1)
+     fail))
+   fail))
+
+It would also be pretty easy to add "as" patterns, which destructure
+an object and also bind the undestructured object to a name; and also
+underscore as a thing that means "match anything but bind no name".
+
+This hack would reproduce the linguistic convenience of Haskell
+pattern matching and destructuring in Scheme.  It has the advantage
+over Haskell (and also over the Racket match macro
+http://docs.racket-lang.org/reference/match.html) that it's trivial
+for the user to extend on the fly with all sorts of weird, ad-hoc
+patterns, because the pattern leader is evaluated.  For example,
+
+(define (has?* key)
+  (lambda (table win lose)
+    (hash-table/lookup table key win lose)))
+
+(case* <some-table>
+ (((has?* 5) datum) ... the table mapped 5 to datum ...)
+ ... the table had no mapping for 5 ...)
+
+can be done entirely at user level.  Note the computed pattern header.
+(In addition to the user-space definition of a procedure that computes
+said pattern header).
+
+In comparison, I don't think that Haskell allows its pattern language
+to be extended at all, except with the definition of new algebraic
+data types; and I think the Racket match macro can only be extended by
+defining "pattern macros" -- new patterns that the matcher compiler
+expands into combinations of uses of old patterns.  Such a facility
+could also be provided in this case.  That makes the current proposal
+much more in line with the Scheme spirit.
+
+
+Performance
+
+The second deal-breaking objection one might raise is performance.  A
+naive implementation of this on top of a naive Scheme compiler would
+probably be a total performance loss, because the runtime would cons
+up huge numbers of closures to pass as the continuations of the
+matching primitives, which those primitives would then have to apply.
+If the library defining pair?* and company is compiled separately from
+the library using it, that's a huge number of "escaping functions"
+from the user, and a huge number of calls to "unknown functions"
+inside of pair?* and co.  A language feature aiming to offer a
+ubiquitous small improvement in code concision and legibility cannot
+afford to impose so steep a performance penalty.  Fortunately, this
+problem is fixable.
+
+In the context of adding this feature to an existing Scheme system, I
+can imagine two (related) ways to fix its performace.  The MIT Scheme
+compiler, to take an example I am familiar with, has a concept of
+"usual integrations", which are primitive procedures like + that the
+compiler knows how to inline at the sub-Scheme level, and not incur
+procedure-call overhead for.  One could then teach MIT Scheme to treat
+pair?* as usual integration, and have it then turn
+(pair?* thing (lambda (a d) ...) (lambda () ...)) into
+(if (pair? thing) (let ((a (car thing)) (d (cdr thing))) ...) ...).
+This can be achieved, even at the user level, with liberal use of
+define-integrable and (declare (integrate-externals ...)).
+
+If fact, the pair?*-style primitives could even offer a performance
+advantage over their pair?-style counterparts.  This is because
+whenever one takes the car of an object, one must confirm that the
+object is, indeed, a pair.  In general, the car primitive must do
+this.  On the one hand, such checks are obviously redundant in code
+like
+
+(if (pair? foo)
+    (do-something-with (car foo) (cdr foo))
+    ...)
+
+On the other hand, actually doing the control flow analysis to detect
+these cases and elide the extra checks from the car and cdr here is
+not trivial, and very difficult to do satisfactorily in general.  A
+primitive pair?*, however, does the destructuring internally, and
+can inline to look like
+(if (pair? thing)
+    (let ((a (unsafe-car thing)) (d (unsafe-cdr thing))) ...)
+     ...),
+where unsafe-car and unsafe-cdr do not do safety checks.  This is an
+example of the benefits of not separating the boolean from its
+meaning.  See also issue 6 below.
+
+Even if one does not incorporate pair?* and company into the set of
+primitives the compiler knows about, the same effect can probably be
+realized by resorting to hairy macrology.  After doing its normal
+thing, case* could do a post-pass where it attempted to do this
+optimization.  It would check whether the name in some appropriate
+place happened to be the same name as the global name for pair?*, and
+if so expand into the integrated version rather than the
+lambda-consing version.  This could even take advantage of eliding
+extra type checks, if the system provided access to unsafe-car and
+unsafe-cdr.
+
+In both cases, it would be nice if the system integrated with the
+record system so that the likes of define-structure would define
+destructurers using this interface for newly defined structures, and
+teach either the compiler or the case* post-processor how to integrate
+them.  Come to think of it, automatic destructurers for records would
+be useful even in the absence of a case* macro.  Other user-defined
+cases can probably be left on the floor --- if you're doing some
+complicated crunch to compute a destructurer on the fly, maybe you
+don't mind the system consing up its success continuation.
+
+
+Related Work
+
+Haskell, and languages of the ML family in general, have very similar
+pattern-matching and destructuring facilities.  If the optional
+features suggested in the issues below are implemented, I think case*
+would replicate the functionality of Haskell pattern matching
+completely, while also offering a more flexible and Schemeier
+extension mechanism, namely having the destructurers live in the same
+namespace as everything else, and being willing to accept new ones,
+even constructed on the fly.  I have not, however, checked this claim
+thoroughly.
+
+Racket has a match macro that supports a significantly more elaborate
+pattern language than this case*; but it pays the price in being
+substantially harder to extend with user-specified matchers.  I do not
+know how easy or difficult it would be to compile Racket match
+emulating case* into code as good as can be had from using case*
+directly.  I also do not believe that the matchers that fit into
+Racket match are useful outside it, whereas one could certainly call
+pair?* by itself to good effect.  My feeling is that this case* and
+Racket match serve two distinct purposes, and as such can happily
+coexist in the same programming language.  It might be nice if they
+were compatible and/or interoperable; see Issue 8 below.
+    
+Sussman teaches a pattern matching system in his Adventures class.
+This system is designed with an eye toward fitting into a rule-based
+term-rewriting system, which in turn is designed with an eye toward
+algebraic simplification.  Consequently, this pattern matching system
+also supports an elaborate pattern language, on a par with Racket
+match.  The same considerations apply.
+
+Regular expressions are also a form of pattern matching language,
+operative over strings.
+
+A generic operations or method dispatch system is also, in a sense, a
+form of pattern matching, but usually only on the types (or
+identities) of the elements of an argument list.  The essential
+distinguishing features of generic operations are syntactically
+separable definition, multiple possible matching clasues, and a
+specificity search.
+
+I am not aware of any other pattern matching or destructuring
+facilities in any other Scheme or Lisp systems, but perhaps this is
+for lack of searching.
+
+
+Open Issues
+
+1) list?*.  In a situation like
+
+(case* '(1 2 3)
+ ((list?* x y) ...)
+ ((list?* x y z) ...))
+
+you expect the first list?* to gracefully fail to match, and the
+second one to give you x->1, y->2, z->3.  A naive definition of list?*,
+however, looking like
+
+(define (list?* thing win lose)
+  (if (list? thing)
+      (apply win thing)
+      (lose)))
+
+would do completely the wrong thing; namely, the first list?* above
+would error out.  The only way I can think of to have the above
+example do the right thing would be to define list?* as a "pattern
+macro" that, in the context of being a case* pattern would expand into
+a appropriate pile of pair?*s.  Then the above becomes equivalent to
+
+(case* '(1 2 3)
+ ((pair?* x (pair?* y (null?*))) ...)
+ ((pair?* x (pair?* y (pair?* z (null?*)))) ...))
+
+which would then do the right thing.
+
+2) Segment variables.  I have no idea how one could implement segment
+variables in this framework.  That is one place where the Racket match
+macro wins.  The solution I am leaning toward is to say that this is
+more of a destructuring facility, and if you actually want complicated
+pattern matching, go use the match macro (which gives you segments but
+is harder to extend with custom matchers, and may be harder to compile
+into very efficient code).  The same thing goes for and/or/not
+patterns and anything else complicated like that.  (heh - apply
+patterns might emerge from the ability to compute destructurers on the
+fly).
+
+3) Guards.  Backtracking back into the destructurer is useful enough
+to be an exception to the previous item.  It can be provided either
+with Haskell-style guard syntax, or Racket-style by binding an
+identifier to the failure continuation if it is syntactically
+requested.  Or something else.  In any case, the case* macro can
+arrange all these things, for example by having the success
+continuation close over the failure continuation.
+
+4) As-patterns.  It is useful to be able to destructure a thing and
+also keep a pointer to the thing.  Some cases of this can be achieved
+with appropriate use of standard binding mechanisms, but it may also
+be a good idea to implement it inside the case* facility.  I don't
+want to make it a special case of an and-pattern facility, even though
+of course it is; dedicated syntax like Haskell might serve this
+purpose better.
+
+5) Names.  This document named the matcher macro case*, and the
+destructurers foo?*.  Especially the latter is probably cumbersome
+enough to impede the fluid use of this facility.  In order to make it
+Schemey (and allow convenient extension), it seems necessary to make
+the destructurers live in the same name space as everything else; but
+that means I would need to introduce a naming convention to keep them
+from clashing with, for example, the constructors, or the traditional
+type testers.  Any suggestion on what that naming convention should
+be?  For example, Haskell spells pair?* as a right-associative infix :
+operator.
+
+6) Flow analysis.  Working on VLAD was what made me actually think
+this through and write it up.  VLAD offers this facility an important
+advantage, which is that it would automatically integrate all the
+destructurers and pay nothing to make closures nobody needs.  More
+important, this facility offers VLAD an important advantage: one can
+define real?* as a primitive, and tell the flow analysis that it will
+only ever call its success continuation with a real number.  This
+gives me a way to get rid of union types -- if I check that something
+is real before entering a hairy loop, I can unbox it once on entry and
+let the interior of the loop operate on it unboxed.  The same
+ability is very difficult to reproduce with the traditional real?,
+because to do a good job of that the analysis has to be able to
+integrate information about an object from more places than just its
+binding site, and propagate this information, and it all gets very
+hairy.  But real?* neatly sidesteps this problem because it introduces
+another binding site!  And of course, real? can be defined in terms of
+real?*:
+
+(define (real? x) (real?* x (lambda (x) #t) (lambda () #f)))
+
+In terms of union types, the real?* in this definition creates a brief
+moment of monomorphism, but returning #t or #f immediately produces a
+union again.
+
+6b) Speaking of flow analysis, it may be a good idea to have the
+destructurers pass the object to their failure continuation if it
+didn't match.  This lets the analysis remove a union member.  However,
+that only works that way without guards or nested patterns, and
+confuses the interface to defining new destructurers.  On the other
+hand, a polyvariant flow analysis would split different call sites of
+the failure continuation by different union information about the
+item, which might amount to automatically compiling the entire case*
+expression into a discrimination net of the tests it needs to perform.
+
+Also, passing the failed object to the lose continuation would allow
+tester-combinators like these:
+
+(define ((and* t1 t2) thing win lose)
+  (t1 thing
+    (lambda (t1-win)
+      (t2 t1-win win lose))
+    lose))
+
+(define ((not* test) thing win lose)
+  (test thing lose win))
+
+(define ((or* t1 t2) thing win lose)
+  (t1 thing win
+    (lambda (t1-lose)
+      (t2 t1-lose win lose))))
+
+These all assume that the win continuation also takes one argument,
+which is the confirmed object.  These patterns will also emerge
+naturally from patterns of use of case*, so it is not completely clear
+that they need separate attention.
+
+7) Integration into the language.  Once there is a case*-type thing,
+one may want a lambda*-type thing.  One would need to decide whether
+it passes its argument list, or its first argument, or what, exactly;
+and how this interacts with optional arguments and rest arguments;
+etc.  As mentioned above, it would also be advisable for case* to
+integrate with the record system.
+
+8) Interoperation with other pattern matching facilities.  One idea
+for interoperation with a pattern matching system in Sussman's style
+might be a combinator of the form
+
+(define (matches?* pattern)
+  (let ((pattern-combinator (pattern-compile pattern)))
+    (lambda (object win lose)
+      (pattern-combinator object
+        (lambda (dict fail)
+          (apply win (all-values dict)))
+        lose))))
+
+If the win continuation has a guard, it would be nice if it
+backtracked into the fail continuation from the matcher rather than
+directly the lose continuation of the case*.  It may also be nice if
+the case* macro recognized patterns offered by the matches?*
+combinator and pulled some hack to use the names of the pattern
+variables instead of asking the user to name those values again for
+the case*.  This is starting to look like case* serving as a common
+base for experimentation with extension into different elaborations of
+the pattern matching idea.
+
+While we're at it, matching regular expressions fits into this
+framework reasonably nicely as well, if one defines a suitable
+combinator.  The same considerations apply as for matches?* above; and
+also that regular expression groups have traditional names, which
+case* could automatically provide.
