@@ -25,6 +25,13 @@
                         (receive (variables body) (loop (cdr subpatterns))
                           (values (cons variable variables)
                                   (list (standard-clause variable (car subpatterns) body))))))
+                     ;; Assume identifier
+                     ((compare (car subpatterns) (rename '_))
+                      (let ((variable (generate-uninterned-symbol 'dead-)))
+                        (receive (variables body) (loop (cdr subpatterns))
+                          (values (cons variable variables)
+                                  (cons `(declare (ignore ,variable))
+                                        body)))))
                      (else ;; Assume identifier
                       (receive (variables body) (loop (cdr subpatterns))
                         (values (cons (car subpatterns) variables)
@@ -53,6 +60,16 @@
             (+ (car a) (cdr a) d)
             (+ a d)))))
 
+(define (do-it2 thing)
+  (case* thing
+   ((pair _ (pair _ d)) d)))
+
+(define (my-do-it2 thing)
+  (if (pair? thing)
+      (let ((d (cdr thing)))
+        (if (pair? d)
+            (cdr d)))))
+
 (define (test-it thing count)
   (show-time
    (lambda ()
@@ -60,7 +77,7 @@
        (if (= count 0)
            'ok
            (begin
-             (my-do-it thing)
+             (my-do-it2 thing)
              (loop (- count 1))))))))
 
 ;; TODO as patterns; underscores?; else clause?
