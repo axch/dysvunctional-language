@@ -156,8 +156,7 @@
   ;; not bind a variable at all; that means that variable in not in
   ;; scope here (constants are always in scope).
   ;;
-  ;; This is written in continuation passing style because recursive
-  ;; calls must return two things.  The win continuation accepts the
+  ;; Recursive calls return two things: the
   ;; new, CSE'd expression and the symbolic expression representing
   ;; the return value from this expression (using a values form for
   ;; the symbolic expressions for the elements of a multivalue
