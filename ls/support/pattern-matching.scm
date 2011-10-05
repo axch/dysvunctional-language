@@ -88,15 +88,4 @@
 (define-algebraic-matcher boolean boolean?)
 (define-algebraic-matcher number number?)
 
-
-(define (test-it thing count)
-  (show-time
-   (lambda ()
-     (let loop ((count count))
-       (if (= count 0)
-           'ok
-           (begin
-             (my-do-it2 thing)
-             (loop (- count 1))))))))
-
 ;; TODO good error messages if syntax is wrong; define all needed matchers
