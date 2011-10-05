@@ -46,7 +46,7 @@
 (define (fol->standalone-mit-scheme program #!optional output-base)
   (if (default-object? output-base)
       (set! output-base "frobnozzle"))
-  (let* ((srfi-11 (read-source (string-append my-path "srfi-11.scm")))
+  (let* ((srfi-11 (read-source (string-append my-path "../support/srfi-11.scm")))
          (runtime (read-source (string-append my-path "runtime.scm")))
          (output
           `(,@srfi-11                   ; includes usual-integrations
