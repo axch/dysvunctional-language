@@ -15,11 +15,12 @@
               (compare (rename '=>) (cadr clause))))
        (define (ignore? thing)
          (compare thing (rename '_)))
-       (define (as-pattern pattern win lose)
+       (define-integrable (as-pattern pattern win lose)
          (let loop ((pattern pattern) (skipped '()))
            (cond ((not (pair? pattern)) (lose))
                  ((null? (cdr pattern)) (lose))
                  ((and (null? (cddr pattern))
+                       (symbol? (car pattern))
                        (compare (car pattern) (rename ':as)))
                   (win (reverse skipped) (cadr pattern)))
                  (else (loop (cdr pattern) (cons (car pattern) skipped))))))
@@ -54,7 +55,12 @@
                                   body)))))
                `(,(car pattern) ,expr-name (,(rename 'lambda) ,variables ,@body) ,lose-name)))
            (cond ((pair? pattern)
-                  (standard-pattern expr-name pattern body))
+                  (as-pattern pattern
+                   (lambda (true-pattern variable)
+                     `(let ((,variable ,expr-name))
+                        ,(standard-pattern expr-name true-pattern body)))
+                   (lambda ()
+                     (standard-pattern expr-name pattern body))))
                  ((ignore? pattern)
                   `(let ()
                      (declare (ignore ,lose-name))
@@ -108,3 +114,5 @@
            (begin
              (my-do-it2 thing)
              (loop (- count 1))))))))
+
+;; TODO Unit tests, performance tests, good error messages if syntax is wrong
