@@ -93,69 +93,65 @@
       (lst1 (lst2 expr))))
   (define (build expr lst)
     (lst expr))
-  (define (loop expr win)
+  (define (loop expr)
     (cond ((or (fol-var? expr)
                (fol-const? expr))
-           (win expr null))
+           (values expr null))
           ((if-form? expr)
-           (lift-lets-from-if expr win))
+           (lift-lets-from-if expr))
           ((let-form? expr)
-           (lift-lets-from-let expr win))
+           (lift-lets-from-let expr))
           ((let-values-form? expr)
-           (lift-lets-from-let-values expr win))
+           (lift-lets-from-let-values expr))
           ((lambda-form? expr)
-           (lift-lets-from-lambda expr win))
+           (lift-lets-from-lambda expr))
           (else ;; general application
-           (lift-lets-from-application expr win))))
-  (define (lift-lets-from-if expr win)
+           (lift-lets-from-application expr))))
+  (define (lift-lets-from-if expr)
     (let ((predicate (cadr expr))
           (consequent (caddr expr))
           (alternate (cadddr expr)))
-      (loop predicate
-            (lambda (new-pred pred-binds)
-              (win `(if ,new-pred
-                        ,(lift-lets-expression consequent)
-                        ,(lift-lets-expression alternate))
-                   pred-binds)))))
-  (define (lift-lets-from-let expr win)
+      (receive (new-pred pred-binds) (loop predicate)
+        (values `(if ,new-pred
+                     ,(lift-lets-expression consequent)
+                     ,(lift-lets-expression alternate))
+                pred-binds))))
+  (define (lift-lets-from-let expr)
     (let ((body (caddr expr)))
       (let per-binding ((bindings (cadr expr))
                         (done null))
         (if (null? bindings)
-            (loop body (lambda (new-body body-binds)
-                         (win new-body (append done body-binds))))
+            (receive (new-body body-binds) (loop body)
+              (values new-body (append done body-binds)))
             (let ((binding (car bindings)))
-              (loop (cadr binding)
-                    (lambda (new-exp exp-binds)
-                      (per-binding
-                       (cdr bindings)
-                       (append done
-                               (append exp-binds
-                                       (singleton
-                                        (car binding) new-exp)))))))))))
-  (define (lift-lets-from-let-values expr win)
+              (receive (new-exp exp-binds) (loop (cadr binding))
+                (per-binding
+                 (cdr bindings)
+                 (append done
+                   (append exp-binds
+                     (singleton
+                      (car binding) new-exp))))))))))
+  (define (lift-lets-from-let-values expr)
     ;; TODO Abstract the commonalities with LET forms?
     (let ((binding (caadr expr))
           (body (caddr expr)))
       (let ((names (car binding))
             (sub-exp (cadr binding)))
-        (loop sub-exp
-         (lambda (new-sub-expr sub-exp-binds)
-           (loop body
-            (lambda (new-body body-binds)
-              (win new-body
-                   (append sub-exp-binds
-                           (append (values-singleton names new-sub-expr)
-                                   body-binds))))))))))
-  (define (lift-lets-from-lambda expr win)
-    (win `(lambda ,(cadr expr)
-            ,(lift-lets-expression (caddr expr)))
-         null))
-  (define (lift-lets-from-application expr win)
+        (receive (new-sub-expr sub-exp-binds) (loop sub-exp)
+          (receive (new-body body-binds) (loop body)
+            (values new-body
+                    (append sub-exp-binds
+                      (append (values-singleton names new-sub-expr)
+                              body-binds))))))))
+  (define (lift-lets-from-lambda expr)
+    (values `(lambda ,(cadr expr)
+               ,(lift-lets-expression (caddr expr)))
+            null))
+  (define (lift-lets-from-application expr)
     ;; In ANF, anything that looks like an application can't have
     ;; nested LETs.
-    (win expr null))
-  (loop expr build))
+    (values expr null))
+  (receive (expr lst) (loop expr) (build expr lst)))
 
 (define (lets-lifted? expr)
   (equal? expr (%lift-lets expr)))
