@@ -1,10 +1,5 @@
 (declare (usual-integrations))
 
-(define-integrable (pair thing win lose)
-  (if (pair? thing)
-      (win (car thing) (cdr thing))
-      (lose)))
-
 (define-syntax case*
   (er-macro-transformer
    (lambda (form rename compare)
@@ -80,30 +75,26 @@
                    `(,(rename 'let) ((,lose-name (,(rename 'lambda) () ,(loop (cdr clauses)))))
                      ,(parse-clause (car clauses) lose-name))))))))))
 
-(define (do-it thing)
-  (case* thing
-         ((pair (pair a d) dd) (+ a d dd))
-         ((pair a d) (+ a d))))
-
-(define (my-do-it thing)
+(define-integrable (pair thing win lose)
   (if (pair? thing)
-      (let ((a (car thing)) (d (cdr thing)))
-        (if (pair? a)
-            (+ (car a) (cdr a) d)
-            (+ a d)))))
+      (win (car thing) (cdr thing))
+      (lose)))
 
-(define (do-it2 thing)
-  (case* thing
-   ((pair _ (pair _ d :as subthing)) (+ d (car subthing)))
-   (_ thing)))
+(define-integrable (null thing win lose)
+  (if (null? thing)
+      (win)
+      (lose)))
 
-(define (my-do-it2 thing)
-  (if (pair? thing)
-      (let ((d (cdr thing)))
-        (if (pair? d)
-            (+ (car d) (cdr d))
-            thing))
-      thing))
+(define-integrable (boolean thing win lose)
+  (if (boolean? thing)
+      (win)
+      (lose)))
+
+(define-integrable (number thing win lose)
+  (if (number? thing)
+      (win)
+      (lose)))
+
 
 (define (test-it thing count)
   (show-time
