@@ -39,7 +39,7 @@
                         (receive (variables body) (loop (cdr subpatterns))
                           (values (cons (car subpatterns) variables)
                                   body)))))
-                      `(,(car pattern) ,expr-name (,(rename 'lambda) ,variables ,@body) ,lose-name)))
+               `(,(car pattern) ,expr-name (,(rename 'lambda) ,variables ,@body) ,lose-name)))
            (cond ((pair? pattern)
                   (standard-pattern expr-name pattern body))
                  ((ignore? pattern)
