@@ -67,6 +67,7 @@
      fol->standalone-mit-scheme
      run-mit-scheme
      fol->stalin
+     fol->common-lisp
 
      ;; Optimization
      equal-type? ; TODO
