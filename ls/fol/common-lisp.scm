@@ -45,9 +45,11 @@
           (compile-entry-point program))))
   (compile-program (alpha-rename program)))
 
+(define *fol->cl-desired-precision* 'single-float)
+
 (define (fol-shape->type-specifier shape)
   (cond ((eq? 'real shape)
-         'single-float)
+         *fol->cl-desired-precision*)
         ((eq? 'bool shape)
          'boolean)
         ((null? shape)
@@ -66,25 +68,25 @@
          (error "Bogus shape " shape))))
 
 (define prelude
-  '((declaim (inline zero?
+  `((declaim (inline zero?
                      positive?
                      negative?
                      read-real
                      write-real
                      gensym=))
     (defun zero? (x)
-      (declare (type single-float x))
+      (declare (type ,*fol->cl-desired-precision* x))
       (zerop x))
     (defun positive? (x)
-      (declare (type single-float x))
+      (declare (type ,*fol->cl-desired-precision* x))
       (plusp x))
     (defun negative? (x)
-      (declare (type single-float x))
+      (declare (type ,*fol->cl-desired-precision* x))
       (minusp x))
     (defun read-real ()
       (read))
     (defun write-real (x)
-      (declare (type single-float x))
+      (declare (type ,*fol->cl-desired-precision* x))
       (format t "~F~%" x)
       x)
     (defun gensym= (gensym1 gensym2)
@@ -113,7 +115,7 @@
            (compile-application expr))))
   (define (compile-const expr)
     (cond ((number? expr)
-           `(float ,(if (exact? expr) (exact->inexact expr) expr)))
+           `(coerce ,(if (exact? expr) (exact->inexact expr) expr) ',*fol->cl-desired-precision*))
           ((boolean? expr)
            (if expr 't 'nil))
           (else
