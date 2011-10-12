@@ -9,7 +9,7 @@
     (with-output-to-file file
       (lambda ()
         (fluid-let ((flonum-unparser-cutoff '(normal 0 scientific)))
-          (write code))))
+          (pp code))))
     (run-shell-command
      (format #f
       "sbcl --eval '(progn (compile-file ~S :verbose t :print t) (quit))'"
@@ -52,10 +52,12 @@
          'boolean)
         ((null? shape)
          'null)
+        ((eq? shape 'escaping-function)
+         'function)
         ((eq? 'cons (car shape))
          `(cons ,(fol-shape->type-specifier (cadr  shape))
                 ,(fol-shape->type-specifier (caddr shape))))
-        ;; Heterogenious vector types are not supported by CL.
+        ;; Heterogeneous vector types are not supported by CL.
         ((eq? 'vector (car shape))
          `(simple-vector ,(length (cdr shape))))
         ((eq? 'values (car shape))
@@ -111,7 +113,7 @@
            (compile-application expr))))
   (define (compile-const expr)
     (cond ((number? expr)
-           (if (exact? expr) (exact->inexact expr) expr))
+           `(float ,(if (exact? expr) (exact->inexact expr) expr)))
           ((boolean? expr)
            (if expr 't 'nil))
           (else
@@ -132,9 +134,9 @@
                         bindings))
              ,(%compile-expression body))))
   (define compile-let-values
-    (rule `(let-values ((?? names) (? expr))
+    (rule `(let-values (((? names) (? expr)))
              (? body))
-          `(muliple-values-bind (,@names) ,(%compile-expression expr)
+          `(multiple-value-bind (,@names) ,(%compile-expression expr)
              ,(%compile-expression body))))
   (define compile-lambda
     (rule `(lambda ((? var))
