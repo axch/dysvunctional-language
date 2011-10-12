@@ -35,14 +35,14 @@
                  ,(compile-expression body lookup-inferred-type))))
       (define (compile-entry-point expression)
         (compile-expression expression lookup-inferred-type))
-      (if (begin-form? program)
-          `(progn
-            (declaim (optimize (speed 3) (safety 0)))
-            ,@prelude
-            ,@(map compile-definition
-                   (cdr (except-last-pair program)))
-            ,(compile-entry-point (last program)))
-          (compile-entry-point program))))
+      `(progn
+        (declaim (optimize (speed 3) (safety 0)))
+        ,@prelude
+        ,@(if (begin-form? program)
+              `(,@(map compile-definition
+                       (cdr (except-last-pair program)))
+                ,(compile-entry-point (last program)))
+             (list (compile-entry-point program))))))
   (compile-program (alpha-rename program)))
 
 (define *fol->cl-desired-precision* 'double-float)
