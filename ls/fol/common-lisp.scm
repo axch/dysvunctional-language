@@ -9,7 +9,7 @@
     (with-output-to-file file
       (lambda ()
         (fluid-let ((flonum-unparser-cutoff '(normal 0 scientific)))
-          (pp code))))
+          (for-each pp code))))
     (run-shell-command
      (format #f
       "sbcl --eval '(progn (compile-file ~S :verbose t :print t) (quit))'"
@@ -35,8 +35,7 @@
                  ,(compile-expression body lookup-inferred-type))))
       (define (compile-entry-point expression)
         (compile-expression expression lookup-inferred-type))
-      `(progn
-        (declaim (optimize (speed 3) (safety 0)))
+      `((declaim (optimize (speed 3) (safety 0)))
         ,@prelude
         ,@(if (begin-form? program)
               `(,@(map compile-definition
