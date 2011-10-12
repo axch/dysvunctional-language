@@ -34,7 +34,8 @@
                                  formals))
                  ,(compile-expression body lookup-inferred-type))))
       (define (compile-entry-point expression)
-        (compile-expression expression lookup-inferred-type))
+        `(defun __main__ ()
+           ,(compile-expression expression lookup-inferred-type)))
       `((declaim (optimize (speed 3) (safety 0)))
         ,@prelude
         ,@(if (begin-form? program)
