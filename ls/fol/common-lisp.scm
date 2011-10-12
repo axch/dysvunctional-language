@@ -45,7 +45,7 @@
           (compile-entry-point program))))
   (compile-program (alpha-rename program)))
 
-(define *fol->cl-desired-precision* 'single-float)
+(define *fol->cl-desired-precision* 'double-float)
 
 (define (fol-shape->type-specifier shape)
   (cond ((eq? 'real shape)
