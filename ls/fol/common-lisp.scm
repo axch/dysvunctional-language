@@ -36,13 +36,26 @@
       (define (compile-entry-point expression)
         `(defun __main__ ()
            ,(compile-expression expression lookup-inferred-type)))
-      `((declaim (optimize (speed 3) (safety 0)))
-        ,@prelude
-        ,@(if (begin-form? program)
-              `(,@(map compile-definition
-                       (cdr (except-last-pair program)))
-                ,(compile-entry-point (last program)))
-             (list (compile-entry-point program))))))
+      ;; TODO This let->let* is a bug waiting to happen, because it
+      ;; invalidates most of the inferred-type-map constructed above.
+      ;; It's OK in the current setup because that type map is only
+      ;; used for procedure call expressions, which after let-lifting
+      ;; will not have any let expressions as subexpressions, and
+      ;; therefore will not, in fact, be changed by let->let*.  There
+      ;; are two ways to fix this disaster: either extend the type
+      ;; checker to handle let* forms and do the conversion before
+      ;; computing the inferred type map, or extend the type
+      ;; declaration facilities enough that the inferred type map is
+      ;; not necessary and all the type information this translation
+      ;; needs can be read off the input FOL program.
+      (let ((program (let->let* program)))
+        `((declaim (optimize (speed 3) (safety 0)))
+          ,@prelude
+          ,@(if (begin-form? program)
+                `(,@(map compile-definition
+                         (cdr (except-last-pair program)))
+                  ,(compile-entry-point (last program)))
+                (list (compile-entry-point program)))))))
   (compile-program (alpha-rename program)))
 
 (define *fol->cl-desired-precision* 'double-float)
@@ -104,6 +117,8 @@
            (compile-if expr))
           ((let-form? expr)
            (compile-let expr))
+          ((let*-form? expr)
+           (compile-let* expr))
           ((let-values-form? expr)
            (compile-let-values expr))
           ((lambda-form? expr)
@@ -133,6 +148,14 @@
                           `(,(car binding)
                             ,(%compile-expression (cadr binding))))
                         bindings))
+             ,(%compile-expression body))))
+  (define compile-let*
+    (rule `(let* ((?? bindings))
+             (? body))
+          `(let* (,@(map (lambda (binding)
+                           `(,(car binding)
+                             ,(%compile-expression (cadr binding))))
+                         bindings))
              ,(%compile-expression body))))
   (define compile-let-values
     (rule `(let-values (((? names) (? expr)))
