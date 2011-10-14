@@ -61,9 +61,10 @@
     (cf output-file)))
 
 (define (internalize-definitions program)
-  (if (begin-form? program)
-      `(let () ,@(cdr program))
-      program))
+  (let->let*
+   (if (begin-form? program)
+       `(let () ,@(cdr program))
+       program)))
 
 ;;; Convert all numeric operations to MIT Scheme primitives that
 ;;; assume floating point arguments, instead of the generic
