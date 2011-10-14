@@ -26,13 +26,16 @@
         (rule `(define ((? name ,fol-var?) (?? formals))
                  (argument-types (?? formal-types) (? return-type))
                  (? body))
-              `(defun ,name (,@formals)
-                 (declare ,@(map (lambda (formal-type formal)
-                                   `(type ,(fol-shape->type-specifier formal-type)
-                                          ,formal))
-                                 formal-types
-                                 formals))
-                 ,(compile-expression body lookup-inferred-type))))
+              `((declaim (ftype (function ,(map fol-shape->type-specifier formal-types)
+                                          ,(fol-shape->type-specifier return-type))
+                                ,name))
+                (defun ,name (,@formals)
+                  (declare ,@(map (lambda (formal-type formal)
+                                    `(type ,(fol-shape->type-specifier formal-type)
+                                           ,formal))
+                                  formal-types
+                                  formals))
+                  ,(compile-expression body lookup-inferred-type)))))
       (define (compile-entry-point expression)
         `(defun __main__ ()
            ,(compile-expression expression lookup-inferred-type)))
@@ -52,8 +55,8 @@
         `((declaim (optimize (speed 3) (safety 0)))
           ,@prelude
           ,@(if (begin-form? program)
-                `(,@(map compile-definition
-                         (cdr (except-last-pair program)))
+                `(,@(append-map compile-definition
+                                (cdr (except-last-pair program)))
                   ,(compile-entry-point (last program)))
                 (list (compile-entry-point program)))))))
   (compile-program (alpha-rename program)))
