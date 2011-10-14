@@ -102,7 +102,8 @@
       form))
 
 ;; Converting LET to LET* is only useful for viewing a program, as the
-;; result is not valid FOL any more.
+;; result is not valid FOL any more.  It can, however, be converted
+;; back by let*->let, below.
 (define let->let*
   (rule-simplifier
    (list
@@ -118,6 +119,22 @@
           `(let* (,binding
                   ,@bindings)
              ,@body)))))
+
+(define let*-form? (tagged-list? 'let*))
+
+(define let*->let
+  (rule-simplifier
+   (list
+    (rule `(let* ((? binding))
+             (?? body))
+          `(let (,binding)
+             ,@body))
+    (rule `(let* ((? binding)
+                  (?? bindings))
+             (?? body))
+          `(let (,binding)
+             (let* (,@bindings)
+               ,@body))))))
 
 ;;; Structures
 

@@ -127,7 +127,7 @@ watching-memory
 All the subsequent procedures in this section accept adverb arguments,
 except the ones that just check whether a particular property holds of
 the program or not (namely, unique-names?, alpha-rename?,
-approximate-anf?, strip-argument-types, let->let*).
+approximate-anf?, strip-argument-types, let->let*, let*->let).
 
 You can also get the output from the code generator, examine it, and
 optimize it separately.
@@ -294,6 +294,10 @@ if that helps you read them.
 (let->let* <program>)
   Changes all strings of one-binding LETs into LET* blocks and returns
   the result (which can no longer be properly called a FOL program).
+
+(let*->let <program>)
+  Changes all LET* blocks into strings of one-binding LETs and returns
+  the result (which can again be properly called a FOL program).
 
 
 Machine code from FOL
