@@ -29,6 +29,14 @@
       stream
       (stream-take (- count 1) (force (cdr stream)))))
 
+(define (compare state1 state2)
+  (cond ((pair? state1)
+         (cons (compare (car state1) (car state2))
+               (compare (cdr state1) (cdr state2))))
+        ((null? state1)
+         '())
+        (else (/ (- state1 state2) state1))))
+
 ;; Compile the DVL program with
 ;(fol->mit-scheme (compile-to-fol (dvl-read-file "examples/celestial.dvl") visibly))
 
