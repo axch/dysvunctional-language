@@ -95,8 +95,7 @@
 
 (define (compile-expression expr lookup-inferred-type)
   (define (%compile-expression expr)
-    `(the ,(fol-shape->type-specifier (lookup-inferred-type expr))
-          ,(loop expr)))
+    (loop expr))
   (define (loop expr)
     (cond ((fol-var? expr) expr)
           ((fol-const? expr)
@@ -145,14 +144,17 @@
              (? body))
           `(function
             (lambda (,var)
+              ;; TODO Support other external args than REAL
+              (declare (type ,*fol->cl-desired-precision* ,var))
               ,(%compile-expression body)))))
   (define compile-vector-ref
     (rule `(vector-ref (? expr) (? index))
           `(svref ,(%compile-expression expr) ,index)))
   (define vector-ref-form? (tagged-list? 'vector-ref))
   (define (compile-application expr)
-    `(,(if  (eq? 'real (car expr))
-            'identity
-            (car expr))
-      ,@(map %compile-expression (cdr expr))))
+    `(the ,(fol-shape->type-specifier (lookup-inferred-type expr))
+          (,(if  (eq? 'real (car expr))
+                 'identity
+                 (car expr))
+           ,@(map %compile-expression (cdr expr)))))
   (%compile-expression expr))
