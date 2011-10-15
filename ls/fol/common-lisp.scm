@@ -16,6 +16,10 @@
       (->namestring file)))))
 
 (define (prepare-for-common-lisp program)
+  (define (force-values thing)
+    (if (values-form? thing)
+        thing
+        `(values ,thing)))
   (define (compile-program program)
     (let ((inferred-type-map (make-eq-hash-table)))
       (check-program-types program inferred-type-map)
@@ -35,6 +39,7 @@
                                            ,formal))
                                   formal-types
                                   formals))
+                  (declare ,(force-values (fol-shape->type-specifier return-type)))
                   ,(compile-expression body lookup-inferred-type)))))
       (define (compile-entry-point expression)
         `(defun __main__ ()
