@@ -72,3 +72,16 @@
 ;; both in ScmUtils.
 
 ;(list euler rk4)
+
+(define (downsampled-stream stream count)
+  (let loop ((stream stream))
+    (let ((state (car stream))
+          (next (cdr stream)))
+      (cons state
+            (lambda (arg)
+              (let countdown ((count count)
+                              (stream stream))
+                (if (<= count 0)
+                    (loop stream)
+                    (countdown (- count 1)
+                               ((cdr stream) arg)))))))))

@@ -47,4 +47,4 @@
  (stream-for-each
   (plot-objects window)
   ((constant-arg-for-dvl-stream 10.)
-   (run-mit-scheme))))
+   ((run-mit-scheme) 100.))))

@@ -138,11 +138,14 @@
                 (map velocity objects) ; the velocities are the derivatives of the positions
                 (map2 / (forces objects) (map mass objects))))))
 
-(step-stream
- rk4-again
- state-derivative
- (cons (real 0) (list sun jupiter saturn uranus neptune
-                      )))
+(lambda (downsample)
+  (downsampled-stream
+   (step-stream
+    rk4-again
+    state-derivative
+    (cons (real 0) (list sun jupiter saturn uranus neptune
+                         )))
+   downsample))
 
 ;;; On September 19, on arrakis, four compilations of this went thus:
 #|
