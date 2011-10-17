@@ -1,0 +1,9 @@
+(include "runge-kutta.dvl")
+
+(lambda (downsample)
+  (downsampled-stream
+   (step-stream
+    naive-euler-again
+    exp-state-deriv
+    exp-init)
+   downsample))
