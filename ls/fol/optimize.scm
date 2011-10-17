@@ -196,9 +196,9 @@
     (lambda (program . extra)
       (display "(")
       (pp (stage-data-name stage-data))
-      (begin1
+      (abegin1
        (apply exec program extra)
-       (pp (hash-table/get eq-properties answer #f))
+       (pp (hash-table/get eq-properties it #f))
        (display ")")))))
 
 (define (report-stage-progress stage name show-program)
