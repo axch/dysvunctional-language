@@ -360,9 +360,13 @@
      rewritten)))
 
 (define (interprocedural-dead-code-elimination program)
-  (%eliminate-intraprocedural-dead-code ; TODO Check for absence of tombstones
-   (%interprocedural-dead-code-elimination
-    program)))
+  ((on-subexpressions
+    (rule `(let-values ((((?? names)) (? exp)))
+              (values (?? names)))
+           exp))
+   (%eliminate-intraprocedural-dead-code ; TODO Check for absence of tombstones
+    (%interprocedural-dead-code-elimination
+     program))))
 
 ;;; The dependency-map is the structure built by steps 1-3 above.  It
 ;;; maps every procedure name to a list of boolean lists.  The outer

@@ -77,15 +77,8 @@
     '(begin
        (define (some-operation)
          (argument-types (values real real))
-         (let-values
-             (((receipt-186 receipt-187)
-               (let-values (((receipt-183 receipt-184) (some-operation)))
-                 (values receipt-183 receipt-184))))
-           (values receipt-186 receipt-187)))
-       (let-values
-           (((receipt-175 receipt-176)
-             (let-values (((receipt-189 receipt-190) (some-operation)))
-               (values receipt-189 receipt-190))))
+         (some-operation))
+       (let-values (((receipt-175 receipt-176) (some-operation)))
          (+ receipt-175 receipt-176)))
     (fol-optimize
      '(begin
