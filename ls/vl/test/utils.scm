@@ -71,14 +71,14 @@
                        (eliminate-interprocedural-dead-code program))))
     program)
   (lambda (exec)
-    (lambda (program)
+    (lambda (program . extra)
       ;; TODO Also check counterfactual invariants:
       ;; - Inlining commutes with ANF up to removal of aliases.  Why
       ;;   aliases?  Because inlining saves ANF work by naming the
       ;;   expressions that are arguments to inlined procedures.
       ;; - Inlining preserves ANF
       ;; - Inlining commutes with SRA+ANF up to aliases.
-      (check-annotations (exec program)))))
+      (check-annotations (apply exec program extra)))))
 
 (define ((meticulously answer) stage-data)
   (lambda (exec)
