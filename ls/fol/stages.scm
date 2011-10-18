@@ -265,9 +265,15 @@
     (set-stage-data-execute! stage-data (preserves-everything f))))
 
 (define (preserves-everything exec)
+  (define (fresh-cons-cell thing)
+    (if (pair? thing)
+        (cons (car thing) (cdr thing))
+        thing))
   (lambda (program . extra)
     (abegin1
-     (apply exec program extra)
+     ;; Fresh object prevents confusion of output's eq-properties with
+     ;; input's eq-properties.
+     (fresh-cons-cell (apply exec program extra))
      (eq-clone! program it))))
 
 ;;; The REQUIRES clause attaches a generator of the needed property as

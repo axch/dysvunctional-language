@@ -72,4 +72,29 @@
         (define (square-root x)
           (numeric-fix (heron-step x) (real 1.) close-enuf?))
         (cons (sqrt 2) (square-root (real 2))))))
+
+   (alpha-rename?
+    '(begin
+       (define (some-operation)
+         (argument-types (values real real))
+         (let-values
+             (((receipt-186 receipt-187)
+               (let-values (((receipt-183 receipt-184) (some-operation)))
+                 (values receipt-183 receipt-184))))
+           (values receipt-186 receipt-187)))
+       (let-values
+           (((receipt-175 receipt-176)
+             (let-values (((receipt-189 receipt-190) (some-operation)))
+               (values receipt-189 receipt-190))))
+         (+ receipt-175 receipt-176)))
+    (fol-optimize
+     '(begin
+        (define (some-operation x y z)
+          (argument-types real real real (values real real real))
+          (some-operation x y (+ x y)))
+        (let-values (((foo bar baz) (some-operation (real 1) (real 2) (real 3))))
+          (+ foo bar)))
+     carefully))
+
+
    ))

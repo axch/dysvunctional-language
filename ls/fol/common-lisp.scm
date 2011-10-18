@@ -16,6 +16,10 @@
       (->namestring file)))))
 
 (define (prepare-for-common-lisp program)
+  (define (force-values thing)
+    (if (values-form? thing)
+        thing
+        `(values ,thing)))
   (define (compile-program program)
     (let ((inferred-type-map (make-eq-hash-table)))
       (check-program-types program inferred-type-map)
@@ -26,18 +30,16 @@
         (rule `(define ((? name ,fol-var?) (?? formals))
                  (argument-types (?? formal-types) (? return-type))
                  (? body))
-              `((declaim (ftype (function ,(map fol-shape->type-specifier formal-types)
-                                          ,(fol-shape->type-specifier return-type))
-                                ,name))
-                (defun ,name (,@formals)
-                  (declare ,@(map (lambda (formal-type formal)
-                                    `(type ,(fol-shape->type-specifier formal-type)
-                                           ,formal))
-                                  formal-types
-                                  formals))
-                  ,(compile-expression body lookup-inferred-type)))))
+              `(,name (,@formals)
+                 (declare ,@(map (lambda (formal-type formal)
+                                   `(type ,(fol-shape->type-specifier formal-type)
+                                          ,formal))
+                                 formal-types
+                                 formals))
+                 (declare ,(force-values (fol-shape->type-specifier return-type)))
+                 ,(compile-expression body lookup-inferred-type))))
       (define (compile-entry-point expression)
-        `(defun __main__ ()
+        `(__main__ ()
            ,(compile-expression expression lookup-inferred-type)))
       ;; TODO This let->let* is a bug waiting to happen, because it
       ;; invalidates most of the inferred-type-map constructed above.
@@ -54,11 +56,12 @@
       (let ((program (let->let* program)))
         `((declaim (optimize (speed 3) (safety 0)))
           ,@prelude
-          ,@(if (begin-form? program)
-                `(,@(append-map compile-definition
-                                (cdr (except-last-pair program)))
-                  ,(compile-entry-point (last program)))
-                (list (compile-entry-point program)))))))
+          (labels (,@(if (begin-form? program)
+                         `(,@(map compile-definition
+                                  (cdr (except-last-pair program)))
+                           ,(compile-entry-point (last program)))
+                         (list (compile-entry-point program))))
+                  (setf (fdefinition '__main__) (function __main__)))))))
   (compile-program (alpha-rename program)))
 
 (define *fol->cl-desired-precision* 'double-float)

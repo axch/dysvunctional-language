@@ -72,7 +72,7 @@
 
 (define (eq-clone! source target)
   (let ((plist (hash-table/get eq-properties source #f)))
-    (if plist (hash-table/put! eq-properties target plist))))
+    (if plist (hash-table/put! eq-properties target (list-copy plist)))))
 
 ;;; Path names are built with properties.
 

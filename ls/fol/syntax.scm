@@ -201,6 +201,16 @@
     (display-list-statistics type-decl-sizes "type annotation size")
     (flush-output)))
 
+(define (count-primitives program)
+  (let ((names (map primitive-name *primitives*)))
+    (let loop ((program program))
+      (cond ((pair? program)
+             (+ (loop (car program))
+                (loop (cdr program))))
+            ((null? program) 0)
+            ((memq program names) 1)
+            (else 0)))))
+
 ;;; Flushing type signatures
 
 ;; Flushing type signatures is only useful for viewing a program, as

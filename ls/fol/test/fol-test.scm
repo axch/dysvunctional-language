@@ -230,4 +230,25 @@
                        1
                        (* n (fact (- n 1)))))
                  1)))
-   ))
+   )
+
+ (define-test (stages-should-not-change-annotations-on-their-input)
+   (define program '(begin
+                      (define (fact n)
+                        (argument-types real real)
+                        (if (= n 1)
+                            1
+                            (* n (fact (- n 1)))))
+                      (fact 5)))
+   (present! 'lets-lifted program)
+   (present! 'unique-names program)
+   (for-each (lambda (stage)
+               (stage program)
+               (check (equal? '((unique-names . #t) (lets-lifted . #t))
+                              (hash-table/get eq-properties program #f))))
+             (list inline intraprocedural-cse
+                   eliminate-intraprocedural-dead-code
+                   eliminate-interprocedural-dead-code
+                   scalar-replace-aggregates reverse-anf)))
+
+ )

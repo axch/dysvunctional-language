@@ -154,7 +154,10 @@
   ;; for the same reason.
   (generates no-intraprocedural-dead-variables)
   ;; TODO Does it really require unique names?
-  (requires syntax-checked unique-names))
+  (requires syntax-checked unique-names)
+  ;; Because of inserting let-values around procedure calls
+  (destroys lets-lifted)
+  )
 
 (define-stage eliminate-interprocedural-dead-code
   ;; TODO Do I want to split this into the pure-interprocedural part
@@ -168,7 +171,10 @@
   (requires syntax-checked unique-names)
   (generates no-interprocedural-dead-variables)
   ;; By running intraprocedural as a post-pass
-  (generates no-intraprocedural-dead-variables))
+  (generates no-intraprocedural-dead-variables)
+  ;; Because of inserting let-values around procedure calls
+  (destroys lets-lifted)
+  )
 
 (define-stage reverse-anf
   %reverse-anf
@@ -196,9 +202,9 @@
     (lambda (program . extra)
       (display "(")
       (pp (stage-data-name stage-data))
-      (begin1
+      (abegin1
        (apply exec program extra)
-       (pp (hash-table/get eq-properties answer #f))
+       (pp (hash-table/get eq-properties it #f))
        (display ")")))))
 
 (define (report-stage-progress stage name show-program)
