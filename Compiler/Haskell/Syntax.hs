@@ -8,29 +8,32 @@ import FOL.Language.Pretty
 import Data.List
 
 data HsModule
-    = HsModule Name [Name] [HsSCDefn]
+    = HsModule [HsPragma] Name [Name] [HsImport] [HsSCDefn]
+      deriving Show
+
+data HsPragma
+    = HsPragma String
+      deriving Show
+
+data HsImport
+    = HsImport String
       deriving Show
 
 data HsSCDefn
-    = HsSCDefn HsFunType Name [Name] HsExpr
+    = HsSCDefn HsType Name [Name] HsExpr
       deriving Show
 
-data HsBasicType
-    = HsUnitTy
-    | HsBoolTy
-    | HsRealTy
-    | HsPairTy HsBasicType HsBasicType
+data HsShape
+    = HsUnitSh
+    | HsBoolSh
+    | HsRealSh
+    | HsPairSh HsShape HsShape
+    | HsUnboxedTupleSh [HsShape]
       deriving Show
 
-type HsArgType = HsBasicType
-
-data HsRetType
-    = HsSingleValue HsBasicType
-    | HsMultipleValues [HsBasicType]
-      deriving Show
-
-data HsFunType
-    = HsFunType [HsArgType] HsRetType
+data HsType
+    = HsPrimType HsShape
+    | HsFuncType [HsShape] HsShape
       deriving Show
 
 data HsExpr
@@ -64,41 +67,49 @@ newline :: Doc
 newline = char '\n'
 
 instance Pretty HsModule where
-    pp (HsModule name exported_names sc_defns)
-        = vcat $ punctuate newline (module_decl : map pp sc_defns)
+    pp (HsModule pragmas name exported_names imports sc_defns)
+        = vcat (pragma_decls : module_body)
         where
-          module_decl = hsep [ text "module"
-                             , pp name
-                             , ppTuple (map pp exported_names)
-                             , text "where" ]
+          pragma_decls = vcat (map pp pragmas)
+          import_decls = vcat (map pp imports)
+          module_decl  = hsep [ text "module"
+                              , ppName name
+                              , ppTuple (map ppName exported_names)
+                              , text "where" ]
+          module_body  = punctuate newline
+                         (module_decl : import_decls : map pp sc_defns)
+
+instance Pretty HsPragma where
+    pp (HsPragma pragma) = text pragma
+
+instance Pretty HsImport where
+    pp (HsImport module_name) = text "import" <+> text module_name
 
 instance Pretty HsSCDefn where
     pp (HsSCDefn sc_type sc_name sc_args sc_body)
         = sc_sign $+$ sc_defn
         where
-          sc_sign = pp sc_name <+> text "::" <+> pp sc_type
-          lhs = hsep (pp sc_name : map pp sc_args)
+          sc_sign = ppName sc_name <+> text "::" <+> pp sc_type
+          lhs = hsep (ppName sc_name : map ppName sc_args)
           rhs = pp sc_body
-          sc_defn = lhs <+> equals <+> rhs
+          sc_defn = hang lhs 4 (equals <+> rhs)
 
-instance Pretty HsBasicType where
-    pp HsUnitTy         = text "()"
-    pp HsBoolTy         = text "Bool"
-    pp HsRealTy         = text "Double#"
-    pp (HsPairTy t1 t2) = ppTuple [pp t1, pp t2]
+instance Pretty HsShape where
+    pp HsUnitSh              = text "()"
+    pp HsBoolSh              = text "Bool"
+    pp HsRealSh              = text "Double#"
+    pp (HsPairSh t1 t2)      = ppTuple [pp t1, pp t2]
+    pp (HsUnboxedTupleSh ts) = ppUnboxedTuple (map pp ts)
 
-instance Pretty HsRetType where
-    pp (HsSingleValue t)     = pp t
-    pp (HsMultipleValues ts) = ppUnboxedTuple (map pp ts)
-
-instance Pretty HsFunType where
-    pp (HsFunType arg_types ret_type)
-        = hsep . intersperse arrow $ map pp arg_types ++ [pp ret_type]
+instance Pretty HsType where
+    pp (HsPrimType shape) = pp shape
+    pp (HsFuncType arg_types ret_type)
+        = hsep . intersperse arrow . map pp $ arg_types ++ [ret_type]
         where
           arrow = text "->"
 
 instance Pretty HsExpr where
-    pp (HsVar x) = pp x
+    pp (HsVar x) = ppName x
     pp HsUnit = text "()"
     pp (HsBool True) = text "True"
     pp (HsBool False) = text "False"
@@ -116,8 +127,53 @@ instance Pretty HsExpr where
     pp (HsSnd e) = text "snd" <+> pp e
     pp (HsPair e1 e2) = ppTuple [pp e1, pp e2]
     pp (HsUnboxedTuple es) = ppUnboxedTuple $ map pp es
-    pp (HsFuncAppl f xs) = sep $ pp f : map pp xs
+    pp (HsFuncAppl f xs) = parens . sep $ ppName f : map pp xs
+
+isOperator :: String -> Bool
+isOperator = (`elem` operators)
+
+operators :: [String]
+operators = ["+", "-", "*", "/", "<", "<=", ">", ">=", "="]
+
+isPrimitive :: String -> Bool
+isPrimitive = (`elem` prims)
+
+prims :: [String]
+prims = ["abs", "exp", "log", "sqrt", "sin", "cos", "tan", "acos", "asin"]
+
+prepare :: Name -> Name
+prepare (Name name) = Name . prepareFuncName . replaceDashes $ name
+    where
+      prepareFuncName name
+          | isOperator name  = "(" ++ name ++ "##)"
+          | isPrimitive name = name ++ "Double#"
+          | otherwise        = name
+      replaceDashes name
+          | name == "-" = name
+          | otherwise   = map (\c -> if c == '-' then '_' else c) name
+
+ppName :: Name -> Doc
+ppName = pp . prepare
+
+bang :: Doc
+bang = char '!'
 
 instance Pretty HsPat where
-    pp (HsPatVar x) = pp x
-    pp (HsPatTuple xs) = char '!' <> ppUnboxedTuple (map pp xs)
+    pp (HsPatVar x) = bang <> ppName x
+    pp (HsPatTuple xs) = bang <> ppUnboxedTuple (map ppName xs)
+
+prelude :: [HsSCDefn]
+prelude = [ HsSCDefn (HsFuncType [HsRealSh] HsRealSh)
+                     (Name "absDouble#")
+                     [x]
+                     (HsIf (HsFuncAppl (Name "(>##)") [ HsVar x
+                                                      , HsReal 0.0 ])
+                           (HsVar x)
+                           (HsFuncAppl (Name "negateDouble#") [HsVar x]))
+          , HsSCDefn (HsFuncType [HsRealSh] HsRealSh)
+                     (Name "real")
+                     [x]
+                     (HsVar x)
+          ]
+    where
+      x = Name "x"
