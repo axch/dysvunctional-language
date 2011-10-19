@@ -125,6 +125,14 @@
 ;;; must be a variable), and the match will proceed using the pattern
 ;;; without the `:as' token or that variable.
 
+;;; TODO Compare to comparable facilities in other languages
+;;; - destructuring-bind, bind in Common Lisp
+;;; - Clojure pattern matching
+;;; - ruby case
+;;; TODO Implement pattern guards?  View patterns?
+;;; TODO Implement known-length list patterns (issue 1)
+;;; TODO Document define-algebraic-matcher
+
 (define-syntax case*
   (er-macro-transformer
    (lambda (form rename compare)
