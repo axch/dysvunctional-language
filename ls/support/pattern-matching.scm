@@ -206,6 +206,9 @@
                  (rename 'unspecific)
                  (let ((lose-name (generate-uninterned-symbol 'lose-)))
                    `(,(rename 'let) ((,lose-name (,(rename 'lambda) () ,(loop (cdr clauses)))))
+                     ;; This integration may not be appropriate if the
+                     ;; body refers to the lose-name more than once...
+                     (declare (integrate-operator ,lose-name))
                      ,(parse-clause (car clauses) lose-name))))))))))
 
 (define-syntax define-algebraic-matcher
