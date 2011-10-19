@@ -52,9 +52,11 @@
 (define (fol-var? thing)
   (or (symbol? thing)
       (fol-name? thing)))
+(define-algebraic-matcher fol-var fol-var?)
 
 (define (fol-const? thing)
   (or (number? thing) (boolean? thing) (null? thing)))
+(define-algebraic-matcher fol-const fol-const?)
 
 (define (simple-form? thing)
   (or (fol-var? thing) (number? thing) (boolean? thing) (null? thing)))
@@ -62,12 +64,18 @@
 ;;; If
 
 (define if-form? (tagged-list? 'if))
+(define-algebraic-matcher if-form if-form? cadr caddr cadddr)
 
 ;;; Binders
 
+(define-integrable (cadaadr thing)
+  (cadr (caadr thing)))
 (define let-form? (tagged-list? 'let))
+(define-algebraic-matcher let-form let-form? cadr caddr)
 (define let-values-form? (tagged-list? 'let-values))
+(define-algebraic-matcher let-values-form let-values-form? caaadr cadaadr caddr)
 (define lambda-form? (tagged-list? 'lambda))
+(define-algebraic-matcher lambda-form lambda-form? cadr caddr)
 
 (define (binder-tag? thing)
   (or (eq? thing 'let)
@@ -153,6 +161,7 @@
        (memq (car expr) '(cons vector))))
 
 (define values-form? (tagged-list? 'values))
+(define-algebraic-matcher values-form values-form? cdr)
 
 (define (tidy-values exp)
   (if (and (values-form? exp)
