@@ -94,15 +94,14 @@
       (lst1 (lst2 expr))))
   (define (build expr lst)
     (lst expr))
-  (define (loop expr)
-    (case* expr
-      ((simple-form _) (values expr null))
-      (if-form => lift-lets-from-if)
-      (let-form => lift-lets-from-let)
-      (let-values-form => lift-lets-from-let-values)
-      (lambda-form => lift-lets-from-lambda)
-      (_ ;; general application
-       (lift-lets-from-application expr))))
+  (define-case* loop
+    ((simple-form expr) (values expr null))
+    (if-form => lift-lets-from-if)
+    (let-form => lift-lets-from-let)
+    (let-values-form => lift-lets-from-let-values)
+    (lambda-form => lift-lets-from-lambda)
+    (expr ;; general application
+     (lift-lets-from-application expr)))
   (define (lift-lets-from-if predicate consequent alternate)
     (receive (new-pred pred-binds) (loop predicate)
       (values `(if ,new-pred

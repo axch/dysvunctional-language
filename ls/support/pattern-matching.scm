@@ -225,4 +225,17 @@
 (define-algebraic-matcher boolean boolean? id-project)
 (define-algebraic-matcher number number? id-project)
 
+(define-syntax define-case*
+  ;; This is not a syntax-rules macro because case* will make some of
+  ;; its subforms into names that are bound in other subforms, and
+  ;; I fear that syntax-rules might interfere with this.
+  (er-macro-transformer
+   (lambda (form rename compare)
+     (let ((name (cadr form))
+           (clauses (cddr form))
+           (defined-name (generate-uninterned-symbol)))
+       `(,(rename 'define) (,name ,defined-name)
+         (,(rename 'case*) ,defined-name
+           ,@clauses))))))
+
 ;; TODO good error messages if syntax is wrong; define all needed matchers
