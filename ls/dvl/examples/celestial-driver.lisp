@@ -19,5 +19,7 @@
       stream
       (stream-take (- count 1) (force (cdr stream)))))
 
-(defun drive (count step)
-  (stream-take count (constant-arg-for-dvl-stream 10.0d0 (funcall (__main__) (coerce step 'double-float)))))
+(defun drive (count step dt)
+  (stream-take count
+   (constant-arg-for-dvl-stream (coerce dt 'double-float)
+    (funcall (__main__) (coerce step 'double-float)))))
