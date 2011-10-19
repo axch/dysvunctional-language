@@ -1,4 +1,6 @@
 (declare (usual-integrations))
+(declare (integrate-external "syntax"))
+(declare (integrate-external "../support/pattern-matching"))
 ;;;; Scalar Replacement of Aggregates (SRA)
 
 ;;; Imagine a program like this:
