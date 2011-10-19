@@ -188,8 +188,9 @@
                           'identity
                           (car expr))
                     ,@(map %compile-expression (cdr expr)))))
-      (if (user-procedure? (car expr))
+      #;(if (user-procedure? (car expr))
           `(the ,(fol-shape->type-specifier (lookup-inferred-type expr))
                 ,result)
-          result)))
+          result)
+      result))
   (%compile-expression expr))
