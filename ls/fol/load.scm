@@ -95,6 +95,7 @@
      ;; Visualizations
      strip-argument-types
      let->let*
+     print-fol-statistics
 
      ;; The underlying type checker
      check-program-types ;; TODO For testing
