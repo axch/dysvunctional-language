@@ -149,6 +149,7 @@
 (define (accessor? expr)
   (or (cons-ref? expr)
       (vector-ref? expr)))
+(define-algebraic-matcher accessor accessor?)
 
 (define (cons-ref? expr)
   (and (pair? expr)
@@ -159,6 +160,7 @@
 (define (construction? expr)
   (and (pair? expr)
        (memq (car expr) '(cons vector))))
+(define-algebraic-matcher construction construction?)
 
 (define values-form? (tagged-list? 'values))
 (define-algebraic-matcher values-form values-form? cdr)
