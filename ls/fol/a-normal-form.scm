@@ -56,7 +56,7 @@
   (define-algebraic-matcher begin-form begin-form?)
   (define (loop expr)
     (case* expr
-      ((simple-form) expr)
+      ((simple-form _) expr)
       (if-form => approximate-anf-if)
       (let-form => approximate-anf-let)
       (let-values-form => approximate-anf-let-values)

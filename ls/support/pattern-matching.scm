@@ -219,9 +219,10 @@
            (win (accessor thing) ...)
            (lose))))))
 
+(define-integrable (id-project x) x)
 (define-algebraic-matcher pair pair? car cdr)
 (define-algebraic-matcher null null?)
-(define-algebraic-matcher boolean boolean?)
-(define-algebraic-matcher number number?)
+(define-algebraic-matcher boolean boolean? id-project)
+(define-algebraic-matcher number number? id-project)
 
 ;; TODO good error messages if syntax is wrong; define all needed matchers

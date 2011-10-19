@@ -119,12 +119,12 @@
     (loop expr))
   (define (loop expr)
     (case* expr
-      ((fol-var) expr)
-      ((number)
+      ((fol-var _) expr)
+      ((number _)
        `(coerce
          ,(if (exact? expr) (exact->inexact expr) expr)
          ',*fol->cl-desired-precision*))
-      ((boolean) (if expr 't 'nil))
+      ((boolean _) (if expr 't 'nil))
       ((null) 'nil)
       (expr => compile-if)
       (let-form => compile-let)

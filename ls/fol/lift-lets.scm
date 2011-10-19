@@ -96,7 +96,7 @@
     (lst expr))
   (define (loop expr)
     (case* expr
-      ((simple-form) (values expr null))
+      ((simple-form _) (values expr null))
       (if-form => lift-lets-from-if)
       (let-form => lift-lets-from-let)
       (let-values-form => lift-lets-from-let-values)

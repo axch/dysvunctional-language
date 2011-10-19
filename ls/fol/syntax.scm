@@ -55,15 +55,15 @@
 (define (fol-var? thing)
   (or (symbol? thing)
       (fol-name? thing)))
-(define-algebraic-matcher fol-var fol-var?)
+(define-algebraic-matcher fol-var fol-var? id-project)
 
 (define (fol-const? thing)
   (or (number? thing) (boolean? thing) (null? thing)))
-(define-algebraic-matcher fol-const fol-const?)
+(define-algebraic-matcher fol-const fol-const? id-project)
 
 (define (simple-form? thing)
   (or (fol-var? thing) (number? thing) (boolean? thing) (null? thing)))
-(define-algebraic-matcher simple-form simple-form?)
+(define-algebraic-matcher simple-form simple-form? id-project)
 
 ;;; If
 

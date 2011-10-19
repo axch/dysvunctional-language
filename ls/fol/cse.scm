@@ -170,8 +170,8 @@
   ;; scopes ensure this elision causes no trouble.
   (define (loop expr env)
     (case* expr
-      ((fol-var) (cse-fol-var expr env))
-      ((fol-const) (values expr expr))
+      ((fol-var _) (cse-fol-var expr env))
+      ((fol-const _) (values expr expr))
       ((if-form pred cons alt) (cse-if pred cons alt env))
       ((let-form bindings body) (cse-let bindings body env))
       ((let-values-form names exp body)
