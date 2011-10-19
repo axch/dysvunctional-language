@@ -1,4 +1,5 @@
 (declare (usual-integrations))
+(declare (integrate-external "syntax"))
 
 ;;; The purpose of lifting lets is to increase the scopes of variables
 ;;; without affecting when and whether their values are computed.
@@ -94,58 +95,45 @@
   (define (build expr lst)
     (lst expr))
   (define (loop expr)
-    (cond ((or (fol-var? expr)
-               (fol-const? expr))
-           (values expr null))
-          ((if-form? expr)
-           (lift-lets-from-if expr))
-          ((let-form? expr)
-           (lift-lets-from-let expr))
-          ((let-values-form? expr)
-           (lift-lets-from-let-values expr))
-          ((lambda-form? expr)
-           (lift-lets-from-lambda expr))
-          (else ;; general application
-           (lift-lets-from-application expr))))
-  (define (lift-lets-from-if expr)
-    (let ((predicate (cadr expr))
-          (consequent (caddr expr))
-          (alternate (cadddr expr)))
-      (receive (new-pred pred-binds) (loop predicate)
-        (values `(if ,new-pred
-                     ,(lift-lets-expression consequent)
-                     ,(lift-lets-expression alternate))
-                pred-binds))))
-  (define (lift-lets-from-let expr)
-    (let ((body (caddr expr)))
-      (let per-binding ((bindings (cadr expr))
-                        (done null))
-        (if (null? bindings)
-            (receive (new-body body-binds) (loop body)
-              (values new-body (append done body-binds)))
-            (let ((binding (car bindings)))
-              (receive (new-exp exp-binds) (loop (cadr binding))
-                (per-binding
-                 (cdr bindings)
-                 (append done
-                   (append exp-binds
-                     (singleton
-                      (car binding) new-exp))))))))))
-  (define (lift-lets-from-let-values expr)
-    ;; TODO Abstract the commonalities with LET forms?
-    (let ((binding (caadr expr))
-          (body (caddr expr)))
-      (let ((names (car binding))
-            (sub-exp (cadr binding)))
-        (receive (new-sub-expr sub-exp-binds) (loop sub-exp)
+    (case* expr
+      ((simple-form) (values expr null))
+      (if-form => lift-lets-from-if)
+      (let-form => lift-lets-from-let)
+      (let-values-form => lift-lets-from-let-values)
+      (lambda-form => lift-lets-from-lambda)
+      (_ ;; general application
+       (lift-lets-from-application expr))))
+  (define (lift-lets-from-if predicate consequent alternate)
+    (receive (new-pred pred-binds) (loop predicate)
+      (values `(if ,new-pred
+                   ,(lift-lets-expression consequent)
+                   ,(lift-lets-expression alternate))
+              pred-binds)))
+  (define (lift-lets-from-let bindings body)
+    (let per-binding ((bindings bindings)
+                      (done null))
+      (if (null? bindings)
           (receive (new-body body-binds) (loop body)
-            (values new-body
-                    (append sub-exp-binds
-                      (append (values-singleton names new-sub-expr)
-                              body-binds))))))))
-  (define (lift-lets-from-lambda expr)
-    (values `(lambda ,(cadr expr)
-               ,(lift-lets-expression (caddr expr)))
+            (values new-body (append done body-binds)))
+          (let ((binding (car bindings)))
+            (receive (new-exp exp-binds) (loop (cadr binding))
+              (per-binding
+               (cdr bindings)
+               (append done
+                 (append exp-binds
+                   (singleton
+                    (car binding) new-exp)))))))))
+  (define (lift-lets-from-let-values names sub-exp body)
+    ;; TODO Abstract the commonalities with LET forms?
+    (receive (new-sub-expr sub-exp-binds) (loop sub-exp)
+      (receive (new-body body-binds) (loop body)
+        (values new-body
+          (append sub-exp-binds
+            (append (values-singleton names new-sub-expr)
+              body-binds))))))
+  (define (lift-lets-from-lambda formals body)
+    (values `(lambda ,formals
+               ,(lift-lets-expression body))
             null))
   (define (lift-lets-from-application expr)
     ;; In ANF, anything that looks like an application can't have
