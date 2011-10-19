@@ -53,18 +53,17 @@
 ;;; only accept single values by the rules of FOL anyway.
 
 (define (approximate-anf expr)
-  (define-algebraic-matcher begin-form begin-form?)
-  (define (loop expr)
-    (case* expr
-      ((simple-form _) expr)
-      (if-form => approximate-anf-if)
-      (let-form => approximate-anf-let)
-      (let-values-form => approximate-anf-let-values)
-      (lambda-form => approximate-anf-lambda)
-      ((begin-form) (map loop expr))
-      (definition => approximate-anf-definition)
-      (_ ; access, construction, application, or multiple value return
-       (approximate-anf-application expr))))
+  (define-algebraic-matcher begin-form begin-form? id-project)
+  (define-case* loop
+    ((simple-form expr) expr)
+    (if-form => approximate-anf-if)
+    (let-form => approximate-anf-let)
+    (let-values-form => approximate-anf-let-values)
+    (lambda-form => approximate-anf-lambda)
+    ((begin-form expr) (map loop expr))
+    (definition => approximate-anf-definition)
+    (expr   ; access, construction, application, or multiple value return
+     (approximate-anf-application expr)))
   (define (approximate-anf-if pred cons alt)
     `(if ,(loop pred) ,(loop cons) ,(loop alt)))
   (define (approximate-anf-let bindings body)
