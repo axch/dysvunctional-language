@@ -47,6 +47,9 @@
          `(define (,name ,@names)
             ,@body))))
 
+;; Wins with formals, type declaration, and body
+(define-algebraic-matcher definition definition? cadr caddr cadddr)
+
 ;;; Simple forms
 
 (define (fol-var? thing)
@@ -60,6 +63,7 @@
 
 (define (simple-form? thing)
   (or (fol-var? thing) (number? thing) (boolean? thing) (null? thing)))
+(define-algebraic-matcher simple-form simple-form?)
 
 ;;; If
 
@@ -73,6 +77,7 @@
 (define let-form? (tagged-list? 'let))
 (define-algebraic-matcher let-form let-form? cadr caddr)
 (define let-values-form? (tagged-list? 'let-values))
+;; Wins with names, subexpression, and body.  Assumes one binding form
 (define-algebraic-matcher let-values-form let-values-form? caaadr cadaadr caddr)
 (define lambda-form? (tagged-list? 'lambda))
 (define-algebraic-matcher lambda-form lambda-form? cadr caddr)
