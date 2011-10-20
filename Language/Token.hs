@@ -77,10 +77,11 @@ isSpecialSubsequent :: Char -> Bool
 isSpecialSubsequent c = c `elem` "+-.@"
 
 scanUnsignedReal :: String -> (String, String)
-scanUnsignedReal cs = (integralPart ++ fractionalPart, cs'')
+scanUnsignedReal cs = (integralPart ++ fractionalPart ++ exponentPart, cs''')
     where
-      (integralPart,   cs' ) = scanIntegralPart   cs
-      (fractionalPart, cs'') = scanFractionalPart cs'
+      (integralPart,   cs'  ) = scanIntegralPart   cs
+      (fractionalPart, cs'' ) = scanFractionalPart cs'
+      (exponentPart,   cs''') = scanExponentPart   cs''
 
 scanIntegralPart :: String -> (String, String)
 scanIntegralPart cs = (ensureNonEmpty cs', cs'')
@@ -92,6 +93,21 @@ scanFractionalPart ('.':cs) = ('.' : ensureNonEmpty cs', cs'')
     where
       (cs', cs'') = span isDigit cs
 scanFractionalPart cs = ([], cs)
+
+scanExponentPart :: String -> (String, String)
+scanExponentPart ('e':cs@(c:_))
+    | isDigit c
+    = ('e' : cs', cs'')
+    where
+      (cs', cs'') = span isDigit cs
+scanExponentPart ('e':'-':cs@(c:_))
+    | c == '-'
+    = ('e' : '-' : cs', cs'')
+    | otherwise
+    = error $ "missing number: " ++ cs
+    where
+      (cs', cs'') = span isDigit cs
+scanExponentPart cs       = ([], cs)
 
 ensureNonEmpty :: String -> String
 ensureNonEmpty [] = "0"
