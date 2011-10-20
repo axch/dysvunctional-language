@@ -47,6 +47,7 @@ data Expr
     | Cons Expr Expr
     | Vector [Expr]
     | Values [Expr]
+    | Lambda Name Expr
     -- Procedure call
     | ProcCall Name [Expr]
       deriving (Eq, Show, Typeable, Data)
@@ -103,6 +104,7 @@ fv (VectorRef e _)   = fv e
 fv (Cons e1 e2)      = fv e1 ++ fv e2
 fv (Vector es)       = concatMap fv es
 fv (Values es)       = concatMap fv es
+fv (Lambda x e)      = delete x (fv e)
 fv (ProcCall _ args) = concatMap fv args
 
 -- Pretty-printing of programs
@@ -161,6 +163,7 @@ instance Pretty Expr where
     pp (Cons e1 e2)    = ppForm "cons"   [e1, e2]
     pp (Vector es)     = ppForm "vector" es
     pp (Values es)     = ppForm "values" es
+    pp (Lambda x e)    = ppList [text "lambda", parens (pp x), pp e]
 
     pp (ProcCall proc args) = ppList $ pp proc : map pp args
 
@@ -219,6 +222,7 @@ data AnnExpr' ann
     | AnnCons (AnnExpr ann) (AnnExpr ann)
     | AnnVector [AnnExpr ann]
     | AnnValues [AnnExpr ann]
+    | AnnLambda Name (AnnExpr ann)
     | AnnProcCall Name [AnnExpr ann]
       deriving (Eq, Show)
 
@@ -242,6 +246,7 @@ stripAnnExpr' (AnnVectorRef e i)      = VectorRef (stripAnnExpr e) i
 stripAnnExpr' (AnnCons e1 e2)         = Cons (stripAnnExpr e1) (stripAnnExpr e2)
 stripAnnExpr' (AnnVector es)          = Vector (map stripAnnExpr es)
 stripAnnExpr' (AnnValues es)          = Values (map stripAnnExpr es)
+stripAnnExpr' (AnnLambda x e)         = Lambda x (stripAnnExpr e)
 stripAnnExpr' (AnnProcCall proc args) = ProcCall proc (map stripAnnExpr args)
 
 instance Pretty (AnnExpr' ann) where
