@@ -102,7 +102,7 @@ parseShape = try parseNilSh <|> parseAtomicShape <|> parens parseCompoundShape
     where
       parseAtomicShape   = caseParser [ ("real",   return RealSh)
                                       , ("bool",   return BoolSh)
-                                      , ("function", return FunctionSh)
+                                      , ("escaping-function", return FunctionSh)
                                       ]
       parseCompoundShape = caseParser [ ("cons",   parseConsSh  )
                                       , ("vector", parseVectorSh)

@@ -135,7 +135,7 @@ instance Pretty Shape where
     pp (ConsSh t1 t2) = ppForm "cons"   [t1, t2]
     pp (VectorSh ts)  = ppForm "vector" ts
     pp (ValuesSh ts)  = ppForm "values" ts
-    pp FunctionSh     = symbol "function"
+    pp FunctionSh     = symbol "escaping-function"
 
 instance Pretty Expr where
     pp Nil          = ppList []
@@ -227,7 +227,7 @@ data AnnExpr' ann
     | AnnValues [AnnExpr ann]
     | AnnLambda Name (AnnExpr ann)
     | AnnProcCall Name [AnnExpr ann]
-      deriving (Eq, Show)
+      deriving (Eq, Show, Typeable, Data)
 
 stripAnnExpr :: AnnExpr ann -> Expr
 stripAnnExpr (_, e) = stripAnnExpr' e
