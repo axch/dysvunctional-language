@@ -182,14 +182,26 @@ prelude :: [HsSCDefn]
 prelude = [ HsSCDefn (HsFuncType [HsUnboxedDoubleSh] HsUnboxedDoubleSh)
                      (Name "absDouble#")
                      [x]
-                     (HsIf (HsFuncAppl (Name "(>##)") [ HsVar x
-                                                      , HsReal 0.0 ])
+                     (HsIf (HsFuncAppl (Name "(>=##)") [ HsVar x
+                                                       , HsReal 0.0 ])
                            (HsVar x)
                            (HsFuncAppl (Name "negateDouble#") [HsVar x]))
           , HsSCDefn (HsFuncType [HsUnboxedDoubleSh] HsUnboxedDoubleSh)
                      (Name "real")
                      [x]
                      (HsVar x)
+          , HsSCDefn (HsFuncType [HsUnboxedDoubleSh] HsBoolSh)
+                     (Name "isZero#")
+                     [x]
+                     (HsFuncAppl (Name "(==##)") [HsVar x, HsReal 0.0])
+          , HsSCDefn (HsFuncType [HsUnboxedDoubleSh] HsBoolSh)
+                     (Name "isPositive#")
+                     [x]
+                     (HsFuncAppl (Name "(>##)") [HsVar x, HsReal 0.0])
+          , HsSCDefn (HsFuncType [HsUnboxedDoubleSh] HsBoolSh)
+                     (Name "isNegative#")
+                     [x]
+                     (HsFuncAppl (Name "(<##)") [HsVar x, HsReal 0.0])
           ]
     where
       x = Name "x"
