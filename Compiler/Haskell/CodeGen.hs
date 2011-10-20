@@ -8,6 +8,8 @@ import FOL.Language.Parser
 import FOL.Language.Pretty
 import FOL.Compiler.Haskell.Syntax
 
+import Data.Generics.Uniplate.Data
+
 translateType :: Type -> HsType
 translateType (PrimTy shape) = HsPrimType (translateShape shape)
 translateType (ProcTy arg_shapes ret_shape)
@@ -24,6 +26,7 @@ translateShape (VectorSh shapes)
     = error "translateShape: vector shapes are not supported yet"
 translateShape (ValuesSh shapes)
     = HsUnboxedTupleSh (map translateShape shapes)
+translateShape FunctionSh = HsFunctionSh
 
 boxShape :: HsShape -> HsShape
 boxShape HsUnboxedDoubleSh = HsBoxedDoubleSh
@@ -67,17 +70,29 @@ compileExpr' (AnnCar e) = HsFst (compileExpr e)
 compileExpr' (AnnCdr e) = HsSnd (compileExpr e)
 compileExpr' (AnnVectorRef _ _)
     = error "compileExpr': vector-ref form is not supported yet"
-compileExpr' (AnnCons e1 e2) = HsPair (compileExprAsBoxed e1)
-                                      (compileExprAsBoxed e2)
+compileExpr' (AnnCons e1 e2) = HsPair (compileExprBoxed e1)
+                                      (compileExprBoxed e2)
 compileExpr' (AnnVector _)
     = error "compileExpr': vector form is not supported yet"
 compileExpr' (AnnValues es)
     = HsUnboxedTuple (map compileExpr es)
+compileExpr' (AnnLambda x e)
+    = HsFuncAppl (Name "Function") [HsLambda x (compileExpr e)]
 compileExpr' (AnnProcCall name args) = HsFuncAppl name (map compileExpr args)
 
-compileExprAsBoxed :: AnnExpr Type -> HsExpr
-compileExprAsBoxed (PrimTy RealSh, e) = HsFuncAppl (Name "D#") [compileExpr' e]
-compileExprAsBoxed (_, e) = compileExpr' e
+compileExprBoxed :: AnnExpr Type -> HsExpr
+compileExprBoxed (PrimTy RealSh, e) = HsFuncAppl (Name "D#") [compileExpr' e]
+compileExprBoxed (_, e) = compileExpr' e
+
+lambdasInProg :: AnnProg Type -> [Shape]
+lambdasInProg (_, AnnProg defns expr)
+    = concatMap lambdasInDefn defns ++ lambdasInExpr expr
+
+lambdasInDefn :: AnnDefn Type -> [Shape]
+lambdasInDefn (_, AnnDefn _ _ body) = lambdasInExpr body
+
+lambdasInExpr :: AnnExpr Type -> [Shape]
+lambdasInExpr (_, e) = [s | AnnLambda x (PrimTy s, _) <- universe e]
 
 compileProgAsModule :: Name -> Prog -> HsModule
 compileProgAsModule module_name prog
@@ -85,10 +100,13 @@ compileProgAsModule module_name prog
                module_name
                [Name "__main__"]
                [HsImport "GHC.Exts"]
+               ty_defns
                sc_defns
     where
       pragmas  = [HsPragma "{-# LANGUAGE MagicHash, UnboxedTuples #-}"]
-      sc_defns = prelude ++ compileProg (ann prog)
+      sc_defns = prelude ++ compileProg ann_prog
+      ann_prog = ann prog
+      ty_defns = [HsTyDefn (translateShape s) | s <- lambdasInProg ann_prog]
 
 program = parse "(begin (define (operation-19 the-closure-141 the-closure-142 the-formals-143 the-formals-144) (argument-types real real real real real) (if (< (abs (- the-formals-143 the-formals-144)) .00001) the-formals-144 (operation-19 the-closure-142 the-closure-142 the-formals-144 (/ (+ the-formals-144 (/ the-closure-141 the-formals-144)) 2)))) (let ((the-formals-92 (real 2))) (let ((anf-79 (real 1.))) (cons 1.4142135623730951 (operation-19 the-formals-92 the-formals-92 anf-79 (/ (+ anf-79 (/ the-formals-92 anf-79)) 2))))))"
 
