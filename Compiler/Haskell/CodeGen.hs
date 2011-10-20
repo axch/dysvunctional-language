@@ -91,3 +91,5 @@ compileProgAsModule module_name prog
       sc_defns = prelude ++ compileProg (ann prog)
 
 program = parse "(begin (define (operation-19 the-closure-141 the-closure-142 the-formals-143 the-formals-144) (argument-types real real real real real) (if (< (abs (- the-formals-143 the-formals-144)) .00001) the-formals-144 (operation-19 the-closure-142 the-closure-142 the-formals-144 (/ (+ the-formals-144 (/ the-closure-141 the-formals-144)) 2)))) (let ((the-formals-92 (real 2))) (let ((anf-79 (real 1.))) (cons 1.4142135623730951 (operation-19 the-formals-92 the-formals-92 anf-79 (/ (+ anf-79 (/ the-formals-92 anf-79)) 2))))))"
+
+program2 = parse "(begin (define (operation-19 the-formals-95) (argument-types real bool) (if (= the-formals-95 0) #t (let ((the-formals-99 (- the-formals-95 1))) (if (= the-formals-99 0) #f (operation-19 (- the-formals-99 1)))))) (operation-19 (real 5)))"
