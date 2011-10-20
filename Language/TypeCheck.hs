@@ -3,6 +3,7 @@ module FOL.Language.TypeCheck where
 
 import FOL.Language.Common
 import FOL.Language.Expression
+import FOL.Language.Parser (parse)
 import FOL.Language.Pretty
 
 import Control.Applicative
@@ -366,6 +367,11 @@ annExpr env e@(Values es)
           = tcFail $ NestedValues e component
       check_shape _ _
           = return ()
+annExpr env (Lambda x body)
+    = do body' <- annExpr env' body
+         return (PrimTy FunctionSh, AnnLambda x body')
+    where
+      env' = (x, PrimTy RealSh) : env
 annExpr env e@(ProcCall proc args)
     | Just proc_type@(ProcTy arg_shapes ret_shape) <- lookup proc env
     , let nargs       = length args
