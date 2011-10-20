@@ -134,18 +134,7 @@ instance Pretty HsExpr where
     pp (HsUnboxedTuple es) = ppUnboxedTuple $ map pp es
     pp (HsFuncAppl f xs) = parens . sep $ ppName f : map pp xs
 
-isOperator :: String -> Bool
-isOperator = (`elem` operators)
-
-operators :: [String]
-operators = ["+", "-", "*", "/", "<", "<=", ">", ">=", "="]
-
-isPrimitive :: String -> Bool
-isPrimitive = (`elem` prims)
-
-prims :: [String]
-prims = ["abs", "exp", "log", "sqrt", "sin", "cos", "tan", "acos", "asin"]
-
+haskellPrimitives :: [(String, String)]
 haskellPrimitives
     = [ ("abs"      , "absDouble#" )
       , ("exp"      , "expDouble#" )
