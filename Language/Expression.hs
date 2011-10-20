@@ -27,6 +27,8 @@ data Shape
     | ConsSh Shape Shape
     | VectorSh [Shape]
     | ValuesSh [Shape]
+    -- This is a hack.
+    | FunctionSh
       deriving (Eq, Ord, Show, Typeable, Data)
 
 data Expr
@@ -133,6 +135,7 @@ instance Pretty Shape where
     pp (ConsSh t1 t2) = ppForm "cons"   [t1, t2]
     pp (VectorSh ts)  = ppForm "vector" ts
     pp (ValuesSh ts)  = ppForm "values" ts
+    pp FunctionSh     = symbol "function"
 
 instance Pretty Expr where
     pp Nil          = ppList []
@@ -159,11 +162,11 @@ instance Pretty Expr where
 
     pp (Car e)         = ppForm "car" [e]
     pp (Cdr e)         = ppForm "cdr" [e]
-    pp (VectorRef e i) = ppList [text "vector-ref", pp e, int i]
+    pp (VectorRef e i) = ppList [symbol "vector-ref", pp e, int i]
     pp (Cons e1 e2)    = ppForm "cons"   [e1, e2]
     pp (Vector es)     = ppForm "vector" es
     pp (Values es)     = ppForm "values" es
-    pp (Lambda x e)    = ppList [text "lambda", parens (pp x), pp e]
+    pp (Lambda x e)    = ppList [symbol "lambda", parens (pp x), pp e]
 
     pp (ProcCall proc args) = ppList $ pp proc : map pp args
 
@@ -261,6 +264,7 @@ data AnnShape ann
     | AnnConsSh (AnnShape ann) (AnnShape ann)
     | AnnVectorSh [AnnShape ann]
     | AnnValuesSh [AnnShape ann]
+    | AnnFunctionSh ann
       deriving (Eq, Show)
 
 stripAnnShape :: AnnShape ann -> Shape
@@ -270,6 +274,7 @@ stripAnnShape (AnnBoolSh _)     = BoolSh
 stripAnnShape (AnnConsSh s1 s2) = ConsSh (stripAnnShape s1) (stripAnnShape s2)
 stripAnnShape (AnnVectorSh ss)  = VectorSh (map stripAnnShape ss)
 stripAnnShape (AnnValuesSh ss)  = ValuesSh (map stripAnnShape ss)
+stripAnnShape (AnnFunctionSh _) = FunctionSh
 
 fringe :: AnnShape ann -> [(ann, Shape)]
 fringe (AnnNilSh  ann)   = [(ann, NilSh )]
@@ -278,6 +283,7 @@ fringe (AnnBoolSh ann)   = [(ann, BoolSh)]
 fringe (AnnConsSh s1 s2) = fringe s1 ++ fringe s2
 fringe (AnnVectorSh ss)  = concatMap fringe ss
 fringe (AnnValuesSh ss)  = concatMap fringe ss
+fringe (AnnFunctionSh ann) = [(ann, FunctionSh)]
 
 annots :: AnnShape ann -> [ann]
 annots = map fst . fringe
