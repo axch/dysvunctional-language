@@ -11,6 +11,8 @@ data HsModule
     = HsModule [HsPragma] Name [Name] [HsImport] [HsSCDefn]
       deriving Show
 
+-- An algebraic data type would be more appropriate, but we only need
+-- a place to stick a few language extensions, so a string suffices.
 data HsPragma
     = HsPragma String
       deriving Show
