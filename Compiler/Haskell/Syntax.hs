@@ -28,7 +28,8 @@ data HsSCDefn
 data HsShape
     = HsUnitSh
     | HsBoolSh
-    | HsRealSh
+    | HsBoxedDoubleSh
+    | HsUnboxedDoubleSh
     | HsPairSh HsShape HsShape
     | HsUnboxedTupleSh [HsShape]
       deriving Show
@@ -99,7 +100,8 @@ instance Pretty HsSCDefn where
 instance Pretty HsShape where
     pp HsUnitSh              = text "()"
     pp HsBoolSh              = text "Bool"
-    pp HsRealSh              = text "Double#"
+    pp HsBoxedDoubleSh       = text "Double"
+    pp HsUnboxedDoubleSh     = text "Double#"
     pp (HsPairSh t1 t2)      = ppTuple [pp t1, pp t2]
     pp (HsUnboxedTupleSh ts) = ppUnboxedTuple (map pp ts)
 
@@ -165,14 +167,14 @@ instance Pretty HsPat where
     pp (HsPatTuple xs) = bang <> ppUnboxedTuple (map ppName xs)
 
 prelude :: [HsSCDefn]
-prelude = [ HsSCDefn (HsFuncType [HsRealSh] HsRealSh)
+prelude = [ HsSCDefn (HsFuncType [HsUnboxedDoubleSh] HsUnboxedDoubleSh)
                      (Name "absDouble#")
                      [x]
                      (HsIf (HsFuncAppl (Name "(>##)") [ HsVar x
                                                       , HsReal 0.0 ])
                            (HsVar x)
                            (HsFuncAppl (Name "negateDouble#") [HsVar x]))
-          , HsSCDefn (HsFuncType [HsRealSh] HsRealSh)
+          , HsSCDefn (HsFuncType [HsUnboxedDoubleSh] HsUnboxedDoubleSh)
                      (Name "real")
                      [x]
                      (HsVar x)
