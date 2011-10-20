@@ -102,6 +102,7 @@ parseShape = try parseNilSh <|> parseAtomicShape <|> parens parseCompoundShape
     where
       parseAtomicShape   = caseParser [ ("real",   return RealSh)
                                       , ("bool",   return BoolSh)
+                                      , ("function", return FunctionSh)
                                       ]
       parseCompoundShape = caseParser [ ("cons",   parseConsSh  )
                                       , ("vector", parseVectorSh)
@@ -179,6 +180,9 @@ parseVectorRef = liftA2 VectorRef parseExpr int
 parseCons      = liftA2 Cons      parseExpr parseExpr
 parseVector    = liftA  Vector    (many parseExpr)
 parseValues    = liftA  Values    (many parseExpr)
+parseLambda    = liftA2 Lambda formal parseExpr
+    where
+      formal = parens identifier
 
 parseSpecialForm, parseApplication :: Parser Expr
 parseSpecialForm = caseParser [ ("if"        , parseIf       )
@@ -187,6 +191,7 @@ parseSpecialForm = caseParser [ ("if"        , parseIf       )
                               , ("cons"      , parseCons     )
                               , ("vector"    , parseVector   )
                               , ("values"    , parseValues   )
+                              , ("lambda"    , parseLambda   )
                               , ("car"       , parseCar      )
                               , ("cdr"       , parseCdr      )
                               , ("vector-ref", parseVectorRef)
