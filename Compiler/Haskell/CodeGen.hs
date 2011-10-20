@@ -14,15 +14,20 @@ translateType (ProcTy arg_shapes ret_shape)
     = HsFuncType (map translateShape arg_shapes) (translateShape ret_shape)
 
 translateShape :: Shape -> HsShape
-translateShape NilSh = HsUnitSh
+translateShape NilSh  = HsUnitSh
 translateShape BoolSh = HsBoolSh
-translateShape RealSh = HsRealSh
+translateShape RealSh = HsUnboxedDoubleSh
 translateShape (ConsSh shape1 shape2)
-    = HsPairSh (translateShape shape1) (translateShape shape2)
+    = HsPairSh (boxShape $ translateShape shape1)
+               (boxShape $ translateShape shape2)
 translateShape (VectorSh shapes)
     = error "translateShape: vector shapes are not supported yet"
 translateShape (ValuesSh shapes)
     = HsUnboxedTupleSh (map translateShape shapes)
+
+boxShape :: HsShape -> HsShape
+boxShape HsUnboxedDoubleSh = HsBoxedDoubleSh
+boxShape shape = shape
 
 compileProg :: AnnProg Type -> [HsSCDefn]
 compileProg (prog_type, AnnProg defns expr)
@@ -62,12 +67,17 @@ compileExpr' (AnnCar e) = HsFst (compileExpr e)
 compileExpr' (AnnCdr e) = HsSnd (compileExpr e)
 compileExpr' (AnnVectorRef _ _)
     = error "compileExpr': vector-ref form is not supported yet"
-compileExpr' (AnnCons e1 e2) = HsPair (compileExpr e1) (compileExpr e2)
+compileExpr' (AnnCons e1 e2) = HsPair (compileExprAsBoxed e1)
+                                      (compileExprAsBoxed e2)
 compileExpr' (AnnVector _)
     = error "compileExpr': vector form is not supported yet"
 compileExpr' (AnnValues es)
     = HsUnboxedTuple (map compileExpr es)
 compileExpr' (AnnProcCall name args) = HsFuncAppl name (map compileExpr args)
+
+compileExprAsBoxed :: AnnExpr Type -> HsExpr
+compileExprAsBoxed (PrimTy RealSh, e) = HsFuncAppl (Name "D#") [compileExpr' e]
+compileExprAsBoxed (_, e) = compileExpr' e
 
 compileProgAsModule :: Name -> Prog -> HsModule
 compileProgAsModule module_name prog
