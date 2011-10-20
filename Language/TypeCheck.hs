@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude, DeriveDataTypeable #-}
 module FOL.Language.TypeCheck where
 
 import FOL.Language.Common
@@ -9,13 +9,15 @@ import FOL.Language.Pretty
 import Control.Applicative
 import Control.Monad
 
+import Data.Data
+
 import qualified Data.Traversable as Traversable
 
 -- Types of entities in FOL programs.  In addition to shapes that
 -- values may have there are also procedure types.
 data Type = PrimTy Shape
           | ProcTy [Shape] Shape
-            deriving (Eq, Show)
+            deriving (Eq, Show, Typeable, Data)
 
 instance Pretty Type where
     pp (PrimTy shape) = pp shape
