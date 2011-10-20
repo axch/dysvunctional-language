@@ -6,6 +6,7 @@ import FOL.Language.Expression
 import FOL.Language.Pretty
 
 import Data.List
+import Data.Maybe
 
 data HsModule
     = HsModule [HsPragma] Name [Name] [HsImport] [HsSCDefn]
@@ -145,16 +146,38 @@ isPrimitive = (`elem` prims)
 prims :: [String]
 prims = ["abs", "exp", "log", "sqrt", "sin", "cos", "tan", "acos", "asin"]
 
+haskellPrimitives
+    = [ ("abs"      , "absDouble#" )
+      , ("exp"      , "expDouble#" )
+      , ("log"      , "logDouble#" )
+      , ("sin"      , "sinDouble#" )
+      , ("cos"      , "cosDouble#" )
+      , ("tan"      , "tanDouble#" )
+      , ("asin"     , "asinDouble#")
+      , ("acos"     , "acosDouble#")
+      , ("atan"     , "atanDouble#")
+      , ("sqrt"     , "sqrtDouble#")
+      , ("real"     , "real"       )
+      , ("+"        , "(+##)"      )
+      , ("-"        , "(-##)"      )
+      , ("*"        , "(*##)"      )
+      , ("/"        , "(/##)"      )
+      , ("expt"     , "(**##)"     )
+      , ("zero?"    , "isZero#"    )
+      , ("positive?", "isPositive#")
+      , ("negative?", "isNegative#")
+      , ("<"        , "(<##)"      )
+      , ("<="       , "(<=##)"     )
+      , (">"        , "(>##)"      )
+      , (">="       , "(>=##)"     )
+      , ("="        , "(==##)"     )
+      ]
+
 prepare :: Name -> Name
-prepare (Name name) = Name . prepareFuncName . replaceDashes $ name
+prepare (Name name)
+    = Name $ fromMaybe (replaceDashes name) (lookup name haskellPrimitives)
     where
-      prepareFuncName name
-          | isOperator name  = "(" ++ name ++ "##)"
-          | isPrimitive name = name ++ "Double#"
-          | otherwise        = name
-      replaceDashes name
-          | name == "-" = name
-          | otherwise   = map (\c -> if c == '-' then '_' else c) name
+      replaceDashes = map (\c -> if c == '-' then '_' else c)
 
 ppName :: Name -> Doc
 ppName = pp . prepare
