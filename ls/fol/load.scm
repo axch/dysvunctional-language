@@ -118,3 +118,9 @@
   (environment-define-macro
    client-environment 'define-stage
    (environment-lookup-macro fol-environment 'define-stage)))
+
+(unless (lexical-unbound? (the-environment) 'stop-scmutils-print)
+  (warn "Turning off the SCMUtils fancy printer because it will choke on FOL programs.")
+  (warn "You can re-enable it by executing (start-scmutils-print),")
+  (warn "and re-disable it by executing (start-scmutils-print).")
+  (stop-scmutils-print))
