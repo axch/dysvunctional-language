@@ -9,7 +9,7 @@ import Data.List
 import Data.Maybe
 
 data HsModule
-    = HsModule [HsPragma] Name [Name] [HsImport] [HsSCDefn]
+    = HsModule [HsPragma] Name [Name] [HsImport] [HsTyDefn] [HsSCDefn]
       deriving Show
 
 -- An algebraic data type would be more appropriate, but we only need
@@ -20,6 +20,10 @@ data HsPragma
 
 data HsImport
     = HsImport String
+      deriving Show
+
+data HsTyDefn
+    = HsTyDefn HsShape
       deriving Show
 
 data HsSCDefn
@@ -33,6 +37,7 @@ data HsShape
     | HsUnboxedDoubleSh
     | HsPairSh HsShape HsShape
     | HsUnboxedTupleSh [HsShape]
+    | HsFunctionSh
       deriving Show
 
 data HsType
@@ -50,6 +55,7 @@ data HsExpr
     | HsFst HsExpr
     | HsSnd HsExpr
     | HsPair HsExpr HsExpr
+    | HsLambda Name HsExpr
     | HsUnboxedTuple [HsExpr]
     | HsFuncAppl Name [HsExpr]
       deriving Show
@@ -71,23 +77,30 @@ newline :: Doc
 newline = char '\n'
 
 instance Pretty HsModule where
-    pp (HsModule pragmas name exported_names imports sc_defns)
+    pp (HsModule pragmas name exported_names imports type_defns sc_defns)
         = vcat (pragma_decls : module_body)
         where
           pragma_decls = vcat (map pp pragmas)
           import_decls = vcat (map pp imports)
+          type_decls   = vcat (map pp type_defns)
           module_decl  = hsep [ text "module"
                               , ppName name
                               , ppTuple (map ppName exported_names)
                               , text "where" ]
           module_body  = punctuate newline
-                         (module_decl : import_decls : map pp sc_defns)
+                         (module_decl : import_decls : type_decls : map pp sc_defns)
 
 instance Pretty HsPragma where
     pp (HsPragma pragma) = text pragma
 
 instance Pretty HsImport where
     pp (HsImport module_name) = text "import" <+> text module_name
+
+instance Pretty HsTyDefn where
+    pp (HsTyDefn shape) = text "newtype" <+> text "Function" <+> equals <+> lhs
+        where
+          lhs = text "Function" <+> (parens $ sep [text "Double#", arrow, pp shape])
+          arrow = text "->"
 
 instance Pretty HsSCDefn where
     pp (HsSCDefn sc_type sc_name sc_args sc_body)
@@ -105,6 +118,7 @@ instance Pretty HsShape where
     pp HsUnboxedDoubleSh     = text "Double#"
     pp (HsPairSh t1 t2)      = ppTuple [pp t1, pp t2]
     pp (HsUnboxedTupleSh ts) = ppUnboxedTuple (map pp ts)
+    pp HsFunctionSh          = text "Function"
 
 instance Pretty HsType where
     pp (HsPrimType shape) = pp shape
@@ -131,6 +145,10 @@ instance Pretty HsExpr where
     pp (HsFst e) = text "fst" <+> pp e
     pp (HsSnd e) = text "snd" <+> pp e
     pp (HsPair e1 e2) = ppTuple [pp e1, pp e2]
+    pp (HsLambda x e) = parens $ sep [backslash, ppName x, arrow, pp e]
+        where
+          backslash = char '\\'
+          arrow = text "->"
     pp (HsUnboxedTuple es) = ppUnboxedTuple $ map pp es
     pp (HsFuncAppl f xs) = parens . sep $ ppName f : map pp xs
 
