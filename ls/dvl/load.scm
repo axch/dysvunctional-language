@@ -55,6 +55,10 @@
   ((on-subexpressions
     (rule-list
      (list
+      (rule '(quote (? datum)) datum) ;; Do not apply the other rules inside quoted data
+      ;; Actually, the "right" thing would be to examine quoted data,
+      ;; see if it contains any imprecise literals, and turn it into a
+      ;; quasiquote that inserts `(real ,number).  Too much work for now.
       (rule '+ 'g:+)
       (rule '- 'g:-)
       (rule '* 'g:*)
