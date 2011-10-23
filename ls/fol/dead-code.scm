@@ -110,10 +110,10 @@
       ;; If used post SRA, there may be constructions to build the
       ;; answer for the outside world, but there should be no
       ;; accesses.
-      ((construction)
-       (eliminate-in-construction expr live-out))
-      ((accessor)
-       (eliminate-in-access expr live-out))
+      ((construction ctor operands)
+       (eliminate-in-construction ctor operands live-out))
+      ((accessor kind arg extra)
+       (eliminate-in-access kind arg extra live-out))
       ((values-form subforms)
        (eliminate-in-values subforms live-out))
       ((pair operator operands) ; general application
@@ -177,13 +177,13 @@
   ;; structure slots, I will say that if a structure is needed then
   ;; all of its slots are needed, and any access to any slot of a
   ;; structure causes the entire structure to be needed.
-  (define (eliminate-in-construction expr live-out)
-    (receive (new-args args-need) (loop* (cdr expr))
-      (values `(,(car expr) ,@new-args)
+  (define (eliminate-in-construction ctor operands live-out)
+    (receive (new-args args-need) (loop* operands)
+      (values `(,ctor ,@new-args)
               (var-set-union* args-need))))
-  (define (eliminate-in-access expr live-out)
-    (receive (new-accessee accessee-uses) (loop (cadr expr) #t)
-      (values `(,(car expr) ,new-accessee ,@(cddr expr))
+  (define (eliminate-in-access kind arg extra live-out)
+    (receive (new-accessee accessee-uses) (loop arg #t)
+      (values `(,kind ,new-accessee ,@extra)
               accessee-uses)))
   (define (eliminate-in-values subforms live-out)
     (assert (list? live-out))
@@ -423,10 +423,8 @@
       ;; If used post SRA, there may be constructions to build the
       ;; answer for the outside world, but there should be no
       ;; accesses.
-      ((construction)
-       (study-construction expr))
-      ((accessor)
-       (study-access expr))
+      (construction => study-construction)
+      (accessor => study-access)
       (values-form => study-values)
       (pair => study-application))) ; general application
   (define (study-if predicate consequent alternate)
@@ -460,14 +458,14 @@
                (cdr binding.need)
                (single-used-var needed-var))))
        need-set)))
-  (define (study-construction expr)
+  (define (study-construction ctor operands)
     (list
      (var-set-union*
       (map (lambda (arg)
              (car (loop arg)))
-           (cdr expr)))))
-  (define (study-access expr)
-    (loop (cadr expr)))
+           operands))))
+  (define (study-access kind arg extra)
+    (loop arg))
   (define (study-values sub-exprs)
     (map
      (lambda (sub-expr)
