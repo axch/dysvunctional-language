@@ -412,21 +412,20 @@
   ;;    value.
   ;; 3) It is always interested in all return values, so it needn't
   ;;    pass down a LIVE-OUT list.
-  (define (loop expr)
-    (case* expr
-      ((fol-var var) (list (single-used-var var)))
-      ((fol-const _) (list (no-used-vars)))
-      (if-form => study-if)
-      (let-form => study-let)
-      (let-values-form => study-let-values)
-      (lambda-form => study-lambda)
-      ;; If used post SRA, there may be constructions to build the
-      ;; answer for the outside world, but there should be no
-      ;; accesses.
-      (construction => study-construction)
-      (accessor => study-access)
-      (values-form => study-values)
-      (pair => study-application))) ; general application
+  (define-case* loop
+    ((fol-var var) (list (single-used-var var)))
+    ((fol-const _) (list (no-used-vars)))
+    (if-form => study-if)
+    (let-form => study-let)
+    (let-values-form => study-let-values)
+    (lambda-form => study-lambda)
+    ;; If used post SRA, there may be constructions to build the
+    ;; answer for the outside world, but there should be no
+    ;; accesses.
+    (construction => study-construction)
+    (accessor => study-access)
+    (values-form => study-values)
+    (pair => study-application))        ; general application
   (define (study-if predicate consequent alternate)
     (let ((pred-needs (car (loop predicate)))
           (cons-needs (loop consequent))
