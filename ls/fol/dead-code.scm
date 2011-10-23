@@ -1,4 +1,6 @@
 (declare (usual-integrations))
+(declare (integrate-external "syntax"))
+(declare (integrate-external "../support/pattern-matching"))
 ;;;; Dead code elimination
 
 ;;; Variables that hold values that are never used can be eliminated.
@@ -92,95 +94,85 @@
   ;; and the set of variables that it needs to compute its live
   ;; results.
   (define (loop expr live-out)
-    (cond ((fol-var? expr)
-           (values expr (single-used-var expr)))
-          ((fol-const? expr)
-           (values expr (no-used-vars)))
-          ((if-form? expr)
-           (eliminate-in-if expr live-out))
-          ((let-form? expr)
-           (eliminate-in-let expr live-out))
-          ((let-values-form? expr)
-           (eliminate-in-let-values expr live-out))
-          ((lambda-form? expr)
-           (eliminate-in-lambda expr live-out))
-          ;; If used post SRA, there may be constructions to build the
-          ;; answer for the outside world, but there should be no
-          ;; accesses.
-          ((construction? expr)
-           (eliminate-in-construction expr live-out))
-          ((accessor? expr)
-           (eliminate-in-access expr live-out))
-          ((values-form? expr)
-           (eliminate-in-values expr live-out))
-          (else ; general application
-           (eliminate-in-application expr live-out))))
-  (define (eliminate-in-if expr live-out)
-    (let ((predicate (cadr expr))
-          (consequent (caddr expr))
-          (alternate (cadddr expr)))
-      (let-values (((new-predicate pred-needs) (loop predicate #t))
-                   ((new-consequent cons-needs) (loop consequent live-out))
-                   ((new-alternate alt-needs) (loop alternate live-out)))
-        (values `(if ,new-predicate
-                     ,new-consequent
-                     ,new-alternate)
-                (var-set-union
-                 pred-needs (var-set-union cons-needs alt-needs))))))
-  (define (eliminate-in-let expr live-out)
-    (let ((bindings (cadr expr))
-          (body (caddr expr)))
-      (receive (new-body body-needs) (loop body live-out)
-        (let ((new-bindings
-               (filter (lambda (binding)
-                         (var-used? (car binding) body-needs))
-                       bindings)))
-          (receive (new-exprs exprs-need) (loop* (map cadr new-bindings))
-            (let ((used (var-set-union* exprs-need)))
-              (values (tidy-empty-let
-                       `(let ,(map list (map car new-bindings)
-                                   new-exprs)
+    (case* expr
+      ((fol-var var)
+       (values expr (single-used-var var)))
+      ((fol-const _)
+       (values expr (no-used-vars)))
+      ((if-form pred cons alt)
+       (eliminate-in-if pred cons alt live-out))
+      ((let-form bindings body)
+       (eliminate-in-let bindings body live-out))
+      ((let-values-form names subexp body)
+       (eliminate-in-let-values names subexp body live-out))
+      ((lambda-form formals body)
+       (eliminate-in-lambda formals body live-out))
+      ;; If used post SRA, there may be constructions to build the
+      ;; answer for the outside world, but there should be no
+      ;; accesses.
+      ((construction)
+       (eliminate-in-construction expr live-out))
+      ((accessor)
+       (eliminate-in-access expr live-out))
+      ((values-form subforms)
+       (eliminate-in-values subforms live-out))
+      ((pair operator operands) ; general application
+       (eliminate-in-application operator operands live-out))))
+  (define (eliminate-in-if predicate consequent alternate live-out)
+    (let-values (((new-predicate pred-needs) (loop predicate #t))
+                 ((new-consequent cons-needs) (loop consequent live-out))
+                 ((new-alternate alt-needs) (loop alternate live-out)))
+      (values `(if ,new-predicate
+                   ,new-consequent
+                   ,new-alternate)
+              (var-set-union
+               pred-needs (var-set-union cons-needs alt-needs)))))
+  (define (eliminate-in-let bindings body live-out)
+    (receive (new-body body-needs) (loop body live-out)
+      (let ((new-bindings
+             (filter (lambda (binding)
+                       (var-used? (car binding) body-needs))
+                     bindings)))
+        (receive (new-exprs exprs-need) (loop* (map cadr new-bindings))
+          (let ((used (var-set-union* exprs-need)))
+            (values (tidy-empty-let
+                     `(let ,(map list (map car new-bindings)
+                                 new-exprs)
+                        ,new-body))
+                    (var-set-union
+                     (var-set-difference
+                      body-needs (map car bindings))
+                     used)))))))
+  (define (eliminate-in-let-values names sub-expr body live-out)
+    (receive (new-body body-needs) (loop body live-out)
+      (define (slot-used? name)
+        (or (and (ignore? name)
+                 ;; Ignored names are a hack for when the source
+                 ;; of the values is a procedure call.
+                 ;; Interprocedural dead code elimination may
+                 ;; replace such a call with a further let or
+                 ;; let-values, in which case the ignore
+                 ;; instruction is out of date.
+                 (not (or (let-form? sub-expr)
+                          (let-values-form? sub-expr))))
+            (and (var-used? name body-needs)
+                 #t)))
+      (let ((sub-expr-live-out (map slot-used? names)))
+        (if (any (lambda (x) x) sub-expr-live-out)
+            (receive (new-sub-expr sub-expr-needs) (loop sub-expr sub-expr-live-out)
+              (values (tidy-let-values
+                       `(let-values ((,(filter slot-used? names)
+                                      ,new-sub-expr))
                           ,new-body))
                       (var-set-union
-                       (var-set-difference
-                        body-needs (map car bindings))
-                       used))))))))
-  (define (eliminate-in-let-values expr live-out)
-    (let ((binding (caadr expr))
-          (body (caddr expr)))
-      (let ((names (car binding))
-            (sub-expr (cadr binding)))
-        (receive (new-body body-needs) (loop body live-out)
-          (define (slot-used? name)
-            (or (and (ignore? name)
-                     ;; Ignored names are a hack for when the source
-                     ;; of the values is a procedure call.
-                     ;; Interprocedural dead code elimination may
-                     ;; replace such a call with a further let or
-                     ;; let-values, in which case the ignore
-                     ;; instruction is out of date.
-                     (not (or (let-form? sub-expr)
-                              (let-values-form? sub-expr))))
-                (and (var-used? name body-needs)
-                     #t)))
-          (let ((sub-expr-live-out (map slot-used? names)))
-            (if (any (lambda (x) x) sub-expr-live-out)
-                (receive (new-sub-expr sub-expr-needs) (loop sub-expr sub-expr-live-out)
-                  (values (tidy-let-values
-                           `(let-values ((,(filter slot-used? names)
-                                          ,new-sub-expr))
-                              ,new-body))
-                          (var-set-union
-                           sub-expr-needs
-                           (var-set-difference body-needs names))))
-                (values new-body body-needs)))))))
-  (define (eliminate-in-lambda expr live-out)
-    (let ((formal (cadr expr))
-          (body (caddr expr)))
-      (receive (new-body body-needs) (loop body #t) ; Nothing that escapes can be dead
-        (values `(lambda ,formal
-                   ,new-body)
-                (var-set-difference body-needs formal)))))
+                       sub-expr-needs
+                       (var-set-difference body-needs names))))
+            (values new-body body-needs)))))
+  (define (eliminate-in-lambda formals body live-out)
+    (receive (new-body body-needs) (loop body #t) ; Nothing that escapes can be dead
+      (values `(lambda ,formals
+                 ,new-body)
+              (var-set-difference body-needs formals))))
   ;; Given that I decided not to do proper elimination of dead
   ;; structure slots, I will say that if a structure is needed then
   ;; all of its slots are needed, and any access to any slot of a
@@ -193,19 +185,19 @@
     (receive (new-accessee accessee-uses) (loop (cadr expr) #t)
       (values `(,(car expr) ,new-accessee ,@(cddr expr))
               accessee-uses)))
-  (define (eliminate-in-values expr live-out)
+  (define (eliminate-in-values subforms live-out)
     (assert (list? live-out))
     (let ((wanted-elts (filter-map (lambda (wanted? elt)
                                      (and wanted? elt))
                                    live-out
-                                   (cdr expr))))
+                                   subforms)))
       (receive (new-elts elts-need) (loop* wanted-elts)
         (values (if (= 1 (length new-elts))
                     (car new-elts)
                     `(values ,@new-elts))
                 (var-set-union* elts-need)))))
-  (define (eliminate-in-application expr live-out)
-    (receive (new-args args-need) (loop* (cdr expr))
+  (define (eliminate-in-application operator operands live-out)
+    (receive (new-args args-need) (loop* operands)
       (define (all-wanted? live-out)
         (or (equal? live-out #t)
             (every (lambda (x) x) live-out)))
@@ -213,7 +205,7 @@
         (if wanted?
             (make-name 'receipt)
             (make-name '_)))
-      (let ((simple-new-call `(,(car expr) ,@new-args)))
+      (let ((simple-new-call `(,operator ,@new-args)))
         (let ((new-call
                (if (all-wanted? live-out)
                    simple-new-call
