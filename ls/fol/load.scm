@@ -123,5 +123,5 @@
     (begin
       (warn "Turning off the SCMUtils fancy printer because it will choke on FOL programs.")
       (warn "You can re-enable it by executing (start-scmutils-print),")
-      (warn "and re-disable it by executing (start-scmutils-print).")
+      (warn "and re-disable it by executing (stop-scmutils-print).")
       (stop-scmutils-print)))
