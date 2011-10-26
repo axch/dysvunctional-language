@@ -92,7 +92,7 @@
           ((iterate (lambda (x) (f (deep-primal x)))) start)))))
     (if (< (distance (deep-primal state) (deep-primal next-state)) 1e-5)
         (let ((primal-fixed (deep-primal next-state)))
-          (let tangent-loop ((state next-state))
+          (let tangent-loop ((state (f (deep-primal state))))
             (semi-deep-bundle?
              state
              (lambda (eps prim tang)
@@ -122,3 +122,6 @@
 ;; TODO Test differentiating such a g wrt to various directions in R^m (even at once)
 ;; TODO Figure out whether or not this is actually behaving the way we want wrt evaluations
 ;; of the primal and tangent
+;; TODO Verify that the case where the tangent is zero is really the same as
+;;   the case where a non-bundle is emitted
+;; TODO nest test: (D (lam (x) (fix (lam (y) (D (lam (z) (fix (lam (w) (g x y z w)))))))))
