@@ -28,3 +28,97 @@
    (lambda ()
      (let (((cons x xs) (force stream)))
        (cons (f x) ((stream-map f) xs))))))
+
+(define (stream-of-adjacent-pairs stream)
+  (let (((cons first rest) (force stream)))
+    (let loop ((first first) (rest rest))
+      (lambda ()
+        (let (((cons second rest) (force rest)))
+          (cons (cons first second)
+                (loop second rest)))))))
+
+(define (deep-primal thing)
+  (bundle?
+   thing
+   (lambda (thing-eps thing-prim thing-tang)
+     (deep-primal thing-prim))
+   (lambda ()
+     (cond ((real? thing)
+            thing)
+           ((procedure? thing)
+            (lambda (x)
+              (deep-primal (thing x))))
+           ((pair? thing)
+            (cons (deep-primal (car thing))
+                  (deep-primal (cdr thing))))
+           (else thing)))))
+
+(define (semi-deep-bundle? thing win lose)
+  (bundle? thing win
+   (lambda ()
+     (if (pair? thing)
+         (semi-deep-bundle? (car thing)
+          (lambda (car-eps car-prim car-tang)
+            (win car-eps (cons car-prim (primal car-eps (cdr thing)))
+                 (cons car-tang (tangent car-eps (cdr thing)))))
+          (lambda ()
+            (semi-deep-bundle? (cdr thing)
+             (lambda (cdr-eps cdr-prim cdr-tang)
+               (win cdr-eps (cons (car thing) cdr-prim)
+                    (cons (tangent cdr-eps (car thing)) ; This is a zero
+                          cdr-tang))))))
+         (lose)))))
+
+(define (max x y)
+  (if (> x y) x y))
+
+(define (distance thing1 thing2)
+  (cond ((real? thing1)
+         (abs (- thing1 thing2)))
+        ((pair? thing1)
+         (let ((da (distance (car thing1) (car thing2)))
+               (dd (distance (cdr thing1) (cdr thing2))))
+           ;(sqrt (+ (* da da) (* dd dd)))
+           (max da dd)))
+        ((null? thing1)
+         0)))
+
+(define (iterate-to-numeric-fix f start)
+  (let primal-loop
+      (((cons (cons state next-state) rest)
+        (force
+         (stream-of-adjacent-pairs
+          ;; The stable point does not depend infinitesimally on the start
+          ((iterate (lambda (x) (f (deep-primal x)))) start)))))
+    (if (< (distance (deep-primal state) (deep-primal next-state)) 1e-5)
+        (let ((primal-fixed (deep-primal next-state)))
+          (let tangent-loop ((state next-state))
+            (semi-deep-bundle?
+             state
+             (lambda (eps prim tang)
+               (make-bundle eps (tangent-loop prim)
+                            (iterate-to-numeric-fix
+                             (lambda (u-bar)
+                               (tangent eps (f (make-bundle eps prim u-bar))))
+                             tang)))
+             (lambda ()
+               state))))
+        (primal-loop (force rest)))))
+
+(define (heron-sqrt x)
+  (iterate-to-numeric-fix (lambda (y) (/ (+ y (/ x y)) 2)) 1.))
+
+;; (heron-sqrt 4.) => 2.0
+;; (heron-sqrt 9.) => 3.0
+;; (heron-sqrt 16.) => 4.0
+
+;; ((derivative heron-sqrt) 4.) => 0.25
+;; ((derivative heron-sqrt) 9.) => 0.16666666666666666
+
+;; ((derivative (derivative heron-sqrt)) 4.) => -.03125
+;; ((derivative (derivative heron-sqrt)) 9.) => -.00390625
+
+;; TODO Test when f is a closure with internal g :: R^n x R^m -> R^n
+;; TODO Test differentiating such a g wrt to various directions in R^m (even at once)
+;; TODO Figure out whether or not this is actually behaving the way we want wrt evaluations
+;; of the primal and tangent
