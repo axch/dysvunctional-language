@@ -1,5 +1,5 @@
 (declare (usual-integrations))
-(declare (integrate-external "syntax"))
+;(declare (integrate-external "syntax")) ; Because SRA overrides CONSTRUCTION, below
 (declare (integrate-external "../support/pattern-matching"))
 ;;;; Scalar Replacement of Aggregates (SRA)
 
@@ -133,7 +133,7 @@
   (define (construction? expr)
     (and (pair? expr)
          (memq (car expr) '(cons vector values))))
-  (define-algebraic-matcher construction construction?)
+  (define-algebraic-matcher construction construction? car cdr)
   (define (loop expr env)
     (case* expr
       ((fol-var _)
@@ -150,8 +150,8 @@
        (sra-let-values names subexp body env))
       ((lambda-form formals body)
        (sra-lambda formals body env))
-      ((accessor) (sra-access expr env))
-      ((construction) (sra-construction expr env))
+      ((accessor _ _ _ :as expr) (sra-access expr env))
+      ((construction ctor operands) (sra-construction ctor operands env))
       ((pair operator operands) ;; general application
        (sra-application operator operands env))))
   (define (sra-if pred cons alt env)
@@ -208,10 +208,10 @@
     (receive (new-cadr cadr-shape) (loop (cadr expr) env)
       (values (slice-values-by-access new-cadr cadr-shape expr)
               (select-from-shape-by-access cadr-shape expr))))
-  (define (sra-construction expr env)
-    (receive (new-terms terms-shapes) (loop* (cdr expr) env)
+  (define (sra-construction ctor operands env)
+    (receive (new-terms terms-shapes) (loop* operands env)
       (values (append-values new-terms)
-              (construct-shape terms-shapes expr))))
+              (construct-shape terms-shapes ctor))))
   (define (sra-application operator operands env)
     (receive (new-args args-shapes) (loop* operands env)
       ;; The type checker should have ensured this
@@ -356,8 +356,8 @@
       (list form)))
 (define (append-values values-forms)
   (tidy-values `(values ,@(append-map smart-values-subforms values-forms))))
-(define (construct-shape subshapes template)
-  `(,(car template) ,@subshapes))
+(define (construct-shape subshapes kind)
+  `(,kind ,@subshapes))
 (define (slice-values-by-access values-form old-shape access-form)
   (let ((the-subforms (smart-values-subforms values-form)))
     (tidy-values

@@ -55,6 +55,15 @@
   ((on-subexpressions
     (rule-list
      (list
+      ;; TODO None of these rules should apply inside quoted data.  In
+      ;; the case of the last one, the "right" thing (if we are
+      ;; serious about treating all imprecise number literals as
+      ;; unknown) would be to examine quoted data, see if it contains
+      ;; any imprecise literals, and turn it into a quasiquote that
+      ;; inserts `(real ,number).  Both of these things cannot be done
+      ;; in the current setting because on-subexpressions applies the
+      ;; rules bottom-up, so by the time any rule of the form '(quote
+      ;; (? datum)) ... would see it, it's already too late.
       (rule '+ 'g:+)
       (rule '- 'g:-)
       (rule '* 'g:*)

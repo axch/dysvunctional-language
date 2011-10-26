@@ -219,7 +219,7 @@
         ;; which would make the test suite too slow if it were done
         ;; after every code generation.
         ;; TODO I need a real module system!
-        ((access clear-name-caches! user-initial-environment)))
+        ((access clear-name-caches! (nearest-repl/environment))))
       (when (eq? name 'reverse-anf)
         (display "Final output has ")
         (show-program it)))))
@@ -232,7 +232,7 @@
            ;; The generate stage wants to display different stats
            (format #t "~A bindings\n"
                    (length
-                    ((access analysis-bindings user-initial-environment)
+                    ((access analysis-bindings (nearest-repl/environment))
                      (property-value 'analysis program))))
            (print-fol-size program))))))
 
@@ -244,7 +244,7 @@
            ;; The generate stage wants to display different stats
            (format #t "~A bindings\n"
                    (length
-                    ((access analysis-bindings user-initial-environment)
+                    ((access analysis-bindings (nearest-repl/environment))
                      (property-value 'analysis program))))
            (print-fol-statistics program))))))
 

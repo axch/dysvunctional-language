@@ -217,7 +217,7 @@
                     expr element-type index)))
        element-types
        (iota (length element-types)))
-      (construct-shape element-types expr)))
+      (construct-shape element-types (car expr))))
   (define (check-application-types expr env)
     (if (not (fol-var? (car expr)))
         (error "Calling a statically unknown procedure" expr))
