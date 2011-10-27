@@ -1,0 +1,18 @@
+(include "streams.dvl")
+
+(define (heron-sqrt x)
+  (iterate-to-numeric-fix (lambda (y) (/ (+ y (/ x y)) 2)) 1.))
+
+(heron-sqrt 4.) ===> 2.000000000000002
+(heron-sqrt 9.) ===> 3.0
+(heron-sqrt 16.) ===> 4.0
+
+;;; TODO These tickle the bug that the inliner is not actually
+;;; idempotent, even though it says it is.  (Don't forget to check
+;;; that dvl-test.scm loads this file before re-enabling these).
+;; ((derivative heron-sqrt) 4.) ===> 0.25
+;; ((derivative heron-sqrt) 9.) ===> 0.16666666666666666
+
+;; ((derivative (derivative heron-sqrt)) 4.) ===> -.03125
+;; ((derivative (derivative heron-sqrt)) 9.) ===> -.00390625
+

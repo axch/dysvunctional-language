@@ -228,6 +228,11 @@
     "../examples/non-bug.dvl"
     ))
 
+ (for-each-example "../examples/sqrt-again.dvl"
+  (lambda (program #!optional value)
+    (define-loose-union-free-example-test
+      (dvl-prepare (vlad->dvl program)) value)))
+
  (define-test (executable-entry-point-from-vl)
    (check
     (equal?
