@@ -112,15 +112,21 @@
           ;; The stable point does not depend infinitesimally on the start
           ((iterate (lambda (x) (f (deep-primal x)))) start)))))
     (if (< (distance (deep-primal state) (deep-primal next-state)) 1e-7)
+        ;; Repeat the computation f here to make it clear to the dead
+        ;; code eliminator that I really will not need the tangent
+        ;; computed by f until after I am done with the loop.  That
+        ;; way, it should refrain from computing it while the loop
+        ;; iterates.
         (let tangent-loop ((state (f (deep-primal state))))
           (semi-deep-bundle?
            state
            (lambda (eps prim tang)
-             (make-bundle eps (tangent-loop prim)
-                          (iterate-to-numeric-fix
-                           (lambda (u-bar)
-                             (tangent eps (f (make-bundle eps prim u-bar))))
-                           tang)))
+             (make-bundle
+              eps (tangent-loop prim)
+              (iterate-to-numeric-fix
+               (lambda (tangent-candidate)
+                 (tangent eps (f (make-bundle eps prim tangent-candidate))))
+               tang)))
            (lambda ()
              state)))
         (primal-loop (force rest)))))
