@@ -112,18 +112,17 @@
           ;; The stable point does not depend infinitesimally on the start
           ((iterate (lambda (x) (f (deep-primal x)))) start)))))
     (if (< (distance (deep-primal state) (deep-primal next-state)) 1e-7)
-        (let ((primal-fixed (deep-primal next-state)))
-          (let tangent-loop ((state (f (deep-primal state))))
-            (semi-deep-bundle?
-             state
-             (lambda (eps prim tang)
-               (make-bundle eps (tangent-loop prim)
-                            (iterate-to-numeric-fix
-                             (lambda (u-bar)
-                               (tangent eps (f (make-bundle eps prim u-bar))))
-                             tang)))
-             (lambda ()
-               state))))
+        (let tangent-loop ((state (f (deep-primal state))))
+          (semi-deep-bundle?
+           state
+           (lambda (eps prim tang)
+             (make-bundle eps (tangent-loop prim)
+                          (iterate-to-numeric-fix
+                           (lambda (u-bar)
+                             (tangent eps (f (make-bundle eps prim u-bar))))
+                           tang)))
+           (lambda ()
+             state)))
         (primal-loop (force rest)))))
 
 ;; TODO Test when f is a closure with internal g :: R^n x R^m -> R^n
