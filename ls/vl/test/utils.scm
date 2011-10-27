@@ -158,6 +158,16 @@
                  'done)
                 ((definition? first)
                  (loop second third (read) (cons first definitions)))
+                ((include-directive? first)
+                 (loop
+                  second
+                  third
+                  (read)
+                  (append (reverse (with-working-directory-pathname
+                                    (directory-namestring filename)
+                                    (lambda ()
+                                      (read-source (cadr first)))))
+                          definitions)))
                 ((eq? '===> second)
                  (proc `(let ()
                           ,@(reverse definitions)
