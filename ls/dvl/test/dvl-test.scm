@@ -228,6 +228,8 @@
     "../examples/non-bug.dvl"
     ))
 
+;; TODO Also too slow
+#;
  (for-each-example "../examples/sqrt-again.dvl"
   (lambda (program #!optional value)
     (define-loose-union-free-example-test
