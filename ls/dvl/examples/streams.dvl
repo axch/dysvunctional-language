@@ -84,6 +84,27 @@
          0)))
 
 (define (iterate-to-numeric-fix f start)
+  ;; For motivation (that is, why this function cares about bundles at all),
+  ;; see ls/dvl/doc/num-fix.tex.
+  ;;
+  ;; This implementation follows Strategy 2 from that document, which
+  ;; is to iterate the primal to convergence alone, and then use that
+  ;; result to iterate the tangent to convergence.
+  ;;
+  ;; Specific complications not addressed in the document:
+  ;; - Examining f does not indicate whether it is lifted or not, so
+  ;;   the question of whether or not differentiation is in progress can
+  ;;   only be answered by observing the output of f.
+  ;; - Bundles are interleaved into datastructures, so care must be
+  ;;   taken to inspect any data structure emitted by f to look for
+  ;;   bundles.  This could cause performance degradation if it had to
+  ;;   be done at runtime (and may cause compilation performance
+  ;;   degradation as it is).
+  ;; - Mercifully, it would be an error anyway if f were to emit a
+  ;;   function, because there is no obvious norm on the function space
+  ;;   by which to measure convergence.
+  ;; - Finally, there may be several levels of differentiation in
+  ;;   progress, so all their tangents are treated recursively.
   (let primal-loop
       (((cons (cons state next-state) rest)
         (force
