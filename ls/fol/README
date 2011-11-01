@@ -345,7 +345,7 @@ program    = <expression>
            | (begin <definition> ... <expression>)
 
 definition = (define (<proc-var> <data-var> ...)
-               (argument-types <shape> ...)
+               (argument-types <shape> ... <return-shape>)
                <expression>)
 
 shape      = real | bool | gensym | ()
