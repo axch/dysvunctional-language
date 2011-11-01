@@ -13,9 +13,8 @@ range of constructs.
 
 The present code collection includes a FOL type checker, an in-memory
 optimizing compiler from FOL to itself, a runtime library for
-executing FOL as MIT Scheme, and a compiler from FOL to native code
-via MIT Scheme.  I have not yet experimented with compiling FOL to any
-other targets.
+executing FOL as MIT Scheme, and compilers from FOL to native code via
+MIT Scheme and SBCL.
 
 The remainder of this document consists of four sections,
 corresponding to the reasons why you might wish to peruse it:
@@ -125,9 +124,10 @@ watching-memory
   comparable to the compilation itself.
 
 All the subsequent procedures in this section accept adverb arguments,
-except the ones that just check whether a particular property holds of
-the program or not (namely, unique-names?, alpha-rename?,
-approximate-anf?, strip-argument-types, let->let*, let*->let).
+except the ones that do trivial jobs, such as checking whether a
+particular property holds of the program or not (namely,
+unique-names?, alpha-rename?, approximate-anf?, strip-argument-types,
+let->let*, and let*->let).
 
 You can also get the output from the code generator, examine it, and
 optimize it separately.
@@ -303,7 +303,8 @@ if that helps you read them.
 Machine code from FOL
 
 FOL includes a compiler to machine code via the MIT Scheme compiler,
-and an experimental backed via the Stalin compiler.
+and experimental backeds via the Stalin compiler and via Steel Bank
+Common Lisp.
 
 (fol->mit-scheme <program> [<basename>])
   Dumps the given FOL program into <basename>.fol-scm and compiles
@@ -314,7 +315,7 @@ and an experimental backed via the Stalin compiler.
 (fol->floating-mit-scheme <program> [<basename>])
   Like `fol->mit-scheme', but replaces all of MIT Scheme's generic
   numeric procedures with specialized floating point versions.  This
-  is faster, but only safe if you did not indend to do any exact
+  is faster, but only safe if you did not intend to do any exact
   arithmetic in your program.  (Vector indexing is not broken).
 
 (run-mit-scheme [<basename>])
@@ -331,6 +332,10 @@ and an experimental backed via the Stalin compiler.
 (fol->stalin <program> [<basename>])
   Dumps the given FOL program into <basename>.sc and compiles that
   with Stalin.  The result is a standalone executable.
+
+(fol->common-lisp <program> [<basename>])
+  Dumps the given FOL program into basename.lisp and compiles that
+  with SBCL.  The result is a fasl file that can be loaded into SBCL.
 
 
 Writing FOL
@@ -375,11 +380,12 @@ and one for holding data; both are represented as Scheme symbols.  The
 procedure variables have global scope, must be globally unique, may
 only be bound by DEFINE forms, and may not shadow primitive
 procedures.  The data variables are lexically scoped with shadowing,
-and may be bound by LET forms and the formal parameter positions of
-DEFINE forms.  Procedures may only be defined at the top level.  The
-lambda form is provided only for wrapping FOL procedures for export
-across the foreign interface.  Applications may only apply procedures
-directly by name.  This serves to make FOL a first-order language.
+and may be bound by LET forms, LAMBDA forms, and the formal parameter
+positions of DEFINE forms.  Procedures may only be defined at the top
+level.  The lambda form is provided only for wrapping FOL procedures
+for export across the foreign interface.  Applications may only apply
+procedures directly by name.  This serves to make FOL a first-order
+language.
 
 FOL being first-order was the point.  The restrictions on FOL make the
 targets of all control transfers (except procedure returns) statically
@@ -496,6 +502,7 @@ runtime.scm         FOL runtime system
 primitives.scm      Primitives available to FOL programs
 mit-scheme.scm      Compilation to machine code with MIT Scheme
 stalin.scm          Compilation to machine code with Stalin
+common-lisp.scm     Compilation with Steel Bank Common Lisp
 load.scm            Entry point; namespace management
 
 The FOL compiler makes extensive use of a pattern matching and
@@ -520,7 +527,10 @@ Perhaps adding the IO monad to the type system?
 
 3) FOL will need a foreign interface, at least to the ambient MIT
 Scheme (which then has a foreign interface to the rest of the world).
-This is how VL and DVL can be given foreign interfaces.
+This is how VL and DVL can be given foreign interfaces.  There already
+is a rudimentary one in the form of returning a value (which may be a
+LAMBDA object, representing a procedure that accepts one real number
+argument), but this will need to be expanded upon.
 
 4) FOL will need to run on a different platform.  Even MIT Scheme
 native code at the moment boxes its floating point numbers, which
