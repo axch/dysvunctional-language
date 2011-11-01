@@ -355,6 +355,7 @@ definition = (define (<proc-var> <data-var> ...)
 
 shape      = real | bool | gensym | ()
            | (cons <shape> <shape>) | (vector <shape> ...) | (values <shape> ...)
+           | function ; for escaping functions only
 
 expression = <data-var>
            | <number> | <boolean> | ()
