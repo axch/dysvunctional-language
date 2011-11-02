@@ -485,11 +485,11 @@
                (if (gensym= eps answer-eps)
                    (let* (((cons seen sorted) (compute-visiting-order forward-phase-answer '() '())))
                      (reverse-phase sorted (list (cons id 1))))
-                   ;; f is not infinitesimally independent on x, return the
-                   ;; empty sensitivity list.
+                   ;; f is not infinitesimally dependent on x, return
+                   ;; the empty sensitivity list.
                    '()))
              (lambda ()
-               ;; f is not infinitesimally independent on x, return the
+               ;; f is not infinitesimally dependent on x, return the
                ;; empty sensitivity list.
                '()))))
       (define (interpret thing)
