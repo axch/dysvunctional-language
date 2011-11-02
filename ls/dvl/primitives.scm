@@ -265,6 +265,29 @@
                      first second))))))
 
 (define-primitive-type-predicate gensym?)
+
+(add-primitive!
+ (simple-primitive 'gensym< 2
+  (lambda (arg)
+    (gensym< (car arg) (cdr arg)))
+  (lambda (arg)
+    (let ((first (car arg))
+          (second (cdr arg)))
+      (if (and (abstract-gensym? first)
+               (abstract-gensym? second))
+          (let ((first-low   (abstract-gensym-min first))
+                (first-high  (abstract-gensym-max first))
+                (second-low  (abstract-gensym-min second))
+                (second-high (abstract-gensym-max second)))
+            (cond ((< first-high second-low)
+                   #t)
+                  ((>= first-low second-high)
+                   #f)
+                  (else
+                   abstract-boolean)))
+          (dvl-error "Bad argument" 'gensym<
+                     (error-irritant/noise " expects two gensyms, given")
+                     first second))))))
 
 ;;;; User detection of errors
 

@@ -46,4 +46,5 @@
     ,@(map real->bool '(zero? positive? negative?))
     ,@(map real*real->bool '(< <= > >= =))
     ,(make-primitive 'gensym (function-type '() 'gensym) #f)
-    ,(make-primitive 'gensym= (function-type '(gensym gensym) 'bool) #t)))
+    ,(make-primitive 'gensym= (function-type '(gensym gensym) 'bool) #t)
+    ,(make-primitive 'gensym< (function-type '(gensym gensym) 'bool) #t)))

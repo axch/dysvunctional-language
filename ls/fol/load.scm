@@ -104,7 +104,7 @@
      ;; The FOL runtime system.  It is exported because it is part of
      ;; the implementation of VL and DVL (the concrete implementations
      ;; of some primitives).
-     real read-real write-real make-gensym gensym-number gensym? gensym=
+     real read-real write-real make-gensym gensym-number gensym? gensym= gensym<
 
      ;; The FOL names subsystem (see nomenclature.scm).
      make-name name->symbol reset-fol-names!
