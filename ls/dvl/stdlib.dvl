@@ -202,6 +202,9 @@
 (define (perturb thing) thing)
 (define (unperturb thing) thing)
 
+(define (gensym-max g1 g2)
+  (if (gensym< g1 g2) g2 g1))
+
 (define (lift-real->real f df/dx)
   (define (self thing)
     (bundle?
@@ -216,22 +219,29 @@
 
 (define (lift-real*real->real f df/dx1 df/dx2)
   (define (self thing1 thing2)
+    (define (operate eps)
+      (let ((prim1 (primal eps thing1))
+            (prim2 (primal eps thing2))
+            (tang1 (tangent eps thing1))
+            (tang2 (tangent eps thing2)))
+        (make-bundle eps
+         (self prim1 prim2)
+         (g:+ (g:* (df/dx1 prim1 prim2) tang1)
+              (g:* (df/dx2 prim1 prim2) tang2)))))
     (bundle?
      thing1
      (lambda (eps prim tang)
-       (make-bundle
-        eps
-        (self prim (primal eps thing2))
-        (g:+ (g:* (df/dx1 prim (primal eps thing2)) tang)
-             (g:* (df/dx2 prim (primal eps thing2)) (tangent eps thing2)))))
+       (bundle?
+        thing2
+        (lambda (eps2 prim2 tang2)
+          (operate (gensym-max eps eps2)))
+        (lambda ()
+          (operate eps))))
      (lambda ()
        (bundle?
         thing2
         (lambda (eps prim tang)
-          (make-bundle
-           eps
-           (self thing1 prim)
-           (g:* (df/dx2 thing1 prim) tang)))
+          (operate eps))
         (lambda ()
           (f thing1 thing2))))))
   self)
