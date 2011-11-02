@@ -7,7 +7,7 @@
 (define least-gensym (gensym))
 
 (define bundle-tag (gensym))
-(define (%make-bundle epsilon primal tangent)
+(define (make-bundle epsilon primal tangent)
   (list bundle-tag epsilon primal tangent))
 (define (bundle? thing win lose)
   (if (and (pair? thing)
@@ -25,7 +25,7 @@
   (car (cdr (cdr (cdr thing)))))
 (define (forward? thing)
   (bundle? thing (lambda (x y z) #t) (lambda () #f)))
-(define (make-bundle epsilon thing1 thing2)
+(define (%make-bundle epsilon thing1 thing2)
   ;; Expect bundles to be interleaved inside pairs and procedures, but
   ;; force nesting of bundles and tape cells to respect the creation
   ;; order of perturbations.
