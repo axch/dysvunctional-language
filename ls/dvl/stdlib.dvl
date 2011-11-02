@@ -248,7 +248,7 @@
 
 (define (lift-real*real->real f df/dx1 df/dx2)
   (define (self thing1 thing2)
-    (define (operate eps)
+    (define (operate-forward eps)
       (let ((prim1 (primal eps thing1))
             (prim2 (primal eps thing2))
             (tang1 (tangent eps thing1))
@@ -257,22 +257,10 @@
          (self prim1 prim2)
          (g:+ (g:* (df/dx1 prim1 prim2) tang1)
               (g:* (df/dx2 prim1 prim2) tang2)))))
-    (bundle?
-     thing1
-     (lambda (eps prim tang)
-       (bundle?
-        thing2
-        (lambda (eps2 prim2 tang2)
-          (operate (gensym-max eps eps2)))
-        (lambda ()
-          (operate eps))))
-     (lambda ()
-       (bundle?
-        thing2
-        (lambda (eps prim tang)
-          (operate eps))
-        (lambda ()
-          (f thing1 thing2))))))
+    (if (or (forward? thing1) (forward? thing2))
+        (operate-forward
+         (gensym-max (perturbation-of thing1) (perturbation-of thing2)))
+        (f thing1 thing2)))
   self)
 
 (define (primal* thing)
