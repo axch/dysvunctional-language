@@ -38,12 +38,11 @@
        eps
        (make-bundle epsilon prim1 prim2)
        (make-bundle epsilon tang1 tang2))))
-  (if (gensym< (gensym-max (perturbation-of thing1)
-                           (perturbation-of thing2))
-               epsilon)
-      (%make-bundle epsilon thing1 thing2)
-      (operate-forward (gensym-max (perturbation-of thing1)
-                                   (perturbation-of thing2)))))
+  (let ((top-eps (gensym-max (perturbation-of thing1)
+                             (perturbation-of thing2))))
+    (if (gensym< top-eps epsilon)
+        (%make-bundle epsilon thing1 thing2)
+        (operate-forward top-eps))))
 
 (define (perturbation-of thing)
   (bundle?
