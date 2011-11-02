@@ -1,0 +1,117 @@
+(gradient-r sin 0) ===> 1
+
+(gradient-r sin (real 0)) ===> 1
+
+(gradient-r + (cons 4 7)) ===> (1 . 1)
+
+(gradient-r * (cons 4 7)) ===> (7 . 4)
+
+(gradient-r * (cons (real 4) (real 7))) ===> (7 . 4)
+
+;;; These are copies of ls/slad/essential-examples.scm, but using
+;;; reverse mode.
+
+(define (derivative-r f)
+  (lambda (x)
+    (gradient-r f x)))
+
+;;; Identity function
+((derivative-r (lambda (x) x)) 7) ===> 1
+
+;;; Constant function
+((derivative-r (lambda (x) 3)) 7) ===> 0
+
+;;; Transform of +
+((derivative-r (lambda (x) (+ x 1))) 7) ===> 1
+((derivative-r (lambda (x) (+ x x))) 7) ===> 2
+
+;;; Nested constant function (don't conflate the perturbations)
+(let ()
+  (define (one x)
+    ((derivative-r (lambda (y) (+ x y))) 3))
+  ((derivative-r one) 7)) ===> 0
+
+;;; Another don't conflate the perturbations
+(let ()
+  (define (one x)
+    ((derivative-r (lambda (y) (+ x y))) 3))
+  ((derivative-r (lambda (x)
+                   (* x (one x))))
+   7)) ===> 1
+
+;;; Don't confuse the perturbations
+;; I'm not sure this would catch a thing that swapped the
+;; perturbations with each other, but it at least might.
+(let ()
+  (define (one x)
+    ((derivative-r (lambda (y) (+ x y))) 3))
+  ((derivative-r (lambda (x)
+                   (* x (one (* 2 x)))))
+   7)) ===> 1
+
+;;; Another don't confuse the perturbations.
+((derivative-r
+  (lambda (y)
+    ((derivative-r
+      (lambda (x)
+        (* x (* x y))))
+     (* y 3))))
+ 5) ===> 60
+
+;;; Ditto, but combining forward and reverse in various ways
+
+;;; Nested constant function (don't conflate the perturbations)
+(let ()
+  (define (one x)
+    ((derivative (lambda (y) (+ x y))) 3))
+  ((derivative-r one) 7)) ===> 0
+(let ()
+  (define (one x)
+    ((derivative-r (lambda (y) (+ x y))) 3))
+  ((derivative one) 7)) ===> 0
+
+;;; Another don't conflate the perturbations
+(let ()
+  (define (one x)
+    ((derivative (lambda (y) (+ x y))) 3))
+  ((derivative-r (lambda (x)
+                   (* x (one x))))
+   7)) ===> 1
+(let ()
+  (define (one x)
+    ((derivative-r (lambda (y) (+ x y))) 3))
+  ((derivative (lambda (x)
+                 (* x (one x))))
+   7)) ===> 1
+
+;;; Don't confuse the perturbations
+;; I'm not sure this would catch a thing that swapped the
+;; perturbations with each other, but it at least might.
+(let ()
+  (define (one x)
+    ((derivative (lambda (y) (+ x y))) 3))
+  ((derivative-r (lambda (x)
+                   (* x (one (* 2 x)))))
+   7)) ===> 1
+(let ()
+  (define (one x)
+    ((derivative-r (lambda (y) (+ x y))) 3))
+  ((derivative (lambda (x)
+                 (* x (one (* 2 x)))))
+   7)) ===> 1
+
+;;; Another don't confuse the perturbations.
+((derivative
+  (lambda (y)
+    ((derivative-r
+      (lambda (x)
+        (* x (* x y))))
+     (* y 3))))
+ 5) ===> 60
+((derivative-r
+  (lambda (y)
+    ((derivative
+      (lambda (x)
+        (* x (* x y))))
+     (* y 3))))
+ 5) ===> 60
