@@ -99,6 +99,11 @@
    (lambda ()
      (cond ((real? thing)
             thing)
+           ((reverse? thing)
+            ;; TODO This expects that primal is always called with the
+            ;; outermost available epsilon, and that bundles and tape
+            ;; cells are properly nested.
+            thing)
            ((procedure? thing)
             (lambda (x)
               (primal epsilon (thing x))))
@@ -118,6 +123,11 @@
                       (tangent epsilon thing-tang))))
    (lambda ()
      (cond ((real? thing)
+            0)
+           ((reverse? thing)
+            ;; TODO This expects that tangent is always called with
+            ;; the outermost available epsilon, and that bundles and
+            ;; tape cells are properly nested.
             0)
            ((procedure? thing)
             ;; Note that this will have a different effect from the
