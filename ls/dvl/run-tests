@@ -1,3 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 
-mit-scheme --compiler -heap 6000 --stack 2000 --batch-mode --no-init-file --eval '(set! load/suppress-loading-message? #t)' --eval '(begin (load "load") (load "test/load") (show-time run-registered-tests) (newline) (flush-output) (%exit 0))'
+if [ `uname -m` == 'x86_64' ]; then
+    HEAP=50000
+else
+    HEAP=6000
+fi
+
+mit-scheme --compiler --heap $HEAP --stack 2000 --batch-mode --no-init-file --eval '(set! load/suppress-loading-message? #t)' --eval '(begin (load "load") (load "test/load") (show-time run-registered-tests) (newline) (flush-output) (%exit 0))'
