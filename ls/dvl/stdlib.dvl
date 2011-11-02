@@ -563,4 +563,4 @@
             (cons (cons a-key (merge datum a-datum))
                   rest)
             (cons (cons a-key a-datum)
-                  (updateq-with (cdr alist key datum merge)))))))
+                  (updateq-with (cdr alist) key datum merge))))))
