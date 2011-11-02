@@ -235,6 +235,22 @@ arbitrary (except that it may not contain functions; this is an
 outstanding issue, below).
 
 
+Conjecture
+
+The above implementation of AD by overloading (and, in the case of
+reverse mode, by further direct interpretation of the tape) can be
+compiled to code competitive with the transformational approaches of
+Tapenade, Stalingrad, etc, by pushing it through a partial evaluator
+that supports (sortable) gensyms, to wit, DVL (after support for,
+e.g., union types is adequately implemented), at least on those
+programs on which said transformational approaches work.  Further, the
+perturbation gensyms amount to deconfusing perturbations at compile
+time in cases where the derivative nesting depth is known statically,
+and degrade gracefully to deconfusing them at runtime when it is not.
+(The latter circumstance would defeat Tapenade, Stalingrad, etc,
+completely, as far as I am aware).
+
+
 Outstanding Issues
 
 1) A version of iterate-to-numeric-fixedpoint that detects when it is
