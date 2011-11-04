@@ -20,6 +20,10 @@
            answer
            (loop (- count 1) (and answer ,expression))))))
 
+(define realize-all
+  (on-subexpressions
+   (rule `(? number ,number?) `(real ,number))))
+
 (in-test-group
  dvl
  (define-each-check
@@ -268,7 +272,7 @@
  (for-each-example "../examples/reverse-examples.dvl"
   (lambda (program #!optional value)
     (define-loose-union-free-example-test
-      (dvl-prepare (vlad->dvl program)) value)))
+      (dvl-prepare (vlad->dvl (realize-all program))) value)))
 
  (define-test (compile-reverse-mode)
    (check (equal?
