@@ -294,6 +294,9 @@ some horrible way to do with the absence of union types.
 
 7) For more, see the TODO comments in the code.
 
+8) swap-gensyms-in-object will violate the genysm sorting invariant.
+Can this ever cause trouble?  Is it possible to manufacture an
+amazing^2 bug out of this?
 
 Rationale for Sorted Gensyms
 
