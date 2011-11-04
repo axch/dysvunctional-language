@@ -291,6 +291,71 @@ some horrible way to do with the absence of union types.
 
 7) For more, see the TODO comments in the code.
 
+
+Rationale for Sorted Gensyms
+
+The original implementation of forward mode in DVL did not rely on a
+total order of the perturbation tags to compute the right answers, but
+with the addition of reverse mode, such a total order was found
+necessary.  Why?
+
+Here is the essence of the problem.  Perturbations commute, so there
+are two semantically equivalent ways to represent a nested forward
+mode bundle:
+
+      B1                 B2
+     /  \               /  \
+   B2    B2    or     B1    B1
+  /  \  /  \         /  \  /  \
+  x  y  z  w         x  z  y  w
+
+When a binary operation is presented with two one-level bundles of
+different epsilons, (for example, the + in (D (lambda (x) (D (lambda
+(y) (+ x y))))) it must choose one or the other of these forms.  With
+unsorted gensyms, there is no reason to choose either arrangement over
+the other, so said binary operation arbitrarily chose to put the top
+epsilon from the first argument on top.
+
+Now, in forward mode, this was all fine, because these two forms are
+connected by the obvious isomorphism, and when a binary operation got
+arguments that were not parallel, (which would happen to the * in (D
+(lambda (x) (D (lambda (y) (* (+ x y) (+ y x))))))) it could just
+(implicitly) apply the isomorphism (and emit an answer whose shape was
+parallel to the shape of its first argument).
+
+With the addition of reverse mode, however, things get worse.  There
+are still equivalent forms for nested tape cells:
+
+   TC1      TC2
+    |        |
+   TC2  or  TC1
+    |        |
+    x        x
+
+and also equivalent forms for forward and reverse mode nested in each
+other:
+
+    B1           TC2
+   /  \           |
+ TC2  TC2   or    B1
+  |    |         /  \
+  x    y         x  y
+
+There are also isomorphisms that can be applied, but the problem is
+that in order to give the reverse phase a workable graph, we care
+about both the assigned unique ids of the tape cells, and also about
+their pointer identities (because the graph links are pointers from
+the keys of partials list of one tape cell to other tape cells).  In
+principle, I am sure that the tape cells that result from the
+application of isomorphisms could be given reasonable partials lists
+that would point to the pre-isomorphism tape cells such that the
+reverse phase would be correct and everything would work out; but I
+got confused trying to do that, and decided to use sorted gensyms to
+produce a canonical order in the first place.  The rule is that larger
+gensyms go on top, so these examples standardize on the second form.
+The first form never occurs, and no isomorphisms need be applied.
+
+
 [1] For motivation of why this is the right thing, see
 axch/tangents-of-functions.tex.  For a subtlety in implementing it,
 see axch/amazing-bug.tex.  That document is out of date, in that the
