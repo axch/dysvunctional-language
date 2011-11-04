@@ -9,6 +9,8 @@
       l2))
 
 (define least-gensym (gensym))
+(define (gensym-max g1 g2)
+  (if (gensym< g1 g2) g2 g1))
 
 (define bundle-tag (gensym))
 (define (make-bundle epsilon primal tangent)
@@ -275,9 +277,6 @@
 (define (perturb thing) thing)
 (define (unperturb thing) thing)
 
-(define (gensym-max g1 g2)
-  (if (gensym< g1 g2) g2 g1))
-
 (define (lift-real->real f df/dx)
   (define (self thing)
     (bundle?
@@ -536,6 +535,8 @@
 (define (reverse-phase nodes sensitivities)
   (if (null? nodes)
       sensitivities
+      ;; Since you're going in topological sort order, when you reach
+      ;; a node you know you are done updating its sensitivity.
       (let ((sensitivity (assq (tape-cell-id (car nodes)) sensitivities)))
         (let loop ((sensitivities sensitivities)
                    (partials (tape-cell-partials (car nodes))))
