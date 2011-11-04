@@ -196,10 +196,13 @@ OK, so now you have the forward-phase-answer, which (since f was
 supposed to go to R) should be a single tape cell.  The sensitivity to
 this single tape cell is the canonical direction on the output space,
 namely 1.  Now what?  Well, first of all, this tape cell is the root
-of a directed acyclic graph whose edges point in the reverse of the
-direction in which the forward phase computation proceeded.  You will
-need to traverse this graph in topological sort order updating
-sensitivities.  So first, compute that topological sort order
+of a directed acyclic graph G whose vertices are tape cells.  For each
+tape cell C, G has an edge from C to each tape cell that appears as a
+key in the partials list of C.  This graph G captures the forward
+phase computation, with edges pointing in the reverse of the direction
+in which the forward phase computation proceeded.  You will need to
+traverse this graph in topological sort order updating sensitivities.
+So first, compute that topological sort order
 
   ... (compute-visiting-order forward-phase-answer '() '()) ...
 
