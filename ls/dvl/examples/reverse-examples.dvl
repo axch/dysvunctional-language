@@ -128,3 +128,6 @@
      (+ (means (means (means (means x y))))))
    (real 3.) (real 4.)))
 ===> (1.0775567911016182 . .9328462448535719) ; This answer checked with Mechanics
+
+;; TODO Check that gradient-r agrees with gradient-f on complicated things
+;; TODO Verify that reverse mode does the right amount of work
