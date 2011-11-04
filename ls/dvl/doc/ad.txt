@@ -123,18 +123,31 @@ above form, must produce what amounts to
   (tape-cell eps <fresh-id> (f primal) (Jf primal))
 
 Note that the id and the partials of the input cells are not read.
-Also, the Jacobian must be stored columwise, mapping each input tape
+Also, the Jacobian must be stored columnwise, mapping each input tape
 cell that contributed to the primal to the partial derivative of (f
 primal) with respect to that input.  Care must again be taken
 that these will be interleaved the other way: a binary function will
-get
+get two tape cell arguments, not a tape cell holding both arguments.
 
-  (cons (tape-cell eps id1 primal1 _)
-        (tape-cell eps id2 primal2 _))
+For example, consider the primitive * (multiply).  In the forward
+phase, it might receive the following two arguments:
 
-not
+  A: (tape-cell eps id1 primal1 partials1)
+  B: (tape-cell eps id2 primal2 partials2)
 
-  (tape-cell eps id (cons primal1 primal2) _)
+(where the epsilons are the same, indicating that these both relate to
+the same run of reverse mode).  It must then produce the following
+output:
+
+  C: (tape-cell eps id3 (* primal1 primal2)
+      `((,A . ,primal2)   ; Map input A to d*/dx1 (primal1,primal2) = primal2
+        (,B . ,primal1))) ; Map input B to d*/dx2 (primal1,primal2) = primal1
+
+Note that the ids and partials lists of the arguments are ignored
+here; they will be used by the reverse phase.  Not also that if this
+run of AD is nested, then the primals may be bundles or tape cells
+(with a smaller epsilon) and therefore the entries in the partials
+lists will also be bundles or tape cells.
 
 Care must also be taken that, like in forward mode, no tape cell with
 a given perturbation means that the sensitivity to this this is not
