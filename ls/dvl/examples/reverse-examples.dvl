@@ -116,9 +116,9 @@
      (* y 3))))
  5) ===> 60
 
-(gradient-r product (list (real 1) (real 2) (real 3))) ===> '(6 3 2)
-(gradient-r product (list (real 1) (real 2) (real 3) (real 4))) ===> '(24 12 8 6)
-(gradient-r (lambda (x y) (sqrt (+ (* x x) (* y y)))) (real 3.) (real 4.)) ===> (.6 .8)
+(gradient-r product (list (real 1) (real 2) (real 3))) ===> (6 3 2)
+(gradient-r product (list (real 1) (real 2) (real 3) (real 4))) ===> (24 12 8 6)
+(gradient-r (lambda (x y) (sqrt (+ (* x x) (* y y)))) (real 3.) (real 4.)) ===> (.6000000000000001 . .8)
 
 (let ()
   (define (means x y)
