@@ -149,10 +149,10 @@ run of AD is nested, then the primals may be bundles or tape cells
 (with a smaller epsilon) and therefore the entries in the partials
 lists will also be bundles or tape cells.
 
-Care must also be taken that, like in forward mode, no tape cell with
-a given perturbation means that the sensitivity to this this is not
-going to be used in this run of reverse mode.  Just don't include that
-input in the partials list.
+Care must also be taken that, like in forward mode, the absence of a
+tape cell with a given perturbation means that the sensitivity to that
+input is not going to be used in this run of reverse mode.  Just don't
+include that input in the partials list.
 
 Why do tape cells have ids?  The forward computation is a directed
 acyclic graph that may very well share nodes, and the reverse phase
