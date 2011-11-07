@@ -3,6 +3,14 @@
 (define (car (cons x y)) x)
 (define (cdr (cons x y)) y)
 (define (not x) (if x #f #t))
+(define (append l1 l2)
+  (if (pair? l1)
+      (cons (car l1) (append (cdr l1) l2))
+      l2))
+
+(define least-gensym (gensym))
+(define (gensym-max g1 g2)
+  (if (gensym< g1 g2) g2 g1))
 
 (define bundle-tag (gensym))
 (define (make-bundle epsilon primal tangent)
@@ -23,6 +31,63 @@
   (car (cdr (cdr (cdr thing)))))
 (define (forward? thing)
   (bundle? thing (lambda (x y z) #t) (lambda () #f)))
+(define (%make-bundle epsilon thing1 thing2)
+  ;; Expect bundles to be interleaved inside pairs and procedures, but
+  ;; force nesting of bundles and tape cells to respect the creation
+  ;; order of perturbations.
+  (define (operate-forward eps)
+    (let ((prim1 (primal eps thing1))
+          (prim2 (primal eps thing2))
+          (tang1 (tangent eps thing1))
+          (tang2 (tangent eps thing2)))
+      (make-bundle
+       eps
+       (make-bundle epsilon prim1 prim2)
+       (make-bundle epsilon tang1 tang2))))
+  (let ((top-eps (gensym-max (perturbation-of thing1)
+                             (perturbation-of thing2))))
+    (if (gensym< top-eps epsilon)
+        (%make-bundle epsilon thing1 thing2)
+        (operate-forward top-eps))))
+
+(define (perturbation-of thing)
+  (bundle?
+   thing
+   (lambda (eps prim tang)
+     eps)
+   (lambda ()
+     (tape-cell?
+      thing
+      (lambda (eps id prim partials)
+        eps)
+      (lambda ()
+        least-gensym)))))
+
+(define tape-cell-tag (gensym))
+(define (make-tape-cell epsilon id primal partial-alist)
+  (list tape-cell-tag epsilon id primal partial-alist))
+(define (tape-cell? thing win lose)
+  (if (and (pair? thing)
+           (gensym? (car thing))
+           (gensym= (car thing) tape-cell-tag))
+      (win (tape-cell-epsilon thing)
+           (tape-cell-id thing)
+           (tape-cell-primal thing)
+           (tape-cell-partials thing))
+      (lose)))
+(define (tape-cell-epsilon thing)
+  (car (cdr thing)))
+(define (tape-cell-id thing)
+  (car (cdr (cdr thing))))
+(define (tape-cell-primal thing)
+  (car (cdr (cdr (cdr thing)))))
+(define (tape-cell-partials thing)
+  (car (cdr (cdr (cdr (cdr thing))))))
+(define (reverse? thing)
+  (tape-cell? thing (lambda (x y z w) #t) (lambda () #f)))
+
+(define (new-tape-cell epsilon primal partial-alist)
+  (make-tape-cell epsilon (gensym) primal partial-alist))
 
 (define (primal epsilon thing)
   (bundle?
@@ -35,6 +100,11 @@
                       (primal epsilon thing-tang))))
    (lambda ()
      (cond ((real? thing)
+            thing)
+           ((reverse? thing)
+            ;; TODO This expects that primal is always called with the
+            ;; outermost available epsilon, and that bundles and tape
+            ;; cells are properly nested.
             thing)
            ((procedure? thing)
             (lambda (x)
@@ -55,6 +125,11 @@
                       (tangent epsilon thing-tang))))
    (lambda ()
      (cond ((real? thing)
+            0)
+           ((reverse? thing)
+            ;; TODO This expects that tangent is always called with
+            ;; the outermost available epsilon, and that bundles and
+            ;; tape cells are properly nested.
             0)
            ((procedure? thing)
             ;; Note that this will have a different effect from the
@@ -211,36 +286,78 @@
         eps
         (self prim)
         (g:* (df/dx prim) tang)))
-     (lambda () (f thing))))
+     (lambda ()
+       (tape-cell?
+        thing
+        (lambda (eps id prim partials)
+          (new-tape-cell
+           eps
+           (self prim)
+           (list (cons thing (df/dx prim)))))
+        (lambda () (f thing))))))
   self)
 
 (define (lift-real*real->real f df/dx1 df/dx2)
   (define (self thing1 thing2)
-    (bundle?
-     thing1
-     (lambda (eps prim tang)
-       (make-bundle
-        eps
-        (self prim (primal eps thing2))
-        (g:+ (g:* (df/dx1 prim (primal eps thing2)) tang)
-             (g:* (df/dx2 prim (primal eps thing2)) (tangent eps thing2)))))
-     (lambda ()
-       (bundle?
-        thing2
-        (lambda (eps prim tang)
-          (make-bundle
+    (define (reverse-primal epsilon thing)
+      ;; This assumes that epsilon is greater than or equal to the
+      ;; perturbation of thing, and is an epsilon associated with
+      ;; reverse mode.
+      (if (and (reverse? thing)
+               (gensym= epsilon (tape-cell-epsilon thing)))
+          (tape-cell-primal thing)
+          thing))
+    (define (operate-forward eps)
+      (let ((prim1 (primal eps thing1))
+            (prim2 (primal eps thing2))
+            (tang1 (tangent eps thing1))
+            (tang2 (tangent eps thing2)))
+        (make-bundle
+         eps
+         (self prim1 prim2)
+         (g:+ (g:* (df/dx1 prim1 prim2) tang1)
+              (g:* (df/dx2 prim1 prim2) tang2)))))
+    (define (operate-reverse eps)
+      (let ((prim1 (reverse-primal eps thing1))
+            (prim2 (reverse-primal eps thing2)))
+        (let ((partial1
+               (if (and (reverse? thing1)
+                        (gensym= eps (tape-cell-epsilon thing1)))
+                   (list
+                    (cons thing1 (df/dx1 prim1 prim2)))
+                   '()))
+              (partial2
+               (if (and (reverse? thing2)
+                        (gensym= eps (tape-cell-epsilon thing2)))
+                   (list
+                    (cons thing2 (df/dx2 prim1 prim2)))
+                   '())))
+          (new-tape-cell
            eps
-           (self thing1 prim)
-           (g:* (df/dx2 thing1 prim) tang)))
-        (lambda ()
-          (f thing1 thing2))))))
+           (self prim1 prim2)
+           (append partial1 partial2)))))
+    (let ((eps1 (perturbation-of thing1))
+          (eps2 (perturbation-of thing2)))
+      (cond ((and (forward? thing1) (not (gensym< eps1 eps2)))
+             (operate-forward eps1))
+            ((and (reverse? thing1) (not (gensym< eps1 eps2)))
+             (operate-reverse eps1))
+            ((and (forward? thing2) (gensym< eps1 eps2))
+             (operate-forward eps2))
+            ((and (reverse? thing2) (gensym< eps1 eps2))
+             (operate-reverse eps2))
+            (else (f thing1 thing2)))))
   self)
 
 (define (primal* thing)
   (bundle? thing
    (lambda (eps prim tang)
      (primal* prim))
-   (lambda () thing)))
+   (lambda ()
+     (tape-cell? thing
+      (lambda (eps id prim partials)
+        (primal* prim))
+      (lambda () thing)))))
 
 (define (lift-real->boolean f)
   (lambda (thing)
@@ -352,3 +469,109 @@
 
 (define sum (reduce g:+ zero))
 (define product (reduce g:* 1))
+
+(define (gradient-r f x)
+  (let ((eps (gensym)))
+    (define (tapify thing)
+      (cond ((or (real? thing) (forward? thing) (reverse? thing))
+             (new-tape-cell eps thing '()))
+            ((pair? thing)
+             (cons (tapify (car thing))
+                   (tapify (cdr thing))))
+            ((procedure? thing)
+             ;; TODO Cannot tapify procedures
+             (error))
+            (else
+             thing)))
+    (let* ((inputs (tapify x))
+           (forward-phase-answer (f inputs))
+           ;; No perturbation greater than eps should be observable in
+           ;; forward-phase-answer.
+           (sensitivities
+            (tape-cell?
+             forward-phase-answer
+             (lambda (answer-eps id prim partials)
+               (if (gensym= eps answer-eps)
+                   (let* (((cons seen sorted) (compute-visiting-order forward-phase-answer '() '())))
+                     (reverse-phase sorted (list (cons id 1))))
+                   ;; f is not infinitesimally dependent on x, return
+                   ;; the empty sensitivity list.
+                   '()))
+             (lambda ()
+               ;; f is not infinitesimally dependent on x, return the
+               ;; empty sensitivity list.
+               '()))))
+      (define (interpret thing)
+        (cond ((or (real? thing) (forward? thing)
+                   (and (reverse? thing) (not (gensym= eps (tape-cell-epsilon thing)))))
+               0)
+              ((and (reverse? thing) (gensym= eps (tape-cell-epsilon thing)))
+               (assq (tape-cell-id thing) sensitivities))
+              ((pair? thing)
+               (cons (interpret (car thing)) 
+                     (interpret (cdr thing))))
+              ((procedure? thing)
+               (error))
+              (else thing)))
+      (interpret inputs))))
+
+(define (compute-visiting-order node seen sorted)
+  (if (memq (tape-cell-id node) seen)
+      (cons seen sorted)
+      (let (((cons seen sorted)
+             (compute-visiting-order*
+              (map car (tape-cell-partials node))
+              (cons (tape-cell-id node) seen)
+              sorted)))
+        (cons seen (cons node sorted)))))
+
+(define (compute-visiting-order* nodes seen sorted)
+  (if (null? nodes)
+      (cons seen sorted)
+      (let (((cons seen sorted)
+             (compute-visiting-order (car nodes) seen sorted)))
+        (compute-visiting-order* (cdr nodes) seen sorted))))
+
+(define (reverse-phase nodes sensitivities)
+  (if (null? nodes)
+      sensitivities
+      ;; Since you're going in topological sort order, when you reach
+      ;; a node you know you are done updating its sensitivity.
+      (let ((sensitivity (assq (tape-cell-id (car nodes)) sensitivities)))
+        (let loop ((sensitivities sensitivities)
+                   (partials (tape-cell-partials (car nodes))))
+          (if (null? partials)
+              (reverse-phase (cdr nodes) sensitivities)
+              (let (((cons (cons partial-cell partial-factor) other-partials) partials))
+                (loop
+                 (updateq-with
+                  sensitivities
+                  (tape-cell-id partial-cell)
+                  (g:* partial-factor sensitivity)
+                  g:+)
+                 other-partials)))))))
+
+(define (memq gensym lst)
+  (if (null? lst)
+      #f
+      (if (gensym= gensym (car lst))
+          #t
+          (memq gensym (cdr lst)))))
+
+(define (assq item alist)
+  (if (null? alist)
+      0
+      (let (((cons (cons key datum) rest) alist))
+        (if (gensym= item key)
+            datum
+            (assq item rest)))))
+
+(define (updateq-with alist key datum merge)
+  (if (null? alist)
+      (list (cons key datum))
+      (let (((cons (cons a-key a-datum) rest) alist))
+        (if (gensym= key a-key)
+            (cons (cons a-key (merge datum a-datum))
+                  rest)
+            (cons (cons a-key a-datum)
+                  (updateq-with (cdr alist) key datum merge))))))

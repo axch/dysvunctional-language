@@ -1,0 +1,369 @@
+                   Automatic Differentiation in DVL
+                             Alexey Radul
+                           November 2, 2011
+
+In brief:
+
+DVL does AD by overloading the arithmetic operations, using gensyms to
+disambiguate perturbations, and also to expose forward-phase sharing
+to the reverse phase of reverse mode.  Bundles and reverse tape cells
+are interleaved inside of conses and closures, but use the creation
+order of the perturbations to arrange interleaving amongst themselves.
+(DVL's gensyms are comparable by their creation time).
+
+In less brief:
+
+What does that actually mean?  The type of real numbers is generalized
+as follows:
+
+  <ad-number> = (bundle <perturbation:gensym> <primal:ad-number> <tangent:ad-number>)
+              | (tape-cell <perturbation:gensym> <id:gensym> <primal:ad-number>
+                  ((<input:tape-cell> . <partial:ad-number>) ...))
+              | <number>
+
+where the primal, tangent, and partial fields of any ad-number z must
+either be base numbers or have a perturbation that is strictly smaller
+than the perturbation of z.  The perturbation fields are unique to
+each pass of AD, and the id fields of tape cells are unique to that
+tape cell.  The association list in a tape cell associates tape cells
+representing inputs to the computation whose output this tape cell
+represents to the partial derivatives of said output with respect to
+those inputs.  The reverse phase will use these after it has computed
+the sensitivity to said output.
+
+The arithmetic primitives are overloaded to carry out forward mode AD
+and the forward phase of reverse mode AD by operating on these
+structures.  The operations DERIVATIVE and GRADIENT-R use this overloading
+to compute derivatives in forward mode and gradients in reverse mode,
+respectively.
+
+
+Forward Mode
+
+Forward mode is conceptually easier than reverse mode, so we will
+treat it first.  The overloading works as follows: given a
+representation of a primitive's input in the form
+
+  (bundle eps primal tangent)
+
+the primitive f must emit
+
+  (bundle eps (f primal) (* (Jf primal) tangent))
+
+where Jf is the thing that computes the Jacobian of f at a point.
+Care must be taken
+1) to suitably do matrix multiplication by the Jacobian;
+2) to note that for non-unary functions the input will actually
+   be interleaved the other way, namely, instead of
+
+     (bundle eps (cons primal1 primal2) (cons tangent1 tangent2))
+
+   we will have
+
+     (cons (bundle eps primal1 tangent1) (bundle eps primal2 tangent2));
+
+3) to take care that any foo that does not contain a perturbation eps
+   is semantically equivalent to (bundle eps foo 0), so the lifted
+   functions must be prepared to handle such arguments and apply that
+   reinterpretation.  This last is aided by the nesting order invariant,
+   namely that if you are looking for eps2 and you have a structure
+   marked with eps1 < eps2, then you know you don't have eps2.  On the
+   other hand, the lifted primitives must take care to preserve that
+   invariant in their outputs.
+
+Given an overloading of the primitives that obeys these desiderata,
+DERIVATIVE is easy:
+
+  ;; derivative :: (R -> a) -> (R -> a)
+  (define (derivative f)
+    (let ((epsilon (gensym)))
+      (lambda (x)
+        (tangent epsilon (f (make-bundle epsilon x 1))))))
+
+A generalization of TANGENT to accept an arbitrary structure and strip
+tangents in it deeply is sufficient for this to produce correct
+derivatives of functions from R to any space a, including a that may
+be or contain functions.  The latter are treated by post-composition
+with TANGENT. [1] The restriction of the input space to be R is there
+to allow derivatives to be taken with respect to a canonical direction
+(to wit, 1) and allow the user not to have to worry about handling
+tangent objects themselves.  It is not problematic in practice because
+one can always define
+
+  (define (directional-derivative f point direction)
+    ((derivative (lambda (e) (f (+ point (* e direction))))) 0))
+
+(the primitives are also overloaded to treat pairs and functions as
+vector spaces, permitting addition and scalar multiplication).
+
+
+Reverse Mode
+
+Overloading primitive operations only does half the work of reverse
+mode, namely the forward phase whose job is to capture all the
+intermediate partial derivatives so that the reverse phase can push a
+sensitivity back through them.  Said capturing is accomplished by
+building a tape that holds said intermediate partial derivatives.
+A tape is made up tape cells of the form
+
+  (tape-cell eps id primal partials)
+
+where eps is the perturbation tag associated with the current run of
+reverse mode, id the a unique tag identifying this tape cell (we will
+see why it is necessary later), primal is the primal at this point,
+and partials is an association list mapping input tape cells to the
+partial derivatives of the current value with respect to those inputs.
+These partial derivatives are what the reverse phase will read to
+eventually compute the sensitivities to the ultimate inputs.
+
+The primitives must therefore be overloaded to handle these objects
+properly.  To wit, an overloaded primitive f given a tape cell of the
+above form, must produce what amounts to
+
+  (tape-cell eps <fresh-id> (f primal) (Jf primal))
+
+Note that the id and the partials of the input cells are not read.
+Also, the Jacobian must be stored columnwise, mapping each input tape
+cell that contributed to the primal to the partial derivative of (f
+primal) with respect to that input.  Care must again be taken
+that these will be interleaved the other way: a binary function will
+get two tape cell arguments, not a tape cell holding both arguments.
+
+For example, consider the primitive * (multiply).  In the forward
+phase, it might receive the following two arguments:
+
+  A: (tape-cell eps id1 primal1 partials1)
+  B: (tape-cell eps id2 primal2 partials2)
+
+(where the epsilons are the same, indicating that these both relate to
+the same run of reverse mode).  It must then produce the following
+output:
+
+  C: (tape-cell eps id3 (* primal1 primal2)
+      `((,A . ,primal2)   ; Map input A to d*/dx1 (primal1,primal2) = primal2
+        (,B . ,primal1))) ; Map input B to d*/dx2 (primal1,primal2) = primal1
+
+Note that the ids and partials lists of the arguments are ignored
+here; they will be used by the reverse phase.  Not also that if this
+run of AD is nested, then the primals may be bundles or tape cells
+(with a smaller epsilon) and therefore the entries in the partials
+lists will also be bundles or tape cells.
+
+Care must also be taken that, like in forward mode, the absence of a
+tape cell with a given perturbation means that the sensitivity to that
+input is not going to be used in this run of reverse mode.  Just don't
+include that input in the partials list.
+
+Why do tape cells have ids?  The forward computation is a directed
+acyclic graph that may very well share nodes, and the reverse phase
+must be able to observe this sharing in order to avoid a potentially
+exponential increase in the work it has to do.  The reverse phase uses
+the unique ids to detect which tape cells it has visited and which it
+has not.
+
+The overloading is only half the job of getting reverse mode.  The
+full reverse driver must also set up the inputs to an overloaded
+function, call it, and carry out the reverse phase on the received
+output.  Setting up the inputs is pretty easy: just wrap every real
+number in the input in a tape cell with a fresh id and no partial
+derivatives:
+
+  ;; gradient-r :: (a -> R) -> a -> a  ; a must have no functions
+  (define (gradient-r f x)
+    (let ((eps (gensym)))
+      (define (tapify thing)
+        (cond ((or (real? thing) (forward? thing) (reverse? thing))
+               (new-tape-cell eps thing '()))
+              ((pair? thing)
+               (cons (tapify (car thing))
+                     (tapify (cdr thing))))
+              ((procedure? thing)
+               ;; TODO Cannot tapify procedures
+               (error))
+              (else
+               thing)))
+      (let* ((inputs (tapify x))
+             (forward-phase-answer (f inputs))
+             ...)
+        ...)))
+
+Just make sure that "real number" includes bundles and tape cells of
+other invocations of AD.  Their perturbations will necessarily be less
+than the new one, so the new tape cells become outermost.  Procedures
+in the input are an outstanding issue, see below.
+
+OK, so now you have the forward-phase-answer, which (since f was
+supposed to go to R) should be a single tape cell.  The sensitivity to
+this single tape cell is the canonical direction on the output space,
+namely 1.  Now what?  Well, first of all, this tape cell is the root
+of a directed acyclic graph G whose vertices are tape cells.  For each
+tape cell C, G has an edge from C to each tape cell that appears as a
+key in the partials list of C.  This graph G captures the forward
+phase computation, with edges pointing in the reverse of the direction
+in which the forward phase computation proceeded.  You will need to
+traverse this graph in topological sort order updating sensitivities.
+So first, compute that topological sort order
+
+  ... (compute-visiting-order forward-phase-answer '() '()) ...
+
+by a depth-first traversal of this graph (from CLR, the time at which
+a depth-first traversal finishes with any given vertex gives the
+position of that vertex in a topological sort).  The unique ids come
+in here, to allow the depth-first traversal to know which nodes it has
+already visited.
+
+With a topological sort in hand, you can actually carry out the
+reverse phase.  Effectful updating of sensitivity values is simulated
+by threading through an alist mapping from tape cell id to the current
+value of the sensitivity to that tape cell.  Initially, the
+sensitivity to the forward-phase-answer is 1, and all the others are
+implicitly zero.
+
+  ... (reverse-phase sorted (list (cons (tape-cell-id forward-phase-answer) 1))) ...
+
+To process a node in the reverse phase, observe that that node's
+sensitivity is done being updated (because you are traversing the
+graph in topological sort order); and increment the sensitivity to
+each of its inputs by the corresponding partial derivative multiplied
+by the senstivity to the node itself.
+
+When the reverse phase is done, the result is an alist mapping all
+tape cell ids that affected the output to their sensitivities.  To
+construct the gradient that is the answer, just traverse the tapified
+input and replace each tape cell with the sensitivity to it.
+
+Note that if this run of reverse mode was nested inside some ambient
+application of AD, then the partial derivatives and the sensitivities
+may well be bundles or tape cells (with smaller epsilons than the
+current one).  This is acceptable.
+
+TODO Is it possible to clean up the driver code enough to include all
+of it here?
+
+Note that the type of GRADIENT-R is symmteric with the type of
+DERIVATIVE: where the input of the function whose DERIVATIVE is
+desired must be R to allow differentiation in the canonical direction
+1, so the output of the function whose GRADIENT-R is desired must be R
+to allow taking the gradient with respect to the canonical direction
+1.  Likewise, where the output of the function subject to DERIVATIVE
+is arbitrary, so the input of the function subject to GRADIENT-R is
+arbitrary (except that it may not contain functions; this is an
+outstanding issue, below).
+
+
+Conjecture
+
+The above implementation of AD by overloading (and, in the case of
+reverse mode, by further direct interpretation of the tape) can be
+compiled to code competitive with the transformational approaches of
+Tapenade, Stalingrad, etc, by pushing it through a partial evaluator
+that supports (sortable) gensyms, to wit, DVL (after support for,
+e.g., union types is adequately implemented), at least on those
+programs on which said transformational approaches work.  Further, the
+perturbation gensyms amount to deconfusing perturbations at compile
+time in cases where the derivative nesting depth is known statically,
+and degrade gracefully to deconfusing them at runtime when it is not.
+(The latter circumstance would defeat Tapenade, Stalingrad, etc,
+completely, as far as I am aware).
+
+
+Outstanding Issues
+
+1) A version of iterate-to-numeric-fixedpoint that detects when it is
+part of a forward mode differentiation and does "the right thing" (see
+Barak's note for motivation) is present in examples/streams.dvl (of
+all places).  It has not been tested as carefully as one would like,
+and has not been adapted to handle reverse mode.
+
+2) The actual gradient-taking features of reverse mode have not been
+tested much.
+
+3) Reverse mode has not been tested for complexity properties (sharing
+detection, also compile time and compile memory issues).
+
+4) Reverse mode gradients have not been compared to forward mode
+gradients for equality, efficiency, etc.
+
+5) Reverse mode does not permit functional inputs (whereas forward
+mode permits functional outputs).  I expect this asymmetry could be
+rectified, but I do not know what exactly the gradient at a function
+is.  Sasha?
+
+6) Reverse mode through a loop of unknown iteration count will fail in
+some horrible way to do with the absence of union types.
+
+7) For more, see the TODO comments in the code.
+
+8) swap-gensyms-in-object will violate the genysm sorting invariant.
+Can this ever cause trouble?  Is it possible to manufacture an
+amazing^2 bug out of this?
+
+Rationale for Sorted Gensyms
+
+The original implementation of forward mode in DVL did not rely on a
+total order of the perturbation tags to compute the right answers, but
+with the addition of reverse mode, such a total order was found
+necessary.  Why?
+
+Here is the essence of the problem.  Perturbations commute, so there
+are two semantically equivalent ways to represent a nested forward
+mode bundle:
+
+      B1                 B2
+     /  \               /  \
+   B2    B2    or     B1    B1
+  /  \  /  \         /  \  /  \
+  x  y  z  w         x  z  y  w
+
+When a binary operation is presented with two one-level bundles of
+different epsilons, (for example, the + in (D (lambda (x) (D (lambda
+(y) (+ x y))))) it must choose one or the other of these forms.  With
+unsorted gensyms, there is no reason to choose either arrangement over
+the other, so said binary operation arbitrarily chose to put the top
+epsilon from the first argument on top.
+
+Now, in forward mode, this was all fine, because these two forms are
+connected by the obvious isomorphism, and when a binary operation got
+arguments that were not parallel, (which would happen to the * in (D
+(lambda (x) (D (lambda (y) (* (+ x y) (+ y x))))))) it could just
+(implicitly) apply the isomorphism (and emit an answer whose shape was
+parallel to the shape of its first argument).
+
+With the addition of reverse mode, however, things get worse.  There
+are still equivalent forms for nested tape cells:
+
+   TC1      TC2
+    |        |
+   TC2  or  TC1
+    |        |
+    x        x
+
+and also equivalent forms for forward and reverse mode nested in each
+other:
+
+    B1           TC2
+   /  \           |
+ TC2  TC2   or    B1
+  |    |         /  \
+  x    y         x  y
+
+There are also isomorphisms that can be applied, but the problem is
+that in order to give the reverse phase a workable graph, we care
+about both the assigned unique ids of the tape cells, and also about
+their pointer identities (because the graph links are pointers from
+the keys of partials list of one tape cell to other tape cells).  In
+principle, I am sure that the tape cells that result from the
+application of isomorphisms could be given reasonable partials lists
+that would point to the pre-isomorphism tape cells such that the
+reverse phase would be correct and everything would work out; but I
+got confused trying to do that, and decided to use sorted gensyms to
+produce a canonical order in the first place.  The rule is that larger
+gensyms go on top, so these examples standardize on the second form.
+The first form never occurs, and no isomorphisms need be applied.
+
+
+[1] For motivation of why this is the right thing, see
+axch/tangents-of-functions.tex.  For a subtlety in implementing it,
+see axch/amazing-bug.tex.  That document is out of date, in that the
+bug is fixed.  The fix is documented only in the source.  I apologize.
+

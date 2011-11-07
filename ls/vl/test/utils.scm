@@ -190,7 +190,7 @@
         (check (equal? value (union-free-answer program *compilation-results-wallp* #t))))
       (define-test
         ;; At least check that interpret and compile-to-fol agree
-        (union-free-answer program *compilation-results-wallp*))))
+        (union-free-answer program *compilation-results-wallp* #t))))
 
 (define (define-loose-union-free-example-test program #!optional value)
   (if (not (default-object? value))
@@ -198,4 +198,4 @@
         (check (equal? value (loose-union-free-answer program *compilation-results-wallp* #t))))
       (define-test
         ;; At least check the FOL invariants are obeyed
-        (loose-union-free-answer program *compilation-results-wallp*))))
+        (loose-union-free-answer program *compilation-results-wallp* #t))))

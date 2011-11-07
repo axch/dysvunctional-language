@@ -20,13 +20,21 @@
            answer
            (loop (- count 1) (and answer ,expression))))))
 
+(define realize-all
+  (on-subexpressions
+   (rule `(? number ,number?) `(real ,number))))
+
 (in-test-group
  dvl
  (define-each-check
    (equal? 3 (determined-answer '(+ 1 2)))
    (equal? #f (determined-answer '(gensym= (gensym) (gensym))))
+   (equal? #t (determined-answer '(gensym< (gensym) (gensym))))
    (equal? #t (determined-answer '(let ((x (gensym))) (gensym= x x))))
+   (equal? #f (determined-answer '(let ((x (gensym))) (gensym< x x))))
    (equal? #f (determined-answer '(let ((x (gensym))) (gensym= x (gensym)))))
+   (equal? #t (determined-answer '(let ((x (gensym))) (gensym< x (gensym)))))
+   (equal? #f (determined-answer '(let ((x (gensym))) (gensym< (gensym) x))))
 
    (equal? #t
     (union-free-answer
@@ -41,9 +49,24 @@
    (equal? #f
     (union-free-answer
      '(let ((x (gensym)))
+        (gensym< x (if (> (real 2) (real 1)) x (gensym))))))
+
+   (equal? #t
+    (union-free-answer
+     '(let ((x (gensym)))
+        (gensym< x (if (< (real 2) (real 1)) x (gensym))))))
+
+   (equal? #f
+    (union-free-answer
+     '(let ((x (gensym)))
         ;; The analysis could solve this with more accurate modeling
         ;; of possible gensym values
         (gensym= (gensym) (if (< (real 2) (real 1)) x (gensym))))))
+
+   (equal? #f
+    (union-free-answer
+     '(let ((x (gensym)))
+        (gensym< (gensym) (if (> (real 2) (real 1)) x (gensym))))))
 
    (equal?
     '(if (= (real 10) 0)
@@ -51,6 +74,9 @@
          #f)
     (compile-carefully
      (in-and-loop '(gensym= (gensym) (gensym)))))
+
+   (equal? #t (compile-carefully
+               (in-and-loop '(gensym< (gensym) (gensym)))))
 
    (equal? #t
     (loose-union-free-answer
@@ -67,6 +93,18 @@
    (equal? #f
     (loose-union-free-answer
      (in-and-loop '(gensym= (gensym) (if (> (real 2) (real 1)) x (gensym))))))
+
+   (equal? #f
+    (loose-union-free-answer
+     (in-and-loop '(gensym< x (if (> (real 2) (real 1)) x (gensym))))))
+
+   (equal? #t
+    (loose-union-free-answer
+     (in-and-loop '(gensym< x (if (< (real 2) (real 1)) x (gensym))))))
+
+   (equal? #f
+    (loose-union-free-answer
+     (in-and-loop '(gensym< (gensym) (if (> (real 2) (real 1)) x (gensym))))))
 
    ;; TODO These two break the analysis because it replicates the loop
    ;; body for every different gensym it might be passed.
@@ -116,6 +154,27 @@
      (in-frobnicating-loop '(let ((y (gensym)))
                               (let ((z (gensym)))
                                 (gensym= z (frobnicate y)))))))
+
+   (equal? #t
+    (loose-union-free-answer
+     (in-frobnicating-loop '(gensym< x (frobnicate (gensym))))))
+
+   (equal? #f
+    (loose-union-free-answer ;; TODO Actually determined, except for sweeping out dead cruft
+     (in-frobnicating-loop '(gensym< x (frobnicate x)))))
+
+   (equal? #f
+    (loose-union-free-answer
+     (in-frobnicating-loop '(let ((y (gensym)))
+                              (gensym< y (frobnicate y))))))
+
+   (equal? '(if (= (real 10) 0)
+                #t
+                #f)
+    (compile-carefully
+     (in-frobnicating-loop '(let ((y (gensym)))
+                              (let ((z (gensym)))
+                                (gensym< z (frobnicate y)))))))
 
    ;; Be sure to analyze the interior of the lambda, as the outside
    ;; world may call it.
@@ -209,6 +268,16 @@
   (lambda (program #!optional value)
     (define-loose-union-free-example-test
       (dvl-prepare (vlad->dvl program)) value)))
+
+ (for-each-example "../examples/reverse-examples.dvl"
+  (lambda (program #!optional value)
+    (define-loose-union-free-example-test
+      (dvl-prepare (vlad->dvl (realize-all program))) value)))
+
+ (define-test (compile-reverse-mode)
+   (check (equal?
+           '(cos (real 0))
+           (compile-to-fol (dvl-prepare (vlad->dvl '(gradient-r sin (real 0))))))))
 
 ;; TODO These are commented out because they are still slow (as of Sep
 ;; 12, 2011) and have rounding error disagreements.  They also use
