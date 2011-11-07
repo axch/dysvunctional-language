@@ -149,7 +149,7 @@
 
 ;;; On September 19, on arrakis, four compilations of this went thus:
 #|
- (define code (compile-to-fol (dvl-read-file "examples/celestial.dvl") volubly)) ; Through Jupiter
+ (define code (compile-to-fol (dvl-source "examples/celestial.dvl") volubly)) ; Through Jupiter
  Stage analyze on 2722 pairs + 0 pairs of type annotations
  0 procedure definitions
  mode expression size: 2722
@@ -293,7 +293,7 @@
  top type annotation sizes: (19)
  ;Value: code
 
- (define code (compile-to-fol (dvl-read-file "examples/celestial.dvl") volubly)) ; Through Saturn
+ (define code (compile-to-fol (dvl-source "examples/celestial.dvl") volubly)) ; Through Saturn
  Stage analyze on 2723 pairs + 0 pairs of type annotations
  0 procedure definitions
  mode expression size: 2723
@@ -437,7 +437,7 @@
  top type annotation sizes: (43 26)
  ;Value: code
 
- (define code (compile-to-fol (dvl-read-file "examples/celestial.dvl") volubly)) ; Through Uranus
+ (define code (compile-to-fol (dvl-source "examples/celestial.dvl") volubly)) ; Through Uranus
  Stage analyze on 2724 pairs + 0 pairs of type annotations
  0 procedure definitions
  mode expression size: 2724
@@ -581,7 +581,7 @@
  top type annotation sizes: (56 33)
  ;Value: code
 
- (define code (compile-to-fol (dvl-read-file "examples/celestial.dvl") volubly)) ; Through Neptune
+ (define code (compile-to-fol (dvl-source "examples/celestial.dvl") volubly)) ; Through Neptune
  Stage analyze on 2725 pairs + 0 pairs of type annotations
  0 procedure definitions
  mode expression size: 2725
