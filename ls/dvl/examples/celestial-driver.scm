@@ -38,7 +38,7 @@
         (else (/ (- state1 state2) state1))))
 
 ;; Compile the DVL program with
-;(fol->mit-scheme (compile-to-fol (dvl-read-file "examples/celestial.dvl") visibly))
+;(fol->mit-scheme (compile-to-fol (dvl-source "examples/celestial.dvl") visibly))
 
 ;; Then run with
 #;
