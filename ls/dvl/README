@@ -36,6 +36,9 @@ gensym?     -- Tells whether an object was created by GENSYM.
 gensym=     -- Tests whether two objects were created by the same
   dynamic call to GENSYM.
 
+gensym<     -- Tests whether the first argument was created by a
+  dynamically earlier call to GENSYM than the second.
+
 See also the DVL standard library.
 
 
