@@ -1,0 +1,14 @@
+;;; This is an example of a program that takes a statically-unknown
+;;; number of derivatives.  Ideally, an AD system that tries to
+;;; migrate the AD transforms to compile time should not barf on this,
+;;; but emit code that does AD at runtime (perhaps with a warning that
+;;; such code will be slow).
+
+(define (foo f x)
+  (let loop ((n (real 0))
+             (nth-derivative f))
+    (if (positive? (nth-derivative x))
+        n
+        (loop (+ n 1) (derivative nth-derivative)))))
+
+(foo sin (real 5))
