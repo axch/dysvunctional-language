@@ -92,13 +92,11 @@
             `(,@context1
               ,@context2)))) forms)))
 
-(define (dvl-read-file filename)
+(define (dvl-source filename)
   (dvl-prepare (vlad->dvl `(let () ,@(read-source filename)))))
 
-(define dvl-source dvl-read-file)
-
 (define (dvl-run-file filename)
-  (let* ((program (dvl-read-file filename))
+  (let* ((program (dvl-source filename))
          (compiled-program (compile-to-fol program)))
     (let ((scm-file (->namestring (pathname-new-type filename #f))))
       (fol->floating-mit-scheme compiled-program scm-file)
