@@ -11,10 +11,10 @@
 
 #|
 (define raw-fol
-  (show-time (lambda () (compile-to-fol (dvl-read-file "examples/sqrt.scm")))))
+  (show-time (lambda () (compile-to-raw-fol (dvl-source "examples/sqrt.dvl")))))
 
 (define hairy-optimal (show-time (lambda () (fol-optimize raw-fol))))
 
 (define done
-  (show-time (lambda () (compile-to-scheme (dvl-read-file "examples/sqrt.scm")))))
+  (show-time (lambda () (compile-to-fol (dvl-source "examples/sqrt.dvl")))))
 |#
