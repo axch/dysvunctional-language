@@ -1,0 +1,306 @@
+* Alpha renaming
+
+The purpose of alpha renaming is to ensure that every variable has at
+most one binding cite.  A variable needs renaming at its binding cite
+if it is known to be bound at some other cite.  Other variables must
+be renamed to what they were renamed to at their immediate binding
+cites.  Hence the following algorithm:
+
+- Traverse the expression recursively carrying around an environment
+  =E= mapping variables in the scope to new names and a set =B= of
+  variables that are known to be bound somewhere.
+
+- Every instance of =Var m= is renamed to =Var n=, where =n= is the
+  new name =m= is bound to in the environment =E=.
+
+- When traversing =Let [(x1, e1), ..., (xn, en)] e=, for each variable
+  =xi= decide whether it requires renaming by checking whether it is
+  contained in =B=; for each of the names that are not in =B= the
+  renaming is the name itself.  Generate these new names:
+  #+begin_example
+  x1 ~> x1', ..., xn ~> xn'
+  #+end_example
+
+- Rename the body =e= of =Let= using the environment =E= extended with
+  the bindings =(x1, x1')=, ..., =(xn, xn')= and the set of names =B=
+  extended with =x1=, ..., =xn=.  Rename, sequentially, =e1=, ...,
+  =en= starting with the old environment =E= and the set of names
+  produced by the renaming the body of =Let=.  (This particular order
+  is arbitrary.)
+
+- Ditto for =LetValues=.
+
+What kind of monad do we need here?
+
+It appears that =Expr= should be parametrized over the type of names
+used to represent variables and then eventually =rename= should take
+an expression of type =Expr Name= and return an expression of type
+=Expr (Unique Name)=:
+#+begin_src haskell
+rename :: Expr Name -> Expr (Unique Name)
+#+end_src
+Then we need to turn =Expr (Unique Name)= into =Unique (Expr Name)=,
+which suggests that =Expr= should be declared an instance of
+=Traversable= (then the necessary commutation morphism is =sequence=
+from =Traversable= class), which it almost certainly is.
+
+Also, to carry the set of names known to be bound we can employ a
+version of the state monad.
+#+begin_src haskell
+type Rename = State Names
+type Names  = [Name]
+
+rename' :: Expr Name -> [(Name, Unique Name)] -> Rename (Expr (Unique Name))
+rename' (Var x) env = return (Var x')
+    where
+      x' = fromMaybe (return x) (lookup x env)
+rename' (Let bindings body) = do
+  used_names <- get
+  let (xs, es) = unzip bindings
+      maybeRename x | x `elem` used_names = uniqueName x
+                    | otherwise = return x
+      xs' = map maybeRename xs
+  put (xs `union` used_names)
+  body' <- rename' body (zip xs xs' ++ env)
+  es' <- mapM (flip rename' env) es
+  let bindings' = zip xs' es'
+  return (Let bindings' body')
+#+end_src
+
+The idea that renaming turns =Expr Name= into =Expr (Unique Name)=
+doesn't work, and in retrospect it is obvious why: when we transform
+=Expr (Unique Name)= into =Unique (Expr Name)=, we chain the actions
+of type =Unique Name=, and as a result things that must be named the
+same are given different names.
+
+An observation: the composition of two =StateT= monad transformers is
+again a =StateT= monad transformer, namely:
+#+begin_example
+StateT s (StateT s' m) ~ StateT (s, s') m
+
+StateT s' m a == s' -> m (a, s')
+
+StateT s (StateT s' m) a
+    ~ s -> (StateT s' m) (a, s)
+    ~ s -> (s' -> m ((a, s), s'))
+    ~ (s, s') -> m (a, (s, s'))
+    ~ StateT (s, s') m a
+#+end_example
+The isomorphism is given explicitly by:
+#+begin_src haskell
+iso :: Monad m => StateT s (StateT t m) a -> StateT (s, t) m a
+iso (StateT f) = StateT $ \(s, t) -> let StateT g = f s
+                                     in do ((x, s'), t') <- g t
+                                           return (x, (s', t'))
+#+end_src
+
+* Inlining
+
+My approach follows more or less that of Alexey.  The definition of
+=inlineExpr= suggests that some generic programming technique a la
+"Scrap Your Boilerplate" might be successfully applied here.
+
+** TODO Study SYB papers.  Does the SYB approach apply here?
+   Uniplate by Neil Mitchell does.
+** DONE Write a test suite for my FOL implementation.
+   - State "DONE"       from "TODO"       [2011-09-13 Tue 14:58]
+     Not exactly how I envisioned, but it is better than nothing.  The
+     test suit uses my optimizer to optimize some FOL program and then
+     runs them in Scheme using =fol-eval= and compares the result to
+     the result of running the unoptimized version of the same program.
+   Testing alpha-renamer can be fully automated:
+   - take a DVL program,
+   - compile it to raw FOL,
+   - feed the code to my optimizer,
+   - alpha-rename it, and
+   - check the result against Alexey's FOL using =alpha-rpename?=).
+   What about inlining?  Is there a fully automatic way to test it?
+
+
+Alexey wants me to implement a "smart" inliner.  "Smart" means the
+following:
+- compute a feedback vertex set of the call graph
+- compute the call graph again, omitting the feedback set and giving
+  each edge a weight: an edge from procedure =p1= to procedure =p2=
+  has weight =n= if =p2= is called =n= times in the body of =p1=.
+- For each vertex of the call graph (for each procedure not in the
+  feedback vertex set), answer the question: if I inline this
+  procedure, how much will the code size increase (say, in terms of
+  the number of nodes of AST)?  Each inlined procedure call will be
+  replaced with the body of the procedure (wrapped into a LET binding
+  the formals to arguments, which we neglect).
+* Type checker
+
+I would like to implement a type checker for FOL.  Because FOL is a
+first-order language with explicit type annotations for procedures,
+type checking it should not be too hard.  The plan is as follows:
+
+- for each definition, check, assuming the supplied types of the
+  definitions, that the inferred type of the procedure agrees with
+  the supplied type;
+
+- infer the type of the expression.
+
+This is not the same (or so it seems) as to type check the implicit
+=letrec= of which the definitions are bindings.
+
+For that, I've decided to change the nomenclature a bit: what was
+called =Type= is called =Shape= now.  Shapes are abstractions of
+values.  Because procedures are not first-class values in FOL, they
+don't have shapes.  Initially, I wanted to add one clause =ProcTy
+[Type] Type= to the definition of =Type= (called =Shape= now), but
+that would be wrong as it would allow types of higher-order
+procedures.  Instead, I'm going to have two separate types: =Shape=
+and =Type= defined as
+#+begin_src haskell
+data Type = PrimTy Shape
+          | ProcTy [Shape] Shape
+#+end_src
+I have done that and the result is pretty ugly.  Some of its ugliness
+is avoidable, but my attempt to make error messages informative turned
+into a mess.  Furthermore, there is at least one subtle bug having to
+do with laziness: type checking an expression is lazy in the
+environment argument, which, as currently implemented, may result in,
+say, LET expressions about which the type checker thinks that they are
+well-typed although some of the bindings may be ill-typed.
+
+The next thing I am going to do is switch to a proper error messaging
+mechanism: monads.  That is going to solve the laziness problem as
+well, hopefully.
+
+Wrapped error messaging into a monad.  Also introduced a data type to
+encode various kinds of errors the type checker may throw.  The code
+looks better but still pretty ugly.  I am getting tired of polishing
+it, so I guess it is time to move on.
+
+Testing that the inliner preserves types of programs revealed a bug: I
+was type-checking each definition assuming the declared types of
+*other* definitions, which doesn't work for self-recursive procedures.
+The fix is easy: type-check each definition assuming the declared
+types of *all* definitions (in a sense, we simply check that the
+declared types are a solution to the fixed point equation).
+
+Type-checking IF expressions makes sure that the consequent and
+alternate have the same type.
+
+*Bug*: according to FOL definition, VALUES cannot be bound to
+variables, stored in data structures, or used as procedure arguments.
+They also can't be nested in more VALUES. *FIXED*
+
+* A-normal form
+
+Implemented (approximate) A-normal form conversion.  The
+implementation is not completely satisfactory in a few ways:
+
+- expressions in ANF have a grammar that is different from the grammar
+  of ordinary expressions, however I'm reusing =Expr= type, instead of
+  capturing the invariants of expressions in ANF (e.g., CONS can only
+  be applied to variables or constants) in a type.  That would be more
+  Haskellish and generally a Good Thing.  However, I don't know if the
+  subsequent stages of the optimizer are going to need ANF or not.
+
+- recursive traversal in =anfExpr= doesn't benefit for SYB techniques,
+  nor from other generic programming techniques.
+
+  *Question*: how do I apply SYB to data types like =Expr=?  The paper
+  tells me how to deal with lots of mutually recursive data types, but
+  not with one recursive data type.
+
+  Can I write a generic fold function for folding over expressions?
+  Ideally, I would like to be able to specify, in declarative manner,
+  for each node type, which functions to apply the children of that
+  node, and how to combine the results.
+
+  I see how I can do that with "Data Types A La Carte" approach, but
+  it implies boilerplate of other kind: writing down instances for
+  each node type.
+
+  I was also a little discouraged to find out, but grepping the source
+  tree of GHC, that they doesn't use SYB techniques (only in libraries
+  but not in the compiler code).  Apparently, doing so would introduce
+  unnecessary complexity.
+* Scalar replacement of aggregates
+*Bug*: =annShape= gives names to =Nil=s, which become additional, but
+arguably bogus parameters to procedures and can only be eliminated by
+interprocedural dead variable elimination.
+* Common subexpression elimination
+One of the purposes of CSE is to get rid of the following situations:
+#+begin_src scheme
+(let ((x e) ...)
+  ...
+  (let ((y e) ...)
+    ...))
+#+end_src
+and
+#+begin_src scheme
+(let-values (((x1 ... xn) e) ...)
+  ...
+  (let-values (((y1 ... yn) e) ...)
+    ...))
+#+end_src
+We proceed by recursively converting these expressions into
+#+begin_src scheme
+(let ((x e) ...)
+  ...
+  (let ((y x) ...)
+    ...))
+#+end_src
+and
+#+begin_src scheme
+(let-values (((x1 ... xn) e) ...)
+  ...
+  (let-values (((y1 ... yn) (values x1 ... xn)) ...)
+    ...))
+#+end_src
+and by subsequently flushing the bindings for =y= and each of =yi=
+(replacing each occurrence of =y= resp. =yi= in the body of =let=
+resp. =let-values= by =x= resp. =xi=).
+
+Actually, I translated Alexey's code into Haskell and it seems to
+work.  It's not the code I'd like to write, though.  I have a vague
+idea to try to separate symbolic evaluation from CSE.  It looks a lot
+like evaluation with abstract values that are symbolic expressions.
+Maybe annotate each subexpression with its symbolic value, and then do
+CSE crunch storing in an environment canonical names of annotated
+expressions, with lookup that compares annotated expressions for
+equality by comparing annotations.  Symbolic expressions seems to
+serve as normal forms for ordinary expressions.
+
+Response to that from Alexey:
+
+No.  If you're thinking what I think you're thinking, this is a bad
+idea.  The reason it's a bad idea is that common subexpression
+eliminations cascade.  Consider
+
+#+begin_src scheme
+(let ((z (compute-something)))
+ (let ((x (+ z 1)))
+   (let ((y z))
+     (let ((w (+ y 1)))
+       (let ((x2 (+ x 1)))
+         (let ((w2 (+ w 1)))
+           ...))))))
+#+end_src
+
+When you're computing the symbolic expression for =(+ y 1)= you have
+to take into account that =y= is an alias of =z=, or you'll miss =w=
+being a common subexpression with =x=.  And if you miss that, you'll
+miss =w2= being a common subexpression with =x2=.  Which means you may
+need to do as many rounds of CSE as there are lets in that chain.
+It's much better, at least to my mind, to do it all in one pass; but
+for that you need to know the results of canonicalization of all
+previously encountered expressions when you are computing the current
+symbolic expression.  This is also why algebraic simplifications enter
+into the picture right here -- a simplification may help identify a
+further common subexpression, which may cascade into yet further
+common subexpressions, which may enable further simplifications.  The
+purpose of having a pass is to catch all these things in one pass.
+That's one reason why I test idempotence of the passes -- idempotence
+means not having to run potentially quadratic loops to convergence.
+
+The current state of CSE is as follows: it does eliminate common
+subexpressions (not only aliases), however, it doesn't do any
+algebraic simplifications, nor it distinguishes between pure and
+non-pure procedures (in particular, it collapses different calls to
+REAL, although it shouldn't).  Also, common subexpressions in parallel
+LET are not detected (a bug).
