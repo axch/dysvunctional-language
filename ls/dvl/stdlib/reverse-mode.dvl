@@ -1,3 +1,8 @@
+;;; Generalized gradient
+;;; gradient-r :: (a -> R) -> (a -> a)
+;;; where the last a is interpreted as the cotangent space of a.
+;;; a must not contain functions.
+
 (define ((gradient-r f) x)
   (let ((eps (gensym)))
     (define (tapify thing)
