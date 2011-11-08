@@ -6,6 +6,12 @@
 (define (force promise)
   (promise))
 
+(define (head stream)
+  (car (force stream)))
+
+(define (tail stream)
+  (cdr (force stream)))
+
 (define ((iterate f) state)
   (promise
    (lambda ()
@@ -16,6 +22,12 @@
       stream
       ((drop (- n 1))
        (cdr (force stream)))))
+
+(define (nth-stream stream k)
+  (let (((cons first rest) (force stream)))
+    (if (<= k 0)
+        first
+        (nth-stream rest (- k 1)))))
 
 (define ((downsample period) stream)
   (promise
@@ -29,13 +41,22 @@
      (let (((cons x xs) (force stream)))
        (cons (f x) ((stream-map f) xs))))))
 
+(define (stream-map2 f s1 s2)
+  (promise
+   (lambda ()
+     (let (((cons s1-first s1-rest) (force s1))
+           ((cons s2-first s2-rest) (force s2)))
+       (cons (f s1-first s2-first)
+             (stream-map2 f s1-rest s2-rest))))))
+
 (define (stream-of-adjacent-pairs stream)
   (let (((cons first rest) (force stream)))
     (let loop ((first first) (rest rest))
-      (lambda ()
-        (let (((cons second rest) (force rest)))
-          (cons (cons first second)
-                (loop second rest)))))))
+      (promise
+       (lambda ()
+         (let (((cons second rest) (force rest)))
+           (cons (cons first second)
+                 (loop second rest))))))))
 
 (define (deep-primal thing)
   (bundle?

@@ -1,17 +1,4 @@
-(define (force stream)
-  (stream))
-
-(define (head stream)
-  (car (force stream)))
-
-(define (tail stream)
-  (cdr (force stream)))
-
-(define (nth-stream stream k)
-  (let (((cons first rest) (force stream)))
-    (if (<= k 0)
-        first
-        (nth-stream rest (- k 1)))))
+(include "streams.dvl")
 
 (define (ones)
   (cons 1 ones))
@@ -19,8 +6,7 @@
 ; (nth-stream ones (real 4))
 
 (define (stream-of-iterates next value)
-  (lambda ()
-    (cons value (stream-of-iterates next (next value)))))
+  ((iterate next) value))
 
 (define (increment x)
   (+ x 1))
@@ -31,24 +17,10 @@
 ; with (nth-stream integers (real 6))
 
 (define (map-streams1 f s1)
-  (lambda ()
-    (let (((cons s1-first s1-rest) (force s1)))
-      (cons (f s1-first) (map-streams1 f s1-rest)))))
+  (stream-map f s1))
 
 (define (map-streams f s1 s2)
-  (lambda ()
-    (let (((cons s1-first s1-rest) (force s1))
-          ((cons s2-first s2-rest) (force s2)))
-      (cons (f s1-first s2-first)
-            (map-streams f s1-rest s2-rest)))))
-
-(define (stream-of-adjacent-pairs stream)
-  (let (((cons first rest) (force stream)))
-    (let loop ((first first) (rest rest))
-      (lambda ()
-        (let (((cons second rest) (force rest)))
-          (cons (cons first second)
-                (loop second rest)))))))
+  (stream-map2 f s1 s2))
 
 (define (refine-by-doubling s)
   (/ s (sqrt (+ 2 (sqrt (- 4 (* s s)))))))
