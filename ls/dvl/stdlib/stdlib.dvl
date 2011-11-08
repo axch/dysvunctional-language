@@ -107,8 +107,9 @@
             ;; cells are properly nested.
             thing)
            ((procedure? thing)
-            (lambda (x)
-              (primal epsilon (thing x))))
+            (hide-gensym-in-procedure epsilon
+             (lambda (x)
+               (primal epsilon (thing x)))))
            ((pair? thing)
             (cons (primal epsilon (car thing))
                   (primal epsilon (cdr thing))))
