@@ -32,6 +32,19 @@
       '()
       (cons (f (car l1) (car l2)) (map2 f (cdr l1) (cdr l2)))))
 
+(define (map3 f l1 l2 l3)
+  (if (null? l1)
+      '()
+      (cons (f (car l1) (car l2) (car l3))
+            (map3 f (cdr l1) (cdr l2) (cdr l3)))))
+
+(define (tree-map f tree)
+  (cond ((pair? tree)
+         (cons (tree-map f (car tree))
+               (tree-map f (cdr tree))))
+        ((null? tree) tree)
+        (else (f tree))))
+
 (define (map-n f n)
   (letrec ((loop (lambda (i) (if (= i n) '() (cons (f i) (loop (+ i 1)))))))
     (loop 0)))
