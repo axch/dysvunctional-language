@@ -1,0 +1,103 @@
+(include "streams.dvl")
+
+(define (deep-primal thing)
+  (bundle?
+   thing
+   (lambda (thing-eps thing-prim thing-tang)
+     (deep-primal thing-prim))
+   (lambda ()
+     (cond ((real? thing)
+            thing)
+           ((procedure? thing)
+            (lambda (x)
+              (deep-primal (thing x))))
+           ((pair? thing)
+            (cons (deep-primal (car thing))
+                  (deep-primal (cdr thing))))
+           (else thing)))))
+
+(define (semi-deep-bundle? thing win lose)
+  (bundle? thing win
+   (lambda ()
+     (if (pair? thing)
+         (semi-deep-bundle? (car thing)
+          (lambda (car-eps car-prim car-tang)
+            (win car-eps (cons car-prim (primal car-eps (cdr thing)))
+                 (cons car-tang (tangent car-eps (cdr thing)))))
+          (lambda ()
+            (semi-deep-bundle? (cdr thing)
+             (lambda (cdr-eps cdr-prim cdr-tang)
+               (win cdr-eps (cons (car thing) cdr-prim)
+                    (cons (tangent cdr-eps (car thing)) ; This is a zero
+                          cdr-tang))))))
+         (lose)))))
+
+(define (max x y)
+  (if (> x y) x y))
+
+(define (distance thing1 thing2)
+  (cond ((real? thing1)
+         (abs (- thing1 thing2)))
+        ((pair? thing1)
+         (let ((da (distance (car thing1) (car thing2)))
+               (dd (distance (cdr thing1) (cdr thing2))))
+           ;(sqrt (+ (* da da) (* dd dd)))
+           (max da dd)))
+        ((null? thing1)
+         0)))
+
+(define (iterate-to-numeric-fix f start)
+  ;; For motivation (that is, why this function cares about bundles at all),
+  ;; see ls/dvl/doc/num-fix.tex.
+  ;;
+  ;; This implementation follows Strategy 2 from that document, which
+  ;; is to iterate the primal to convergence alone, and then use that
+  ;; result to iterate the tangent to convergence.
+  ;;
+  ;; Specific complications not addressed in the document:
+  ;; - Examining f does not indicate whether it is lifted or not, so
+  ;;   the question of whether or not differentiation is in progress can
+  ;;   only be answered by observing the output of f.
+  ;; - Bundles are interleaved into datastructures, so care must be
+  ;;   taken to inspect any data structure emitted by f to look for
+  ;;   bundles.  This could cause performance degradation if it had to
+  ;;   be done at runtime (and may cause compilation performance
+  ;;   degradation as it is).
+  ;; - Mercifully, it would be an error anyway if f were to emit a
+  ;;   function, because there is no obvious norm on the function space
+  ;;   by which to measure convergence.
+  ;; - Finally, there may be several levels of differentiation in
+  ;;   progress, so all their tangents are treated recursively.
+  (let primal-loop
+      (((cons (cons state next-state) rest)
+        (force
+         (stream-of-adjacent-pairs
+          ;; The stable point does not depend infinitesimally on the start
+          ((iterate (lambda (x) (f (deep-primal x)))) start)))))
+    (if (< (distance (deep-primal state) (deep-primal next-state)) 1e-7)
+        ;; Repeat the computation f here to make it clear to the dead
+        ;; code eliminator that I really will not need the tangent
+        ;; computed by f until after I am done with the loop.  That
+        ;; way, it should refrain from computing it while the loop
+        ;; iterates.
+        (let tangent-loop ((state (f (deep-primal state))))
+          (semi-deep-bundle?
+           state
+           (lambda (eps prim tang)
+             (make-bundle
+              eps (tangent-loop prim)
+              (iterate-to-numeric-fix
+               (lambda (tangent-candidate)
+                 (tangent eps (f (make-bundle eps prim tangent-candidate))))
+               tang)))
+           (lambda ()
+             state)))
+        (primal-loop (force rest)))))
+
+;; TODO Test when f is a closure with internal g :: R^n x R^m -> R^n
+;; TODO Test differentiating such a g wrt to various directions in R^m (even at once)
+;; TODO Figure out whether or not this is actually behaving the way we want wrt evaluations
+;; of the primal and tangent
+;; TODO Verify that the case where the tangent is zero is really the same as
+;;   the case where a non-bundle is emitted
+;; TODO nest test: (D (lam (x) (fix (lam (y) (D (lam (z) (fix (lam (w) (g x y z w)))))))))
