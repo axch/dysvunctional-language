@@ -57,6 +57,10 @@ explicit tagging of and dispatching on distinct perturbations.  It
 relies on the flow analysis to specialize all that machinery to each
 particular use case to produce efficient code.
 
+Finally, the DVL flow analysis is extended relative VL to support a
+DVL program returning a function (of exactly one real argument) to the
+surrounding world, which DVL assumes may be called.
+
 
 I'm psyched!  Where do I start?
 ----------------------------------------------------------------------
