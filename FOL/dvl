@@ -1,0 +1,6 @@
+#!/bin/sh
+
+input=`cat < /dev/stdin`
+flags='--compiler --batch-mode --no-init-file'
+
+echo $input | mit-scheme $flags --load scm/dvl-wrapper.scm
