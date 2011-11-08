@@ -1,4 +1,4 @@
-(include "streams.dvl")
+(include "iterate-to-numeric-fix.dvl")
 
 (define (heron-sqrt x)
   (iterate-to-numeric-fix (lambda (y) (/ (+ y (/ x y)) 2)) 1.))
