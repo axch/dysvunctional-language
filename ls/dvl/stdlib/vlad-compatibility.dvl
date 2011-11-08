@@ -4,6 +4,12 @@
 (define (derivative-using-j* f)
   (derivative f))
 
+(define (derivative-r f)
+  (gradient-r f))
+
+(define (derivative-using-*j f)
+  (gradient-r f))
+
 (define (v+ u v) (map2 g:+ u v))
 
 (define (v- u v) (map2 g:- u v))

@@ -45,7 +45,8 @@
 
 (define (dvl-supersedes? name)
   (memq name '(derivative derivative-f derivative-using-j* j*
-               gradient-f jacobian-using-j* car cdr)))
+               gradient-f jacobian-using-j* car cdr
+               gradient-r derivative-r derivative-using-*j)))
 
 (define (inexact-number? thing)
   (and (number? thing)
