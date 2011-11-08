@@ -4,106 +4,111 @@ module FOL.Language.Feedback where
 import FOL.Language.Common
 
 import Data.List
+import Data.Maybe
+import Data.Ord
 
 import Data.Map (Map)
 import qualified Data.Map as Map
 
-data Node    a = Node { outNeighbors :: [a]
-                      , inNeighbors  :: [a]
-                      , outDegree    :: Int
-                      , inDegree     :: Int
-                      }
-type Graph   a = [(a, [a])]
+data Node a = Node { outEdges :: Map a Int
+                   , inEdges  :: Map a Int
+                   , size     :: Int
+                   }
+
+multiplicity :: Ord a => a -> Map a Int -> Int
+multiplicity name = fromMaybe 0 . Map.lookup name
+
+outMultiplicity, inMultiplicity :: Ord a => a -> Node a -> Int
+outMultiplicity name = multiplicity name . outEdges
+inMultiplicity  name = multiplicity name . inEdges
+
+totalDegree :: Map a Int -> Int
+totalDegree = Map.fold (+) 0
+
+totalOutDegree, totalInDegree :: Node a -> Int
+totalOutDegree = totalDegree . outEdges
+totalInDegree  = totalDegree . inEdges
+
+type Graph a = [(a, (Int, [a]))]
 type NodeMap a = Map a (Node a)
 
--- Add v2 to the list of outgoing neighbors of v1.  To avoid computing
--- the length of that list, the length is stored in the node record
--- and is updated on every modification.
-addOutNeighbor :: Ord a => a -> a -> NodeMap a -> NodeMap a
-addOutNeighbor v1 v2 = Map.adjust addOutNeighbor' v1
+addOutEdge :: Ord a => a -> a -> NodeMap a -> NodeMap a
+addOutEdge v1 v2 = Map.adjust addOutEdge' v1
     where
-      addOutNeighbor' node
-          = node { outNeighbors = v2 : outNeighbors node
-                 , outDegree    = outDegree node + 1
-                 }
+      addOutEdge' node
+          = node {outEdges = Map.insertWith (+) v2 1 (outEdges node)}
 
--- Add v2 to the list of incoming neighbors of v1.
-addInNeighbor  :: Ord a => a -> a -> NodeMap a -> NodeMap a
-addInNeighbor  v1 v2 = Map.adjust addInNeighbor'  v1
+addInEdge  :: Ord a => a -> a -> NodeMap a -> NodeMap a
+addInEdge  v1 v2 = Map.adjust addInEdge'  v1
     where
-      addInNeighbor'  node
-          = node { inNeighbors  = v2 : inNeighbors  node
-                 , inDegree     = inDegree  node + 1
-                 }
+      addInEdge'  node
+          = node {inEdges  = Map.insertWith (+) v2 1 (inEdges  node)}
 
--- Attache an edge from v1 to v2.
 attachEdge :: Ord a => a -> a -> NodeMap a -> NodeMap a
-attachEdge v1 v2 = addInNeighbor v2 v1 . addOutNeighbor v1 v2
+attachEdge v1 v2 = addInEdge v2 v1 . addOutEdge v1 v2
 
--- Remove a vertex v from the graph.  In particular, remove v from the
--- lists of outgoing and incoming neighbors of the other vertices.  It
--- there is no vertex called v in the graph, return it unchanged.
-deleteNode :: Ord a => a -> NodeMap a -> NodeMap a
-deleteNode v node_map
-    | Just (Node o i _ _) <- Map.lookup v node_map
-    = compose (map delInNeighbor o
-                       ++ map delOutNeighbor i) (Map.delete v node_map)
+inlineNode' :: Ord a => a -> Node a -> NodeMap a -> NodeMap a
+inlineNode' scrutinee_name (Node o i s) node_map
+    = compose transformations (Map.delete scrutinee_name node_map)
+    where
+      update_out_neighbor  = Map.adjustWithKey update_out_neighbor'
+      update_out_neighbor' neighbor_name neighbor_node
+          = neighbor_node {
+              inEdges = Map.unionWith (+) new_in_edges old_in_edges
+            }
+          where
+            d = multiplicity neighbor_name o
+            old_in_edges = Map.delete scrutinee_name (inEdges neighbor_node)
+            new_in_edges = Map.map (* d) i
+
+      update_in_neighbor  = Map.adjustWithKey update_in_neighbor'
+      update_in_neighbor' neighbor_name neighbor_node
+          = neighbor_node {
+              outEdges = Map.unionWith (+) new_out_edges old_out_edges
+            , size = size neighbor_node + d * s
+            }
+          where
+            d = multiplicity neighbor_name i
+            old_out_edges = Map.delete scrutinee_name (outEdges neighbor_node)
+            new_out_edges = Map.map (* d) o
+
+      transformations = map update_out_neighbor (Map.keys o)
+                        ++ map update_in_neighbor  (Map.keys i)
+
+inlineNode :: Ord a => a -> NodeMap a -> NodeMap a
+inlineNode name node_map
+    | Just node <- Map.lookup name node_map
+    = inlineNode' name node node_map
     | otherwise
     = node_map
-    where
-      delOutNeighbor = Map.adjust delOutNeighbor'
-          where
-            delOutNeighbor' node
-                = node { outNeighbors = delete v (outNeighbors node)
-                       , outDegree    = outDegree node - 1
-                       }
-      delInNeighbor  = Map.adjust delInNeighbor'
-          where
-            delInNeighbor'  node
-                = node { inNeighbors  = delete v (inNeighbors  node)
-                       , inDegree     = inDegree  node - 1
-                       }
 
--- Build a node map out of adjacency list representation of a graph.
 mkNodeMap :: Ord a => Graph a -> NodeMap a
-mkNodeMap graph = compose (map insertVertex graph) initialNodeMap
+mkNodeMap graph = compose (map insert_vertex graph) initial_node_map
     where
-      initialNodeMap
-          = Map.fromList [(name, Node [] [] 0 0) | (name, _) <- graph]
-      insertVertex (name, neighbors)
+      initial_node_map
+          = Map.fromList [(name, Node Map.empty Map.empty size)
+                              | (name, (size, _)) <- graph]
+      insert_vertex (name, (_, neighbors))
           = compose (map (attachEdge name) neighbors)
 
--- Compute a feedback vertex set of a given graph.
-feedbackVertexSet :: Ord a => Graph a -> [a]
-feedbackVertexSet graph = prune (mkNodeMap graph, [])
-    where
-      prune = pass2 . pass1
-      pass1 (node_map, feedback)
-          = Map.foldrWithKey sweep (node_map, feedback, False) node_map
-      -- The third component of the tuple is a flag indicating whether
-      -- we have made progress.
-      sweep name node state@(node_map, feedback, _)
-          | outDegree node == 0 || inDegree node == 0
-          = (deleteNode name node_map,        feedback, True)
-          | name `elem` outNeighbors node
-          = (deleteNode name node_map, name : feedback, True)
-          | otherwise
-          = state
-      pass2 (node_map, feedback, progress)
-          | Map.null node_map
-          = feedback
-          -- If the first pass made no progress, heuristically remove a
-          -- vertex and put it into the feedback set.
-          | not progress
-          , let name = select node_map
-          = prune (deleteNode name node_map, name : feedback)
-          | otherwise
-          = prune (node_map, feedback)
+inlineCost :: Node a -> Int
+inlineCost node = size node * (totalInDegree node - 1)
 
--- Heuristic used to pick a node when the feedback set algorithm stalls.
-select :: NodeMap a -> a
-select = fst . maximumBy nodeMax . Map.toList
+acceptableInlinees :: Ord a => Int -> Graph a -> [a]
+acceptableInlinees threshold = prune [] 0 . mkNodeMap
     where
-      nodeMax (_, Node _ _ o1 i1) (_, Node _ _ o2 i2)
-          | i1 * o1 > i2 * o2 = GT
-          | otherwise         = LT
+      prune is old_total_cost node_map
+          | Map.null inlinable
+          = is
+          | new_total_cost <= threshold
+          = prune (candidate_name:is) new_total_cost (inlineNode candidate_name node_map)
+          | otherwise
+          = is
+          where
+            isInlinable name node = outMultiplicity name node == 0
+            inlinable = Map.filterWithKey isInlinable node_map
+            (candidate_name, candidate_cost) = findMinWith inlineCost inlinable
+            new_total_cost = old_total_cost + candidate_cost
+
+findMinWith :: Ord b => (a -> b) -> Map k a -> (k, b)
+findMinWith cost m = minimumBy (comparing snd) [(k, cost v) | (k, v) <- Map.toList m]

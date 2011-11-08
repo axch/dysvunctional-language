@@ -18,4 +18,5 @@ import Control.Monad
 optimize :: String -> String
 optimize = pprint . tidy . evalUnique . transform . parse
     where
-      transform = liftM cse . ((sra . ann) <=< inline <=< alphaRn)
+      transform = inline <=< alphaRn
+      -- transform = liftM cse . ((sra . ann) <=< inline <=< alphaRn)

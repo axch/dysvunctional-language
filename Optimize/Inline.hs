@@ -7,6 +7,7 @@ import FOL.Language.Expression
 import FOL.Language.Feedback
 import FOL.Language.Unique
 
+import Data.Generics.Schemes
 import Data.Generics.Uniplate.Data
 
 import Data.List
@@ -22,23 +23,24 @@ callees :: Expr -> [Name]
 callees e = nub [proc | ProcCall proc _ <- universe e]
 
 inlineProg :: Prog -> Prog
-inlineProg (Prog defns expr) = Prog defns' expr'
+inlineProg prog@(Prog defns expr) = Prog defns' expr'
     where
-      non_inlinable = feedbackVertexSet call_graph
-      call_graph    = [(proc_name, callees body \\ primitives)
-                           | Defn (proc_name, _) _ body <- defns]
+      prog_size  = gsize prog
+      inlinees   = acceptableInlinees (3 * prog_size) call_graph
+      call_graph = [(proc_name, (gsize body, callees body \\ primitives))
+                        | Defn (proc_name, _) _ body <- defns]
       -- A map mapping the names of the procedures that are
       -- to be inlined to their definitions.
-      defn_map      = Map.fromList
-                      [(proc_name, defn)
-                           | defn@(Defn (proc_name, _) _ _) <- defns
-                           , proc_name `notElem` non_inlinable]
+      defn_map   = Map.fromList
+                   [(proc_name, defn)
+                        | defn@(Defn (proc_name, _) _ _) <- defns
+                        , proc_name `elem` inlinees]
       -- Leave only the procedure definitions that have not
       -- been inlined, inlining their bodies.
-      defns'        = [inlineDefn defn_map defn
-                           | defn@(Defn (proc_name, _) _ _) <- defns
-                           , proc_name `elem` non_inlinable]
-      expr'         = inlineExpr defn_map expr
+      defns'     = [inlineDefn defn_map defn
+                        | defn@(Defn (proc_name, _) _ _) <- defns
+                        , proc_name `notElem` inlinees]
+      expr'      = inlineExpr defn_map expr
 
 -- Inline given procedure definitions in a given definition.
 inlineDefn :: Map Name Defn -> Defn -> Defn
