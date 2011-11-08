@@ -36,7 +36,7 @@
 
 (define stdlib-file
   (string-append (->namestring (self-relatively working-directory-pathname))
-                 "stdlib.dvl"))
+                 "stdlib/stdlib.dvl"))
 
 (define (dvl-prepare form)
   (let* ((stdlib (read-source stdlib-file))
