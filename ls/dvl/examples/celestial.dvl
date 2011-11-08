@@ -109,22 +109,7 @@
     (potential (map2 update-position objects positions))))
 
 (define (gradient f pt)
-  (let loop ((thing pt)
-             (eat f))
-    (cond ((real? thing)
-           ((derivative eat) thing))
-          ((pair? thing)
-           (let (((cons thing1 thing2) thing))
-             (cons (loop thing1
-                         (lambda (different-thing)
-                           (eat (cons different-thing thing2))))
-                   (loop thing2
-                         (lambda (different-thing)
-                           (eat (cons thing1 different-thing)))))))
-          ((null? thing)
-           '())
-          ;; TODO This should probably be an error
-          (else thing))))
+  ((gradient-f f) pt))
 
 (define (forces objects)
   (* -1 (gradient (positions->potential objects) (map position objects))))

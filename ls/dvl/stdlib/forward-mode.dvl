@@ -3,12 +3,20 @@
     (lambda (x)
       (tangent epsilon (f (make-bundle epsilon x 1))))))
 
-(define (gradient-f f)
-  (lambda (x)
-    (let ((n (length x)))
-      (map-n (lambda (i)
-               ((derivative (lambda (displacement)
-                              (f (v+ x (ex displacement i n)))))
-                0))
-             n))))
-
+(define ((gradient-f f) pt)
+  (let loop ((thing pt)
+             (eat f))
+    (cond ((real? thing)
+           ((derivative eat) thing))
+          ((pair? thing)
+           (let (((cons thing1 thing2) thing))
+             (cons (loop thing1
+                         (lambda (different-thing)
+                           (eat (cons different-thing thing2))))
+                   (loop thing2
+                         (lambda (different-thing)
+                           (eat (cons thing1 different-thing)))))))
+          ((null? thing)
+           '())
+          ;; TODO This should probably be an error
+          (else thing))))
