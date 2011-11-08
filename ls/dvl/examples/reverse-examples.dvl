@@ -1,19 +1,21 @@
-(gradient-r sin 0) ===> 1
+(define (gradient-r-at f pt)
+  ((gradient-r f) pt))
 
-(gradient-r sin (real 0)) ===> 1
+(gradient-r-at sin 0) ===> 1
 
-(gradient-r + (cons 4 7)) ===> (1 . 1)
+(gradient-r-at sin (real 0)) ===> 1
 
-(gradient-r * (cons 4 7)) ===> (7 . 4)
+(gradient-r-at + (cons 4 7)) ===> (1 . 1)
 
-(gradient-r * (cons (real 4) (real 7))) ===> (7 . 4)
+(gradient-r-at * (cons 4 7)) ===> (7 . 4)
+
+(gradient-r-at * (cons (real 4) (real 7))) ===> (7 . 4)
 
 ;;; These are copies of ls/slad/essential-examples.scm, but using
 ;;; reverse mode.
 
 (define (derivative-r f)
-  (lambda (x)
-    (gradient-r f x)))
+  (gradient-r f))
 
 ;;; Identity function
 ((derivative-r (lambda (x) x)) 7) ===> 1
@@ -116,14 +118,14 @@
      (* y 3))))
  5) ===> 60
 
-(gradient-r product (list (real 1) (real 2) (real 3))) ===> (6 3 2)
-(gradient-r product (list (real 1) (real 2) (real 3) (real 4))) ===> (24 12 8 6)
-(gradient-r (lambda (x y) (sqrt (+ (* x x) (* y y)))) (real 3.) (real 4.)) ===> (.6000000000000001 . .8)
+(gradient-r-at product (list (real 1) (real 2) (real 3))) ===> (6 3 2)
+(gradient-r-at product (list (real 1) (real 2) (real 3) (real 4))) ===> (24 12 8 6)
+(gradient-r-at (lambda (x y) (sqrt (+ (* x x) (* y y)))) (real 3.) (real 4.)) ===> (.6000000000000001 . .8)
 
 (let ()
   (define (means x y)
     (cons (/ (+ x y) 2) (sqrt (* y x))))
-  (gradient-r
+  (gradient-r-at
    (lambda (x y)
      (+ (means (means (means (means x y))))))
    (real 3.) (real 4.)))

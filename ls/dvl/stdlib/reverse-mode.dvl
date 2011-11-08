@@ -1,4 +1,4 @@
-(define (gradient-r f x)
+(define ((gradient-r f) x)
   (let ((eps (gensym)))
     (define (tapify thing)
       (cond ((or (real? thing) (forward? thing) (reverse? thing))
