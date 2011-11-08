@@ -20,3 +20,7 @@
 (define (perturb thing) thing)
 
 (define (unperturb thing) thing)
+
+(define (sensitize thing) thing)
+
+(define (unsensitize thing) thing)
