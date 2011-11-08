@@ -57,6 +57,9 @@
   (and (gensym? thing)
        (gensym= thing zero)))
 
+;;; TODO Do I need e and ex for anything?  They used to be used for,
+;;; e.g., gradient-f, but I don't need them for that anymore.
+
 ;;; An n-dimensional vector with x in position i and zeros elsewhere.
 (define (ex x i n)
   (if (zero? n)
