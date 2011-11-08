@@ -277,7 +277,7 @@
  (define-test (compile-reverse-mode)
    (check (equal?
            '(cos (real 0))
-           (compile-to-fol (dvl-prepare (vlad->dvl '(gradient-r sin (real 0))))))))
+           (compile-to-fol (dvl-prepare (vlad->dvl '((gradient-r sin) (real 0))))))))
 
 ;; TODO These are commented out because they are still slow (as of Sep
 ;; 12, 2011) and have rounding error disagreements.  They also use
