@@ -1,12 +1,21 @@
+;;; Directional derivaitve
+;;; derivaitve :: (R -> a) -> (R -> a) where the last a is interpreted
+;;; as the tangent space of a.
+
 (define (derivative f)
   (let ((epsilon (gensym)))
     (lambda (x)
       (tangent epsilon (f (make-bundle epsilon x 1))))))
 
-(define ((gradient-f f) pt)
+;;; Jacobian by forward mode.
+;;; jacobian-f :: (R^n -> a) -> (R^n -> a)
+;;; where a is interpreted as in derivative, and R^n is an arbitrary
+;;; cons tree containing real numbers.
+
+(define ((jacobian-f f) pt)
   (let loop ((thing pt)
              (eat f))
-    (cond ((real? thing)
+    (cond ((or (real? thing) (forward? thing) (reverse? thing))
            ((derivative eat) thing))
           ((pair? thing)
            (let (((cons thing1 thing2) thing))
@@ -20,3 +29,5 @@
            '())
           ;; TODO This should probably be an error
           (else thing))))
+
+(define gradient-f jacobian-f)
