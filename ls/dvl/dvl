@@ -12,4 +12,4 @@ fi
 # (notably, an MIT-Scheme run-shell-command calling this script will
 # error out in the subsidiary mit-scheme is killed, whereas it would
 # return normally otherwise).
-exec mit-scheme --heap $HEAP --batch-mode --no-init-file --load "${SELFDIR}/load.scm" --eval "(begin (pp (dvl-run-file \"$1\")) (%exit 0))"
+exec mit-scheme --heap $HEAP --stack 2000 --batch-mode --no-init-file --load "${SELFDIR}/load.scm" --eval "(begin (pp (dvl-run-file \"$1\")) (%exit 0))"
