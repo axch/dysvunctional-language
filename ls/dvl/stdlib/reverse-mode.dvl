@@ -36,7 +36,7 @@
               ((and (reverse? thing) (gensym= eps (tape-cell-epsilon thing)))
                (assq (tape-cell-id thing) sensitivities))
               ((pair? thing)
-               (cons (interpret (car thing)) 
+               (cons (interpret (car thing))
                      (interpret (cdr thing))))
               ((procedure? thing)
                (error))
