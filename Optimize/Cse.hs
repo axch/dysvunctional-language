@@ -18,31 +18,6 @@ instance CanName :<: Expr where
     inj (CanBool b) = Bool b
     inj (CanReal r) = Real r
 
-maybeCanName :: Expr -> Maybe CanName
-maybeCanName (Var x)  = Just (CanVar x)
-maybeCanName Nil      = Just CanNil
-maybeCanName (Bool b) = Just (CanBool b)
-maybeCanName (Real r) = Just (CanReal r)
-maybeCanName _        = Nothing
-
-isVariable, isConstant, isValues, isNotValues :: Expr -> Bool
-isVariable (Var _)  = True
-isVariable _        = False
-
-isConstant Nil      = True
-isConstant (Bool _) = True
-isConstant (Real _) = True
-isConstant _        = False
-
-isValues (Values _) = True
-isValues _          = False
-
-isNotValues = not . isValues
-
-isCanName, isNotCanName :: Expr -> Bool
-isCanName    = isJust    . maybeCanName
-isNotCanName = isNothing . maybeCanName
-
 data SymExpr = SymVar Name
              | SymNil
              | SymBool Bool
@@ -51,24 +26,12 @@ data SymExpr = SymVar Name
              | SymCar SymExpr
              | SymCdr SymExpr
              | SymVectorRef SymExpr Int
+             | SymValuesRef SymExpr Int
              | SymCons SymExpr SymExpr
              | SymVector [SymExpr]
              | SymValues [SymExpr]
              | SymProcCall Name [SymExpr]
-
-instance SymExpr :<: Expr where
-    inj (SymVar x)              = Var x
-    inj SymNil                  = Nil
-    inj (SymBool b)             = Bool b
-    inj (SymReal r)             = Real r
-    inj (SymIf p c a)           = If (inj p) (inj c) (inj a)
-    inj (SymCar e)              = Car (inj e)
-    inj (SymCdr e)              = Cdr (inj e)
-    inj (SymVectorRef e i)      = VectorRef (inj e) i
-    inj (SymCons e1 e2)         = Cons (inj e1) (inj e2)
-    inj (SymVector es)          = Vector (map inj es)
-    inj (SymValues es)          = Values (map inj es)
-    inj (SymProcCall proc args) = ProcCall proc (map inj args)
+               deriving Eq
 
 instance CanName :<: SymExpr where
     inj (CanVar x)  = SymVar x
@@ -76,76 +39,123 @@ instance CanName :<: SymExpr where
     inj (CanBool b) = SymBool b
     inj (CanReal r) = SymReal r
 
-cseExpr :: [(Expr, CanName)] -> Expr -> Expr
-cseExpr env e
-    | Just a <- lookup e env
-    = inj a
-    | isConstant e, let Just a = maybeCanName e
-    = inj a
-cseExpr _ (Var x)
-    = error $ "Unbound variable: " ++ pprint x
-cseExpr env (If p c a)
-    = If (cseExpr env p) (cseExpr env c) (cseExpr env a)
-cseExpr env (Let (Bindings bs) body)
-    = mkLet bs1' body'
-    where
-      -- CSE each RHS
-      bs'   = [(x, cseExpr env e) | (x, e) <- bs]
-      -- Flush bindings with atomic RHSs
-      bs1'  = [b' | b'@(_, e') <- bs', isNotCanName e']
-      bs2'  = [(x, e'') | (x, e') <- bs', e'' <- maybeToList (maybeCanName e')]
-      -- Each non-atomic RHS has a canonical name that is its LHS, the
-      -- canonical name of each LHS with non-atomic RHS is itself, and
-      -- for each LHS with atomic RHS, the canonical name is that RHS.
-      env'  = [(e',    CanVar x) | (x, e') <- bs1']
-           ++ [(Var x, CanVar x) | (x, _ ) <- bs1']
-           ++ [(Var x, e'      ) | (x, e') <- bs2']
-      body' = cseExpr (env' ++ env) body
-cseExpr env (LetValues (Bindings bs) body)
-    = mkLetValues bs''' body'
-    where
-      -- CSE each RHS
-      bs'  = [(xs, cseExpr env e) | (xs, e) <- bs]
-      -- Split the CSE'd bindings into 3 groups: those with the RHS of
-      -- type Values but in which some of the components isn't atomic;
-      -- those in which the RHS is of type Values and each component
-      -- is atomic, and the rest (those in which the RHS is not of
-      -- type Values).
-      bs1' = [b' | b'@(_, Values es') <- bs', any isNotCanName es']
-      bs2' = [b' | b'@(_, Values es') <- bs', all isCanName    es']
-      bs'' = [b' | b'@(_, e') <- bs', isNotValues e']
-      -- Each binding of the form ((x1 ... xn) (VALUES e1 ... en)),
-      -- where each ei is atomic, implies that the canonical name of
-      -- xi is ei.  Each such binding where some ei is not atomic
-      -- implies that the canonical name of each ei is xi (this is not
-      -- exactly right, but I don't have a better idea at the moment).
-      -- Finally, each binding ((x1 ... xn) e), where e is not of type
-      -- VALUES implies that each xi is its own canonical name.
-      env'  = [(e',    CanVar x) | (xs, Values es') <- bs1', (x, e') <- zip xs es']
-           ++ [(Var x, CanVar x) | (xs, _) <- bs''', x <- xs]
-           ++ [(Var x, e''     ) | (xs, Values es') <- bs2'
-                                 , let es'' = mapMaybe maybeCanName es'
-                                 , (x, e'') <- zip xs es'']
-      body' = cseExpr (env' ++ env) body
-      -- Flush bindings with the RHS of type VALUES in which each
-      -- component is atomic.
-      bs''' = bs1' ++ bs''
-cseExpr env (Car e)              = Car (cseExpr env e)
-cseExpr env (Cdr e)              = Cdr (cseExpr env e)
-cseExpr env (VectorRef e i)      = VectorRef (cseExpr env e) i
-cseExpr env (Cons e1 e2)         = Cons (cseExpr env e1) (cseExpr env e2)
-cseExpr env (Vector es)          = Vector (map (cseExpr env) es)
-cseExpr env (Values es)          = Values (map (cseExpr env) es)
-cseExpr env (ProcCall proc args) = ProcCall proc (map (cseExpr env) args)
+isVariable, isConstant :: SymExpr -> Bool
+isVariable (SymVar _)  = True
+isVariable _           = False
 
-cseDefn :: [(Expr, CanName)] -> Defn -> Defn
+isConstant SymNil      = True
+isConstant (SymBool _) = True
+isConstant (SymReal _) = True
+isConstant _           = False
+
+type CseEnv = [(SymExpr, CanName)]
+
+canonicalize :: CseEnv -> SymExpr -> SymExpr
+canonicalize env s
+    | Just c <- lookup s env, let s' = inj c, isAcceptableAlias env s'
+    = s'
+    | otherwise
+    = s
+
+augmentEnv :: [SymExpr] -> [Name] -> CseEnv -> (CseEnv, [Bool])
+augmentEnv ss ns env = (env' ++ env, map (isAcceptableAlias env) ss)
+    where
+      env' = concat (zipWith bind ss ns)
+      bind s n
+          | Just c <- lookup s env
+          = [(SymVar n, c)]
+      bind (SymVar _) n
+          = [(SymVar n, CanVar n)]
+      bind SymNil n
+          = [(SymVar n, CanNil)]
+      bind (SymBool b) n
+          = [(SymVar n, CanBool b)]
+      bind (SymReal r) n
+          = [(SymVar n, CanReal r)]
+      bind s n
+          = [(SymVar n, CanVar n), (s, CanVar n)]
+
+isAcceptableAlias :: CseEnv -> SymExpr -> Bool
+isAcceptableAlias env s = isConstant s || (isVariable s && isInScope env s)
+
+isInScope :: CseEnv -> SymExpr -> Bool
+isInScope env s = isConstant s || isJust (lookup s env)
+
+cseExpr :: CseEnv -> Expr -> (SymExpr, Expr)
+cseExpr env (Var x)
+    | Just n <- lookup (SymVar x) env
+    = (inj n, inj n)
+    | otherwise
+    = error $ "Unbound variable: " ++ pprint x
+cseExpr _ Nil = (SymNil, Nil)
+cseExpr _ e@(Bool b) = (SymBool b, e)
+cseExpr _ e@(Real r) = (SymReal r, e)
+cseExpr env (If p c a)
+    = (SymIf sp sc sa, If p' c' a')
+    where
+      (sp, p') = cseExpr env p
+      (sc, c') = cseExpr env c
+      (sa, a') = cseExpr env a
+cseExpr env (Let (Bindings bs) body)
+    = (sbody, mkLet bs' body')
+    where
+      (xs, es) = unzip bs
+      (ss, es') = unzip $ map (cseExpr env) es
+      (env', dead) = augmentEnv ss xs env
+      (sbody, body') = cseExpr env' body
+      bs' = [(x, e') | (x, False, e') <- zip3 xs dead es']
+cseExpr env (LetValues (Bindings bs) body)
+    = (sbody, mkLetValues bs' body')
+    where
+      (xss, es) = unzip bs
+      (ss, es') = unzip $ map (cseExpr env) es
+      sss = zipWith destructure xss ss
+      destructure _ (SymValues syms) = syms
+      destructure xs s = [SymValuesRef s i | i <- [1..length xs]]
+      (env', dead) = augmentEnv (concat sss) (concat xss) env
+      (sbody, body') = cseExpr env' body
+      bs'| any not dead = zip xss es'
+         | otherwise    = []
+cseExpr env (Car e)
+    = (canonicalize env (SymCar se), Car e')
+    where
+      (se, e') = cseExpr env e
+cseExpr env (Cdr e)
+    = (canonicalize env (SymCdr se), Cdr e')
+    where
+      (se, e') = cseExpr env e
+cseExpr env (VectorRef e i)
+    = (canonicalize env (SymVectorRef se i), VectorRef e' i)
+    where
+      (se, e') = cseExpr env e
+cseExpr env (Cons e1 e2)
+    = (canonicalize env (SymCons se1 se2), Cons e1' e2')
+    where
+      (se1, e1') = cseExpr env e1
+      (se2, e2') = cseExpr env e2
+cseExpr env (Vector es)
+    = (canonicalize env (SymVector ses), Vector es')
+    where
+      (ses, es') = unzip (map (cseExpr env) es)
+cseExpr env (Values es)
+    = (canonicalize env (SymValues ses), Values es')
+    where
+      (ses, es') = unzip (map (cseExpr env) es)
+cseExpr env (ProcCall proc args)
+    = (canonicalize env (SymProcCall proc sargs), ProcCall proc args')
+    where
+      (sargs, args') = unzip (map (cseExpr env) args)
+
+cseDefn :: CseEnv -> Defn -> Defn
 cseDefn env (Defn proc args body) = Defn proc args body'
     where
-      body' = cseExpr (env' ++ env) body
-      env'  = [(Var x, CanVar x) | (x, _) <- args]
+      (_, body') = cseExpr (env' ++ env) body
+      env'  = [(SymVar x, CanVar x) | (x, _) <- args]
 
-cseProg :: [(Expr, CanName)] -> Prog -> Prog
-cseProg env (Prog defns expr) = Prog (map (cseDefn env) defns) (cseExpr env expr)
+cseProg :: CseEnv -> Prog -> Prog
+cseProg env (Prog defns expr) = Prog (map (cseDefn env) defns) expr'
+    where
+      (_, expr') = cseExpr env expr
 
 cse :: Prog -> Prog
 cse = cseProg []

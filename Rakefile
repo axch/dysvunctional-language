@@ -20,6 +20,6 @@ mit-scheme \
 --batch-mode \
 --no-init-file \
 --eval '(set! load/suppress-loading-message? #t)' \
---eval '(begin (load "test/load") (show-time run-registered-tests) (newline) (flush-output) (%exit 0))'
+--eval '(begin (load "scm/load") (show-time run-registered-tests) (newline) (flush-output) (%exit 0))'
 EOF
 end

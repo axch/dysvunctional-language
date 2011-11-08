@@ -101,7 +101,13 @@ My approach follows more or less that of Alexey.  The definition of
 "Scrap Your Boilerplate" might be successfully applied here.
 
 ** TODO Study SYB papers.  Does the SYB approach apply here?
-** TODO Write a test suite for my FOL implementation.
+   Uniplate by Neil Mitchell does.
+** DONE Write a test suite for my FOL implementation.
+   - State "DONE"       from "TODO"       [2011-09-13 Tue 14:58]
+     Not exactly how I envisioned, but it is better than nothing.  The
+     test suit uses my optimizer to optimize some FOL program and then
+     runs them in Scheme using =fol-eval= and compares the result to
+     the result of running the unoptimized version of the same program.
    Testing alpha-renamer can be fully automated:
    - take a DVL program,
    - compile it to raw FOL,
@@ -110,6 +116,19 @@ My approach follows more or less that of Alexey.  The definition of
    - check the result against Alexey's FOL using =alpha-rpename?=).
    What about inlining?  Is there a fully automatic way to test it?
 
+
+Alexey wants me to implement a "smart" inliner.  "Smart" means the
+following:
+- compute a feedback vertex set of the call graph
+- compute the call graph again, omitting the feedback set and giving
+  each edge a weight: an edge from procedure =p1= to procedure =p2=
+  has weight =n= if =p2= is called =n= times in the body of =p1=.
+- For each vertex of the call graph (for each procedure not in the
+  feedback vertex set), answer the question: if I inline this
+  procedure, how much will the code size increase (say, in terms of
+  the number of nodes of AST)?  Each inlined procedure call will be
+  replaced with the body of the procedure (wrapped into a LET binding
+  the formals to arguments, which we neglect).
 * Type checker
 
 I would like to implement a type checker for FOL.  Because FOL is a
@@ -236,3 +255,52 @@ and
 and by subsequently flushing the bindings for =y= and each of =yi=
 (replacing each occurrence of =y= resp. =yi= in the body of =let=
 resp. =let-values= by =x= resp. =xi=).
+
+Actually, I translated Alexey's code into Haskell and it seems to
+work.  It's not the code I'd like to write, though.  I have a vague
+idea to try to separate symbolic evaluation from CSE.  It looks a lot
+like evaluation with abstract values that are symbolic expressions.
+Maybe annotate each subexpression with its symbolic value, and then do
+CSE crunch storing in an environment canonical names of annotated
+expressions, with lookup that compares annotated expressions for
+equality by comparing annotations.  Symbolic expressions seems to
+serve as normal forms for ordinary expressions.
+
+Response to that from Alexey:
+
+No.  If you're thinking what I think you're thinking, this is a bad
+idea.  The reason it's a bad idea is that common subexpression
+eliminations cascade.  Consider
+
+#+begin_src scheme
+(let ((z (compute-something)))
+ (let ((x (+ z 1)))
+   (let ((y z))
+     (let ((w (+ y 1)))
+       (let ((x2 (+ x 1)))
+         (let ((w2 (+ w 1)))
+           ...))))))
+#+end_src
+
+When you're computing the symbolic expression for =(+ y 1)= you have
+to take into account that =y= is an alias of =z=, or you'll miss =w=
+being a common subexpression with =x=.  And if you miss that, you'll
+miss =w2= being a common subexpression with =x2=.  Which means you may
+need to do as many rounds of CSE as there are lets in that chain.
+It's much better, at least to my mind, to do it all in one pass; but
+for that you need to know the results of canonicalization of all
+previously encountered expressions when you are computing the current
+symbolic expression.  This is also why algebraic simplifications enter
+into the picture right here -- a simplification may help identify a
+further common subexpression, which may cascade into yet further
+common subexpressions, which may enable further simplifications.  The
+purpose of having a pass is to catch all these things in one pass.
+That's one reason why I test idempotence of the passes -- idempotence
+means not having to run potentially quadratic loops to convergence.
+
+The current state of CSE is as follows: it does eliminate common
+subexpressions (not only aliases), however, it doesn't do any
+algebraic simplifications, nor it distinguishes between pure and
+non-pure procedures (in particular, it collapses different calls to
+REAL, although it shouldn't).  Also, common subexpressions in parallel
+LET are not detected (a bug).
