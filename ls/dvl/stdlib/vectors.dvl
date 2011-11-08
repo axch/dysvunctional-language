@@ -57,6 +57,15 @@
   (and (gensym? thing)
        (gensym= thing zero)))
 
+(define (dot u v) ((reduce + 0) (map2 * u v)))
+
+(define (magnitude-squared v) (dot v v))
+
+(define (magnitude v) (sqrt (magnitude-squared v)))
+
+(define (distance pos1 pos2)
+  (magnitude (- pos2 pos1)))
+
 ;;; TODO Do I need e and ex for anything?  They used to be used for,
 ;;; e.g., gradient-f, but I don't need them for that anymore.
 

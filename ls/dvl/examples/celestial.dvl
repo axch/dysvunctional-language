@@ -11,16 +11,6 @@
                       (cdr lst))
                  (pairwise f (cdr lst))))))
 
-(define (dot u v) ((reduce + 0) (map2 * u v)))
-
-(define (magnitude-squared v) (dot v v))
-
-(define (magnitude v) (sqrt (magnitude-squared v)))
-
-(define (distance pos1 pos2)
-  (magnitude (- pos2 pos1)))
-
-
 (define (make-body mass position velocity)
   (tree-map real (make-object mass position velocity)))
 
