@@ -29,12 +29,6 @@
         first
         (nth-stream rest (- k 1)))))
 
-(define ((downsample period) stream)
-  (promise
-   (lambda ()
-     (let (((cons x xs) (force stream)))
-       (cons x ((drop (- period 1)) xs))))))
-
 (define (stream-map f stream)
   (promise
    (lambda ()
