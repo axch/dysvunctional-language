@@ -1,0 +1,57 @@
+(define (car (cons x y)) x)
+(define (cdr (cons x y)) y)
+(define (not x) (if x #f #t))
+(define (append l1 l2)
+  (if (pair? l1)
+      (cons (car l1) (append (cdr l1) l2))
+      l2))
+
+(define least-gensym (gensym))
+(define (gensym-max g1 g2)
+  (if (gensym< g1 g2) g2 g1))
+
+(define (length l)
+  (if (null? l)
+      0
+      (+ (length (cdr l)) 1)))
+
+(define (reverse l)
+  (let loop ((l l)
+             (answer '()))
+    (if (null? l)
+        answer
+        (loop (cdr l) (cons (car l) answer)))))
+
+(define (map f l)
+  (if (null? l)
+      '()
+      (cons (f (car l)) (map f (cdr l)))))
+
+(define (map2 f l1 l2)
+  (if (null? l1)
+      '()
+      (cons (f (car l1) (car l2)) (map2 f (cdr l1) (cdr l2)))))
+
+(define (map-n f n)
+  (letrec ((loop (lambda (i) (if (= i n) '() (cons (f i) (loop (+ i 1)))))))
+    (loop 0)))
+
+(define (abs x)
+  (if (g:negative? x)
+      (g:- 0 x)
+      x))
+
+(define (equal? x y)
+  (or
+   (and (null? x) (null? y))
+   (and (boolean? x) (boolean? y) (or (and x y) (and (not x) (not y))))
+   (and (real? x) (real? y) (= x y))
+   (and (pair? x) (pair? y) (equal? (car x) (car y)) (equal? (cdr x) (cdr y)))
+   (and (gensym? x) (gensym? y) (gensym= x y))))
+
+(define ((reduce f i) l)
+  (if (null? l) i (f (car l) ((reduce f i) (cdr l)))))
+
+(define sum (reduce g:+ zero))
+(define product (reduce g:* 1))
+

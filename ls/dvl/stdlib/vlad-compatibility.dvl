@@ -1,0 +1,16 @@
+(define (derivative-f f)
+  (derivative f))
+
+(define (derivative-using-j* f)
+  (derivative f))
+
+(define (v+ u v) (map2 g:+ u v))
+
+(define (v- u v) (map2 g:- u v))
+
+(define (jacobian-using-j* f)
+  (gradient-f f))
+
+(define (perturb thing) thing)
+
+(define (unperturb thing) thing)

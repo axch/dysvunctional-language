@@ -1,0 +1,67 @@
+(define (pointwise f obj)
+  (cond ((real? obj)
+         (f obj))
+        ((pair? obj)
+         (cons (f (car obj)) (f (cdr obj))))
+        ((procedure? obj)
+         (lambda (x) (f (obj x))))
+        (else
+         obj)))
+
+(define (pointwise2 f obj1 obj2)
+  (cond ((and (real? obj1) (real? obj2))
+         (f obj1 obj2))
+        ((and (pair? obj1) (pair? obj2))
+         (cons (f (car obj1) (car obj2))
+               (f (cdr obj1) (cdr obj2))))
+        ((and (procedure? obj1) (procedure? obj2))
+         (lambda (z)
+           (f (obj1 z) (obj2 z))))
+        ((equal? obj1 obj2)
+         obj1)
+        (else (error)) ; TODO Error string "Object shape mismatch"
+        ))
+
+(define (v:+ x y)
+  (cond ((universal-zero? x) y)
+        ((universal-zero? y) x)
+        ((and (real? x) (real? y))
+         (+ x y))
+        (else
+         (pointwise2 g:+ x y))))
+
+(define (v:- x y)
+  (v:+ x (g:* -1 y)))
+
+(define (v:* obj1 obj2)
+  (if (real? obj1)
+      (if (real? obj2)
+          (* obj1 obj2)
+          (pointwise (lambda (x) (g:* obj1 x)) obj2))
+      (if (real? obj2)
+          (pointwise (lambda (x) (g:* x obj2)) obj1)
+          (error)) ; TODO Error string "Multiplication mismatch"
+      ))
+
+(define (v:/ obj1 obj2)
+  (if (real? obj2)
+      (if (real? obj1)
+          (/ obj1 obj2)
+          (pointwise (lambda (x) (g:/ x obj2)) obj1))
+      (error) ; TODO Error string "Dividing by a non-real"
+      ))
+
+(define zero (gensym))
+
+(define (universal-zero? thing)
+  (and (gensym? thing)
+       (gensym= thing zero)))
+
+;;; An n-dimensional vector with x in position i and zeros elsewhere.
+(define (ex x i n)
+  (if (zero? n)
+      '()
+      (cons (if (zero? i) x (real 0)) (ex x (- i 1) (- n 1)))))
+
+;;; The ith n-dimensional basis vector.
+(define (e i n) (ex (real 1) i n))

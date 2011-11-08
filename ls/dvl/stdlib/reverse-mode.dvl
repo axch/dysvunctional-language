@@ -1,0 +1,105 @@
+(define (gradient-r f x)
+  (let ((eps (gensym)))
+    (define (tapify thing)
+      (cond ((or (real? thing) (forward? thing) (reverse? thing))
+             (new-tape-cell eps thing '()))
+            ((pair? thing)
+             (cons (tapify (car thing))
+                   (tapify (cdr thing))))
+            ((procedure? thing)
+             ;; TODO Cannot tapify procedures
+             (error))
+            (else
+             thing)))
+    (let* ((inputs (tapify x))
+           (forward-phase-answer (f inputs))
+           ;; No perturbation greater than eps should be observable in
+           ;; forward-phase-answer.
+           (sensitivities
+            (tape-cell?
+             forward-phase-answer
+             (lambda (answer-eps id prim partials)
+               (if (gensym= eps answer-eps)
+                   (let* (((cons seen sorted) (compute-visiting-order forward-phase-answer '() '())))
+                     (reverse-phase sorted (list (cons id 1))))
+                   ;; f is not infinitesimally dependent on x, return
+                   ;; the empty sensitivity list.
+                   '()))
+             (lambda ()
+               ;; f is not infinitesimally dependent on x, return the
+               ;; empty sensitivity list.
+               '()))))
+      (define (interpret thing)
+        (cond ((or (real? thing) (forward? thing)
+                   (and (reverse? thing) (not (gensym= eps (tape-cell-epsilon thing)))))
+               0)
+              ((and (reverse? thing) (gensym= eps (tape-cell-epsilon thing)))
+               (assq (tape-cell-id thing) sensitivities))
+              ((pair? thing)
+               (cons (interpret (car thing)) 
+                     (interpret (cdr thing))))
+              ((procedure? thing)
+               (error))
+              (else thing)))
+      (interpret inputs))))
+
+(define (compute-visiting-order node seen sorted)
+  (if (memq (tape-cell-id node) seen)
+      (cons seen sorted)
+      (let (((cons seen sorted)
+             (compute-visiting-order*
+              (map car (tape-cell-partials node))
+              (cons (tape-cell-id node) seen)
+              sorted)))
+        (cons seen (cons node sorted)))))
+
+(define (compute-visiting-order* nodes seen sorted)
+  (if (null? nodes)
+      (cons seen sorted)
+      (let (((cons seen sorted)
+             (compute-visiting-order (car nodes) seen sorted)))
+        (compute-visiting-order* (cdr nodes) seen sorted))))
+
+(define (reverse-phase nodes sensitivities)
+  (if (null? nodes)
+      sensitivities
+      ;; Since you're going in topological sort order, when you reach
+      ;; a node you know you are done updating its sensitivity.
+      (let ((sensitivity (assq (tape-cell-id (car nodes)) sensitivities)))
+        (let loop ((sensitivities sensitivities)
+                   (partials (tape-cell-partials (car nodes))))
+          (if (null? partials)
+              (reverse-phase (cdr nodes) sensitivities)
+              (let (((cons (cons partial-cell partial-factor) other-partials) partials))
+                (loop
+                 (updateq-with
+                  sensitivities
+                  (tape-cell-id partial-cell)
+                  (g:* partial-factor sensitivity)
+                  g:+)
+                 other-partials)))))))
+
+(define (memq gensym lst)
+  (if (null? lst)
+      #f
+      (if (gensym= gensym (car lst))
+          #t
+          (memq gensym (cdr lst)))))
+
+(define (assq item alist)
+  (if (null? alist)
+      0
+      (let (((cons (cons key datum) rest) alist))
+        (if (gensym= item key)
+            datum
+            (assq item rest)))))
+
+(define (updateq-with alist key datum merge)
+  (if (null? alist)
+      (list (cons key datum))
+      (let (((cons (cons a-key a-datum) rest) alist))
+        (if (gensym= key a-key)
+            (cons (cons a-key (merge datum a-datum))
+                  rest)
+            (cons (cons a-key a-datum)
+                  (updateq-with (cdr alist) key datum merge))))))

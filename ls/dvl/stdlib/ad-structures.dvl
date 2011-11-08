@@ -1,0 +1,219 @@
+(define bundle-tag (gensym))
+(define (make-bundle epsilon primal tangent)
+  (list bundle-tag epsilon primal tangent))
+(define (bundle? thing win lose)
+  (if (and (pair? thing)
+           (gensym? (car thing))
+           (gensym= (car thing) bundle-tag))
+      (win (bundle-epsilon thing)
+           (bundle-primal thing)
+           (bundle-tangent thing))
+      (lose)))
+(define (bundle-epsilon thing)
+  (car (cdr thing)))
+(define (bundle-primal thing)
+  (car (cdr (cdr thing))))
+(define (bundle-tangent thing)
+  (car (cdr (cdr (cdr thing)))))
+(define (forward? thing)
+  (bundle? thing (lambda (x y z) #t) (lambda () #f)))
+(define (%make-bundle epsilon thing1 thing2)
+  ;; Expect bundles to be interleaved inside pairs and procedures, but
+  ;; force nesting of bundles and tape cells to respect the creation
+  ;; order of perturbations.
+  (define (operate-forward eps)
+    (let ((prim1 (primal eps thing1))
+          (prim2 (primal eps thing2))
+          (tang1 (tangent eps thing1))
+          (tang2 (tangent eps thing2)))
+      (make-bundle
+       eps
+       (make-bundle epsilon prim1 prim2)
+       (make-bundle epsilon tang1 tang2))))
+  (let ((top-eps (gensym-max (perturbation-of thing1)
+                             (perturbation-of thing2))))
+    (if (gensym< top-eps epsilon)
+        (%make-bundle epsilon thing1 thing2)
+        (operate-forward top-eps))))
+
+(define (perturbation-of thing)
+  (bundle?
+   thing
+   (lambda (eps prim tang)
+     eps)
+   (lambda ()
+     (tape-cell?
+      thing
+      (lambda (eps id prim partials)
+        eps)
+      (lambda ()
+        least-gensym)))))
+
+(define tape-cell-tag (gensym))
+(define (make-tape-cell epsilon id primal partial-alist)
+  (list tape-cell-tag epsilon id primal partial-alist))
+(define (tape-cell? thing win lose)
+  (if (and (pair? thing)
+           (gensym? (car thing))
+           (gensym= (car thing) tape-cell-tag))
+      (win (tape-cell-epsilon thing)
+           (tape-cell-id thing)
+           (tape-cell-primal thing)
+           (tape-cell-partials thing))
+      (lose)))
+(define (tape-cell-epsilon thing)
+  (car (cdr thing)))
+(define (tape-cell-id thing)
+  (car (cdr (cdr thing))))
+(define (tape-cell-primal thing)
+  (car (cdr (cdr (cdr thing)))))
+(define (tape-cell-partials thing)
+  (car (cdr (cdr (cdr (cdr thing))))))
+(define (reverse? thing)
+  (tape-cell? thing (lambda (x y z w) #t) (lambda () #f)))
+
+(define (new-tape-cell epsilon primal partial-alist)
+  (make-tape-cell epsilon (gensym) primal partial-alist))
+
+(define (primal epsilon thing)
+  (bundle?
+   thing
+   (lambda (thing-eps thing-prim thing-tang)
+     (if (gensym= thing-eps epsilon)
+         thing-prim
+         (make-bundle thing-eps
+                      (primal epsilon thing-prim)
+                      (primal epsilon thing-tang))))
+   (lambda ()
+     (cond ((real? thing)
+            thing)
+           ((reverse? thing)
+            ;; TODO This expects that primal is always called with the
+            ;; outermost available epsilon, and that bundles and tape
+            ;; cells are properly nested.
+            thing)
+           ((procedure? thing)
+            (hide-gensym-in-procedure epsilon
+             (lambda (x)
+               (primal epsilon (thing x)))))
+           ((pair? thing)
+            (cons (primal epsilon (car thing))
+                  (primal epsilon (cdr thing))))
+           (else thing)))))
+
+(define (tangent epsilon thing)
+  (bundle?
+   thing
+   (lambda (thing-eps thing-prim thing-tang)
+     (if (gensym= thing-eps epsilon)
+         thing-tang
+         (make-bundle thing-eps
+                      (tangent epsilon thing-prim)
+                      (tangent epsilon thing-tang))))
+   (lambda ()
+     (cond ((real? thing)
+            0)
+           ((reverse? thing)
+            ;; TODO This expects that tangent is always called with
+            ;; the outermost available epsilon, and that bundles and
+            ;; tape cells are properly nested.
+            0)
+           ((procedure? thing)
+            ;; Note that this will have a different effect from the
+            ;; bundle? case if thing intends to accept a procedural
+            ;; argument and pass a closed-over bundle to it.  This
+            ;; clause will have the effect of differentiating that
+            ;; procedural argument, whereas taking the tangent of such
+            ;; a bundle and passing it in to such a procedure will
+            ;; not.  This is arguably correct.  See discussion in
+            ;; church-encoding.tex.
+            (hide-gensym-in-procedure epsilon
+             (lambda (x)
+               (tangent epsilon (thing x)))))
+           ((pair? thing)
+            (cons (tangent epsilon (car thing))
+                  (tangent epsilon (cdr thing))))
+           (else thing)))))
+
+;;; This version should work.  Why?  The NEW-SYMBOL is made after I
+;;; see the input, so the input cannot contain it.  This means that
+;;; the input cannot tickle any instance of SYMBOL in PROCEDURE.  So
+;;; far so good.  But is there any way for SYMBOL to escape PROCEDURE?
+;;; If it tries, it will come out looking like NEW-SYMBOL, so I just
+;;; re-hide that.
+
+;;; Then again, maybe not.  What if X contains some procedure, and
+;;; PROCEDURE calls it with several different closure arguments all of
+;;; which are closed over SYMBOL?  Then the procedure in X will see
+;;; several different closures with the same gensym in them, and that
+;;; are no longer hiding anything, and may smash them into each other
+;;; can cause chaos.  Would that even be wrong?  Arguably not.
+;;; Consider that in the presence of standard definitions of addition,
+;;; Chruch encoded pairs add differently from standard ones, because
+;;; the Church encoding preserves any non-linearity in the
+;;; continuation of the pair, whereas the standard addition does not.
+;;; (lambda (cont) (cont x1 y1)) + (lambda (cont) (cont x2 y2)) =
+;;; (lambda (cont) (+ (cont x1 y1) (cont x2 y2))) !=
+;;; (lambda (cont) (cont (+ x1 x2) (+ y1 y2)))
+;;; So perhaps the closures passed to X *should* share their
+;;; perturbations.
+(define (hide-gensym-in-procedure symbol procedure)
+  (lambda (x)
+    ;; Can I afford to bind the gensym outside the binder?  What
+    ;; invariants would I need for that to work?  Do I even need to do
+    ;; it for anything?
+    (let* ((new-symbol (gensym))
+           (answer ((swap-gensyms-in-object procedure symbol new-symbol) x)))
+      (hide-gensym-in-object new-symbol answer))))
+
+;;; I hope that the use pattern will be such that the symbol I am
+;;; trying to hide only occurs inside closures, never exposed.
+(define (hide-gensym-in-object symbol object)
+  (cond ((procedure? object)
+         (hide-gensym-in-procedure symbol object))
+        ((pair? object)
+         ;; Observe that if OBJECT contains functions, this clause
+         ;; will do something different from what the previous clause
+         ;; would have effected on a Church-encoded version of the
+         ;; same OBJECT.  Why?  Because when the recursive calls
+         ;; proceed to hide their procedures, they will make different
+         ;; gensyms, and those procedures will not see each other's
+         ;; perturbations; whereas if the continuation given to a
+         ;; Church-encoded version were to recombine the procedures,
+         ;; they *would* see each other's perturbations.  This is
+         ;; arguably correct.  See the note in church-encoding.tex.
+         (cons (hide-gensym-in-object symbol (car object))
+               (hide-gensym-in-object symbol (cdr object))))
+        ;; Can I rely on the object never *being* the symbol I am hiding?
+        ;; What should I do if it is?
+        ((and (gensym? object) (gensym= symbol object))
+         (gensym))
+        (else object)))
+
+(define (swap-gensyms-in-object object symbol new-symbol)
+  (cond ((procedure? object)
+         (lambda (x)
+           (let* ((new-x (swap-gensyms-in-object x symbol new-symbol))
+                  (answer (object new-x)))
+             (swap-gensyms-in-object answer symbol new-symbol))))
+        ((gensym? object)
+         (if (gensym= object symbol)
+             new-symbol
+             (if (gensym= object new-symbol)
+                 symbol
+                 object)))
+        ((pair? object)
+         (cons (swap-gensyms-in-object (car object) symbol new-symbol)
+               (swap-gensyms-in-object (cdr object) symbol new-symbol)))
+        (else object)))
+
+(define (primal* thing)
+  (bundle? thing
+   (lambda (eps prim tang)
+     (primal* prim))
+   (lambda ()
+     (tape-cell? thing
+      (lambda (eps id prim partials)
+        (primal* prim))
+      (lambda () thing)))))
+
