@@ -50,6 +50,10 @@
              (stream-map2 f s1-rest s2-rest))))))
 
 (define (stream-of-adjacent-pairs stream)
+  ;; This is not implemented as the semantically equivalent
+  ;; (stream-map2 cons stream (cdr stream)) because since these
+  ;; streams are not memoized, that version would duplicate
+  ;; computation.
   (let (((cons first rest) (force stream)))
     (let loop ((first first) (rest rest))
       (promise
