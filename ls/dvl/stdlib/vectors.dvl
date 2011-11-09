@@ -57,7 +57,7 @@
   (and (gensym? thing)
        (gensym= thing zero)))
 
-(define (dot u v) ((reduce + 0) (map2 * u v)))
+(define (dot u v) (sum (map2 g:* u v)))
 
 (define (magnitude-squared v) (dot v v))
 
