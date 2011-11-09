@@ -23,18 +23,24 @@
   (let ((pathname (default-extension-to-vlad pathname)))
     (with-input-from-file pathname
       (lambda ()
-        (let loop ((forms '()) (ignore? #f))
+        (let loop ((forms '()))
           (let ((form (read)))
-            (cond
-             ((eof-object? form) (reverse forms))
-             (ignore? (loop forms #f))
-             ((eq? '===> form) (loop forms #t))
-             ((include-directive? form)
-              (loop
-               (append (reverse (with-working-directory-pathname
-                                 (directory-namestring pathname)
-                                 (lambda ()
-                                   (read-source (second form)))))
-                       forms)
-               #f))
-             (else (loop (cons form forms) #f)))))))))
+            (if (eof-object? form)
+                (expand-toplevel-source (reverse forms) pathname)
+                (loop (cons form forms)))))))))
+
+(define (expand-toplevel-source forms pathname)
+  (let loop ((forms forms) (ignore? #f))
+    (if (null? forms)
+        '()
+        (let ((form (car forms)) (rest (cdr forms)))
+          (cond
+           (ignore? (loop rest #f))
+           ((eq? '===> form) (loop rest #t))
+           ((include-directive? form)
+            (append (with-working-directory-pathname
+                     (directory-namestring pathname)
+                     (lambda ()
+                       (read-source (second form))))
+                    (loop rest #f)))
+           (else (cons form (loop rest #f))))))))
