@@ -121,4 +121,6 @@
     (list (list 0 -0.084395 0.648461)))))
 
 (define ((do-it gradient) count)
-  (vanilla-train gradient count 0.3 xor-weights0 (error-on-dataset xor-data)))
+  (let ((error (error-on-dataset xor-data)))
+    (error
+     (vanilla-train gradient count 0.3 xor-weights0 error))))
