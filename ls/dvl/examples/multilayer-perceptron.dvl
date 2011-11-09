@@ -1,0 +1,124 @@
+;;;; Multilayer perceptron training
+
+;;; Rewritten by axch in DVL from
+;;; stalingrad/examples/automatic/backprop-{F,R}.vlad, by Barak
+;;; Pearlmutter.  The motivation for the rewrite was to use DVL's
+;;; gradient machinery instead of the manual bootstrapping of
+;;; Stalingrad's J* and *J into suitable gradients present there; but
+;;; I (axch) decided to completely rewrite it in order to also
+;;; understand what it's actually doing.
+
+;;; Problem Statement
+
+;;; Summarized from a little Google and a little reaching into
+;;; memories of undergraduate courses taken ten years ago:
+
+;;; "Multilayer perceptron" is a class of neural network.  A neural
+;;; network is a graph of "neurons", whose edges are "reads the output
+;;; of" relationships.  Each "neuron" is a machine that reads its
+;;; inputs, computes some function of them and writes that as its
+;;; output (which may then be read by other "neurons" as their inputs,
+;;; to compute their outputs).  Then a network of neurons will be a
+;;; blob of stuff that reads some network inputs (which are forwarded
+;;; as inputs to some individual "input" neurons) and eventually
+;;; writes some outputs (which are taken from the outputs of some
+;;; individual "output" neurons).  Such a blob of stuff can be trained
+;;; to compute some approximation of something by adjusting "weights"
+;;; -- parameters the individual neurons are closed over.
+
+;;; It is traditional for a neuron's function to be some monotonic
+;;; nonlinear twist (like sigmoid, or logistic, or some such) on the
+;;; dot product of its inputs with a list of tunable weights (it is
+;;; also traditional to include an extra input named "bias" that is
+;;; pegged at 1 -- homogeneous coordinates).
+
+;;; A "multilayer perceptron" network is one where the graph is
+;;; striated into layers, such that each layer reads as inputs exactly
+;;; the outputs of the layer before.  The inputs to the network are
+;;; the inputs to the first layer, and the outputs of the network are
+;;; the outputs of the last layer.  Lateral edges, "shortcut
+;;; connections" (edges that skip some layers) and feedback are
+;;; considered advanced topics.
+
+;;; Program
+
+;;; Interpreting a multilayer perceptron network is pretty easy.  Let
+;;; us assume we are using the sigmoid function as our nonlinear
+;;; twist.
+
+(define (sigmoid x)
+  (/ 1 (+ (exp (- 0 x)) 1)))
+
+;;; Each "neuron" can be represented as the list of weights for its
+;;; inputs (with the convention that the bias input weight is first).
+
+(define ((interpret-neuron inputs) weights)
+  (sigmoid (dot weights (cons 1 inputs))))
+
+;;; Each layer is then a list of such neurons,
+
+(define (interpret-layer neurons inputs)
+  (map (interpret-neuron inputs) neurons))
+
+;;; and the whole network is a list of such layers (layer reading
+;;; inputs first).
+
+(define ((interpret-network network) inputs)
+  (if (null? network)
+      inputs
+      ((interpret-network (cdr network))
+       (interpret-layer (car network) inputs))))
+
+;;; Now, suppose we have some training data, which we can represent as
+;;; a list of examples, each example being a list of the available
+;;; inputs and a list of the desired outputs.  Then we can evaluate a
+;;; network against this training data (using, say, least squares
+;;; error).
+
+(define ((error-on-dataset dataset) network)
+  (sum (map (error-on-example network) dataset)))
+
+(define ((error-on-example network) (list example-in example-out))
+  ;; N.B. stalingrad/examples/automatic/backprop-F.vlad multiplies
+  ;; this by 0.5.  Why?
+  (magnitude-squared
+   (- ((interpret-network network) example-in) example-out)))
+
+;;; The procedure that the neural network community calls "vanilla
+;;; backpropagation" is just gradient ascent of the dataset error with
+;;; respect to the weights for a fixed number of steps with a fixed
+;;; step size.
+
+(define (vanilla-train gradient count step start error)
+  (let loop ((count count)
+             (start start))
+    (if (<= count 0)
+        start
+        (loop (- count 1)
+              ;; Minus because we are trying to minimize the error
+              (- start (* step ((gradient error) start)))))))
+
+;;; Let's train a network for computing xor
+
+(define xor-data
+  ;; In this case, the training data will be compiled into the program
+  ;; (in case that matters).
+ '(((0 0) (0))
+   ((0 1) (1))
+   ((1 0) (1))
+   ((1 1) (0))))
+
+;;; from the following initial structure (one "hidden" layer and one
+;;; output layer; I believe this is called a [2,2,1] topology, where
+;;; the first 2 is the number of inputs and the rest are the lengths
+;;; of the weights lists).
+
+(define xor-weights0
+  (tree-map real ; The initial weights are unknown
+   ;; Oops, DVL does not like inexact numbers inside quotes
+   (list
+    (list (list 0 -0.284227 1.16054) (list 0 0.617194 1.30467))
+    (list (list 0 -0.084395 0.648461)))))
+
+(define ((do-it gradient) count)
+  (vanilla-train gradient count 0.3 xor-weights0 (error-on-dataset xor-data)))
