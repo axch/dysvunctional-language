@@ -96,6 +96,11 @@
 (define (dvl-source filename)
   (dvl-prepare (vlad->dvl `(let () ,@(read-source filename)))))
 
+(define (dvl-program forms #!optional basepath)
+  (if (default-object? basepath)
+      (set! basepath ".")) ;; TODO Or should this be the current file, namely the top of the DVL tree?
+  (dvl-prepare (vlad->dvl `(let () ,@(expand-toplevel-source forms basepath)))))
+
 (define (dvl-run-file filename)
   (let* ((program (dvl-source filename))
          (compiled-program (compile-to-fol program)))
