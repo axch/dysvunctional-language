@@ -40,3 +40,24 @@
 
 (define (dvl-error message . irritants)
   (signal-dvl-error message *on-behalf-of* irritants))
+
+;;; Inspecting and debugging tools
+
+(define (run-up-binding-chain binding stop?)
+  (cond ((not (= 1 (length (binding-notify binding))))
+         binding)
+        ((stop? (car (binding-notify binding)))
+         binding)
+        (else (run-up-binding-chain (car (binding-notify binding)) stop?))))
+
+(define (run-up-eval-binding-chain binding)
+  (run-up-binding-chain binding apply-binding?))
+
+(define (confusing-apply-binding? binding)
+  (and (apply-binding? binding)
+       (or (not (= 1 (length (binding-notify binding))))
+           (let* ((predecessor (car (binding-notify binding)))
+                  (pred-exp (binding-exp predecessor))
+                  (pred-operator (car pred-exp)))
+             (not (or (eq? 'if-procedure pred-operator)
+                      (lambda-form? pred-operator)))))))
