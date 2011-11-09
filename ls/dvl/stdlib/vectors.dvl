@@ -31,7 +31,7 @@
          (pointwise2 g:+ x y))))
 
 (define (v:- x y)
-  (v:+ x (g:* -1 y)))
+  (g:+ x (g:* -1 y)))
 
 (define (v:* obj1 obj2)
   (if (real? obj1)
