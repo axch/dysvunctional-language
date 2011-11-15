@@ -17,6 +17,11 @@
 (define (jacobian-using-j* f)
   (gradient-f f))
 
+(define (j-transpose*v f)
+  (lambda (x y-grave)
+    ((gradient-r (lambda (x) (dot (f x) y-grave)))
+     x)))
+
 (define (perturb thing) thing)
 
 (define (unperturb thing) thing)
