@@ -90,7 +90,10 @@
 ;;; eqv-hash.  While I'm at it, I think I can do a better job of
 ;;; spreading the love than equal-hash would.
 (define abstract-hash
-  (memoize (make-eq-hash-table)
+  (memoize-conditionally
+   (lambda (thing)
+     (or (pair? thing) (closure? thing) (env? thing) (binding? thing) (symbol? thing) (primitive? thing)))
+   (make-eq-hash-table)
    (let ((factor 37)
          (modulus 33554393))
      ;; The factor is a not-too-big prime.  The modulus is the largest

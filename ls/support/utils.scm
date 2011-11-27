@@ -180,3 +180,10 @@
      (lambda (datum) datum)
      (lambda ()
        (abegin1 (f x) (hash-table/put! cache x it))))))
+
+(define (memoize-conditionally memoize? cache f)
+  (let ((memoized (memoize cache f)))
+    (lambda (x)
+      (if (memoize? x)
+          (memoized x)
+          (f x)))))
