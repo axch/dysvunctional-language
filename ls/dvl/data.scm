@@ -86,15 +86,6 @@
         (else
          (lose))))
 
-(define (memoize cache f)
-  (lambda (x)
-    ;; Not hash-table/intern! because f may modify the cache (for
-    ;; instance, by recurring through the memoization).
-    (hash-table/lookup cache x
-     (lambda (datum) datum)
-     (lambda ()
-       (abegin1 (f x) (hash-table/put! cache x it))))))
-
 (define free-variables
   (memoize (make-eq-hash-table)
    (lambda (form)
