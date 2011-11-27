@@ -3,14 +3,15 @@
 (define-structure
   (closure
    safe-accessors
-   (constructor %make-closure)
+   (constructor %make-closure (exp env))
    (print-procedure
     (simple-unparser-method 'closure
      (lambda (closure)
        (list (closure-exp closure)
              (closure-env closure))))))
   exp
-  env)
+  env
+  (cached-abstract-hash #f))
 
 (define (closure-formal closure)
   (lambda-formal (closure-exp closure)))

@@ -15,7 +15,7 @@
 ;;; effect it has on the world (namely, whether or not it creates new
 ;;; gensyms).
 
-(define-structure (binding safe-accessors (constructor %make-binding))
+(define-structure (binding safe-accessors (constructor %make-binding (part1 part2 world value new-world notify escapes?)))
   part1
   part2 ; Always an env for exp-env pairs, never an env for proc-arg pairs
   world
@@ -26,7 +26,8 @@
   notify
   ;; Is the abstract value represented by this ever visible to the
   ;; outside world?
-  escapes?)
+  escapes?
+  (cached-abstract-hash #f))
 
 (define (eval-binding? binding)
   (env? (binding-part2 binding)))

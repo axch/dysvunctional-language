@@ -6,8 +6,9 @@
 ;;; sorted by the bound names.  This canonical form much simplifies
 ;;; comparing and unioning them during the abstract analysis.
 
-(define-structure (env (safe-accessors #t) (constructor %make-env))
-  bindings)
+(define-structure (env (safe-accessors #t) (constructor %make-env (bindings)))
+  bindings
+  (cached-abstract-hash #f))
 
 (define (make-env bindings)
   (%make-env

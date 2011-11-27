@@ -172,7 +172,19 @@
      (if (not test)
          (let () form ...)))))
 
-(define (memoize cache f)
+(define (slot-memoizer read-slot write-slot sentinel)
+  (lambda (f)
+    (lambda (x)
+      (let ((current (read-slot x)))
+        (if (eq? sentinel current)
+            (abegin1 (f x)
+              (write-slot x it))
+            current)))))
+
+(define (memoize-in-slot slot-memoizer f)
+  (slot-memoizer f))
+
+(define (memoize-in-hash-table cache f)
   (lambda (x)
     ;; Not hash-table/intern! because f may modify the cache (for
     ;; instance, by recurring through the memoization).
@@ -180,6 +192,11 @@
      (lambda (datum) datum)
      (lambda ()
        (abegin1 (f x) (hash-table/put! cache x it))))))
+
+(define (memoize cache f)
+  (if (hash-table? cache)
+      (memoize-in-hash-table cache f)
+      (memoize-in-slot cache f)))
 
 (define (memoize-conditionally memoize? cache f)
   (let ((memoized (memoize cache f)))
