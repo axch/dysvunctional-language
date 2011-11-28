@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ `uname -m` == 'x86_64' ]; then
-    HEAP=50000
+    HEAP=100000
 else
     HEAP=6000
 fi
