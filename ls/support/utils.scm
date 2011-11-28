@@ -172,31 +172,36 @@
      (if (not test)
          (let () form ...)))))
 
+(define-structure slot-memoizer wrap)
+
 (define (slot-memoizer read-slot write-slot sentinel)
-  (lambda (f)
-    (lambda (x)
-      (let ((current (read-slot x)))
-        (if (eq? sentinel current)
-            (abegin1 (f x)
-              (write-slot x it))
-            current)))))
+  (make-slot-memoizer
+   (lambda (f)
+     (lambda (x)
+       (let ((current (read-slot x)))
+         (if (eq? sentinel current)
+             (abegin1 (f x)
+               (write-slot x it))
+             current))))))
 
 (define (memoize-in-slot slot-memoizer f)
-  (slot-memoizer f))
+  ((slot-memoizer-wrap slot-memoizer) f))
 
-(define (memoize-in-hash-table cache f)
+(define (memoize-in-hash-table table f)
   (lambda (x)
-    ;; Not hash-table/intern! because f may modify the cache (for
+    ;; Not hash-table/intern! because f may modify the table (for
     ;; instance, by recurring through the memoization).
-    (hash-table/lookup cache x
+    (hash-table/lookup table x
      (lambda (datum) datum)
      (lambda ()
-       (abegin1 (f x) (hash-table/put! cache x it))))))
+       (abegin1 (f x) (hash-table/put! table x it))))))
 
 (define (memoize cache f)
-  (if (hash-table? cache)
-      (memoize-in-hash-table cache f)
-      (memoize-in-slot cache f)))
+  (cond ((hash-table? cache)
+         (memoize-in-hash-table cache f))
+        ((slot-memoizer? cache)
+         (memoize-in-slot cache f))
+        (else (error "Unknown cache type" cache))))
 
 (define (memoize-conditionally memoize? cache f)
   (let ((memoized (memoize cache f)))
