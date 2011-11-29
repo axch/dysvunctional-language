@@ -556,6 +556,10 @@
   ;; 3) When it encounters a procedure call, it updates the
   ;;    LIVENESS-MAP with a side effect.
   (define (loop expr live-out)
+    (if (any (lambda (x) x) live-out)
+        (%loop expr live-out)
+        (no-used-vars)))
+  (define (%loop expr live-out)
     (case* expr
       ((fol-var var)
        (single-used-var var))
@@ -621,11 +625,9 @@
            ;; The default in the hash table get is the full operands list because
            ;; needed primitives are assumed to always need everything.
            (operands-live (hash-table/get input-liveness-map operator operands)))
-      (if (any (lambda (x) x) live-out)
-          (var-set-union*
-           (map (lambda (operand) (loop operand (list #t)))
-                (select-masked operands-live operands)))
-          (no-used-vars))))
+      (var-set-union*
+       (map (lambda (operand) (loop operand (list #t)))
+            (select-masked operands-live operands)))))
   (define improve-liveness-map
     (rule `(define ((? name) (?? args))
              (argument-types (?? stuff) (? return))
