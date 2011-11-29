@@ -262,69 +262,35 @@
 ;;;     diminish the amount of work in the following (assume all
 ;;;     procedure calls need all their inputs)
 ;;; 0) Treat the final expression as a nullary procedure definition
-;;; 1) Initialize a map for each procedure, mapping from output that
-;;;    might be desired to set of inputs that are known to be needed
-;;;    to compute that output.
-;;;    - I know the answer for primitives
-;;;    - All compound procedures start mapping every output to the
-;;;      empty set of inputs known to be needed.
-;;; 2) I can improve the map by walking the body of a procedure,
-;;;    computing a map saying which outputs require which inputs.
-;;;    This is exactly analagous to the intraprocedural dead code
-;;;    recursion, except for distinguishing which inputs are needed
-;;;    for which outputs.
-;;;    - A constant requires no inputs for one output.
-;;;    - A variable requires itself for one output.
-;;;    - A VALUES maps the requirements of subexpressions to its
-;;;      outputs.
-;;;    - A LET is processed body first:
-;;;      - Get the map for which of the returned values need what
-;;;        variables from the environment.
-;;;      - Process the expressions generating the bound variables to
-;;;        determine what they need.
-;;;      - For each of its outputs, the LET form as a whole needs the
-;;;        variables the body needs for it that the LET didn't bind,
-;;;        and all the variables needed by the LET's expressions for
-;;;        the variables the body needed that the LET did bind.
-;;;    - A LET-VALUES is analagous, except that there is only one
-;;;      expression for all the bound names.
-;;;    - An IF recurs on the predicate, the consequent and the
-;;;      alternate.  When the answers come back, it needs to union the
-;;;      consequent and alternate maps, and then add the predicate
-;;;      requirements as inputs to all outputs of the IF.
-;;;    - A procedure call refers to the currently known map for that
-;;;      procedure.
-;;;    - Whatever comes out of the top becomes the new map for this
-;;;      procedure.
-;;; 3) Repeat step 2 until no more improvements are possible.
-;;; 4) Initialize a table of which inputs and outputs to each compound
+;;; 1) Initialize a table of which inputs and outputs to each compound
 ;;;    procedure are actually needed.
-;;;    - I actually only need to store the outputs, because the inputs
-;;;      can be deduced from them using the map computed in steps 1-3.
 ;;;    - All procedures start not needed.
-;;;    - The entry point starts fully needed.
-;;; 5) I can improve this table by pretending to do an intraprocedural
+;;;    - The entry point's outputs start fully needed.
+;;; 2) I can improve this table by pretending to do an intraprocedural
 ;;;    dead code elimination on the body of a procedure some of whose
 ;;;    outputs are needed, except
-;;;    - At a procedure call, mark outputs of that procedure as needed
-;;;      in the table if I found that I needed them on the walk; then
-;;;      take back up the set of things that that procedure says it
-;;;      needs to produce what I needed from it.
+;;;    - At a procedure call, mark outputs of the callee as needed in
+;;;      the table if I found that I needed them on the walk; then
+;;;      take back up the set of things the callee says it needs as
+;;;      inputs.
+;;;    - When done walking a procedure body, mark the needed formal
+;;;      parameters as needed inputs to that procedure.
 ;;;    - Otherwise walk as for intraprocedural (without rewriting)
-;;; 6) Repeat step 5 until no more improvements are possible.
-;;; 7) Replace all definitions to
+;;; 3) Repeat step 2 until no more improvements are possible.
+;;; 4) Replace all definitions to
 ;;;    - Accept only those arguments they need (internally LET-bind all
 ;;;      others to tombstones)
 ;;;    - Return only those outputs that are needed (internally
 ;;;      LET-VALUES everything the body will generate, and VALUES out
 ;;;      that which is wanted)
-;;; 8) Replace all call sites to
+;;; 5) Replace all call sites to
 ;;;    - Supply only those arguments that are needed (just drop the
 ;;;      rest)
 ;;;    - Solicit only those outputs that are needed (LET-VALUES them,
 ;;;      and VALUES what the body expects, filling in with tombstones).
-;;; 9) Run a round of intraprocedural dead variable elimination to
+;;; 6) Run a round of intraprocedural dead variable elimination to
 ;;;    clean up (all procedure calls now do need all their inputs).
+;;;    After this, there should be no tombstones.
 
 (define (program->procedure-definitions program)
   (define (expression->procedure-definition entry-point return-type)
@@ -346,7 +312,7 @@
 (define (%interprocedural-dead-code-elimination program)
   (let* ((defns (program->procedure-definitions program)))
     (receive (liveness-map input-liveness-map)
-      (compute-liveness-map defns)
+      (compute-liveness-maps defns)
       (let ((rewritten (rewrite-definitions liveness-map input-liveness-map defns)))
         (procedure-definitions->program
          rewritten)))))
@@ -365,13 +331,14 @@
       (cdr shape)
       (list shape)))
 
-;;; The liveness map is the structure constructed during steps 4-6
-;;; above.  It maps every procedure name to the set of its outputs
-;;; that are actually needed (represented as a parallel list of
-;;; booleans).  The needed inputs can be inferred from this given the
-;;; dependency-map.
+;;; The liveness map and input liveness map are the structures
+;;; constructed during steps 1-3 above.  The liveness map maps every
+;;; procedure name to the set of its outputs that are actually needed
+;;; (represented as a parallel list of booleans).  This input liveness
+;;; map maps every procedure name to the set of its inputs that are
+;;; actually needed (represented as a parallel list of booleans).
 
-(define (compute-liveness-map defns)
+(define (compute-liveness-maps defns)
   (let ((liveness-map (initial-liveness-map defns))
         (input-liveness-map (initial-input-liveness-map defns)))
     (let loop ()
@@ -418,7 +385,8 @@
   ;; This loop is identical with the one in ELIMINATE-IN-EXPRESSION,
   ;; except that
   ;; 1) It doesn't rewrite the expression (so returns one value).
-  ;; 2) It refers to the given LIVENESS-MAP for what callees need.
+  ;; 2) It refers to the given INPUT-LIVENESS-MAP for what callees
+  ;;    need.
   ;; 3) When it encounters a procedure call, it updates the
   ;;    LIVENESS-MAP with a side effect.
   (define (loop expr live-out)
@@ -601,3 +569,78 @@
   ;; never be used.  TODO Make the tombstones distinctive so I can
   ;; check whether they all disappear?
   '())
+
+;;; It is possible to make the above interprocedural dead variable
+;;; elimination more precise.  Instead of treating every procedure as
+;;; fully strict, it is possible to study which inputs are actually
+;;; needed to compute which outputs, and possibly eliminate some
+;;; computations of arguments that are needed only for inputs that
+;;; this call site does not need.  To do that, insert the following
+;;; steps between steps 0 and 1 above:
+
+;;; 1) Initialize a map for each procedure, mapping from output that
+;;;    might be desired to set of inputs that are known to be needed
+;;;    to compute that output.
+;;;    - I know the answer for primitives
+;;;    - All compound procedures start mapping every output to the
+;;;      empty set of inputs known to be needed.
+;;; 2) I can improve the map by walking the body of a procedure,
+;;;    computing a map saying which outputs require which inputs.
+;;;    This is exactly analagous to the intraprocedural dead code
+;;;    recursion, except for distinguishing which inputs are needed
+;;;    for which outputs.
+;;;    - A constant requires no inputs for one output.
+;;;    - A variable requires itself for one output.
+;;;    - A VALUES maps the requirements of subexpressions to its
+;;;      outputs.
+;;;    - A LET is processed body first:
+;;;      - Get the map for which of the returned values need what
+;;;        variables from the environment.
+;;;      - Process the expressions generating the bound variables to
+;;;        determine what they need.
+;;;      - For each of its outputs, the LET form as a whole needs the
+;;;        variables the body needs for it that the LET didn't bind,
+;;;        and all the variables needed by the LET's expressions for
+;;;        the variables the body needed that the LET did bind.
+;;;    - A LET-VALUES is analagous, except that there is only one
+;;;      expression for all the bound names.
+;;;    - An IF recurs on the predicate, the consequent and the
+;;;      alternate.  When the answers come back, it needs to union the
+;;;      consequent and alternate maps, and then add the predicate
+;;;      requirements as inputs to all outputs of the IF.
+;;;    - A procedure call refers to the currently known map for that
+;;;      procedure.
+;;;    - Whatever comes out of the top becomes the new map for this
+;;;      procedure.
+;;; 3) Repeat step 2 until no more improvements are possible.
+
+;;; and then use the resulting dependency map to compute liveness more
+;;; precisely and to rewrite definitions and call sites more
+;;; aggressively.
+
+;;; This is how interprocedural dead code elimination was originally
+;;; implemented, because I did not realize that this dependency
+;;; computation was not actually necessary.  The downside of doing
+;;; this is that some tombstones will remain even after cleanup: if
+;;; some arguments are not needed at this call site but are needed at
+;;; others, they will have to be passed in to the procedure as
+;;; tombstones, and intraprocedural dead code elimination will not
+;;; eliminate them.  Unfortunately, in the current scheme of things,
+;;; tombstones have a different type than the variables they replace,
+;;; so leaving tombstones present will violate the type constraints.
+;;; This might have been OK, since the values are, in fact, dead, but
+;;; it leads to real trouble if, for example, SRA is performed
+;;; afterwards, because it will do one thing to the definition and
+;;; (because the types do not match) something else to the call site.
+;;; See the test `overprecise dead code elimination should not be
+;;; allowed to cause trouble' in fol/test/fol-test.scm for an example
+;;; program that gets screwed by this.
+
+;;; One could in principle fix this problem by introducing well-typed
+;;; tombstones, or by introducing distinguishable tombstones that are
+;;; treated specially in other places where their types are needed.
+;;; Unfortunately, that would entail considerable complexity to do
+;;; with plumbing long-range type information to places that do not
+;;; currently need it (either the tombstone constructor or SRA).  The
+;;; path of less complexity is to just dike out this extra level of
+;;; precision.
