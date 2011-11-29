@@ -256,6 +256,9 @@
 (define (var-set-equal? vars1 vars2)
   (lset= eq? vars1 vars2))
 
+(define (var-set->list var-set)
+  var-set)
+
 ;;; To do interprocedural dead variable elimination I have to proceed
 ;;; as follows:
 ;;; -1) Run a round of intraprocedural dead variable elimination to
@@ -506,14 +509,16 @@
 ;;; dependency-map.
 
 (define (compute-liveness-map dependency-map defns)
-  (let ((liveness-map (initial-liveness-map defns)))
+  (let ((liveness-map (initial-liveness-map defns))
+        (input-liveness-map (initial-input-liveness-map defns)))
     (let loop ()
       (clear-changed! liveness-map)
+      (clear-changed! input-liveness-map)
       (for-each
        (lambda (defn)
-         (improve-liveness-map! dependency-map liveness-map defn))
+         (improve-liveness-map! dependency-map liveness-map input-liveness-map defn))
        defns)
-      (if (changed? liveness-map)
+      (if (or (changed? liveness-map) (changed? input-liveness-map))
           (loop)
           liveness-map))))
 
@@ -537,7 +542,16 @@
          defns))
    (hash-table/put! it (definiendum (last defns)) (list #t))))
 
-(define (improve-liveness-map! dependency-map liveness-map defn)
+(define (initial-input-liveness-map defns)
+  (abegin1
+   (alist->eq-hash-table
+    (map (rule `(define ((? name) (?? args))
+                  (argument-types (?? stuff) (? return))
+                  (? body))
+               (cons name (map (lambda (x) #f) stuff)))
+         defns))))
+
+(define (improve-liveness-map! dependency-map liveness-map input-liveness-map defn)
   ;; This loop is identical with the one in ELIMINATE-IN-EXPRESSION,
   ;; except that
   ;; 1) It doesn't rewrite the expression (so returns one value).
@@ -607,11 +621,14 @@
   (define (study-application operator operands live-out)
     (outputs-needed! liveness-map operator live-out)
     (let* ((operator-dependency-map (hash-table/get dependency-map operator #f))
-           (operands-live
-            (find-needed-inputs live-out operator-dependency-map)))
-      (var-set-union*
-       (map (lambda (operand) (loop operand (list #t)))
-            (select-masked operands-live operands)))))
+           ;; The default in the hash table get is the full operands list because
+           ;; needed primitives are assumed to always need everything.
+           (operands-live (hash-table/get input-liveness-map operator operands)))
+      (if (any (lambda (x) x) live-out)
+          (var-set-union*
+           (map (lambda (operand) (loop operand (list #t)))
+                (select-masked operands-live operands)))
+          (no-used-vars))))
   (define improve-liveness-map
     (rule `(define ((? name) (?? args))
              (argument-types (?? stuff) (? return))
@@ -622,8 +639,9 @@
             ;; dependency-map of this operator already allows one to
             ;; deduce which inputs the operator needs, given which of
             ;; the operator's outputs are needed.
-            (loop body body-live-out))))
+            (outputs-needed! input-liveness-map name (var-set->list (loop body body-live-out))))))
   (define (outputs-needed! liveness-map name live)
+    ;; TODO Actually identical for needing inputs as well.
     (let ((needed-outputs (hash-table/get liveness-map name #f)))
       (if needed-outputs
           (pair-for-each
