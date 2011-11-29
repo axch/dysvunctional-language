@@ -344,10 +344,9 @@
       ,(cadddr (last defns)))))
 
 (define (%interprocedural-dead-code-elimination program)
-  (let* ((defns (program->procedure-definitions program))
-         (dependency-map (compute-dependency-map defns)))
+  (let* ((defns (program->procedure-definitions program)))
     (receive (liveness-map input-liveness-map)
-      (compute-liveness-map dependency-map defns)
+      (compute-liveness-map defns)
       (let ((rewritten (rewrite-definitions liveness-map input-liveness-map defns)))
         (procedure-definitions->program
          rewritten)))))
@@ -361,140 +360,6 @@
     (%interprocedural-dead-code-elimination
      program))))
 
-;;; The dependency-map is the structure built by steps 1-3 above.  It
-;;; maps every procedure name to a list of boolean lists.  The outer
-;;; list is parallel to the values that the procedure returns, each
-;;; inner list is parallel to the procedure's inputs, and each boolean
-;;; answers the question of whether that input is needed for the
-;;; procedure to compute that output.
-
-(define (compute-dependency-map defns)
-  (let loop ((overall-map (initial-dependency-map defns))
-             (maybe-done? #t))
-    (for-each
-     (lambda (defn)
-       (let ((local-map (improve-dependency-map defn overall-map)))
-         (if (every equal? local-map (hash-table/get overall-map (definiendum defn) #f))
-             'ok
-             (begin
-               (hash-table/put! overall-map (definiendum defn) local-map)
-               (set! maybe-done? #f)))))
-     defns)
-    (if (not maybe-done?)
-        (loop overall-map #t)
-        overall-map)))
-
-(define (initial-dependency-map defns)
-  (define (primitive-dependency-map)
-    (define (needs-all primitive)
-      (cons (primitive-name primitive)
-            (list ;; TODO Assumes all primitives return only one value
-             (map (lambda (arg) #t)
-                  (arg-types (primitive-type primitive))))))
-    (alist->eq-hash-table
-     (map needs-all *primitives*)))
-  (abegin1
-   (primitive-dependency-map)
-   (for-each
-    (rule `(define ((? name) (?? args))
-             (argument-types (?? stuff) (? return))
-             (? body))
-          (hash-table/put! it name
-           (map (lambda (item) (map (lambda (x) #f) args))
-                (desirable-slot-list return))))
-    defns)))
-
-(define (improve-dependency-map defn dependency-map)
-  ;; This loop is like the one in ELIMINATE-IN-EXPRESSION, except that
-  ;; 1) It accumulates a more detailed answer structure (namely one
-  ;;    mapping all the possible outputs to which variables are needed
-  ;;    to compute each one).
-  ;; 2) It does not rewrite the expression, so it returns only one
-  ;;    value.
-  ;; 3) It is always interested in all return values, so it needn't
-  ;;    pass down a LIVE-OUT list.
-  (define-case* loop
-    ((fol-var var) (list (single-used-var var)))
-    ((fol-const _) (list (no-used-vars)))
-    (if-form => study-if)
-    (let-form => study-let)
-    (let-values-form => study-let-values)
-    (lambda-form => study-lambda)
-    ;; If used post SRA, there may be constructions to build the
-    ;; answer for the outside world, but there should be no
-    ;; accesses.
-    (construction => study-construction)
-    (accessor => study-access)
-    (values-form => study-values)
-    (pair => study-application))        ; general application
-  (define (study-if predicate consequent alternate)
-    (let ((pred-needs (car (loop predicate)))
-          (cons-needs (loop consequent))
-          (alt-needs (loop alternate)))
-      (map
-       (lambda (needed-in)
-         (var-set-union pred-needs needed-in))
-       (map var-set-union cons-needs alt-needs))))
-  (define (study-let bindings body)
-    (let ((body-needs (loop body))
-          (bindings-need (map (lambda (binding)
-                                (cons (car binding)
-                                      (car (loop (cadr binding)))))
-                              bindings)))
-      (map (interpolate-let-bindings bindings-need) body-needs)))
-  (define (study-let-values names sub-expr body)
-    (let ((body-needs (loop body))
-          (bindings-need (map cons names (loop sub-expr))))
-      (map (interpolate-let-bindings bindings-need) body-needs)))
-  (define (study-lambda formals body)
-    (let ((body-needs (loop body)))
-      (var-set-difference body-needs formals)))
-  (define (interpolate-let-bindings bindings-need)
-    (lambda (need-set)
-      (var-set-union-map
-       (lambda (needed-var)
-         (let ((binding.need (assq needed-var bindings-need)))
-           (if binding.need
-               (cdr binding.need)
-               (single-used-var needed-var))))
-       need-set)))
-  (define (study-construction ctor operands)
-    (list
-     (var-set-union*
-      (map (lambda (arg)
-             (car (loop arg)))
-           operands))))
-  (define (study-access kind arg extra)
-    (loop arg))
-  (define (study-values sub-exprs)
-    (map
-     (lambda (sub-expr)
-       (car (loop sub-expr)))
-     sub-exprs))
-  (define (study-application operator operands)
-    (let ((operator-dependency-map (hash-table/get dependency-map operator #f))
-          (operands-need (map (lambda (operand)
-                                (car (loop operand)))
-                              operands)))
-      (map
-       (lambda (operands-live)
-         (var-set-union*
-          (select-masked
-           operands-live
-           operands-need)))
-       operator-dependency-map)))
-  (define improve-dependency-map
-    (rule `(define ((? name) (?? args))
-             (argument-types (?? stuff) (? return))
-             (? body))
-          (map
-           (lambda (out-needs)
-             (map (lambda (arg)
-                    (and (var-used? arg out-needs) #t))
-                  args))
-           (loop body))))
-  (improve-dependency-map defn))
-
 (define (desirable-slot-list shape)
   (if (values-form? shape)
       (cdr shape)
@@ -506,7 +371,7 @@
 ;;; booleans).  The needed inputs can be inferred from this given the
 ;;; dependency-map.
 
-(define (compute-liveness-map dependency-map defns)
+(define (compute-liveness-map defns)
   (let ((liveness-map (initial-liveness-map defns))
         (input-liveness-map (initial-input-liveness-map defns)))
     (let loop ()
@@ -514,7 +379,7 @@
       (clear-changed! input-liveness-map)
       (for-each
        (lambda (defn)
-         (improve-liveness-map! dependency-map liveness-map input-liveness-map defn))
+         (improve-liveness-map! liveness-map input-liveness-map defn))
        defns)
       (if (or (changed? liveness-map) (changed? input-liveness-map))
           (loop)
@@ -549,11 +414,11 @@
                (cons name (map (lambda (x) #f) stuff)))
          defns))))
 
-(define (improve-liveness-map! dependency-map liveness-map input-liveness-map defn)
+(define (improve-liveness-map! liveness-map input-liveness-map defn)
   ;; This loop is identical with the one in ELIMINATE-IN-EXPRESSION,
   ;; except that
   ;; 1) It doesn't rewrite the expression (so returns one value).
-  ;; 2) It refers to the given DEPENDENCY-MAP for what callees need.
+  ;; 2) It refers to the given LIVENESS-MAP for what callees need.
   ;; 3) When it encounters a procedure call, it updates the
   ;;    LIVENESS-MAP with a side effect.
   (define (loop expr live-out)
@@ -622,8 +487,7 @@
           (select-masked live-out subforms))))
   (define (study-application operator operands live-out)
     (outputs-needed! liveness-map operator live-out)
-    (let* ((operator-dependency-map (hash-table/get dependency-map operator #f))
-           ;; The default in the hash table get is the full operands list because
+    (let* (;; The default in the hash table get is the full operands list because
            ;; needed primitives are assumed to always need everything.
            (operands-live (hash-table/get input-liveness-map operator operands)))
       (var-set-union*
@@ -634,11 +498,6 @@
              (argument-types (?? stuff) (? return))
              (? body))
           (let ((body-live-out (hash-table/get liveness-map name #f)))
-            ;; The loop does return information on which inputs are
-            ;; needed, but I can safely throw it away because the
-            ;; dependency-map of this operator already allows one to
-            ;; deduce which inputs the operator needs, given which of
-            ;; the operator's outputs are needed.
             (outputs-needed!
              input-liveness-map name
              (let ((live-in (loop body body-live-out)))
