@@ -256,9 +256,6 @@
 (define (var-set-equal? vars1 vars2)
   (lset= eq? vars1 vars2))
 
-(define (var-set->list var-set)
-  var-set)
-
 ;;; To do interprocedural dead variable elimination I have to proceed
 ;;; as follows:
 ;;; -1) Run a round of intraprocedural dead variable elimination to
@@ -639,7 +636,12 @@
             ;; dependency-map of this operator already allows one to
             ;; deduce which inputs the operator needs, given which of
             ;; the operator's outputs are needed.
-            (outputs-needed! input-liveness-map name (var-set->list (loop body body-live-out))))))
+            (outputs-needed!
+             input-liveness-map name
+             (let ((live-in (loop body body-live-out)))
+               (map (lambda (arg)
+                      (var-used? arg live-in))
+                    args))))))
   (define (outputs-needed! liveness-map name live)
     ;; TODO Actually identical for needing inputs as well.
     (let ((needed-outputs (hash-table/get liveness-map name #f)))
