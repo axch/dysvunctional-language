@@ -257,3 +257,10 @@
           (format #t "program of size ~A\n" (estimate-space-usage program)))
       (format #t "~A free words\n" (gc-flip))
       (apply exec program extra))))
+
+(define (type-safely stage-data)
+  (lambda (exec)
+    (lambda (program . extra)
+      (abegin1 (apply exec program extra)
+        (if (present? 'syntax-checked it)
+            (pp (check-program-types it)))))))

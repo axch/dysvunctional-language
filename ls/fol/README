@@ -125,6 +125,11 @@ watching-memory
   When intermediate structures are large, this can take time
   comparable to the compilation itself.
 
+type-safely
+  Check that each intermediate state that is supposed to be well typed
+  actually is.  Print the type of the entry point if so, and signal an
+  error if not.
+
 All the subsequent procedures in this section accept adverb arguments,
 except the ones that do trivial jobs, such as checking whether a
 particular property holds of the program or not (namely,
