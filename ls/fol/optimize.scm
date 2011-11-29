@@ -188,7 +188,7 @@
   (stage-pipeline
    reverse-anf
    eliminate-interprocedural-dead-code
-   eliminate-intraprocedural-dead-code
+;   eliminate-intraprocedural-dead-code ; This is slow and mostly redundant
    intraprocedural-cse
    scalar-replace-aggregates
    eliminate-intraprocedural-dead-code
