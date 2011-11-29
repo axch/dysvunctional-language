@@ -251,4 +251,48 @@
                    eliminate-interprocedural-dead-code
                    scalar-replace-aggregates reverse-anf)))
 
+ (define-test (overprecise-dead-code-elimination-should-not-be-allowed-to-cause-trouble)
+   (define program
+     '(begin
+        ;; Here is a function that generates multiple outputs, and
+        ;; uses only some of its inputs for each.
+        (define (sinx+cosy x y)
+          (argument-types real real (values real real))
+          (values (sin x) (cos y)))
+        ;; Here is a reason to retain the full definition
+        (define (use-it x)
+          (argument-types real real)
+          (let-values (((sinx cosx) (sinx+cosy x x)))
+            (+ sinx cosx)))
+        ;; Here is a function that only uses part of sinx+cosy.  If
+        ;; interprocedural dead code elimination discovers the fact
+        ;; that y is not actually needed to compute the output of
+        ;; use-it-partly, it will be replaced with a tombstone.  The
+        ;; tombstone will not, however, get removed, because the y
+        ;; parameter to sinx+cosy needs to be retained because of
+        ;; use-it.  This tombstone is not the same type as the desired
+        ;; parameter, which violates the FOL type system; and even if
+        ;; we close our eyes to this, a subsequent round of SRA will
+        ;; treat the tombstone differently from the parameter it is
+        ;; tombstoning, causing a real disaster.
+        (define (use-it-partly x y)
+          (argument-types real real real)
+          (let-values (((sinx cosx) (sinx+cosy x y)))
+            sinx))
+        (+ (use-it (real 5)) (use-it-partly (real 6) (real 7)))))
+   (define answer (+ (sin 5) (cos 5) (sin 6)))
+   (check (= (fol-eval program) answer))
+   (define processed
+     ;; Use a custom stage pipeline because the potential bug is
+     ;; masked by sufficiently aggressive inlining (which would
+     ;; effectively specialize sinx+cosy to its call site) and by not
+     ;; doing much to the program after interprocedural dead code
+     ;; elimination.
+     ((stage-pipeline
+       scalar-replace-aggregates
+       eliminate-interprocedural-dead-code)
+      program
+      type-safely))
+   (check (= (fol-eval processed) answer)))
+
  )
