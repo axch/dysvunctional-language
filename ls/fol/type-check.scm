@@ -63,8 +63,8 @@
         (let ((body-type
                (check-expression-types
                 body
-                (augment-type-env (empty-type-env) (cdr formals)
-                                  (arg-types (lookup-type (car formals))))
+                (augment-type-env! (empty-type-env) (cdr formals)
+                                   (arg-types (lookup-type (car formals))))
                 lookup-type
                 inferred-type-map)))
           (if (not (equal? (last types) body-type))
@@ -146,8 +146,10 @@
                       expr binding-type index)))
          binding-types
          (iota (length binding-types)))
-        (loop body (augment-type-env
-                    env (map car bindings) binding-types)))))
+        (abegin1
+            (loop body (augment-type-env!
+                        env (map car bindings) binding-types))
+          (degment-type-env! env (map car bindings))))))
   (define (check-let-values-types expr env)
     (if (not (= 3 (length expr)))
         (error "Malformed LET-VALUES (excess body forms?)" expr))
@@ -170,8 +172,10 @@
         (if (not (= (length (caar bindings)) (length (cdr binding-type))))
             (error "LET-VALUES binds the wrong number of VALUES"
                    expr binding-type))
-        (loop body (augment-type-env
-                    env (caar bindings) (cdr binding-type))))))
+        (abegin1
+            (loop body (augment-type-env!
+                        env (caar bindings) (cdr binding-type)))
+          (degment-type-env! env (caar bindings))))))
   (define (check-lambda-types expr env)
     (if (not (= 3 (length expr)))
         (error "Malformed LAMBDA (excess body forms?)" expr))
@@ -181,7 +185,8 @@
           (error "Malformed LAMBDA (formal not a list)" expr))
       (if (not (= 1 (length formal)))
           (error "Malformed LAMBDA (multiple args not allowed)" expr))
-      (let ((body-type (loop body (augment-type-env env formal (list 'real)))))
+      (let ((body-type (loop body (augment-type-env! env formal (list 'real)))))
+        (degment-type-env! env formal)
         ;; TODO Do I want to actually declare and check lambda expression types?
         ;; TODO Extend to checking other foreign types
         #;(function-type 'real body-type)
@@ -249,14 +254,32 @@
                (= 2 (length (cdr thing))))
            (every fol-shape? (cdr thing)))))
 
-(define (empty-type-env) '())
-(define (augment-type-env env names shapes)
-  (append (map list names shapes) env))
+(define (empty-type-env) (make-strong-eq-hash-table))
+(define (augment-type-env! env names shapes)
+  (for-each (lambda (name shape)
+              (hash-table/put! env name
+                               (cons shape (hash-table/get env name '()))))
+            names shapes)
+  env)
 (define (lookup-type name env)
-  (let ((binding (assq name env)))
-    (if (not binding)
-        (error "Refencing an unbound variable" name)
-        (cadr binding))))
+  (define (lose) (error "Refencing an unbound variable" name))
+  (hash-table/lookup env name
+   (lambda (stack) (if (null? stack) (lose) (car stack)))
+   lose))
+(define (degment-type-env! env names)
+  (define (lose) (error "Degmenting an unbound variable" name))
+  (for-each (lambda (name)
+              (hash-table/lookup
+               env name
+               (lambda (stack)
+                 (if (null? stack)
+                     (lose)
+                     (if (null? (cdr stack))
+                         (hash-table/remove! env name)
+                         (hash-table/put! env name (cdr stack)))))
+               lose))
+            names)
+  env)
 
 (define (check-unique-names names message)
   (pair-for-each
