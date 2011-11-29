@@ -348,7 +348,7 @@
          (dependency-map (compute-dependency-map defns)))
     (receive (liveness-map input-liveness-map)
       (compute-liveness-map dependency-map defns)
-      (let ((rewritten (rewrite-definitions dependency-map liveness-map input-liveness-map defns)))
+      (let ((rewritten (rewrite-definitions liveness-map input-liveness-map defns)))
         (procedure-definitions->program
          rewritten)))))
 
@@ -662,12 +662,11 @@
           'ok)))
   (improve-liveness-map defn))
 
-(define (rewrite-definitions dependency-map liveness-map input-liveness-map defns)
+(define (rewrite-definitions liveness-map input-liveness-map defns)
   ;; This bogon has to do with the entry point being a definition now
   (define the-type-map (type-map `(begin ,@defns 'bogon)))
   (define (rewrite-definition name args arg-types return body)
     (let* ((needed-outputs (hash-table/get liveness-map name #f))
-           (i/o-map (hash-table/get dependency-map name #f))
            (needed-inputs (hash-table/get input-liveness-map name #f))
            (all-outs-needed? (every (lambda (x) x) needed-outputs)))
       (define new-return-type
@@ -679,7 +678,7 @@
          (argument-types ,@(select-masked needed-inputs arg-types)
                          ,new-return-type)
          ,(let* ((body (rewrite-call-sites
-                        the-type-map dependency-map liveness-map input-liveness-map body))
+                        the-type-map liveness-map input-liveness-map body))
                  (the-body
                   (tidy-empty-let
                    `(let ,(map (lambda (name)
@@ -704,25 +703,14 @@
          (rewrite-definition name args arg-types return body))
    defns))
 
-(define (rewrite-call-sites type-map dependency-map liveness-map input-liveness-map form)
+(define (rewrite-call-sites type-map liveness-map input-liveness-map form)
   (define (procedure? name)
     (hash-table/get liveness-map name #f))
   (define (rewrite-call-site operator operands)
     (let* ((needed-outputs (hash-table/get liveness-map operator #f))
-           (i/o-map (hash-table/get dependency-map operator #f))
            (needed-inputs (hash-table/get input-liveness-map operator #f))
            (all-outs-needed? (every (lambda (x) x) needed-outputs)))
       (let ((the-call
-             ;; TODO One could, actually, eliminate even more dead
-             ;; code than this: imagine a call site that only needs
-             ;; some of the needed outputs of the callee, where the
-             ;; callee only needs some of its needed inputs to compute
-             ;; those outputs.  Then the remaining inputs need to be
-             ;; supplied, because the callee's interface has to
-             ;; support callers that may need the outputs those inputs
-             ;; help it compute, but it would be safe to put
-             ;; tombstones there, because the analysis just proved
-             ;; that they will not be needed.
              `(,operator ,@(select-masked needed-inputs operands))))
         (if all-outs-needed?
             the-call
@@ -743,14 +731,6 @@
     (rule `((? operator ,procedure?) (?? operands))
           (rewrite-call-site operator operands)))
    form))
-
-(define (find-needed-inputs needed-outputs i/o-map)
-  (define (parallel-list-or lists)
-    (if (null? lists)
-        (map (lambda (x) #f) (car i/o-map))
-        (apply map boolean/or lists)))
-  (parallel-list-or
-   (select-masked needed-outputs i/o-map)))
 
 (define (select-masked liveness items)
   (filter-map (lambda (live? item)
