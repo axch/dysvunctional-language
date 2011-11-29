@@ -29,3 +29,16 @@
 (define (sensitize thing) thing)
 
 (define (unsensitize thing) thing)
+
+;;; DVL does not lift constants to zero-tangent bundles, expecting the
+;;; arithmetic operations to deal with any asymmetries.  Sadly, if one
+;;; branch of an IF wants to return a constant and the other a bundle,
+;;; DVL has a problem.  If DVL supported union types, this would just
+;;; become a union -- inefficient perhaps, but not deadly.  If DVL
+;;; supported a mechanism to define automatic coersions of one type to
+;;; another, that IF could be taught to apply, the union in question
+;;; could even be eliminated.  As it stands, however, the only way to
+;;; compile examples that experience this phenomenon is by manually
+;;; inserting a hack like this.
+(define (HACK-raise-to-same-bundle-level thing target)
+  (g:+ (g:- thing target) target))
