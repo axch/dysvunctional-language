@@ -643,4 +643,7 @@
 ;;; with plumbing long-range type information to places that do not
 ;;; currently need it (either the tombstone constructor or SRA).  The
 ;;; path of less complexity is to just dike out this extra level of
-;;; precision.
+;;; precision.  The last state when it was fully in place was commit
+;;; 002f8baa29b1fbc1faf046013f83e2feecf7bf29, also tagged
+;;; end-of-overprecise-dead-code-elimination; which was when this bug
+;;; was confirmed as serious and effort began to resolve it.
