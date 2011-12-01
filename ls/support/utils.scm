@@ -80,21 +80,18 @@
           (per-field (f accum (record-ref record index)) (fix:+ index 1))
           accum))))
 
+(define (reduce-vector f init vector)
+  (let per-elt ((accum init) (index 0))
+    (if (fix:< index (vector-length vector))
+        (per-elt (f accum (vector-ref vector index)) (fix:+ index 1))
+        accum)))
+
 (define (estimate-space-usage thing)
-  (define (sum lst) (reduce + 0 lst))
   (define seen-table (make-strong-eq-hash-table))
   (define (seen? thing)
     (hash-table/get seen-table thing #f))
   (define (seen! thing)
     (hash-table/put! seen-table thing #t))
-  ;; Loop fusion by force of will
-  (define (sum-map-record-fields record)
-    (reduce-record-fields sum-loop 0 record))
-  (define (sum-map-vector vector)
-    (let per-elt ((accum 0) (index 0))
-      (if (= index (vector-length vector))
-          accum
-          (per-elt (+ accum (loop (vector-ref vector index))) (+ index 1)))))
   (define (sum-loop accum thing)
     (+ accum (loop thing)))
   (define (loop thing)
@@ -105,11 +102,11 @@
               (loop (cdr thing))))
           ((vector? thing)
            (seen! thing)
-           (+ 1 (sum-map-vector thing)))
+           (+ 1 (reduce-vector sum-loop 0 thing)))
           ((record? thing)
            (seen! thing)
            ;; Records appear to have an overhead of 2
-           (+ 1 2 (sum-map-record-fields thing)))
+           (+ 1 2 (reduce-record-fields sum-loop 0 thing)))
           (else 1)))
   (loop thing))
 
