@@ -67,6 +67,19 @@
            ((record-accessor type field-name) record))
          (record-type-field-names type))))
 
+(define (reduce-record-fields f init record)
+  (define non-allocated-record-type-field-names-vector
+    (access %record-type-field-names (->environment '(runtime record))))
+  (define (record-ref record index)
+    ((access %record-ref (->environment '(runtime record)))
+     record (fix:+ index 1)))
+  (let* ((type (record-type-descriptor record))
+         (n-fields (vector-length (non-allocated-record-type-field-names-vector type))))
+    (let per-field ((accum init) (index 0))
+      (if (fix:< index n-fields)
+          (per-field (f accum (record-ref record index)) (fix:+ index 1))
+          accum))))
+
 (define (estimate-space-usage thing)
   (define (sum lst) (reduce + 0 lst))
   (define seen-table (make-strong-eq-hash-table))
@@ -74,7 +87,17 @@
     (hash-table/get seen-table thing #f))
   (define (seen! thing)
     (hash-table/put! seen-table thing #t))
-  (let loop ((thing thing))
+  ;; Loop fusion by force of will
+  (define (sum-map-record-fields record)
+    (reduce-record-fields sum-loop 0 record))
+  (define (sum-map-vector vector)
+    (let per-elt ((accum 0) (index 0))
+      (if (= index (vector-length vector))
+          accum
+          (per-elt (+ accum (loop (vector-ref vector index))) (+ index 1)))))
+  (define (sum-loop accum thing)
+    (+ accum (loop thing)))
+  (define (loop thing)
     (cond ((seen? thing) 1) ; For the incoming pointer
           ((pair? thing)
            (seen! thing)
@@ -82,12 +105,13 @@
               (loop (cdr thing))))
           ((vector? thing)
            (seen! thing)
-           (+ 1 (sum (map loop (vector->list thing)))))
+           (+ 1 (sum-map-vector thing)))
           ((record? thing)
            (seen! thing)
            ;; Records appear to have an overhead of 2
-           (+ 1 2 (sum (map loop (record-fields thing)))))
-          (else 1))))
+           (+ 1 2 (sum-map-record-fields thing)))
+          (else 1)))
+  (loop thing))
 
 (define (occurs-in-tree? thing tree)
   (cond ((equal? thing tree) #t)
