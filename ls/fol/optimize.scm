@@ -263,4 +263,4 @@
     (lambda (program . extra)
       (abegin1 (apply exec program extra)
         (if (present? 'syntax-checked it)
-            (pp (check-program-types it)))))))
+            (check-program-types it))))))
