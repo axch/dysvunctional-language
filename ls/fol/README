@@ -121,8 +121,11 @@ volubly
   statistics about the input, and time to completion.
 
 watching-memory
+  Produce reports about system memory use.
+
+measuring-memory
   Produce reports about total size of arguments and system memory use.
-  When intermediate structures are large, this can take time
+  When intermediate structures are large, this can take time and space
   comparable to the compilation itself.
 
 type-safely

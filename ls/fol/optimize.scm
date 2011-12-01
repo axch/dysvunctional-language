@@ -248,7 +248,7 @@
                      (property-value 'analysis program))))
            (print-fol-statistics program))))))
 
-(define (watching-memory stage-data)
+(define (measuring-memory stage-data)
   (lambda (exec)
     (lambda (program . extra)
       (if (eq? (stage-data-name stage-data) 'generate)
@@ -256,6 +256,14 @@
                   (estimate-space-usage (property-value 'analysis program)))
           (format #t "program of size ~A\n" (estimate-space-usage program)))
       (format #t "~A free words\n" (gc-flip))
+      (print-gc-statistics)
+      (apply exec program extra))))
+
+(define (watching-memory stage-data)
+  (lambda (exec)
+    (lambda (program . extra)
+      (format #t "~A free words\n" (gc-flip))
+      (print-gc-statistics)
       (apply exec program extra))))
 
 (define (type-safely stage-data)
