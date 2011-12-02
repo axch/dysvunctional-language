@@ -221,11 +221,7 @@
    win))
 
 (define (abstract-result-of thunk-shape analysis)
-  (analysis-get (closure-body thunk-shape)
-                (extend-env (closure-formal thunk-shape)
-                            '()
-                            (closure-env thunk-shape))
-                analysis))
+  (analysis-get thunk-shape '() analysis))
 
 ;;;; Gensym
 
