@@ -123,7 +123,7 @@
   (define initial-prime-numbers-stream-size
     (estimate-space-used-by-prime-numbers-stream))
 
-  (format #t "Analyzing...\n")
+  (format #t "Analyzing ~A...\n" name)
   (define analysis-run-time)
   (define analysis-gc-time)
   (define analysis (with-timings (lambda () (analyze true-program))
@@ -152,7 +152,7 @@
   (format #t "~@11A entries in abstract-hash cache\n" (commas abstract-hash-count))
   (format #t "~@11A entries in free-variables cache\n" (commas free-variables-count))
 
-  (format #t "Generating...\n")
+  (format #t "Generating ~A...\n" name)
   (define generation-run-time)
   (define generation-gc-time)
   (define raw-fol (with-timings (lambda () (generate true-program analysis))
@@ -213,7 +213,7 @@
                      raw-fol-space-usage
                      (- new-prime-numbers-stream-size initial-prime-numbers-stream-size))))
 
-  (format #t "Optimizing...\n")
+  (format #t "Optimizing ~A...\n" name)
   (define optimization-run-time)
   (define optimization-gc-time)
   (define opt-fol (with-timings (lambda () (fol-optimize raw-fol))
