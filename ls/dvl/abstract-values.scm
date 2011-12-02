@@ -186,12 +186,14 @@
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #f))
 
 ;;; Union of shapes --- can be either this or that.  ABSTRACT-UNION is
-;;; only used on the return values of IF statements.  If we think of
-;;; "gensym" shapes as of sets of gensym numbers, then the union of
-;;; two "gensym" shapes is given by the union of the underlying sets.
-;;; Because we approximate a set of gensym numbers by the pair of its
-;;; minimal and maximal elements, the union of sets turns into the
-;;; minimum of the minima paired with the maximum of the maxima.
+;;; used on the return values of IF statements and to merge the
+;;; results of successive refinements of the same binding.  If we
+;;; think of "gensym" shapes as of sets of gensym numbers, then the
+;;; union of two "gensym" shapes is given by the union of the
+;;; underlying sets.  Because we approximate a set of gensym numbers
+;;; by the pair of its minimal and maximal elements, the union of sets
+;;; turns into the minimum of the minima paired with the maximum of
+;;; the maxima.
 
 (define (abstract-union thing1 thing2)
   (cond ((abstract-equal? thing1 thing2)
