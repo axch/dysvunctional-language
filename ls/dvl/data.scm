@@ -87,8 +87,9 @@
         (else
          (lose))))
 
+(define free-variables-cache (make-eq-hash-table))
 (define free-variables
-  (memoize (make-eq-hash-table)
+  (memoize free-variables-cache
    (lambda (form)
      (cond ((constant? form)
             '())
