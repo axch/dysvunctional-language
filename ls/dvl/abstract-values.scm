@@ -108,6 +108,7 @@
          (set-binding-cached-abstract-hash! thing value))
         (else (error "No cache for abstract hash on" thing))))
 
+(define abstract-hash-cache-table (make-eq-hash-table))
 ;;; It turns out that I want this hash function to be GC-invariant
 ;;; (see the commit log) instead of relying on address hashing in
 ;;; eqv-hash.  While I'm at it, I think I can do a better job of
@@ -119,7 +120,7 @@
    (memoize-conditionally
     (lambda (thing)
       (or (pair? thing) (symbol? thing) (primitive? thing)))
-    (make-eq-hash-table)
+    abstract-hash-cache-table
     (let ((factor 37)
           (modulus 33554393))
       ;; The factor is a not-too-big prime.  The modulus is the largest
