@@ -188,6 +188,20 @@
     (newline))
   program)
 
+(define (print-short-fol-stats program)
+  (let* ((program (if (begin-form? program)
+                      program
+                      `(begin ,program)))
+         (defns (filter definition? program))
+         (defn-count (length defns))
+         (structure-defns (filter structure-definition? program))
+         (struct-count (length structure-defns)))
+    (print-fol-size program)
+    (format #t "~A procedures" defn-count)
+    (when (> struct-count 0)
+      (format #t " + ~A structures" struct-count))
+    (newline)))
+
 (define (print-fol-statistics program)
   (define defn-statistics
     (rule `(define ((? name) (?? formals))

@@ -97,6 +97,7 @@
      strip-argument-types
      let->let*
      print-fol-statistics
+     print-short-fol-stats
 
      ;; The underlying type checker
      check-program-types ;; TODO For testing
