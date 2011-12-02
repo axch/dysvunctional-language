@@ -236,3 +236,18 @@
   ;; (abegin1 (show-time (lambda () (run-mit-scheme name)))
   ;;   (newline))
 )
+
+(define dvl-benchmarks
+  `(("sqrt"        ((include "examples/sqrt.dvl")))
+    ("celestial"   ((include "examples/celestial.dvl")))
+    ("saddle"      ((include "../../../stalingrad/examples/automatic/saddle.vlad")))
+    ("particle"    ((include "../../../stalingrad/examples/automatic/particle.vlad")))
+    ("prob-lambda" ((include "../../../stalingrad/examples/automatic/probabilistic-lambda-calculus.vlad")))
+    ("prob-prolog" ((include "../../../stalingrad/examples/automatic/probabilistic-prolog.vlad")))
+    ("backprop"    ((include "examples/multilayer-perceptron.dvl")))))
+
+(define (dvl-benchmark name)
+  (let ((benchmark (assoc name dvl-benchmarks)))
+    (if benchmark
+        (apply dvl-watch-benchmark benchmark)
+        (error "No such benchmark" name))))

@@ -10,4 +10,4 @@ else
     STACK=2000
 fi
 
-exec mit-scheme --heap $HEAP --stack $STACK --batch-mode --no-init-file --load "${SELFDIR}/load.scm" --eval "(begin (pp (dvl-watch-benchmark \"$1\" '$2)) (%exit 0))"
+exec mit-scheme --heap $HEAP --stack $STACK --batch-mode --no-init-file --load "${SELFDIR}/load.scm" --eval "(begin (pp (dvl-benchmark \"$1\")) (%exit 0))"
