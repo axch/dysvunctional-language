@@ -247,3 +247,24 @@
   (lambda args
     (let ((answer (apply f args)))
       (hash-table/intern! cache answer (lambda () answer)))))
+
+(define (number->string-with-commas number)
+  (define (zero-pad str size)
+    (if (< (string-length str) size)
+        (zero-pad (string-append "0" str) size)
+        str))
+  (if (< number 1000)
+      (number->string number)
+      (string-append (number->string-with-commas (quotient number 1000))
+                     ","
+                     (zero-pad (number->string (remainder number 1000)) 3))))
+
+(define (prime-numbers-stream-forced-length str)
+  (+ 1 (let ((promise (cdr str)))
+         (if (promise-forced? promise)
+             (prime-numbers-stream-forced-length (promise-value promise))
+             0))))
+
+(define (estimate-space-used-by-prime-numbers-stream)
+  (* 4 (prime-numbers-stream-forced-length
+        (access prime-numbers-stream (->environment '(runtime hash-table))))))
