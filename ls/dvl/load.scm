@@ -238,7 +238,8 @@
 )
 
 (define dvl-benchmarks
-  `(("sqrt"        ((include "examples/sqrt.dvl")))
+  `(("sqrt"        ((include-definitions "examples/sqrt.dvl")
+                    ((derivative nr-sqrt) 4)))
     ("celestial"   ((include "examples/celestial.dvl")))
     ("saddle"      ((include "../../../stalingrad/examples/automatic/saddle.vlad")))
     ("particle"    ((include "../../../stalingrad/examples/automatic/particle.vlad")))

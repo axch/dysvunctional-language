@@ -19,6 +19,12 @@
        (eq? (first form) 'include)
        (string? (second form))))
 
+(define (include-definitions-directive? form)
+  (and (list? form)
+       (= (length form) 2)
+       (eq? (first form) 'include-definitions)
+       (string? (second form))))
+
 (define (read-source pathname)
   (let ((pathname (default-extension-to-vlad pathname)))
     (with-input-from-file pathname
@@ -42,5 +48,12 @@
                      (directory-namestring pathname)
                      (lambda ()
                        (read-source (second form))))
+                    (loop rest #f)))
+           ((include-definitions-directive? form)
+            (append (filter definition?
+                     (with-working-directory-pathname
+                      (directory-namestring pathname)
+                      (lambda ()
+                        (read-source (second form)))))
                     (loop rest #f)))
            (else (cons form (loop rest #f))))))))
