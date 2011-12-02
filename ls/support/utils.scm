@@ -242,3 +242,8 @@
       (if (memoize? x)
           (memoized x)
           (f x)))))
+
+(define (canonize cache f)
+  (lambda args
+    (let ((answer (apply f args)))
+      (hash-table/intern! cache answer (lambda () answer)))))

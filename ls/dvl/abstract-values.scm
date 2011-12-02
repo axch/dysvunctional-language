@@ -79,6 +79,8 @@
         ((and (abstract-gensym? thing1) (abstract-gensym? thing2))
          (and (= (abstract-gensym-min thing1) (abstract-gensym-min thing2))
               (= (abstract-gensym-max thing1) (abstract-gensym-max thing2))))
+        ((and (gensym? thing1) (gensym? thing2))
+         (= (gensym-number thing1) (gensym-number thing2)))
         (else (congruent-reduce
                (lambda (lst1 lst2) (every abstract-equal? lst1 lst2))
                thing1
@@ -148,6 +150,10 @@
               ((abstract-gensym? thing)
                (munch (abstract-gensym-min thing)
                       (abstract-gensym-max thing)))
+              ;; TODO Do I want to separate abstract and concrete envs
+              ;; and closures so that concrete gensyms need not be
+              ;; abstract values?
+              ((gensym? thing) (* factor (gensym-number thing)))
               ((symbol? thing)
                (string-hash (symbol->string thing)))
               ((primitive? thing)
@@ -184,6 +190,15 @@
 
 (define make-abstract-hash-table
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #f))
+
+(define canonical-abstract-values (make-abstract-hash-table))
+;(define make-abstract-gensym (canonize canonical-abstract-values make-abstract-gensym))
+;(define %make-env (canonize canonical-abstract-values %make-env))
+;(define %make-closure (canonize canonical-abstract-values %make-closure))
+;(define make-world (canonize canonical-abstract-values make-world))
+;(define %make-binding (canonize canonical-abstract-values %make-binding))
+(define (reset-canonical-abstract-values!)
+  (hash-table/clear! canonical-abstract-values))
 
 ;;; Union of shapes --- can be either this or that.  ABSTRACT-UNION is
 ;;; used on the return values of IF statements and to merge the
