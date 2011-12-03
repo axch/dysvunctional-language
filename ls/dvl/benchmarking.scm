@@ -65,9 +65,7 @@
   (define analyze-and-generate-used (- initial-memory post-generation-memory))
   (format #t "~@11A words eaten by analyze-and-generate\n" (commas analyze-and-generate-used))
 
-  (set! *closure-names* (make-abstract-hash-table))
-  (set! *call-site-names* (make-abstract-hash-table))
-  (set! *escaper-names* (make-abstract-hash-table))
+  (clear-name-caches!)
   (define post-name-cache-clear-memory (gc-flip))
   (format #t "~@11A words freed by clearing the name caches\n"
           (commas (- post-name-cache-clear-memory post-generation-memory)))
