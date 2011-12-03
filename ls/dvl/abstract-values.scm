@@ -193,9 +193,9 @@
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #f))
 
 (define canonical-abstract-values (make-abstract-hash-table))
-;(define make-abstract-gensym (canonize canonical-abstract-values make-abstract-gensym))
-;(define %make-env (canonize canonical-abstract-values %make-env))
-;(define %make-closure (canonize canonical-abstract-values %make-closure))
+(define make-abstract-gensym (canonize canonical-abstract-values make-abstract-gensym))
+(define %make-env (canonize canonical-abstract-values %make-env))
+(define %make-closure (canonize canonical-abstract-values %make-closure))
 ;(define make-world (canonize canonical-abstract-values make-world))
 ;(define %make-binding (canonize canonical-abstract-values %make-binding))
 (define (reset-canonical-abstract-values!)
