@@ -117,7 +117,6 @@
                 (begin
                   ;; 0 always triggers any wallpaper.
                   (do-wallpaper 0 analysis *analyze-wallp*)
-                  (reset-canonical-abstract-values!)
                   analysis)
                 (loop (+ count 1))))
           (begin
