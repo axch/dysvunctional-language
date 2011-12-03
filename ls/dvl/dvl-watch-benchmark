@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ulimit -t 900
+ulimit -t 600
 
 SELFDIR=$(dirname $0)
 
