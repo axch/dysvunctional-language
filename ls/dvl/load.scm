@@ -186,7 +186,7 @@
   (define canonical-cache-count-2 (hash-table/count canonical-abstract-values))
   (reset-canonical-abstract-values!)
   (define post-reset-canonical-memory (gc-flip))
-  (format #t "~@11A words freed by reclearing the canonical abstract value cache (had ~A entries)\n"
+  (format #t "~@11A words freed by clearing the canonical abstract value cache (had ~A entries)\n"
           (commas (- post-reset-canonical-memory post-name-cache-clear-memory))
           (commas canonical-cache-count-2))
 
