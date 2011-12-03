@@ -264,7 +264,7 @@
                 operands)
            ,(compile
              (closure-body operator)
-             (extend-env
+             (extend-env ;; TODO Allocates new abstract value
               (closure-formal operator)
               operands
               (closure-env operator))
