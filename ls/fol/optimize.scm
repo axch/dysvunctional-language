@@ -213,13 +213,6 @@
     (show-program program)
     (abegin1 (show-time (lambda () (apply stage program extra)))
       (newline)
-      (when (eq? name 'generate)
-        ;; TODO This was done only in visibly mode in the old world
-        ;; order, presumably because it explicitly invokes the GC,
-        ;; which would make the test suite too slow if it were done
-        ;; after every code generation.
-        ;; TODO I need a real module system!
-        ((access clear-name-caches! (nearest-repl/environment))))
       (when (eq? name 'reverse-anf)
         (display "Final output has ")
         (show-program it)))))
