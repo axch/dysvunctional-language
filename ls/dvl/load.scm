@@ -113,6 +113,7 @@
         (run-mit-scheme scm-file)))))
 
 (define (dvl-watch-benchmark name program)
+  (define basename (string-append "benchmarks/" name))
   (define commas number->string-with-commas)
   (format #t "Starting benchmark ~A\n" name)
   (define starting-memory (gc-flip))
@@ -237,13 +238,23 @@
           generation-run-time generation-gc-time (- analyze-and-generate-used analysis-used)
           optimization-run-time optimization-gc-time (estimate-space-usage opt-fol))
 
-  ;; (format #t "Compiling...\n")
-  ;; (show-time (lambda () (fol->floating-mit-scheme opt-fol name)))
-  ;; (newline)
+  (format #t "Compiling ~A...\n" name)
+  (define compilation-run-time)
+  (define compilation-gc-time)
+  (with-timings (lambda () (fol->floating-mit-scheme opt-fol basename))
+   (lambda (run gc real)
+     (set! compilation-run-time run)
+     (set! compilation-gc-time gc)
+     (format #t "Compiling ~A took ~A RUN + ~A GC\n" name run gc)))
 
-  ;; (format #t "Running...\n")
-  ;; (abegin1 (show-time (lambda () (run-mit-scheme name)))
-  ;;   (newline))
+  (format #t "Running ~A...\n" name)
+  (define run-time)
+  (define gc-time)
+  (with-timings (lambda () (run-mit-scheme basename))
+   (lambda (run gc real)
+     (set! run-time run)
+     (set! gc-time gc)
+     (format #t "Running ~A took ~A RUN + ~A GC\n" name run gc)))
 )
 
 (define dvl-benchmarks
