@@ -141,20 +141,21 @@
   (define post-analysis-prime-numbers-stream-size
     (estimate-space-used-by-prime-numbers-stream))
   (define canonical-cache-count (hash-table/count canonical-abstract-values))
-  (reset-canonical-abstract-values!)
-  (define post-analysis-clear-canonical-cache-memory (gc-flip))
+  ;; (reset-canonical-abstract-values!)
+  ;; (define post-analysis-clear-canonical-cache-memory (gc-flip))
   (when (< (* 5 analysis-used) initial-memory)
     (define analysis-object-used (estimate-space-usage analysis))
     (format #t "~@11A words used by the analysis object\n" (commas analysis-object-used))
     (format #t "~@11A words used elsewhere\n" (commas (- analysis-used analysis-object-used))))
-  (format #t "~@11A words freed by clearing the canonical abstract value cache (had ~A entries)\n"
-          (commas (- post-analysis-clear-canonical-cache-memory post-analysis-memory))
-          (commas canonical-cache-count))
+  ;; (format #t "~@11A words freed by clearing the canonical abstract value cache (had ~A entries)\n"
+  ;;         (commas (- post-analysis-clear-canonical-cache-memory post-analysis-memory))
+  ;;         (commas canonical-cache-count))
   (format #t "~@11A words used by prime numbers stream (before measuring analysis)\n"
           (commas (- post-analysis-prime-numbers-stream-size initial-prime-numbers-stream-size)))
 
   (define abstract-hash-count (hash-table/count abstract-hash-cache-table))
   (define free-variables-count (hash-table/count free-variables-cache))
+  (format #t "~@11A entries in canonical abstract value cache\n" (commas canonical-cache-count))
   (format #t "~@11A entries in abstract-hash cache\n" (commas abstract-hash-count))
   (format #t "~@11A entries in free-variables cache\n" (commas free-variables-count))
 
