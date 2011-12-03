@@ -35,3 +35,12 @@
    "read"
    "entry-point"
    "benchmarking"))
+
+;;; TODO Where does this procedure go?
+(define (clear-analyze-and-generate-caches!)
+  (clear-name-caches!)
+  (reset-canonical-abstract-values!)
+  (hash-table/clear! abstract-hash-cache-table)
+  (hash-table/clear! free-variables-cache)
+  (gc-flip)
+  (hash-table/clean! (access eq-properties fol-environment)))
