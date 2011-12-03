@@ -3,15 +3,15 @@
 time ./dvl-watch-benchmark sqrt
 time ./dvl-watch-benchmark saddle-FF
 time ./dvl-watch-benchmark saddle-FR
-time ./dvl-watch-benchmark saddle-RF
-time ./dvl-watch-benchmark saddle-RR
+# time ./dvl-watch-benchmark saddle-RF
+# time ./dvl-watch-benchmark saddle-RR
 time ./dvl-watch-benchmark particle-FF
 time ./dvl-watch-benchmark particle-FR
 time ./dvl-watch-benchmark particle-RF
 time ./dvl-watch-benchmark particle-RR
 time ./dvl-watch-benchmark prob-lambda-F
-time ./dvl-watch-benchmark prob-lambda-R
+# time ./dvl-watch-benchmark prob-lambda-R
 time ./dvl-watch-benchmark prob-prolog-F
 time ./dvl-watch-benchmark prob-prolog-R
 time ./dvl-watch-benchmark backprop-F
-time ./dvl-watch-benchmark backprop-R
+# time ./dvl-watch-benchmark backprop-R
