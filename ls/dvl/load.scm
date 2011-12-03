@@ -200,12 +200,12 @@
   (format #t "~@11A words freed by clearing the analysis\n"
           (commas (- post-clear-analysis-memory post-free-variables-clear-memory)))
 
+  (define new-prime-numbers-stream-size
+    (estimate-space-used-by-prime-numbers-stream))
   (define raw-fol-space-usage (estimate-space-usage raw-fol))
   (format #t "~@11A words used by raw fol\n" (commas raw-fol-space-usage))
 
-  (define new-prime-numbers-stream-size
-    (estimate-space-used-by-prime-numbers-stream))
-  (format #t "~@11A words used by prime numbers stream\n"
+  (format #t "~@11A words used by prime numbers stream (before measuing raw fol size)\n"
           (commas (- new-prime-numbers-stream-size initial-prime-numbers-stream-size)))
 
   (format #t "~@11A words not accounted for (interned symbols?)\n"
