@@ -1,5 +1,7 @@
 #!/bin/bash
 
+ulimit -t 900
+
 SELFDIR=$(dirname $0)
 
 if [ `uname -m` == 'x86_64' ]; then
@@ -10,4 +12,4 @@ else
     STACK=2000
 fi
 
-exec mit-scheme --heap $HEAP --stack $STACK --batch-mode --no-init-file --load "${SELFDIR}/load.scm" --eval "(begin (pp (dvl-benchmark \"$1\")) (%exit 0))"
+exec mit-scheme --heap $HEAP --stack $STACK --batch-mode --no-init-file --load "${SELFDIR}/load.scm" --eval "(begin (pp (dvl-benchmark \"$1\")) (%exit 0))" < /dev/null
