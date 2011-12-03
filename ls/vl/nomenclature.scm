@@ -39,13 +39,7 @@
 (define (clear-name-caches!)
   (set! *closure-names* (make-abstract-hash-table))
   (set! *call-site-names* (make-abstract-hash-table))
-  (set! *escaper-names* (make-abstract-hash-table))
-  ;; Also poke memoized functions to clear out table structure I may
-  ;; have just freed
-  (gc-flip)
-  (if (lexical-unbound? (->environment clear-name-caches!) 'abstract-hash)
-      'ok
-      (abstract-hash 0)))
+  (set! *escaper-names* (make-abstract-hash-table)))
 
 (define (initialize-name-caches!)
   (set! *closure-names* (make-abstract-hash-table))
