@@ -192,12 +192,10 @@
   (define (loop substage-alist)
     (let ((substage (cdar substage-alist)))
       (lambda (program)
-        (pp `looping)
         (let repeat ((old-program program)
                      (old-size (count-pairs program)))
           (let* ((new-program (substage old-program))
                  (new-size (count-pairs new-program)))
-            (pp `(deciding whether to repeat ,old-size ,new-size))
             (if (>= new-size old-size)
                 new-program
                 (repeat new-program new-size)))))))
