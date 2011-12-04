@@ -112,7 +112,7 @@
   (format #t "Optimizing ~A...\n" name)
   (define optimization-run-time)
   (define optimization-gc-time)
-  (define opt-fol (with-timings (lambda () (fol-optimize raw-fol))
+  (define opt-fol (with-timings (lambda () (loopy-fol-optimize raw-fol))
                    (lambda (run gc real)
                      (set! optimization-run-time run)
                      (set! optimization-gc-time gc)

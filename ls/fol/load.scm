@@ -73,6 +73,7 @@
      ;; Optimization
      equal-type? ; TODO
      fol-optimize
+     loopy-fol-optimize
 
      ;; Form checkers and converters
      structure-definitions->vectors
