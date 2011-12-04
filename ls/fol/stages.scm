@@ -188,6 +188,27 @@
       (map cons names substages)
       #f))))
 
+(define (loop-while-shrinks substage)
+  (define (loop substage-alist)
+    (let ((substage (cdar substage-alist)))
+      (lambda (program)
+        (pp `looping)
+        (let repeat ((old-program program)
+                     (old-size (count-pairs program)))
+          (let* ((new-program (substage old-program))
+                 (new-size (count-pairs new-program)))
+            (pp `(deciding whether to repeat ,old-size ,new-size))
+            (if (>= new-size old-size)
+                new-program
+                (repeat new-program new-size)))))))
+  (let ((name (stage-name substage)))
+    (stage-data->stage
+     (%make-stage-data
+      `(shrink-loop ,name)
+      loop
+      `((,name . ,substage))
+      #f))))
+
 ;;; We define a nice language for specifying stages.  For example,
 ;;;
 ;;; (define-stage scalar-replace-aggregates
