@@ -195,6 +195,20 @@
    intraprocedural-cse
    inline))
 
+(define loopy-fol-optimize
+  (stage-pipeline
+   reverse-anf
+   (loop-while-shrinks
+    (stage-pipeline
+     eliminate-interprocedural-dead-code
+     intraprocedural-cse
+     scalar-replace-aggregates
+     (loop-while-shrinks
+      (stage-pipeline
+       eliminate-intraprocedural-dead-code
+       intraprocedural-cse
+       inline))))))
+
 ;;; Adverbs
 
 (define (watching-annotations stage-data)
