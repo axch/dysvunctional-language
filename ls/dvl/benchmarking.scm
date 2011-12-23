@@ -1,7 +1,12 @@
 (declare (usual-integrations))
 
+(define benchmarks-dir
+  (string-append
+   (->namestring (self-relatively working-directory-pathname))
+   "benchmarks/"))
+
 (define (dvl-watch-benchmark name program)
-  (define basename (string-append "benchmarks/" name))
+  (define basename (string-append benchmarks-dir name))
   (define commas number->string-with-commas)
   (format #t "Starting benchmark ~A\n" name)
   (define starting-memory (gc-flip))
@@ -180,4 +185,6 @@
   (let ((benchmark (assoc name dvl-benchmarks)))
     (if benchmark
         (apply dvl-watch-benchmark benchmark)
-        (error "No such benchmark" name))))
+        ;; If not a predefined benchmark, assume is a filename that
+        ;; should be executed.
+        (dvl-watch-benchmark (->namestring (pathname-new-type name #f)) `((include ,name))))))
