@@ -10,6 +10,7 @@
 	   (optimized-fol-program-value (fol-eval optimized-fol-program)))
       (check (equal? fol-program-value optimized-fol-program-value)))))
 
+;; This assumes that 'fol2fol' has been installed somewhere on the PATH.
 (define *fol-executable* "fol2fol")
 
 (define (pipe-through command input)
