@@ -129,6 +129,11 @@
           generation-run-time generation-gc-time (- analyze-and-generate-used analysis-used)
           optimization-run-time optimization-gc-time (estimate-space-usage opt-fol))
 
+  (with-output-to-file
+      (string-append basename ".fol")
+    (lambda ()
+      (pp opt-fol)))
+
   (format #t "Compiling ~A...\n" name)
   (define compilation-run-time)
   (define compilation-gc-time)
