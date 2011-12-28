@@ -17,6 +17,15 @@
       "sbcl --eval '(progn (compile-file ~S :verbose t :print t) (quit))'"
       (->namestring file)))))
 
+(define (run-common-lisp #!optional base)
+  (if (default-object? base)
+      (set! base "comozzle"))
+  (let ((file (pathname-new-type base "fasl")))
+    (run-shell-command
+     (format #f
+      "sbcl --noinform --eval '(progn (load ~S) (write (__main__)) (quit))'"
+      (->namestring file)))))
+
 (define (prepare-for-common-lisp program)
   (define (force-values thing)
     (if (values-form? thing)
