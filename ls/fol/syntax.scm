@@ -134,6 +134,7 @@
              ,@body)))))
 
 (define let*-form? (tagged-list? 'let*))
+(define-algebraic-matcher let*-form let-form? cadr caddr)
 
 (define let*->let
   (rule-simplifier

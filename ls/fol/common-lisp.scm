@@ -125,7 +125,7 @@
        ',*fol->cl-desired-precision*))
     ((boolean expr) (if expr 't 'nil))
     ((null) 'nil)
-    (expr => compile-if)
+    (if-form => compile-if)
     (let-form => compile-let)
     (let*-form => compile-let*)
     (let-values-form => compile-let-values)
