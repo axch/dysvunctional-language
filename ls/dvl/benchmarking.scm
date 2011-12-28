@@ -151,6 +151,20 @@
      (set! run-time run)
      (set! gc-time gc)
      (format #t "Running ~A took ~A RUN + ~A GC\n" name run gc)))
+
+  (format #t "Compiling ~A with SBCL...\n" name)
+  (define lisp-compilation-time)
+  (with-timings (lambda () (fol->common-lisp opt-fol basename))
+   (lambda (run gc real)
+     (set! lisp-compilation-time real)
+     (format #t "Compiling ~A took ~Ams\n" name real)))
+
+  (format #t "Running ~A in SBCL...\n" name)
+  (define lisp-run-time)
+  (with-timings (lambda () (run-common-lisp basename))
+   (lambda (run gc real)
+     (set! lisp-run-time real)
+     (format #t "Running ~A took ~Ams\n" name real)))
 )
 
 (define dvl-benchmarks
