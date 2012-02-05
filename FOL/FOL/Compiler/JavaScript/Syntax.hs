@@ -8,7 +8,7 @@ import FOL.Language.Pretty
 import Data.List
 import Data.Maybe
 
-data JsProg = JsProg [JsDefn] JsExpr
+data JsProg = JsProg [JsDefn]
               deriving Show
 
 data JsDefn = JsDefn Name [Name] JsExpr
@@ -34,20 +34,20 @@ newline, questionMark :: Doc
 newline      = char '\n'
 questionMark = char '?'
 
-ppTuple :: Pretty a => [a] -> Doc
-ppTuple = sep . punctuate comma . map pp
+ppTuple :: Pretty a => (a -> Doc) -> [a] -> Doc
+ppTuple pp = sep . punctuate comma . map pp
 
 -- Just _ <=> named, Nothing <=> anonymous
 ppFunction :: Maybe Name -> [Name] -> JsExpr -> Doc
 ppFunction name args body
-    =     text "function" <+> maybe empty pp name <> parens (ppTuple args)
+    =     text "function" <+> maybe empty ppName name <> parens (ppTuple ppName args)
       $+$ lbrace
       $+$ nest 4 (text "return" <+> pp body <> semi)
       $+$ rbrace
 
 instance Pretty JsProg where
-    pp (JsProg defns expr)
-        = vcat . punctuate newline $ map pp defns ++ [pp expr <> semi]
+    pp (JsProg defns)
+        = vcat . punctuate newline $ map pp defns
 
 instance Pretty JsDefn where
     pp (JsDefn name args body)
@@ -59,11 +59,11 @@ instance Pretty JsExpr where
     pp (JsBool True) = text "true"
     pp (JsBool False) = text "false"
     pp (JsReal d) = double d
-    pp (JsIf p c a) = sep [pp' p, questionMark, pp' c, colon, pp' a]
-    pp (JsArray es) = brackets (ppTuple es)
+    pp (JsIf p c a) = sep [pp p, questionMark, pp c, colon, pp a]
+    pp (JsArray es) = brackets (ppTuple pp es)
     pp (JsAccess e i) = pp' e <> brackets (int i)
     pp (JsFunction args body) = ppFunction Nothing args body
-    pp (JsFunctionCall func args) = pp' func <> parens (ppTuple args)
+    pp (JsFunctionCall func args) = pp' func <> parens (ppTuple pp args)
     pp (JsInfixOpApplication op e1 e2) = pp' e1 <+> pp op <+> pp' e2
 
 pp' :: JsExpr -> Doc
