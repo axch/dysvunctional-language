@@ -6,7 +6,14 @@ Cabal-Version: >= 1.2
 Executable fol2fol
   Build-Depends: base, mtl, pretty, parsec, containers, syb, uniplate
   Main-Is:       fol2fol.hs
+  Extensions:    PatternGuards
 
-Executable fol2haskell
+Executable fol2hs
   Build-Depends: base, mtl, pretty, parsec, containers, syb, uniplate
-  Main-Is:       fol2haskell.hs
+  Main-Is:       fol2hs.hs
+  Extensions:    PatternGuards
+
+Executable fol2js
+  Build-Depends: base, mtl, pretty, parsec, containers, syb, uniplate
+  Main-Is:       fol2js.hs
+  Extensions:    PatternGuards
