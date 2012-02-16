@@ -11,5 +11,5 @@
   (self-relatively (lambda () (load filename))))
 
 (load-relative "../../ls/dvl/load")
-(pp (compile-to-raw-fol (read)))
+(pp (compile-to-fol (read)))
 (%exit 0)
