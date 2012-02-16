@@ -1,0 +1,20 @@
+# -*- mode: ruby -*-
+
+def available?(command)
+  ENV['PATH'].split(':').each do |directory|
+    file_name = File.join(directory, command)
+    return true if File.exists? file_name and File.executable? file_name
+  end
+  return false
+end
+
+task :default => ["celestial.js"]
+
+file "celestial.js" do
+  if available? "fol2js"
+    sh 'fol2js < celestial-no-fractions.fol > celestial.js'
+  else
+    puts "No 'fol2js' executable found."
+    puts "Run 'cabal configure && cabal build && cabal install' in FOL root directory first."
+  end
+end
