@@ -1,0 +1,20 @@
+<html>
+  <head>
+    <script src="celestial.js">
+    </script>
+    <script src="driver.js">
+    </script>
+    <script>
+      function run(count, step, dt)
+      {
+          var start = new Date().getTime();
+          var result = drive(count, step, dt);
+          var end = new Date().getTime();
+          console.log("Evaluation took " + (end - start) + " milliseconds");
+          return result;
+      }
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
