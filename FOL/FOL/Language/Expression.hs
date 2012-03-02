@@ -125,7 +125,8 @@ instance Pretty Defn where
         where
           (proc_name, proc_shape) = proc
           (arg_names, arg_shapes) = unzip args
-          proto  = symbol "define" <+> parens (pp proc_name <+> sepMap pp arg_names)
+          proto  =     symbol "define"
+                   <+> parens (pp proc_name <+> sepMap pp arg_names)
           shapes = ppForm "argument-types" (arg_shapes ++ [proc_shape])
 
 instance Pretty Shape where
@@ -246,7 +247,8 @@ stripAnnExpr' (AnnLetValues bindings body)
 stripAnnExpr' (AnnCar e)              = Car (stripAnnExpr e)
 stripAnnExpr' (AnnCdr e)              = Cdr (stripAnnExpr e)
 stripAnnExpr' (AnnVectorRef e i)      = VectorRef (stripAnnExpr e) i
-stripAnnExpr' (AnnCons e1 e2)         = Cons (stripAnnExpr e1) (stripAnnExpr e2)
+stripAnnExpr' (AnnCons e1 e2)         = Cons (stripAnnExpr e1)
+                                             (stripAnnExpr e2)
 stripAnnExpr' (AnnVector es)          = Vector (map stripAnnExpr es)
 stripAnnExpr' (AnnValues es)          = Values (map stripAnnExpr es)
 stripAnnExpr' (AnnLambda x e)         = Lambda x (stripAnnExpr e)

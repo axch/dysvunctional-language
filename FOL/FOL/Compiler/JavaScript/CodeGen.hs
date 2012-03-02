@@ -34,7 +34,8 @@ compileBlck (LetValues (Bindings bindings) body)
       JsBlck stmts = compileBlck body
       compileBinding (names, expr)
           = JsVarAssignment result (compileExpr expr)
-          : [JsVarAssignment x (JsAccess (JsVar result) i) | (x, i) <- zip names [0..]]
+          : [JsVarAssignment x (JsAccess (JsVar result) i)
+                 | (x, i) <- zip names [0..]]
       result = Name "$result"
 
 compileExpr :: Expr -> JsExpr
@@ -73,11 +74,14 @@ ops = [ (Name "+", Add)
 prelude = [ JsDefn (Name "real") [x]
             (JsBlck [JsReturn (JsVar x)])
           , JsDefn (Name "isZero") [x]
-            (JsBlck [JsReturn (JsInfixOpApplication Eq (JsVar x) (JsReal 0.0))])
+            (JsBlck
+             [JsReturn (JsInfixOpApplication Eq (JsVar x) (JsReal 0.0))])
           , JsDefn (Name "isPositive") [x]
-            (JsBlck [JsReturn (JsInfixOpApplication Gt (JsVar x) (JsReal 0.0))])
+            (JsBlck
+             [JsReturn (JsInfixOpApplication Gt (JsVar x) (JsReal 0.0))])
           , JsDefn (Name "isNegative") [x]
-            (JsBlck [JsReturn (JsInfixOpApplication Lt (JsVar x) (JsReal 0.0))])
+            (JsBlck
+             [JsReturn (JsInfixOpApplication Lt (JsVar x) (JsReal 0.0))])
           ]
     where
       x = Name "x"

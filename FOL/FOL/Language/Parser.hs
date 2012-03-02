@@ -92,7 +92,8 @@ parseEmptyList = do { lparen; rparen; return () }
 
 -- Parsing shapes
 
-parseNilSh, parseConsSh, parseVectorSh, parseValuesSh, parseShape :: Parser Shape
+parseNilSh, parseConsSh, parseVectorSh, parseValuesSh :: Parser Shape
+parseShape :: Parser Shape
 parseNilSh    = NilSh <$ parseEmptyList
 parseConsSh   = liftA2 ConsSh parseShape parseShape
 parseVectorSh = liftA  VectorSh (many parseShape)
@@ -100,14 +101,16 @@ parseValuesSh = liftA  ValuesSh (many parseShape)
 
 parseShape = try parseNilSh <|> parseAtomicShape <|> parens parseCompoundShape
     where
-      parseAtomicShape   = caseParser [ ("real",   return RealSh)
-                                      , ("bool",   return BoolSh)
-                                      , ("escaping-function", return FunctionSh)
-                                      ]
-      parseCompoundShape = caseParser [ ("cons",   parseConsSh  )
-                                      , ("vector", parseVectorSh)
-                                      , ("values", parseValuesSh)
-                                      ]
+      parseAtomicShape
+          = caseParser [ ("real",   return RealSh)
+                       , ("bool",   return BoolSh)
+                       , ("escaping-function", return FunctionSh)
+                       ]
+      parseCompoundShape
+          = caseParser [ ("cons",   parseConsSh  )
+                       , ("vector", parseVectorSh)
+                       , ("values", parseValuesSh)
+                       ]
 
 -- Parsing programs
 
