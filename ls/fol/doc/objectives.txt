@@ -33,6 +33,9 @@ intermediate languages.
   in the target language
 
 The choices and objectives entail several FOL design principles:
+- FOL and FOL-- should be clearly and precisely specified
+  - with clear semantics and
+  - (to the extent possible) a clear cost model
 - FOL should impose no arbitrary limits.  In particular, no limits besides
   available memory on:
   - the size of an input program, or
