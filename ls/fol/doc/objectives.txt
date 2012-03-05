@@ -1,0 +1,46 @@
+                          Objectives of FOL
+
+If I were to push FOL out as a thing in its own right, what would be
+its distinguishing characteristics, that would make people want to use
+it?
+
+FOL is a middle-end in a compiler and an intermediate language for
+compilation.  As such, the FOL system accepts input in the FOL
+language, optimizes it, and produces output in a slightly restricted
+subset of FOL called FOL-- (this difference is on the logic that a
+machine should be liberal in the inputs it accepts and strict in the
+outputs it produces).  The FOL system also comes with several
+back-ends that translate FOL-- to other languages.
+
+FOL has several design objectives:
+- FOL must be a convenient target for code generation
+- FOL-- must be compilable to efficient machine code
+- FOL programs should interoperate with the outside world
+- FOL and FOL-- should not be unduly illegible
+
+The above objectives are narrowed by several choices one might call
+arbitrary, that I made for FOL because they were what I needed.  These
+choices put FOL in a particular point in the design space of
+intermediate languages.
+- FOL has a Scheme-like syntax (making it easy to parse and generate)
+- FOL is first-order
+- FOL is statically typed
+  - With sum and product types
+- FOL is tail-recursive
+- FOL is garbage-collected
+- FOL supports multiple-value returns
+- Interoperation is done by having the back-end generate callable code
+  in the target language
+
+The choices and objectives entail several FOL design principles:
+- FOL should impose no arbitrary limits.  In particular, no limits besides
+  available memory on:
+  - the size of an input program, or
+  - the number of procedures, or
+  - the size of procedures, or
+  - the nesting depth of expressions, or
+  - the number of formal parameters to procedures, or
+  - the number of values returned from procedures, or
+  - the number of members in product and sum types
+- The FOL optimizer should have clearly-stated (and good) asymptotic
+  performance as any of above counts grow.
