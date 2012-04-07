@@ -37,11 +37,13 @@ compileProg (prog_type, AnnProg defns expr)
     = map compileDefn defns ++ [entry_point]
     where
       entry_point
-          = HsSCDefn (translateType prog_type) (Name "__main__") [] (compileExpr expr)
+          = HsSCDefn (translateType prog_type)
+            (Name "__main__") [] (compileExpr expr)
 
 compileDefn :: AnnDefn Type -> HsSCDefn
 compileDefn (proc_type, AnnDefn proc args expr)
-    = HsSCDefn (translateType proc_type) proc_name arg_names (compileExpr expr)
+    = HsSCDefn (translateType proc_type)
+      proc_name arg_names (compileExpr expr)
     where
       proc_name = fst proc
       arg_names = map fst args
@@ -54,7 +56,8 @@ compileExpr' (AnnVar x) = HsVar x
 compileExpr' AnnNil = HsUnit
 compileExpr' (AnnBool b) = HsBool b
 compileExpr' (AnnReal r) = HsReal r
-compileExpr' (AnnIf p c a) = HsIf (compileExpr p) (compileExpr c) (compileExpr a)
+compileExpr' (AnnIf p c a)
+    = HsIf (compileExpr p) (compileExpr c) (compileExpr a)
 compileExpr' (AnnLet (Bindings bs) body)
     -- Haskell `let' is actually recursive, but we alpha-rename the
     -- program before compiling, so no recursion in bindings can

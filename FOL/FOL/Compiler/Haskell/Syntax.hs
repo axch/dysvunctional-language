@@ -88,7 +88,10 @@ instance Pretty HsModule where
                               , ppTuple (map ppName exported_names)
                               , text "where" ]
           module_body  = punctuate newline
-                         (module_decl : import_decls : type_decls : map pp sc_defns)
+                         ( module_decl
+                         : import_decls
+                         : type_decls
+                         : map pp sc_defns)
 
 instance Pretty HsPragma where
     pp (HsPragma pragma) = text pragma
@@ -97,9 +100,11 @@ instance Pretty HsImport where
     pp (HsImport module_name) = text "import" <+> text module_name
 
 instance Pretty HsTyDefn where
-    pp (HsTyDefn shape) = text "newtype" <+> text "Function" <+> equals <+> lhs
+    pp (HsTyDefn shape)
+        = text "newtype" <+> text "Function" <+> equals <+> lhs
         where
-          lhs = text "Function" <+> (parens $ sep [text "Double#", arrow, pp shape])
+          lhs =     text "Function"
+                <+> (parens $ sep [text "Double#", arrow, pp shape])
           arrow = text "->"
 
 instance Pretty HsSCDefn where

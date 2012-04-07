@@ -101,14 +101,17 @@ acceptableInlinees threshold = prune [] 0 . mkNodeMap
           | Map.null inlinable
           = is
           | new_total_cost <= threshold
-          = prune (candidate_name:is) new_total_cost (inlineNode candidate_name node_map)
+          = prune (candidate_name:is) new_total_cost
+            (inlineNode candidate_name node_map)
           | otherwise
           = is
           where
             isInlinable name node = outMultiplicity name node == 0
             inlinable = Map.filterWithKey isInlinable node_map
-            (candidate_name, candidate_cost) = findMinWith inlineCost inlinable
+            (candidate_name, candidate_cost)
+                = findMinWith inlineCost inlinable
             new_total_cost = old_total_cost + candidate_cost
 
 findMinWith :: Ord b => (a -> b) -> Map k a -> (k, b)
-findMinWith cost m = minimumBy (comparing snd) [(k, cost v) | (k, v) <- Map.toList m]
+findMinWith cost m
+    = minimumBy (comparing snd) [(k, cost v) | (k, v) <- Map.toList m]

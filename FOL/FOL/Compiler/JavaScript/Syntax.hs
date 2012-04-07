@@ -72,7 +72,8 @@ instance Pretty JsBlck where
 instance Pretty JsStmt where
     pp (JsReturn e) = text "return" <+> pp e <> semi
     pp (JsVarAssignment  x e) = ppName x <+> equals <+> pp e <> semi
-    pp (JsVarDeclaration x e) = text "var" <+> ppName x <+> equals <+> pp e <> semi
+    pp (JsVarDeclaration x e)
+        = text "var" <+> ppName x <+> equals <+> pp e <> semi
 
 instance Pretty JsExpr where
     pp (JsVar x) = ppName x
@@ -82,7 +83,8 @@ instance Pretty JsExpr where
     pp (JsReal d) = double d
     -- 'if' can occur in the RHS of variable assignment, therefore it
     -- needs to be an expression, not a statement.
-    pp (JsIf p c a) = sep [pp p, questionMark, pp (expr c), colon, pp (expr a)]
+    pp (JsIf p c a)
+        = sep [pp p, questionMark, pp (expr c), colon, pp (expr a)]
     pp (JsArray es) = brackets (ppTuple pp es)
     pp (JsAccess e i) = pp' e <> brackets (int i)
     pp (JsFunction args body) = ppFunction Nothing args body

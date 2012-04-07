@@ -22,7 +22,10 @@ data Type = PrimTy Shape
 instance Pretty Type where
     pp (PrimTy shape) = pp shape
     pp (ProcTy arg_shapes ret_shape)
-        = ppList [symbol "procedure", ppList (map pp arg_shapes), pp ret_shape]
+        = ppList [ symbol "procedure"
+                 , ppList (map pp arg_shapes)
+                 , pp ret_shape
+                 ]
 
 -- Possible type checker errors.
 data TCError
@@ -262,7 +265,8 @@ annProg init_env (Prog defns expr)
          ann_expr@(prog_type, _) <- annExpr prog_env expr
          return (prog_type, AnnProg ann_defns ann_expr)
     where
-      prog_env = [(procName defn, declProcType defn) | defn <- defns] ++ init_env
+      prog_env =    [(procName defn, declProcType defn) | defn <- defns]
+                 ++ init_env
 
 annDefn :: TyEnv -> Defn -> TC (AnnDefn Type)
 annDefn env defn@(Defn proc args body)
@@ -334,7 +338,8 @@ annExpr env (Cdr e)
 annExpr env (VectorRef e i)
     = do ann_e@(t, _) <- annExpr env e
          case t of
-           PrimTy (VectorSh ss) -> return (PrimTy (ss !! i), AnnVectorRef ann_e i)
+           PrimTy (VectorSh ss) -> return ( PrimTy (ss !! i)
+                                          , AnnVectorRef ann_e i)
            _                    -> tcFail $ ShapeMismatch e t "vector"
 annExpr env e@(Cons e1 e2)
     = do ann_e1@(t1, _) <- annExpr env e1
