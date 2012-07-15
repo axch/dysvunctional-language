@@ -20,6 +20,10 @@
 (define (structure-definition? form)
   (and (pair? form)
        (eq? (car form) 'define-typed-structure)))
+;; Wins with the name and the slot-type list of the structure
+;; definition.
+(define-algebraic-matcher
+  structure-definition structure-definition? cadr cddr)
 
 (define (%structure-definitions->vectors program)
   (if (begin-form? program)
@@ -62,7 +66,9 @@
     (hash-table/put-alist!
      structure-map
      (map (lambda (defn)
-            (cons (cadr defn) `(vector ,@(map cadr (cddr defn)))))
+            (case* defn
+              ((structure-definition name fields)
+               (cons name `(vector ,@(map cadr fields))))))
           structure-definitions))
     (define basic-tree
       (lambda (type)
@@ -79,17 +85,22 @@
 
     (hash-table/put-alist!
      structure-map
-     (map (lambda (name) (cons (symbol 'make- name) 'constructor))
-          structure-names))
+     (map (lambda (defn)
+            (case* defn
+              ((structure-definition name _)
+               (cons (symbol 'make- name) 'constructor))))
+          structure-definitions))
 
     (hash-table/put-alist!
      structure-map
      (append-map
       (lambda (defn)
-        (map (lambda (field index)
-               (cons (symbol (cadr defn) '- field) index))
-             (map car (cddr defn))
-             (iota (length (cddr defn)))))
+        (case* defn
+          ((structure-definition name fields)
+           (map (lambda (field index)
+                  (cons (symbol name '- field) index))
+                (map car fields)
+                (iota (length fields))))))
       structure-definitions))
     (define (classify name)
       (hash-table/get structure-map name #f))
