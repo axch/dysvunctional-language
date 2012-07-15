@@ -65,10 +65,9 @@
          (structure-map (make-eq-hash-table)))
     (hash-table/put-alist!
      structure-map
-     (map (lambda (defn)
-            (case* defn
-              ((structure-definition name fields)
-               (cons name `(vector ,@(map cadr fields))))))
+     (map (lambda-case*
+           ((structure-definition name fields)
+            (cons name `(vector ,@(map cadr fields)))))
           structure-definitions))
     (define basic-tree
       (lambda (type)
@@ -85,22 +84,20 @@
 
     (hash-table/put-alist!
      structure-map
-     (map (lambda (defn)
-            (case* defn
-              ((structure-definition name _)
-               (cons (symbol 'make- name) 'constructor))))
+     (map (lambda-case*
+           ((structure-definition name _)
+            (cons (symbol 'make- name) 'constructor)))
           structure-definitions))
 
     (hash-table/put-alist!
      structure-map
      (append-map
-      (lambda (defn)
-        (case* defn
-          ((structure-definition name fields)
-           (map (lambda (field index)
-                  (cons (symbol name '- field) index))
-                (map car fields)
-                (iota (length fields))))))
+      (lambda-case*
+       ((structure-definition name fields)
+        (map (lambda (field index)
+               (cons (symbol name '- field) index))
+             (map car fields)
+             (iota (length fields)))))
       structure-definitions))
     (define (classify name)
       (hash-table/get structure-map name #f))
