@@ -1,4 +1,5 @@
 (declare (usual-integrations))
+(declare (integrate-externals "pattern-matching"))
 ;;;; Turning record structures into vectors
 
 ;;; VL and DVL emit code that defines Scheme records to serve as
@@ -8,7 +9,7 @@
 ;;; support for union types.
 
 ;;; Every structure definition of the form
-;;; (define-typed-structure foo (bar bar-type) (baz baz-type))
+;;; (define-type foo (structure (bar bar-type) (baz baz-type)))
 ;;; entails the constructor MAKE-FOO, accessors FOO-BAR and FOO-BAZ,
 ;;; and the type FOO.  Fortunately, all are used only in call
 ;;; position, so they are easy to search for and replace.  The
@@ -19,11 +20,12 @@
 
 (define (structure-definition? form)
   (and (pair? form)
-       (eq? (car form) 'define-typed-structure)))
+       (eq? (car form) 'define-type)
+       (eq? (car (caddr form)) 'structure)))
 ;; Wins with the name and the slot-type list of the structure
 ;; definition.
 (define-algebraic-matcher
-  structure-definition structure-definition? cadr cddr)
+  structure-definition structure-definition? cadr cdaddr)
 
 (define (%structure-definitions->vectors program)
   (if (begin-form? program)

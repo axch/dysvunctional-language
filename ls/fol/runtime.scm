@@ -11,9 +11,9 @@
     ((_ arg ...)
      (begin))))
 
-(define-syntax define-typed-structure
+(define-syntax define-type
   (syntax-rules ()
-    ((_ name (field type) ...)
+    ((_ name (structure (field type) ...))
      (define-structure name field ...))))
 
 (define (real x)

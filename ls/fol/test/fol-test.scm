@@ -24,7 +24,13 @@
     '(vector-ref (vector 1 2) 0)
     (structure-definitions->vectors
      '(begin
-        (define-typed-structure foo (bar real) (baz real))
+        (define-type foo (structure (bar real) (baz real)))
+        (foo-bar (make-foo 1 2)))))
+
+   (equal? 1
+    (fol-eval
+     '(begin
+        (define-type foo (structure (bar real) (baz real)))
         (foo-bar (make-foo 1 2)))))
 
    (lset= eq? '(c a) (feedback-vertex-set '((a b c d) (b a) (c d) (d c) (e a))))
