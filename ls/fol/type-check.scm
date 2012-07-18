@@ -22,6 +22,16 @@
 ;;; grammar, but instead of learning (or writing) a tool for doing
 ;;; that I put some basic syntax checks into this program.
 
+
+;; To really do this right, I must first check the basic syntax of the
+;; type definitions while building a list of defined type names; then
+;; I check that all the slot types in the defined type definitions are
+;; valid types (to wit, only use defined and pre-supplied types) and
+;; build a map from defined type names to the structure types that
+;; they name (the layer of indirection is needed because the types may
+;; (eventually) be recursive); and then, that in hand, proceed to
+;; check the syntax and then the typology of the procedure definitions
+;; the way I do here.
 (define (check-program-types program #!optional inferred-type-map)
   (define (check-definition-syntax definition)
     (if (not (definition? definition))
