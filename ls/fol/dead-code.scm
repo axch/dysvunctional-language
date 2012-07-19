@@ -491,7 +491,7 @@
 
 (define (rewrite-definitions liveness-map input-liveness-map defns)
   ;; This bogon has to do with the entry point being a definition now
-  (define the-type-map (type-map `(begin ,@defns 'bogon)))
+  (define the-type-map (procedure-type-map `(begin ,@defns 'bogon)))
   (define (rewrite-definition name args arg-types return body)
     (let* ((needed-outputs (hash-table/get liveness-map name #f))
            (needed-inputs (hash-table/get input-liveness-map name #f))
@@ -530,7 +530,7 @@
          (rewrite-definition name args arg-types return body))
    defns))
 
-(define (rewrite-call-sites type-map liveness-map input-liveness-map form)
+(define (rewrite-call-sites procedure-type-map liveness-map input-liveness-map form)
   (define (procedure? name)
     (hash-table/get liveness-map name #f))
   (define (rewrite-call-site operator operands)
@@ -543,7 +543,7 @@
             the-call
             (let* ((output-names
                     (invent-names-for-parts
-                     'receipt (return-type (type-map operator))))
+                     'receipt (return-type (procedure-type-map operator))))
                    (needed-names
                     (select-masked needed-outputs output-names)))
               (tidy-let-values

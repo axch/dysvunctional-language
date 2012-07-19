@@ -91,7 +91,7 @@
 ;;; (see RECONSTRUCT-PRE-SRA-SHAPE).
 
 (define (%scalar-replace-aggregates program)
-  (let ((lookup-type (type-map program)))
+  (let ((lookup-type (procedure-type-map program)))
     ;; TODO This is not idempotent because if repeated on an entry
     ;; point that has to produce a structure, it will re-SRA the
     ;; reconstruction code and then add more reconstruction code to

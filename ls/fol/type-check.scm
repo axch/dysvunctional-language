@@ -86,7 +86,7 @@
         (check-unique-names
          (map definiendum (except-last-pair (cdr program)))
          "Repeated definition")))
-  (let ((lookup-type (type-map program)))
+  (let ((lookup-type (procedure-type-map program)))
     (define (check-definition-types definition)
       (let ((formals (cadr definition))
             (types (caddr definition))
@@ -329,24 +329,24 @@
 ;;; to type-check FOL, and will also be used for other FOL stages that
 ;;; need to look up type information of FOL procedures.
 
-(define (type-map program)
+(define (procedure-type-map program)
   (define (make-initial-type-map)
     (alist->eq-hash-table
      (map (lambda (prim)
             (cons (primitive-name prim) (primitive-type prim)))
           *primitives*)))
-  (let ((type-map (make-initial-type-map)))
+  (let ((procedure-type-map (make-initial-type-map)))
     (if (begin-form? program)
         (for-each
          (rule `(define ((? name ,fol-var?) (?? formals))
                   (argument-types (?? args) (? return))
                   (? body))
                (hash-table/put!
-                type-map name (function-type args return)))
+                procedure-type-map name (function-type args return)))
          (cdr program))
         'ok)
     (define (lookup-type name)
-      (or (hash-table/get type-map name #f)
+      (or (hash-table/get procedure-type-map name #f)
           (error "Looking up unknown name" name)))
     lookup-type))
 
