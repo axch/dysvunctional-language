@@ -321,7 +321,60 @@
          (error message (car names))))
    names))
 
-;;; A type map maps the name of any FOL procedure to a function-type
+;;; A type map maps the name of any FOL type to an object representing
+;;; that type.  I implement this as a hash table backed procedure that
+;;; returns that information when given the name in question, or #f if
+;;; the given name is not a defined FOL type.  This is useful here to
+;;; type-check FOL, and will also be used for other FOL stages that
+;;; need to look up FOL type information.
+
+(define (type-map program)
+  (let ((type-map (make-eq-hash-table)))
+    (for-each
+     (lambda (basic-type)
+       (hash-table/put! type-map basic-type basic-type))
+     '(real bool gensym escaping-function))
+    (define (check-valid-type-level ok-constructors type)
+      (cond ((fol-var? type)
+             (if (hash-table/get type-map type #f)
+                 'ok
+                 (error "Referencing unknown type name" type)))
+            ((pair? type)
+             (if (not (list? type))
+                 (error "Malformed type spec" type))
+             (if (not (memq (car type) ok-constructors))
+                 (error "Incorrect type constructor" type))
+             (if (and (eq? 'cons (car type)) (not (= 2 (length (cdr type)))))
+                 (error "Wrong size cons" type)))
+            ((null? type) 'ok)
+            (else (error "Malformed type spec" type))))
+    (define (check-valid-anonymous-type type)
+      (check-valid-type-level '(cons vector values) type)
+      (if (pair? type)
+          (for-each check-valid-anonymous-type (cdr type))))
+    (define (check-valid-named-type type)
+      (check-valid-type-level '(structure) type)
+      (if (pair? type)
+          (for-each check-valid-anonymous-type (map cadr (cdr type)))))
+    (if (begin-form? program)
+        (let ((type-defns (filter type-definition? program)))
+          (for-each
+           (lambda (name) (hash-table/put! type-map name #t))
+           (map cadr type-defns))
+          (for-each
+           (lambda (defn)
+             (let ((name (cadr defn))
+                   (body (caddr defn)))
+               (check-valid-named-type body)
+               (hash-table/put! type-map name body)))
+           type-defns))
+        'ok)
+    (define (lookup-type name)
+      (or (hash-table/get type-map name #f)
+          (error "Looking up unknown type name" name)))
+    lookup-type))
+
+;;; A procedure type map maps the name of any FOL procedure to a function-type
 ;;; object representing its argument types and return type.  I
 ;;; implement this as a hash table backed procedure that returns that
 ;;; information when given the name in question, or #f if the given
