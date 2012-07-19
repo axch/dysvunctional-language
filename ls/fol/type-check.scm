@@ -40,6 +40,8 @@
           (type (caddr definition)))
       (if (not (fol-var? name))
           (error "Malformed type name" name))
+      (if (memq name '(real bool gensym escaping-function))
+          (error "Defining a reserved type name"))
       (check-structure-type-syntax type)))
   (define (check-structure-type-syntax type)
     (let ((fields (cdr definition)))
@@ -73,20 +75,32 @@
           (error "Defining a reserved name" (car formals)))
       (for-each
        (lambda (type sub-index)
-         (if (not (fol-shape? type))
+         (if (not (tree-of? fol-var? type))
              (error "Type declaring a non-type"
                     type definition sub-index)))
        (except-last-pair (cdr types))
        (iota (length (cdr formals))))
+      (if (not (tree-of? fol-var? (last types)))
+          (error "Malformed return type declaration" definition))
       (check-unique-names (cdr formals) "Repeated formal parameter")))
+  (define (check-definition-syntax definition)
+    (cond ((type-definition? definition)
+           (check-type-defn-syntax definition))
+          ((procedure-definition? definition)
+           (check-proc-defn-syntax definition))
+          (else (error "Invalid definition type" definition))))
   (if (begin-form? program)
       (begin
-        (for-each check-proc-defn-syntax
+        (for-each check-definition-syntax
                   (except-last-pair (cdr program)))
         (check-unique-names
-         (map definiendum (except-last-pair (cdr program)))
-         "Repeated definition")))
-  (let ((lookup-type (procedure-type-map program)))
+         (map cadr (filter type-definition? program))
+         "Redefining type name")
+        (check-unique-names
+         (map definiendum (filter procedure-definition? program))
+         "Redefining procedure name")))
+  (let* ((defined-type-map (type-map program))
+         (lookup-type (procedure-type-map program)))
     (define (check-definition-types definition)
       (let ((formals (cadr definition))
             (types (caddr definition))
@@ -96,22 +110,22 @@
                 body
                 (augment-type-env! (empty-type-env) (cdr formals)
                                    (arg-types (lookup-type (car formals))))
-                lookup-type
-                inferred-type-map)))
+                defined-type-map lookup-type inferred-type-map)))
           (if (not (equal? (last types) body-type))
               (error "Return type declaration doesn't match"
                      definition (last types) body-type))
           body-type)))
     (define (check-entry-point-types expression)
       (check-expression-types
-       expression (empty-type-env) lookup-type inferred-type-map))
+       expression (empty-type-env)
+       defined-type-map lookup-type inferred-type-map))
     (if (begin-form? program)
         (begin
           (for-each check-definition-types (except-last-pair (cdr program)))
           (check-entry-point-types (last program)))
         (check-entry-point-types program))))
 
-(define (check-expression-types expr env global-type #!optional inferred-type-map)
+(define (check-expression-types expr env defined-type-map global-type #!optional inferred-type-map)
   ;; A type environment maps every bound local name to its type.  The
   ;; global-type procedure returns the (function) type of any global
   ;; name passed to it.  CHECK-EXPRESSION-TYPES either returns the
@@ -367,7 +381,15 @@
                    (body (caddr defn)))
                (check-valid-named-type body)
                (hash-table/put! type-map name body)))
-           type-defns))
+           type-defns)
+          (for-each
+           (rule `(define ((? name ,fol-var?) (?? formals))
+                    (argument-types (?? args) (? return))
+                    (? body))
+                 (begin
+                   (for-each check-valid-anonymous-type args)
+                   (check-valid-anonymous-type return)))
+           program))
         'ok)
     (define (lookup-type name)
       (or (hash-table/get type-map name #f)
