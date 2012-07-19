@@ -33,7 +33,28 @@
 ;; check the syntax and then the typology of the procedure definitions
 ;; the way I do here.
 (define (check-program-types program #!optional inferred-type-map)
-  (define (check-definition-syntax definition)
+  (define (check-type-defn-syntax definition)
+    (if (not (= 3 (length definition)))
+        (error "Malformed type definition" definition))
+    (let ((name (cadr definition))
+          (type (caddr definition)))
+      (if (not (fol-var? name))
+          (error "Malformed type name" name))
+      (check-structure-type-syntax type)))
+  (define (check-structure-type-syntax type)
+    (let ((fields (cdr definition)))
+      (for-each
+       (lambda (field-spec)
+         (if (not (and (list? field-spec)
+                       (= 2 (length field-spec))))
+             (error "Malformed structure field spec" field-spec))
+         (if (not (fol-var? (car field-spec)))
+             (error "Setting a non-name as a structure field" field-spec))
+         (if (not (tree-of? fol-var? (cadr field-spec)))
+             (error "Malformed structure field type" field-spec)))
+       fields)
+      (check-unique-names (map car fields) "Repeated structure field name")))
+  (define (check-proc-defn-syntax definition)
     (if (not (procedure-definition? definition))
         (error "Non-definition in a non-terminal program position"
                definition))
@@ -60,7 +81,7 @@
       (check-unique-names (cdr formals) "Repeated formal parameter")))
   (if (begin-form? program)
       (begin
-        (for-each check-definition-syntax
+        (for-each check-proc-defn-syntax
                   (except-last-pair (cdr program)))
         (check-unique-names
          (map definiendum (except-last-pair (cdr program)))

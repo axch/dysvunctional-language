@@ -18,10 +18,13 @@
 ;;; corresponding fully-expanded tree of VECTOR, CONS, etc.
 ;;; Thereafter, the structure definitions can be dropped.
 
+(define type-definition? (tagged-list? 'define-type))
+
+(define structure-type? (tagged-list? 'structure))
+
 (define (structure-definition? form)
-  (and (pair? form)
-       (eq? (car form) 'define-type)
-       (eq? (car (caddr form)) 'structure)))
+  (and (type-definition? form)
+       (structure-type? (caddr form))))
 ;; Wins with the name and the slot-type list of the structure
 ;; definition.
 (define-algebraic-matcher
