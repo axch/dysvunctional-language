@@ -30,7 +30,7 @@
     (define (inline? name)
       (not (not (walked-body name))))
     (define (not-inline? form)
-      (or (not (definition? form))
+      (or (not (procedure-definition? form))
           (not (inline? (definiendum form)))))
     (define (walk expression)
       ((on-subexpressions
@@ -85,7 +85,7 @@
              (filter-tree defined-name? (entry-point program))))))
   (cons
    entry-point-vertex
-   (map defn-vertex (filter definition? program))))
+   (map defn-vertex (filter procedure-definition? program))))
 
 ;;; The actual greedy graph algorithm is implemented by
 ;;; ACCEPTABLE-INLINEES in inlinees.scm.  So the toplevel inliner just
@@ -130,7 +130,7 @@
     (alist->eq-hash-table
      (map (lambda (defn)
             (cons (definiendum defn) defn))
-          (filter definition? program))))
+          (filter procedure-definition? program))))
   (lambda (name)
     (hash-table/get defn-map name #f)))
 

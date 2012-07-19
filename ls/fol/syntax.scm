@@ -21,10 +21,10 @@
 
 ;;; Define
 
-(define definition? (tagged-list? 'define))
+(define procedure-definition? (tagged-list? 'define))
 
 (define (normalize-definition definition)
-  (cond ((not (definition? definition))
+  (cond ((not (procedure-definition? definition))
          (error "Trying to normalize a non-definition" definition))
         ((pair? (cadr definition))
          (normalize-definition
@@ -48,7 +48,7 @@
             ,@body))))
 
 ;; Wins with formals, type declaration, and body
-(define-algebraic-matcher definition definition? cadr caddr cadddr)
+(define-algebraic-matcher definition procedure-definition? cadr caddr cadddr)
 
 ;;; Simple forms
 
@@ -193,7 +193,7 @@
   (let* ((program (if (begin-form? program)
                       program
                       `(begin ,program)))
-         (defns (filter definition? program))
+         (defns (filter procedure-definition? program))
          (defn-count (length defns))
          (structure-defns (filter structure-definition? program))
          (struct-count (length structure-defns)))
@@ -220,7 +220,7 @@
   (let* ((program (if (begin-form? program)
                       program
                       `(begin ,program)))
-         (defns (filter definition? program))
+         (defns (filter procedure-definition? program))
          (defn-stats (map defn-statistics defns))
          (body-sizes (cons (count-pairs (last program))
                            (map cadr defn-stats)))

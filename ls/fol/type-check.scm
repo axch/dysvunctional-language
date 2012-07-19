@@ -34,7 +34,7 @@
 ;; the way I do here.
 (define (check-program-types program #!optional inferred-type-map)
   (define (check-definition-syntax definition)
-    (if (not (definition? definition))
+    (if (not (procedure-definition? definition))
         (error "Non-definition in a non-terminal program position"
                definition))
     (if (not (= 4 (length definition)))
