@@ -67,6 +67,8 @@
       (lift-lets-expression program)))
 
 (define lift-lets-definition
+  ;; By a fortunate coincidence, this does exactly the right thing
+  ;; with type definitions -- nothing.
   (rule `(define (? formals)
            (argument-types (?? stuff))
            (? body))
