@@ -54,6 +54,9 @@
            (reconstitute-definition
             `(define ,(definiendum exp)
                ,(loop (definiens exp)))))
+          ((type-definition? exp)
+           ;; Type names are global anyway, in their own namespace
+           exp)
           ((pair? exp)
            (cons (loop (car exp))
                  (loop (cdr exp))))
@@ -96,6 +99,9 @@
                  (name2 (definiendum exp2)))
              (and (loop name1 name2 env)
                   (loop (definiens exp1) (definiens exp2) env))))
+          ((and (type-definition? exp1) (type-definition? exp2))
+           ;; TODO Accept alpha renamings of types as well?
+           (equal? exp1 exp2))
           ((and (pair? exp1) (pair? exp2))
            (and (loop (car exp1) (car exp2) env)
                 (loop (cdr exp1) (cdr exp2) env)))

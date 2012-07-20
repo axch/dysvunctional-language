@@ -73,9 +73,7 @@
 (define-stage alpha-rename
   %alpha-rename
   (generates unique-names)
-  (requires syntax-checked)
-  ;; TODO Remove this dependency
-  (requires structures-as-vectors))
+  (requires syntax-checked))
 
 (define-stage a-normal-form
   approximate-anf
