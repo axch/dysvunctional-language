@@ -294,18 +294,6 @@
       (return-type (global-type (car expr)))))
   (loop expr env))
 
-(define (fol-shape? thing)
-  ;; This will need to be updated when union types appear
-  (or (null? thing)
-      (and (fol-var? thing)
-           (memq thing '(real bool gensym escaping-function)))
-      (and (list? thing)
-           (> (length thing) 0)
-           (memq (car thing) '(cons vector values))
-           (or (not (eq? 'cons (car thing)))
-               (= 2 (length (cdr thing))))
-           (every fol-shape? (cdr thing)))))
-
 (define (empty-type-env) (make-strong-eq-hash-table))
 (define (augment-type-env! env names shapes)
   (for-each (lambda (name shape)
