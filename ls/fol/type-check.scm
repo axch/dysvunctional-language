@@ -124,7 +124,7 @@
           (check-unique-names
            (append (map definiendum (filter procedure-definition? program))
                    (map car (implicit-procedures defined-type-map)))
-           "User procedure name clashes with implicit procedure name")
+           "Name clash involving implicit procedure")
           (for-each check-definition-types (filter procedure-definition? program))
           (check-entry-point-types (last program)))
         (check-entry-point-types program))))
