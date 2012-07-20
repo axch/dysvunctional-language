@@ -187,9 +187,7 @@
   %reverse-anf
   ;; TODO Does it really preserve lets-lifted?
   (destroys a-normal-form)
-  (requires syntax-checked unique-names)
-  ;; TODO Remove this dependency
-  (requires structures-as-vectors))
+  (requires syntax-checked unique-names))
 
 ;;; Standard ordering
 
