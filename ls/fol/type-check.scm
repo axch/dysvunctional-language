@@ -110,7 +110,7 @@
                 body
                 (augment-type-env! (empty-type-env) (cdr formals)
                                    (arg-types (lookup-type (car formals))))
-                defined-type-map lookup-type inferred-type-map)))
+                lookup-type inferred-type-map)))
           (if (not (equal? (last types) body-type))
               (error "Return type declaration doesn't match"
                      definition (last types) body-type))
@@ -118,21 +118,22 @@
     (define (check-entry-point-types expression)
       (check-expression-types
        expression (empty-type-env)
-       defined-type-map lookup-type inferred-type-map))
+       lookup-type inferred-type-map))
     (if (begin-form? program)
         (begin
           (for-each check-definition-types (filter procedure-definition? program))
           (check-entry-point-types (last program)))
         (check-entry-point-types program))))
 
-(define (check-expression-types expr env defined-type-map global-type #!optional inferred-type-map)
+(define (check-expression-types expr env global-type #!optional inferred-type-map)
   ;; A type environment maps every bound local name to its type.  The
   ;; global-type procedure returns the (function) type of any global
   ;; name passed to it.  CHECK-EXPRESSION-TYPES either returns the
   ;; type of the expression or signals an error if the expression is
   ;; either malformed or not type correct.
-  ;; For this purpose, a VALUES is the same as any other polymorphic-construction,
-  ;; but in other contexts they may need to be distinguished.
+  ;; For this purpose, a VALUES is the same as any other polymorphic
+  ;; construction, but in other contexts they may need to be
+  ;; distinguished.
   (define (polymorphic-construction? expr)
     (and (pair? expr)
          (memq (car expr) '(cons vector values))))
@@ -278,6 +279,8 @@
                  expr))
       (for-each
        (lambda (expected given index)
+         ;; TODO Type aliases for named or cons types would break this
+         ;; test.
          (if (not (equal? expected given))
              (error "Mismatched argument at function call"
                     expr index expected given)))
