@@ -68,8 +68,7 @@
 (define-stage check-fol-types
   check-program-types
   (computes type)
-  (generates syntax-checked)
-  (requires structures-as-vectors))
+  (generates syntax-checked))
 
 (define-stage alpha-rename
   %alpha-rename
