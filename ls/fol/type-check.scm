@@ -44,7 +44,7 @@
           (error "Defining a reserved type name"))
       (check-structure-type-syntax type)))
   (define (check-structure-type-syntax type)
-    (let ((fields (cdr definition)))
+    (let ((fields (cdr type)))
       (for-each
        (lambda (field-spec)
          (if (not (and (list? field-spec)
@@ -100,7 +100,7 @@
          (map definiendum (filter procedure-definition? program))
          "Redefining procedure name")))
   (let* ((defined-type-map (type-map program))
-         (lookup-type (procedure-type-map program)))
+         (lookup-type (procedure-type-map program defined-type-map)))
     (define (check-definition-types definition)
       (let ((formals (cadr definition))
             (types (caddr definition))
@@ -121,7 +121,7 @@
        defined-type-map lookup-type inferred-type-map))
     (if (begin-form? program)
         (begin
-          (for-each check-definition-types (except-last-pair (cdr program)))
+          (for-each check-definition-types (filter procedure-definition? program))
           (check-entry-point-types (last program)))
         (check-entry-point-types program))))
 
@@ -336,10 +336,8 @@
    names))
 
 ;;; A type map maps the name of any FOL type to an object representing
-;;; that type.  I implement this as a hash table backed procedure that
-;;; returns that information when given the name in question, or #f if
-;;; the given name is not a defined FOL type.  This is useful here to
-;;; type-check FOL, and will also be used for other FOL stages that
+;;; that type.  I implement this as a hash table.  This is useful here
+;;; to type-check FOL, and will also be used for other FOL stages that
 ;;; need to look up FOL type information.
 
 (define (type-map program)
@@ -391,10 +389,27 @@
                    (check-valid-anonymous-type return)))
            program))
         'ok)
-    (define (lookup-type name)
-      (or (hash-table/get type-map name #f)
-          (error "Looking up unknown type name" name)))
-    lookup-type))
+    type-map))
+
+;;; Every structure type defintion of the form (define-type foo (bar real))
+;;; defines implicit constructor and accessor procedures, in this case
+;;; make-foo :: real -> foo and foo-bar :: foo -> real.  This function
+;;; computes the names and types of those procedures from a type map.
+(define (implicit-procedures type-map)
+  (append-map
+   (lambda (pair)
+     (let ((name (car pair))
+           (type (cdr pair)))
+       (if (structure-type? type)
+           (let ((fields (map car (cdr type)))
+                 (types (map cadr (cdr type))))
+             `((,(symbol 'make- name) . ,(function-type types name))
+               ,@(map (lambda (field type)
+                        (cons (symbol name '- field)
+                              (function-type (list name) type)))
+                      fields types)))
+           '())))
+   (hash-table->alist type-map)))
 
 ;;; A procedure type map maps the name of any FOL procedure to a function-type
 ;;; object representing its argument types and return type.  I
@@ -404,13 +419,17 @@
 ;;; to type-check FOL, and will also be used for other FOL stages that
 ;;; need to look up type information of FOL procedures.
 
-(define (procedure-type-map program)
+;; TODO require the type map argument when all call sites supply it.
+(define (procedure-type-map program #!optional type-map)
   (define (make-initial-type-map)
     (alist->eq-hash-table
      (map (lambda (prim)
             (cons (primitive-name prim) (primitive-type prim)))
           *primitives*)))
   (let ((procedure-type-map (make-initial-type-map)))
+    (if (not (default-object? type-map))
+        (hash-table/put-alist!
+         procedure-type-map (implicit-procedures type-map)))
     (if (begin-form? program)
         (for-each
          (rule `(define ((? name ,fol-var?) (?? formals))
