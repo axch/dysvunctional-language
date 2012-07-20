@@ -74,7 +74,9 @@
 (define-stage alpha-rename
   %alpha-rename
   (generates unique-names)
-  (requires syntax-checked))
+  (requires syntax-checked)
+  ;; TODO Remove this dependency
+  (requires structures-as-vectors))
 
 (define-stage a-normal-form
   approximate-anf
@@ -82,13 +84,17 @@
   (destroys lets-lifted) ; Because of multiple argument procedures
   ;; By naming new things that may be common
   (destroys no-common-subexpressions)
-  (requires syntax-checked))
+  (requires syntax-checked)
+  ;; TODO Remove this dependency
+  (requires structures-as-vectors))
 
 (define-stage lift-lets
   %lift-lets
   (generates lets-lifted)
   ;; TODO Does it really preserve a-normal-form ?
   (requires syntax-checked unique-names)
+  ;; TODO Remove this dependency
+  (requires structures-as-vectors)
   (requires a-normal-form)   ; Just because I'm lazy
   ;; By splitting lets
   (destroys no-common-subexpressions))
@@ -123,6 +129,8 @@
   %scalar-replace-aggregates
   ;; TODO Does it require unique-names?
   (requires syntax-checked a-normal-form)
+  ;; TODO Remove this dependency
+  (requires structures-as-vectors)
   (generates aggregates-replaced)
   ;; Because of the reconstruction
   (sra-may-destroy aggregates-replaced)
@@ -137,6 +145,8 @@
 (define-stage intraprocedural-cse
   %intraprocedural-cse
   (requires syntax-checked)
+  ;; TODO Remove this dependency
+  (requires structures-as-vectors)
   (requires unique-names) ; Because it does some internal let-lifting
   ;; These two requirements are not really requirements, but it works
   ;; much better this way.
@@ -155,6 +165,8 @@
   (generates no-intraprocedural-dead-variables)
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
+  ;; TODO Remove this dependency
+  (requires structures-as-vectors)
   ;; Because of inserting let-values around procedure calls
   (destroys lets-lifted)
   )
@@ -169,6 +181,8 @@
   interprocedural-dead-code-elimination
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
+  ;; TODO Remove this dependency
+  (requires structures-as-vectors)
   (generates no-interprocedural-dead-variables)
   ;; By running intraprocedural as a post-pass
   (generates no-intraprocedural-dead-variables)
@@ -180,7 +194,9 @@
   %reverse-anf
   ;; TODO Does it really preserve lets-lifted?
   (destroys a-normal-form)
-  (requires syntax-checked unique-names))
+  (requires syntax-checked unique-names)
+  ;; TODO Remove this dependency
+  (requires structures-as-vectors))
 
 ;;; Standard ordering
 
