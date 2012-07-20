@@ -54,6 +54,7 @@
 
 (define (approximate-anf expr)
   (define-algebraic-matcher begin-form begin-form? id-project)
+  (define-algebraic-matcher type-definition type-definition? id-project)
   (define-case* loop
     ((simple-form expr) expr)
     (if-form => approximate-anf-if)
@@ -62,6 +63,7 @@
     (lambda-form => approximate-anf-lambda)
     ((begin-form expr) (map loop expr))
     (definition => approximate-anf-definition)
+    ((type-definition expr) expr)
     (expr   ; access, construction, application, or multiple value return
      (approximate-anf-application expr)))
   (define (approximate-anf-if pred cons alt)

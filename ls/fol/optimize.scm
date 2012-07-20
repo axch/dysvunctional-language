@@ -81,9 +81,7 @@
   (destroys lets-lifted) ; Because of multiple argument procedures
   ;; By naming new things that may be common
   (destroys no-common-subexpressions)
-  (requires syntax-checked)
-  ;; TODO Remove this dependency
-  (requires structures-as-vectors))
+  (requires syntax-checked))
 
 (define-stage lift-lets
   %lift-lets
