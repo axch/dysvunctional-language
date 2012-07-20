@@ -131,9 +131,9 @@
   ;; name passed to it.  CHECK-EXPRESSION-TYPES either returns the
   ;; type of the expression or signals an error if the expression is
   ;; either malformed or not type correct.
-  ;; For this purpose, a VALUES is the same as any other construction,
+  ;; For this purpose, a VALUES is the same as any other polymorphic-construction,
   ;; but in other contexts they may need to be distinguished.
-  (define (construction? expr)
+  (define (polymorphic-construction? expr)
     (and (pair? expr)
          (memq (car expr) '(cons vector values))))
   (define (loop expr env)
@@ -152,7 +152,7 @@
           ((lambda-form? expr) (check-lambda-types expr env))
           ((cons-ref? expr) (check-cons-ref-types expr env))
           ((vector-ref? expr) (check-vector-ref-types expr env))
-          ((construction? expr) (check-construction-types expr env))
+          ((polymorphic-construction? expr) (check-polymorphic-construction-types expr env))
           (else (check-application-types expr env))))
   (define (check-if-types expr env)
     (if (not (= 4 (length expr)))
@@ -258,7 +258,7 @@
           (error "Index out of bounds"
                  (caddr expr) accessee-type))
       (select-from-shape-by-access accessee-type expr)))
-  (define (check-construction-types expr env)
+  (define (check-polymorphic-construction-types expr env)
     (let ((element-types (map (lambda (exp) (loop exp env)) (cdr expr))))
       (for-each
        (lambda (element-type index)
