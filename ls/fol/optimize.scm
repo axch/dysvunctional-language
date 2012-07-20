@@ -143,13 +143,13 @@
 
 (define-stage intraprocedural-cse
   %intraprocedural-cse
-  (requires syntax-checked)
   ;; TODO Remove this dependency
   (requires structures-as-vectors)
-  (requires unique-names) ; Because it does some internal let-lifting
   ;; These two requirements are not really requirements, but it works
   ;; much better this way.
   (requires a-normal-form lets-lifted)
+  (requires unique-names) ; Because it does some internal let-lifting
+  (requires syntax-checked)
   (generates no-common-subexpressions)
   ;; By leaving some dead aliases around
   (destroys no-intraprocedural-dead-variables

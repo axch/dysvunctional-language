@@ -255,9 +255,10 @@
                       (fact 5)))
    (present! 'lets-lifted program)
    (present! 'unique-names program)
+   (check-fol-types program)
    (for-each (lambda (stage)
                (stage program)
-               (check (equal? '((unique-names . #t) (lets-lifted . #t))
+               (check (equal? '((syntax-checked . #t) (type . real) (unique-names . #t) (lets-lifted . #t))
                               (hash-table/get eq-properties program #f))))
              (list inline intraprocedural-cse
                    eliminate-intraprocedural-dead-code
