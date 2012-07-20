@@ -21,6 +21,13 @@
        (fiction 4)))
 
    (equal?
+    'real
+    (check-program-types
+     '(begin
+        (define-type foo (structure (bar real) (baz real)))
+        (foo-bar (make-foo 1 2)))))
+
+   (equal?
     '(vector-ref (vector 1 2) 0)
     (structure-definitions->vectors
      '(begin
