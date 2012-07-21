@@ -319,6 +319,9 @@
           (reverse-lookup env accessee
            (lambda (held-value)
              (if (construction? held-value)
+                 ;; Assume it was a construction of the same type as
+                 ;; is accessed, because the type checker should
+                 ;; ensure this.
                  (let ((candidate
                         ;; It's not really "from shape" here, but
                         ;; let's pick out the accessed field.
