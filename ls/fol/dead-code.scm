@@ -197,6 +197,11 @@
                     `(values ,@new-elts))
                 (var-set-union* elts-need)))))
   (define (eliminate-in-application operator operands live-out)
+    ;; This will include calls to the implicit procedures defined by
+    ;; structure definitions, but that turns out to be OK.  I could
+    ;; also reuse the hack CSE used to communicate with itself to
+    ;; reclassify implicit constructions and accesses as constructions
+    ;; and accesses, respectively.
     (receive (new-args args-need) (loop* operands)
       (define (all-wanted? live-out)
         (or (equal? live-out #t)

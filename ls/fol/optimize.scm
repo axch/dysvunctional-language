@@ -156,8 +156,6 @@
   (generates no-intraprocedural-dead-variables)
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
-  ;; TODO Remove this dependency
-  (requires structures-as-vectors)
   ;; Because of inserting let-values around procedure calls
   (destroys lets-lifted)
   )
