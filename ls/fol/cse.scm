@@ -143,10 +143,19 @@
              (argument-types ,@stuff)
              ,(cse-expression body (fresh-cse-env formals)))))
   (if (begin-form? program)
-      (append
-       (map cse-definition (except-last-pair program))
-       (list (cse-entry-point (last program))))
+      (fluid-let ((*accessor-constructor-map* (accessor-constructor-map program))
+                  (*implicit-pure-procedures* (map car (implicit-procedures (type-map program)))))
+        (append
+         (map cse-definition (except-last-pair program))
+         (list (cse-entry-point (last program)))))
       (cse-entry-point program)))
+
+;;; TODO These global variables are horrible hacks, added because in
+;;; the presence of user structures, the set of accessors and
+;;; constructors is open; but I don't want to modify the existing code
+;;; to carry that information until I know I am using it properly.
+(define *accessor-constructor-map* #f)
+(define *implicit-pure-procedures* #f)
 
 (define (cse-expression expr env)
   ;; A CSE environment maps every symbolic expression to the name of
@@ -346,8 +355,10 @@
   (define (simplify expr)
     (simplify-arithmetic (simplify-access expr)))
   (define (user-procedure? operator)
-    (not (memq operator (append '(cons car cdr vector vector-ref)
-                                (map primitive-name *primitives*)))))
+    (not (or (memq operator (append '(cons car cdr vector vector-ref)
+                                    (map primitive-name *primitives*)))
+             (and *implicit-pure-procedures*
+                  (memq operator *implicit-pure-procedures*)))))
   (simplify
    (cond ((memq operator
                 (cons 'real ; REAL is "statically" but not "dynamically" impure
@@ -448,6 +459,32 @@
       ;; non-constant canonical name (which is because #f, being
       ;; constant, is always its own canonical name).
       (forward-get env name #f)))
+
+;;; TODO compare structures-map in structs.scm and implicit-procedures
+;;; in type-check.scm.
+(define (accessor-constructor-map program)
+  (let* ((structure-definitions (filter structure-definition? program))
+         (structure-names (map cadr structure-definitions))
+         (structure-map (make-eq-hash-table)))
+    (hash-table/put-alist!
+     structure-map
+     (map (lambda-case*
+           ((structure-definition name _)
+            (cons (symbol 'make- name) 'constructor)))
+          structure-definitions))
+    (hash-table/put-alist!
+     structure-map
+     (append-map
+      (lambda-case*
+       ((structure-definition name fields)
+        (map (lambda (field index)
+               (cons (symbol name '- field) index))
+             (map car fields)
+             (iota (length fields)))))
+      structure-definitions))
+    (define (classify name)
+      (hash-table/get structure-map name #f))
+    classify))
 
 ;;; To do interprocedural must-alias analysis and alias elimination, I
 ;;; have to proceed as follows:

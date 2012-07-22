@@ -154,7 +154,8 @@
 
 (define (accessor? expr)
   (or (cons-ref? expr)
-      (vector-ref? expr)))
+      (vector-ref? expr)
+      (implicit-acessor? expr)))
 ; Produces accessor, object, and extra (that being either a null or a
 ; list containing the index for vector-ref).
 (define-algebraic-matcher accessor accessor? car cadr cddr)
@@ -165,10 +166,21 @@
 
 (define vector-ref? (tagged-list? 'vector-ref))
 
-(define (construction? expr)
+(define (implicit-acessor? expr)
   (and (pair? expr)
-       (memq (car expr) '(cons vector))))
+       *accessor-constructor-map*
+       (integer? (*accessor-constructor-map* (car expr)))))
+
+(define (construction? expr)
+  (or (and (pair? expr)
+           (memq (car expr) '(cons vector)))
+      (implicit-construction? expr)))
 (define-algebraic-matcher construction construction? car cdr)
+
+(define (implicit-construction? expr)
+  (and (pair? expr)
+       *accessor-constructor-map*
+       (eq? 'constructor (*accessor-constructor-map* (car expr)))))
 
 (define values-form? (tagged-list? 'values))
 (define-algebraic-matcher values-form values-form? cdr)

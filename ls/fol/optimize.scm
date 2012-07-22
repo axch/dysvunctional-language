@@ -137,8 +137,6 @@
 
 (define-stage intraprocedural-cse
   %intraprocedural-cse
-  ;; TODO Remove this dependency
-  (requires structures-as-vectors)
   ;; These two requirements are not really requirements, but it works
   ;; much better this way.
   (requires a-normal-form lets-lifted)

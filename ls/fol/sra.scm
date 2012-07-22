@@ -384,4 +384,8 @@
         ((eq? (car access-form) 'cdr)
          (caddr old-shape))
         ((eq? (car access-form) 'vector-ref)
-         (list-ref (cdr old-shape) (caddr access-form)))))
+         (list-ref (cdr old-shape) (caddr access-form)))
+        ((and *accessor-constructor-map*
+              (integer? (*accessor-constructor-map* (car access-form))))
+         (list-ref (cdr old-shape) (*accessor-constructor-map* (car access-form))))
+        (else (error "Not a valid accessor" (car access-form)))))
