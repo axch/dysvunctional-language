@@ -368,16 +368,23 @@
             `(values ,@(drop the-subforms
                              (count-meaningful-parts (cadr old-shape)))))
            ((eq? (car access-form) 'vector-ref)
-            (let loop ((index-left (caddr access-form))
-                       (names-left the-subforms)
-                       (shape-left (cdr old-shape)))
-              (if (= 0 index-left)
-                  `(values ,@(take names-left
-                                   (count-meaningful-parts (car shape-left))))
-                  (loop (- index-left 1)
-                        (drop names-left
-                              (count-meaningful-parts (car shape-left)))
-                        (cdr shape-left)))))))))
+            (slice-values-by-index (caddr access-form) the-subforms (cdr old-shape)))
+           ((and *accessor-constructor-map*
+                 (integer? (*accessor-constructor-map* (car access-form))))
+            (slice-values-by-index (*accessor-constructor-map* (car access-form))
+                                   the-subforms (cdr old-shape)))
+           (else (error "Invalid accessor" (car access-form)))))))
+(define (slice-values-by-index index names shape)
+  (let loop ((index-left index)
+             (names-left names)
+             (shape-left shape))
+    (if (= 0 index-left)
+        `(values ,@(take names-left
+                         (count-meaningful-parts (car shape-left))))
+        (loop (- index-left 1)
+              (drop names-left
+                    (count-meaningful-parts (car shape-left)))
+              (cdr shape-left)))))
 (define (select-from-shape-by-access old-shape access-form)
   (cond ((eq? (car access-form) 'car)
          (cadr old-shape))
