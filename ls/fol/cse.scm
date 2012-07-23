@@ -463,28 +463,30 @@
 ;;; TODO compare structures-map in structs.scm and implicit-procedures
 ;;; in type-check.scm.
 (define (accessor-constructor-map program)
-  (let* ((structure-definitions (filter structure-definition? program))
-         (structure-names (map cadr structure-definitions))
-         (structure-map (make-eq-hash-table)))
-    (hash-table/put-alist!
-     structure-map
-     (map (lambda-case*
-           ((structure-definition name _)
-            (cons (symbol 'make- name) 'constructor)))
+  (if (begin-form? program)
+      (let* ((structure-definitions (filter structure-definition? program))
+             (structure-names (map cadr structure-definitions))
+             (structure-map (make-eq-hash-table)))
+        (hash-table/put-alist!
+         structure-map
+         (map (lambda-case*
+               ((structure-definition name _)
+                (cons (symbol 'make- name) 'constructor)))
+              structure-definitions))
+        (hash-table/put-alist!
+         structure-map
+         (append-map
+          (lambda-case*
+           ((structure-definition name fields)
+            (map (lambda (field index)
+                   (cons (symbol name '- field) index))
+                 (map car fields)
+                 (iota (length fields)))))
           structure-definitions))
-    (hash-table/put-alist!
-     structure-map
-     (append-map
-      (lambda-case*
-       ((structure-definition name fields)
-        (map (lambda (field index)
-               (cons (symbol name '- field) index))
-             (map car fields)
-             (iota (length fields)))))
-      structure-definitions))
-    (define (classify name)
-      (hash-table/get structure-map name #f))
-    classify))
+        (define (classify name)
+          (hash-table/get structure-map name #f))
+        classify)
+      (lambda (x) #f)))
 
 ;;; To do interprocedural must-alias analysis and alias elimination, I
 ;;; have to proceed as follows:
