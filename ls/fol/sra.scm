@@ -131,8 +131,9 @@
   ;; return before SRA.
   ;; For this purpose, a VALUES is the same as any other construction.
   (define (construction? expr)
-    (and (pair? expr)
-         (memq (car expr) '(cons vector values))))
+    (or (and (pair? expr)
+             (memq (car expr) '(cons vector values)))
+        (implicit-construction? expr)))
   (define-algebraic-matcher construction construction? car cdr)
   (define (loop expr env)
     (case* expr
