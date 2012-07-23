@@ -114,11 +114,12 @@
                   ,(tidy-values `(values ,@(primitive-fringe return))))
                  ,(sra-expression body env lookup-type
                                   (lambda (new-body shape) new-body))))))
-    (if (begin-form? program)
-        (append
-         (map sra-definition (except-last-pair program))
-         (list (sra-entry-point (last program))))
-        (sra-entry-point program))))
+    (fluid-let ((*accessor-constructor-map* (accessor-constructor-map program)))
+      (if (begin-form? program)
+          (append
+           (map sra-definition (except-last-pair program))
+           (list (sra-entry-point (last program))))
+          (sra-entry-point program)))))
 
 (define (sra-expression expr env lookup-type win)
   ;; An SRA environment maps every bound name to two things: the shape
