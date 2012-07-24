@@ -291,7 +291,7 @@
            (values (car names) (cdr names)))
           ((null? shape)
            (values '() names))
-          ((construction? (car shape))
+          ((construction? shape)
            (receive (new-exprs names-left) (walk* (cdr shape) names)
              (values `(,(car shape) ,@new-exprs) names-left)))
           (else
