@@ -334,7 +334,7 @@
                  (let ((candidate
                         ;; It's not really "from shape" here, but
                         ;; let's pick out the accessed field.
-                        (select-from-shape-by-access held-value expr)))
+                        (select-by-access held-value expr)))
                    ;; If the canonical name for that accessed field is
                    ;; still in scope, then the current expression can
                    ;; be replaced by it.

@@ -114,12 +114,16 @@
                   ,(tidy-values `(values ,@(primitive-fringe return))))
                  ,(sra-expression body env lookup-type
                                   (lambda (new-body shape) new-body))))))
-    (fluid-let ((*accessor-constructor-map* (accessor-constructor-map program)))
+    (fluid-let ((*accessor-constructor-map* (accessor-constructor-map program))
+                (*type-map* (type-map program)))
       (if (begin-form? program)
           (append
            (map sra-definition (except-last-pair program))
            (list (sra-entry-point (last program))))
           (sra-entry-point program)))))
+
+;; TODO this is another instance of the hack described in cse.scm.
+(define *type-map* #f)
 
 (define (sra-expression expr env lookup-type win)
   ;; An SRA environment maps every bound name to two things: the shape
@@ -340,7 +344,13 @@
          (cdr shape))
         ((values-form? shape)
          (cdr shape))
-        (else (list shape))))
+        ((primitive-shape? shape)
+         (list shape))
+        ((structure-type? shape)
+         (map cadr (cdr shape)))
+        ((and *type-map* (hash-table/get *type-map* shape #f))
+         (sra-parts (hash-table/get *type-map* shape #f)))
+        (else (error "Weird shape" shape))))
 (define (invent-names-for-parts basename shape)
   (let ((count (count-meaningful-parts shape)))
     (if (= 1 count)
@@ -356,20 +366,21 @@
 (define (construct-shape subshapes kind)
   `(,kind ,@subshapes))
 (define (slice-values-by-access values-form old-shape access-form)
-  (let ((the-subforms (smart-values-subforms values-form)))
+  (let ((the-subforms (smart-values-subforms values-form))
+        (old-shape-parts (sra-parts old-shape)))
     (tidy-values
      (cond ((eq? (car access-form) 'car)
             `(values ,@(take the-subforms
-                             (count-meaningful-parts (cadr old-shape)))))
+                             (count-meaningful-parts (car old-shape-parts)))))
            ((eq? (car access-form) 'cdr)
             `(values ,@(drop the-subforms
-                             (count-meaningful-parts (cadr old-shape)))))
+                             (count-meaningful-parts (car old-shape-parts)))))
            ((eq? (car access-form) 'vector-ref)
-            (slice-values-by-index (caddr access-form) the-subforms (cdr old-shape)))
+            (slice-values-by-index (caddr access-form) the-subforms old-shape-parts))
            ((and *accessor-constructor-map*
                  (integer? (*accessor-constructor-map* (car access-form))))
             (slice-values-by-index (*accessor-constructor-map* (car access-form))
-                                   the-subforms (cdr old-shape)))
+                                   the-subforms old-shape-parts))
            (else (error "Invalid accessor" (car access-form)))))))
 (define (slice-values-by-index index names shape)
   (let loop ((index-left index)
@@ -382,14 +393,16 @@
               (drop names-left
                     (count-meaningful-parts (car shape-left)))
               (cdr shape-left)))))
-(define (select-from-shape-by-access old-shape access-form)
+(define (select-by-access thing access-form)
   (cond ((eq? (car access-form) 'car)
-         (cadr old-shape))
+         (cadr thing))
         ((eq? (car access-form) 'cdr)
-         (caddr old-shape))
+         (caddr thing))
         ((eq? (car access-form) 'vector-ref)
-         (list-ref (cdr old-shape) (caddr access-form)))
+         (list-ref (cdr thing) (caddr access-form)))
         ((and *accessor-constructor-map*
               (integer? (*accessor-constructor-map* (car access-form))))
-         (list-ref (cdr old-shape) (*accessor-constructor-map* (car access-form))))
+         (list-ref (cdr thing) (*accessor-constructor-map* (car access-form))))
         (else (error "Not a valid accessor" (car access-form)))))
+(define (select-from-shape-by-access old-shape access-form)
+  (select-by-access (cons 'dummy (sra-parts old-shape)) access-form))

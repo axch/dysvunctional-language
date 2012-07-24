@@ -122,8 +122,6 @@
   %scalar-replace-aggregates
   ;; TODO Does it require unique-names?
   (requires syntax-checked a-normal-form)
-  ;; TODO Remove this dependency
-  (requires structures-as-vectors)
   (generates aggregates-replaced)
   ;; Because of the reconstruction
   (sra-may-destroy aggregates-replaced)
