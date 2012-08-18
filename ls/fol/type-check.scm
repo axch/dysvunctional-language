@@ -447,3 +447,29 @@
          (and (equal-type? (car type1) (car type2))
               (equal-type? (cdr type1) (cdr type2))))
         (else (equal? type1 type2))))
+
+;;;; Types
+
+;;; Some procedures for manipulating (the syntactic structure of) FOL
+;;; types.
+
+; primitive-shape? -> primitive-type?
+; sra-parts -> type-factors (factors are different from terms)
+; primitive-fringe -> factor-fringe
+
+(define (primitive-type? type)
+  (or (function-type? type)
+      (memq type '(real bool gensym escaping-function))))
+
+(define (type-factors type)
+  (cond ((construction? type)
+         (cdr type))
+        ((values-form? type)
+         (cdr type))
+        ((primitive-type? type)
+         (list type))
+        ((structure-type? type)
+         (map cadr (cdr type)))
+        ((and *type-map* (hash-table/get *type-map* type #f))
+         (type-factors (hash-table/get *type-map* type #f)))
+        (else (error "Weird type" type))))

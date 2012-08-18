@@ -521,7 +521,7 @@
             (if all-outs-needed?
                 the-body ; All the outs of the entry point will always be needed
                 (let ((output-names
-                       (invent-names-for-parts 'receipt return)))
+                       (invent-names-for-factors 'receipt return)))
                   (tidy-let-values
                    `(let-values ((,output-names ,the-body))
                       ,(tidy-values
@@ -547,7 +547,7 @@
         (if all-outs-needed?
             the-call
             (let* ((output-names
-                    (invent-names-for-parts
+                    (invent-names-for-factors
                      'receipt (return-type (procedure-type-map operator))))
                    (needed-names
                     (select-masked needed-outputs output-names)))

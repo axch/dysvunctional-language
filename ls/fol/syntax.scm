@@ -191,6 +191,15 @@
       (cadr exp)
       exp))
 
+(define (smart-values-subforms form)
+  (if (values-form? form)
+      (cdr form)
+      (list form)))
+
+(define (append-values values-forms)
+  (tidy-values
+   `(values ,@(append-map smart-values-subforms values-forms))))
+
 ;;; Measurements
 
 (define (print-fol-size program)
