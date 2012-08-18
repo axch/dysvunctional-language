@@ -249,7 +249,7 @@
           (if (eq? 'car (car expr))
               (error "Taking the CAR of a non-CONS" accessee-type)
               (error "Taking the CDR of a non-CONS" accessee-type)))
-      (select-from-shape-by-access accessee-type expr)))
+      (select-by-access accessee-type expr)))
   (define (check-vector-ref-types expr env)
     (if (not (= (length expr) 3))
         (error "Malformed vector reference" expr))
@@ -262,7 +262,7 @@
       (if (not (< (caddr expr) (length (cdr accessee-type))))
           (error "Index out of bounds"
                  (caddr expr) accessee-type))
-      (select-from-shape-by-access accessee-type expr)))
+      (select-by-access accessee-type expr)))
   (define (check-polymorphic-construction-types expr env)
     (let ((element-types (map (lambda (exp) (loop exp env)) (cdr expr))))
       (for-each
