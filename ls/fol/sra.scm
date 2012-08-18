@@ -220,7 +220,7 @@
   (define (sra-construction ctor operands env)
     (receive (new-terms terms-shapes) (loop* operands env)
       (values (append-values new-terms)
-              (construct-shape terms-shapes ctor))))
+              (construct-type terms-shapes ctor))))
   (define (sra-application operator operands env)
     (receive (new-args args-shapes) (loop* operands env)
       ;; The type checker should have ensured this
@@ -353,8 +353,6 @@
         (list basename)
         (map (lambda (i) (make-name basename))
              (iota count)))))
-(define (construct-shape subshapes kind)
-  `(,kind ,@subshapes))
 (define (slice-values-by-index index names shape)
   (tidy-values
    (let loop ((index-left index)

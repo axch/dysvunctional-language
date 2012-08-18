@@ -272,7 +272,7 @@
                     expr element-type index)))
        element-types
        (iota (length element-types)))
-      (construct-shape element-types (car expr))))
+      (construct-type element-types (car expr))))
   (define (check-application-types expr env)
     (if (not (fol-var? (car expr)))
         (error "Calling a statically unknown procedure" expr))
@@ -453,9 +453,8 @@
 ;;; Some procedures for manipulating (the syntactic structure of) FOL
 ;;; types.
 
-; primitive-shape? -> primitive-type?
-; sra-parts -> type-factors (factors are different from terms)
-; primitive-fringe -> factor-fringe
+(define (construct-type subshapes kind)
+  `(,kind ,@subshapes))
 
 (define (primitive-type? type)
   (or (function-type? type)
