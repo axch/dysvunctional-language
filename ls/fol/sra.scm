@@ -356,19 +356,8 @@
   (let ((the-subforms (smart-values-subforms values-form))
         (old-shape-parts (sra-factors old-shape)))
     (tidy-values
-     (cond ((eq? (car access-form) 'car)
-            `(values ,@(take the-subforms
-                             (count-atomic-factors (car old-shape-parts)))))
-           ((eq? (car access-form) 'cdr)
-            `(values ,@(drop the-subforms
-                             (count-atomic-factors (car old-shape-parts)))))
-           ((eq? (car access-form) 'vector-ref)
-            (slice-values-by-index (caddr access-form) the-subforms old-shape-parts))
-           ((and *accessor-constructor-map*
-                 (integer? (*accessor-constructor-map* (car access-form))))
-            (slice-values-by-index (*accessor-constructor-map* (car access-form))
-                                   the-subforms old-shape-parts))
-           (else (error "Invalid accessor" (car access-form)))))))
+     (slice-values-by-index
+      (access-index access-form) the-subforms old-shape-parts))))
 (define (slice-values-by-index index names shape)
   (let loop ((index-left index)
              (names-left names)
