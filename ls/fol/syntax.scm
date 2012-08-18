@@ -171,6 +171,16 @@
        *accessor-constructor-map*
        (integer? (*accessor-constructor-map* (car expr)))))
 
+(define (access-index access-form)
+  (cond ((eq? (car access-form) 'car) 0)
+        ((eq? (car access-form) 'cdr) 1)
+        ((eq? (car access-form) 'vector-ref)
+         (caddr access-form))
+        ((and *accessor-constructor-map*
+              (integer? (*accessor-constructor-map* (car access-form))))
+         (*accessor-constructor-map* (car access-form)))
+        (else (error "Not a valid accessor" (car access-form)))))
+
 (define (construction? expr)
   (or (and (pair? expr)
            (memq (car expr) '(cons vector)))
