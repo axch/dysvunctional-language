@@ -369,7 +369,5 @@
               (drop names-left
                     (count-atomic-factors (car shape-left)))
               (cdr shape-left)))))
-(define (select-by-access thing access-form)
-  (list-ref (cdr thing) (access-index access-form)))
 (define (select-from-shape-by-access old-shape access-form)
   (select-by-access (cons 'dummy (sra-factors old-shape)) access-form))

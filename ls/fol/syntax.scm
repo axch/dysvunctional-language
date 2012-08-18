@@ -181,6 +181,9 @@
          (*accessor-constructor-map* (car access-form)))
         (else (error "Not a valid accessor" (car access-form)))))
 
+(define (select-by-access thing access-form)
+  (list-ref (cdr thing) (access-index access-form)))
+
 (define (construction? expr)
   (or (and (pair? expr)
            (memq (car expr) '(cons vector)))
