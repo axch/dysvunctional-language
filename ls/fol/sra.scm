@@ -212,8 +212,11 @@
               'escaping-function)))
   (define (sra-access expr env)
     (receive (new-cadr cadr-shape) (loop (cadr expr) env)
-      (values (slice-values-by-access new-cadr cadr-shape expr)
-              (select-from-shape-by-access cadr-shape expr))))
+      (let ((index (access-index expr))
+            (factors (sra-factors cadr-shape)))
+        (values (slice-values-by-index
+                 index (smart-values-subforms new-cadr) factors)
+                (list-ref factors index)))))
   (define (sra-construction ctor operands env)
     (receive (new-terms terms-shapes) (loop* operands env)
       (values (append-values new-terms)
@@ -352,22 +355,15 @@
              (iota count)))))
 (define (construct-shape subshapes kind)
   `(,kind ,@subshapes))
-(define (slice-values-by-access values-form old-shape access-form)
-  (let ((the-subforms (smart-values-subforms values-form))
-        (old-shape-parts (sra-factors old-shape)))
-    (tidy-values
-     (slice-values-by-index
-      (access-index access-form) the-subforms old-shape-parts))))
 (define (slice-values-by-index index names shape)
-  (let loop ((index-left index)
-             (names-left names)
-             (shape-left shape))
-    (if (= 0 index-left)
-        `(values ,@(take names-left
-                         (count-atomic-factors (car shape-left))))
-        (loop (- index-left 1)
-              (drop names-left
-                    (count-atomic-factors (car shape-left)))
-              (cdr shape-left)))))
-(define (select-from-shape-by-access old-shape access-form)
-  (select-by-access (cons 'dummy (sra-factors old-shape)) access-form))
+  (tidy-values
+   (let loop ((index-left index)
+              (names-left names)
+              (shape-left shape))
+     (if (= 0 index-left)
+         `(values ,@(take names-left
+                          (count-atomic-factors (car shape-left))))
+         (loop (- index-left 1)
+               (drop names-left
+                     (count-atomic-factors (car shape-left)))
+               (cdr shape-left))))))
