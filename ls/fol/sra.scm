@@ -321,6 +321,8 @@
 
 ;;; SRA supporting procedures
 
+;; Type environments
+
 (define (empty-env) '())
 (define (augment-env env old-names name-sets shapes)
   (append (map list old-names name-sets shapes)
@@ -331,6 +333,9 @@
 (define (get-names name env)
   (let ((binding (assq name env)))
     (cadr binding)))
+
+;; Atomic expansions of given types
+
 (define (count-atomic-factors shape)
   (cond ((null? shape) 0)
         ((atomic-type? shape) 1)
