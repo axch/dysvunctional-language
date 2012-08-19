@@ -217,9 +217,10 @@
 
 (define (print-fol-size program)
   (let ((size (count-pairs program))
-        (stripped-size (count-pairs (strip-argument-types program))))
-    (format #t "~A pairs + ~A pairs of type annotations"
-            stripped-size (- size stripped-size))
+        (stripped-size (count-pairs (strip-argument-types program)))
+        (struct-size (count-pairs (filter structure-definition? program))))
+    (format #t "~A pairs + ~A pairs of structure definitions + ~A pairs of type annotations"
+            (- stripped-size struct-size) struct-size (- size stripped-size))
     (newline))
   program)
 
