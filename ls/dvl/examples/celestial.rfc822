@@ -1,0 +1,96 @@
+This week?  That limits my ability to help you in any non-off-the-cuff
+manner.  So, off the cuff:
+
+On Tue, Nov 20, 2012 at 7:44 AM, David Rush <kumoyuki@gmail.com> wrote:
+> So yo umay or may not have realized that we have a review by SFI coming up
+> this week, and we were hoping to use the celestial mechanics demo you coded
+> up in DVL as part of the dog-and-pony show. Do you mind at all if we do
+> this?
+
+By all means, please use celestial.dvl.
+
+> Assuming you don't, I'm not entirely sure where to start on putting
+> the pieces together. given the time we have for the review it will pretty
+> much only be a short spot, so I need to have like a 5 minute patter, and the
+> ability to run it and show the curves tracing out as you showed once upon a
+> time.
+
+If memory serves, the curves I would have shown you are somewhat
+embarrassing, because the initial conditions start the solar system
+off with an initial momentum, so it drifts.  In fact, the whole demo
+showing orbits is a little un-serious---of course the orbits are going
+to be circles up to visual resolution, and if you do it right, they
+will be circles that write over themselves.  Drawing the orbits is
+more of a debugging aid.  The graph that would be impressive to
+cognoscenti would be the error in the energy of the system over time
+(both simulated time and number of integration steps taken).  (You can
+draw this in real time, and point to how many time-steps the thing
+computes per second. [1]) It should not be hard to tweak the code to
+produce the data needed for this graph, either in celestial.dvl itself
+or in the driver program.  The actual drawing you would have to do in
+the driver program, of course.
+
+Speaking of which, the really nice thing is that DVL has a
+(rudimentary) foreign interface, such that celestial.dvl only codes
+the actual integration, and you can write a driver program in the
+language that you ask DVL to compile to [2] that uses the result as a
+(fast!) subroutine.  There are two examples of this in examples/,
+celestial-driver.{scm,lisp}.  Of the ones that work out of the box,
+SBCL is the fastest backend, but I was using Mechanics's plotting
+facilities to show you the thing.
+
+Sasha coded up a backend that would compile to Haskell and go to
+native code through GHC.  This was even faster than SBCL (by around
+1.5x or 2x), but it required a little manual intervention to actually
+run, because FOL didn't retain enough type information to
+automatically emit type declarations for the lambdas that escape to
+the host language (in this case Haskell).  I don't suggest you use it
+for the demo, but I'm telling you so you know the approximate
+performance scale: Fortran = 1x, DVL via GHC = 2x (approx), DVL via
+SBCL = 3-4x, DVL via MIT Scheme = somewhat slower (maybe 10x? I
+forget).  I also dimly remember Sasha writing a Javascript backend,
+but I forget how fast and stable it was.
+
+> We'll probably also take another slot later on to demo the DVL compiler as a
+> tool (rather than showing off an application built with it), so  a little
+> bit of a steer on good things to say would also be very helpful.
+
+
+Probably the most important thing I think of when I'm thinking about
+DVL (and its ilk) is abstraction/modularity for no performance price.
+That Fortran program on the Computer Language Shootout that's merely
+2x faster than celestial.dvl is incredibly hand-inlined: the
+integrator is mixed in with the state derivative (so if you wanted to
+switch from naive Euler to Runge Kutta you would have to rewrite it);
+the dimensionality of the space is mixed in with everything (so if you
+wanted to restrict to a plane or to work in spacetime you would have
+to rewrite it); the computation of what the state derivative is was
+done ahead of time, so if you wanted to use a different potential
+function you would have to rewrite it.  The same is true of the SBCL
+entry in that same competition: it's about the same speed as
+celestial.dvl via SBCL, but it's about as modular as the Fortran
+program.  Worst of both worlds.  celestial.dvl, however, separates all
+the pieces that need separating, and does not pay the huge performance
+penalty that this usually comes with.  To me, this is the key thing;
+but you may need to craft your words well in order for your audience
+to appreciate it.
+
+Or were you asking about things to say about the underlying
+technology?  Either of flow analysis/partial evaluation or of AD?
+
+~Alexey
+
+[1] If you care, the dominant cost in ODE integration is evaluating
+the state derivative function, and the integration method
+celestial.dvl uses (Runge-Kutta 4) makes 4 evaluations per time-step;
+so the comparable naive-Euler would be allowed to take 4x more steps.
+This is where I got the "only 2x slower than Fortran" thing -- I
+measured a naive-Euler written in Fortran for the same problem on my
+machine, and it took time-steps about 8x faster than compiling
+celestial.dvl via GHC.
+
+[2] celestial.dvl itself contains the incantation that needs to be
+incanted at an MIT Scheme repl with DVL loaded in order to compile it
+to in-memory FOL; the FOL readme at BCL-AD/ls/fol/README explains how
+to choose compilation targets; celestial-driver.scm contains an
+example.
