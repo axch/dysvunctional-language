@@ -1,0 +1,587 @@
+;;; On September 19, on arrakis, four compilations of this went thus:
+#|
+ (define code (compile-to-fol (dvl-source "examples/celestial.dvl") volubly)) ; Through Jupiter
+ Stage analyze on 2722 pairs + 0 pairs of type annotations
+ 0 procedure definitions
+ mode expression size: 2722
+ top expression sizes: (2722)
+ ;process time: 14760 (13190 RUN + 1570 GC); real time: 14763
+ Stage generate on analysis of size 18697240
+ ;process time: 22940 (18060 RUN + 4880 GC); real time: 22947
+ Stage structure-definitions->vectors on 233254 pairs + 159636 pairs of type annotations
+ 4149 procedure definitions
+ mode expression size: 19
+ top expression sizes: (102 102 102 102 102 102 85 85 85 85)
+ mode formal length: 2
+ top formal lengths: (2 2 2 2 2 2 2 2 2 2)
+ mode type annotation size: 28
+ top type annotation sizes: (670 670 553 553 551 467 433 433 416 416)
+ ;process time: 570 (570 RUN + 0 GC); real time: 578
+ Stage check-fol-types on 146155 pairs + 7421123 pairs of type annotations
+ 4149 procedure definitions
+ mode expression size: 20
+ top expression sizes: (113 113 113 113 113 113 94 94 94 94)
+ mode formal length: 2
+ top formal lengths: (2 2 2 2 2 2 2 2 2 2)
+ mode type annotation size: 201
+ top type annotation sizes: (44317 44317 44262 44261 44260 44259 44065 44065 33245 33245)
+ ;process time: 500 (500 RUN + 0 GC); real time: 498
+ Stage inline on 146155 pairs + 7421123 pairs of type annotations
+ 4149 procedure definitions
+ mode expression size: 20
+ top expression sizes: (113 113 113 113 113 113 94 94 94 94)
+ mode formal length: 2
+ top formal lengths: (2 2 2 2 2 2 2 2 2 2)
+ mode type annotation size: 201
+ top type annotation sizes: (44317 44317 44262 44261 44260 44259 44065 44065 33245 33245)
+ ;process time: 9460 (7850 RUN + 1610 GC); real time: 9464
+ Stage a-normal-form on 4851134 pairs + 22099 pairs of type annotations
+ 1 procedure definitions
+ mode expression size: 14335
+ top expression sizes: (4836791 14335)
+ mode formal length: 1
+ top formal lengths: (1)
+ mode type annotation size: 22098
+ top type annotation sizes: (22098)
+ ;process time: 2600 (1070 RUN + 1530 GC); real time: 2609
+ Stage alpha-rename on 8134733 pairs + 22099 pairs of type annotations
+ 1 procedure definitions
+ mode expression size: 22357
+ top expression sizes: (8112368 22357)
+ mode formal length: 1
+ top formal lengths: (1)
+ mode type annotation size: 22098
+ top type annotation sizes: (22098)
+ ;process time: 7930 (5640 RUN + 2290 GC); real time: 7938
+ Stage lift-lets on 8134733 pairs + 22099 pairs of type annotations
+ 1 procedure definitions
+ mode expression size: 22357
+ top expression sizes: (8112368 22357)
+ mode formal length: 1
+ top formal lengths: (1)
+ mode type annotation size: 22098
+ top type annotation sizes: (22098)
+ ;process time: 520 (520 RUN + 0 GC); real time: 523
+ Stage intraprocedural-cse on 9456017 pairs + 22099 pairs of type annotations
+ 1 procedure definitions
+ mode expression size: 26320
+ top expression sizes: (9429689 26320)
+ mode formal length: 1
+ top formal lengths: (1)
+ mode type annotation size: 22098
+ top type annotation sizes: (22098)
+ ;process time: 21300 (13300 RUN + 8000 GC); real time: 21322
+ Stage eliminate-intraprocedural-dead-code on 266318 pairs + 22099 pairs of type annotations
+ 1 procedure definitions
+ mode expression size: 3208
+ top expression sizes: (263102 3208)
+ mode formal length: 1
+ top formal lengths: (1)
+ mode type annotation size: 22098
+ top type annotation sizes: (22098)
+ ;process time: 290 (290 RUN + 0 GC); real time: 295
+ Stage scalar-replace-aggregates on 5259 pairs + 22099 pairs of type annotations
+ 1 procedure definitions
+ mode expression size: 927
+ top expression sizes: (4324 927)
+ mode formal length: 1
+ top formal lengths: (1)
+ mode type annotation size: 22098
+ top type annotation sizes: (22098)
+ ;process time: 20 (20 RUN + 0 GC); real time: 31
+ Stage lift-lets on 137916 pairs + 3586 pairs of type annotations
+ 1 procedure definitions
+ mode expression size: 66953
+ top expression sizes: (67373 66953)
+ mode formal length: 3583
+ top formal lengths: (3583)
+ mode type annotation size: 3585
+ top type annotation sizes: (3585)
+ ;process time: 10 (10 RUN + 0 GC); real time: 8
+ Stage intraprocedural-cse on 259806 pairs + 3586 pairs of type annotations
+ 1 procedure definitions
+ mode expression size: 125966
+ top expression sizes: (130250 125966)
+ mode formal length: 3583
+ top formal lengths: (3583)
+ mode type annotation size: 3585
+ top type annotation sizes: (3585)
+ ;process time: 180 (180 RUN + 0 GC); real time: 180
+ Stage eliminate-intraprocedural-dead-code on 15138 pairs + 3586 pairs of type annotations
+ 1 procedure definitions
+ mode expression size: 4049
+ top expression sizes: (7499 4049)
+ mode formal length: 3583
+ top formal lengths: (3583)
+ mode type annotation size: 3585
+ top type annotation sizes: (3585)
+ ;process time: 160 (160 RUN + 0 GC); real time: 163
+ Stage eliminate-interprocedural-dead-code on 15138 pairs + 3586 pairs of type annotations
+ 1 procedure definitions
+ mode expression size: 4049
+ top expression sizes: (7499 4049)
+ mode formal length: 3583
+ top formal lengths: (3583)
+ mode type annotation size: 3585
+ top type annotation sizes: (3585)
+ ;process time: 130 (130 RUN + 0 GC); real time: 135
+ Stage reverse-anf on 4426 pairs + 20 pairs of type annotations
+ 1 procedure definitions
+ mode expression size: 469
+ top expression sizes: (3933 469)
+ mode formal length: 17
+ top formal lengths: (17)
+ mode type annotation size: 19
+ top type annotation sizes: (19)
+ ;process time: 340 (340 RUN + 0 GC); real time: 336
+ Final output has 2122 pairs + 20 pairs of type annotations
+ 1 procedure definitions
+ mode expression size: 247
+ top expression sizes: (1851 247)
+ mode formal length: 17
+ top formal lengths: (17)
+ mode type annotation size: 19
+ top type annotation sizes: (19)
+ ;Value: code
+
+ (define code (compile-to-fol (dvl-source "examples/celestial.dvl") volubly)) ; Through Saturn
+ Stage analyze on 2723 pairs + 0 pairs of type annotations
+ 0 procedure definitions
+ mode expression size: 2723
+ top expression sizes: (2723)
+ ;process time: 18900 (15390 RUN + 3510 GC); real time: 18917
+ Stage generate on analysis of size 22926708
+ ;process time: 31670 (23090 RUN + 8580 GC); real time: 31695
+ Stage structure-definitions->vectors on 338175 pairs + 259517 pairs of type annotations
+ 5764 procedure definitions
+ mode expression size: 19
+ top expression sizes: (102 102 102 102 102 102 102 102 102 102)
+ mode formal length: 2
+ top formal lengths: (2 2 2 2 2 2 2 2 2 2)
+ mode type annotation size: 31
+ top type annotation sizes: (970 970 793 793 791 677 613 613 596 596)
+ ;process time: 870 (870 RUN + 0 GC); real time: 870
+ Stage check-fol-types on 203491 pairs + 9725288 pairs of type annotations
+ 5764 procedure definitions
+ mode expression size: 20
+ top expression sizes: (113 113 113 113 113 113 113 113 113 113)
+ mode formal length: 2
+ top formal lengths: (2 2 2 2 2 2 2 2 2 2)
+ mode type annotation size: 247
+ top type annotation sizes: (44437 44437 44352 44351 44350 44349 44065 44065 33335 33335)
+ ;process time: 3180 (770 RUN + 2410 GC); real time: 3190
+ Stage inline on 203491 pairs + 9725288 pairs of type annotations
+ 5764 procedure definitions
+ mode expression size: 20
+ top expression sizes: (113 113 113 113 113 113 113 113 113 113)
+ mode formal length: 2
+ top formal lengths: (2 2 2 2 2 2 2 2 2 2)
+ mode type annotation size: 247
+ top type annotation sizes: (44437 44437 44352 44351 44350 44349 44065 44065 33335 33335)
+ ;process time: 18480 (14860 RUN + 3620 GC); real time: 18489
+ Stage a-normal-form on 5111669 pairs + 32906 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 1958155
+ top expression sizes: (3136638 1958155 16861)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10776
+ top type annotation sizes: (22128 10776)
+ ;process time: 2920 (1140 RUN + 1780 GC); real time: 2932
+ Stage alpha-rename on 8643560 pairs + 32906 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 3245833
+ top expression sizes: (5371968 3245833 25744)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10776
+ top type annotation sizes: (22128 10776)
+ ;process time: 8370 (5820 RUN + 2550 GC); real time: 8386
+ Stage lift-lets on 8643560 pairs + 32906 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 3245833
+ top expression sizes: (5371968 3245833 25744)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10776
+ top type annotation sizes: (22128 10776)
+ ;process time: 540 (540 RUN + 0 GC); real time: 539
+ Stage intraprocedural-cse on 10040894 pairs + 32906 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 3778807
+ top expression sizes: (6231798 3778807 30274)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10776
+ top type annotation sizes: (22128 10776)
+ ;process time: 25900 (13940 RUN + 11960 GC); real time: 25907
+ Stage eliminate-intraprocedural-dead-code on 256276 pairs + 32906 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 85673
+ top expression sizes: (166631 85673 3957)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10776
+ top type annotation sizes: (22128 10776)
+ ;process time: 310 (310 RUN + 0 GC); real time: 318
+ Stage scalar-replace-aggregates on 9034 pairs + 32906 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 1845
+ top expression sizes: (6036 1845 1138)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10776
+ top type annotation sizes: (22128 10776)
+ ;process time: 30 (30 RUN + 0 GC); real time: 36
+ Stage lift-lets on 153010 pairs + 5358 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 61654
+ top expression sizes: (67818 61654 18197)
+ mode formal length: 1739
+ top formal lengths: (3590 1739)
+ mode type annotation size: 1764
+ top type annotation sizes: (3592 1764)
+ ;process time: 10 (10 RUN + 0 GC); real time: 9
+ Stage intraprocedural-cse on 278113 pairs + 5358 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 107233
+ top expression sizes: (130860 107233 34679)
+ mode formal length: 1739
+ top formal lengths: (3590 1739)
+ mode type annotation size: 1764
+ top type annotation sizes: (3592 1764)
+ ;process time: 210 (210 RUN + 0 GC); real time: 213
+ Stage eliminate-intraprocedural-dead-code on 24741 pairs + 5358 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 4267
+ top expression sizes: (13790 4267 1343)
+ mode formal length: 1739
+ top formal lengths: (3590 1739)
+ mode type annotation size: 1764
+ top type annotation sizes: (3592 1764)
+ ;process time: 610 (610 RUN + 0 GC); real time: 605
+ Stage eliminate-interprocedural-dead-code on 24913 pairs + 5358 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 4267
+ top expression sizes: (13962 4267 1343)
+ mode formal length: 1739
+ top formal lengths: (3590 1739)
+ mode type annotation size: 1764
+ top type annotation sizes: (3592 1764)
+ ;process time: 390 (390 RUN + 0 GC); real time: 391
+ Stage reverse-anf on 5784 pairs + 71 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 1382
+ top expression sizes: (3657 1382 687)
+ mode formal length: 22
+ top formal lengths: (24 22)
+ mode type annotation size: 26
+ top type annotation sizes: (43 26)
+ ;process time: 250 (250 RUN + 0 GC); real time: 244
+ Final output has 3138 pairs + 71 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 680
+ top expression sizes: (2043 680 357)
+ mode formal length: 22
+ top formal lengths: (24 22)
+ mode type annotation size: 26
+ top type annotation sizes: (43 26)
+ ;Value: code
+
+ (define code (compile-to-fol (dvl-source "examples/celestial.dvl") volubly)) ; Through Uranus
+ Stage analyze on 2724 pairs + 0 pairs of type annotations
+ 0 procedure definitions
+ mode expression size: 2724
+ top expression sizes: (2724)
+ ;process time: 31990 (19880 RUN + 12110 GC); real time: 32018
+ Stage generate on analysis of size 27214251
+ ;process time: 40430 (26860 RUN + 13570 GC); real time: 40456
+ Stage structure-definitions->vectors on 457527 pairs + 392999 pairs of type annotations
+ 7547 procedure definitions
+ mode expression size: 19
+ top expression sizes: (102 102 102 102 102 102 102 102 102 102)
+ mode formal length: 2
+ top formal lengths: (2 2 2 2 2 2 2 2 2 2)
+ mode type annotation size: 31
+ top type annotation sizes: (1270 1270 1033 1033 1031 887 793 793 776 776)
+ ;process time: 1190 (1190 RUN + 0 GC); real time: 1197
+ Stage check-fol-types on 263797 pairs + 12679794 pairs of type annotations
+ 7547 procedure definitions
+ mode expression size: 19
+ top expression sizes: (113 113 113 113 113 113 113 113 113 113)
+ mode formal length: 2
+ top formal lengths: (2 2 2 2 2 2 2 2 2 2)
+ mode type annotation size: 247
+ top type annotation sizes: (44557 44557 44442 44441 44440 44439 44065 44065 33425 33425)
+ ;process time: 1070 (1070 RUN + 0 GC); real time: 1069
+ Stage inline on 263797 pairs + 12679794 pairs of type annotations
+ 7547 procedure definitions
+ mode expression size: 19
+ top expression sizes: (113 113 113 113 113 113 113 113 113 113)
+ mode formal length: 2
+ top formal lengths: (2 2 2 2 2 2 2 2 2 2)
+ mode type annotation size: 247
+ top type annotation sizes: (44557 44557 44442 44441 44440 44439 44065 44065 33425 33425)
+ ;process time: 38940 (26210 RUN + 12730 GC); real time: 38965
+ Stage a-normal-form on 8860330 pairs + 32996 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 4143770
+ top expression sizes: (4697154 4143770 19391)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10836
+ top type annotation sizes: (22158 10836)
+ ;process time: 4550 (1960 RUN + 2590 GC); real time: 4549
+ Stage alpha-rename on 14932519 pairs + 32996 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 7097528
+ top expression sizes: (7805838 7097528 29138)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10836
+ top type annotation sizes: (22158 10836)
+ ;process time: 16490 (10370 RUN + 6120 GC); real time: 16503
+ Stage lift-lets on 14932519 pairs + 32996 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 7097528
+ top expression sizes: (7805838 7097528 29138)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10836
+ top type annotation sizes: (22158 10836)
+ ;process time: 4000 (970 RUN + 3030 GC); real time: 3994
+ Stage intraprocedural-cse on 17354383 pairs + 32996 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 8233487
+ top expression sizes: (9086643 8233487 34238)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10836
+ top type annotation sizes: (22158 10836)
+ ;process time: 50740 (24420 RUN + 26320 GC); real time: 50779
+ Stage eliminate-intraprocedural-dead-code on 380292 pairs + 32996 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 156990
+ top expression sizes: (218580 156990 4707)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10836
+ top type annotation sizes: (22158 10836)
+ ;process time: 560 (560 RUN + 0 GC); real time: 563
+ Stage scalar-replace-aggregates on 12569 pairs + 32996 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 3243
+ top expression sizes: (7962 3243 1349)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10836
+ top type annotation sizes: (22158 10836)
+ ;process time: 30 (30 RUN + 0 GC); real time: 38
+ Stage lift-lets on 158287 pairs + 5379 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 64827
+ top expression sizes: (68284 64827 19821)
+ mode formal length: 1746
+ top formal lengths: (3597 1746)
+ mode type annotation size: 1778
+ top type annotation sizes: (3599 1778)
+ ;process time: 1940 (20 RUN + 1920 GC); real time: 1936
+ Stage intraprocedural-cse on 285214 pairs + 5379 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 111780
+ top expression sizes: (131512 111780 36567)
+ mode formal length: 1746
+ top formal lengths: (3597 1746)
+ mode type annotation size: 1778
+ top type annotation sizes: (3599 1778)
+ ;process time: 230 (230 RUN + 0 GC); real time: 236
+ Stage eliminate-intraprocedural-dead-code on 27290 pairs + 5379 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 4485
+ top expression sizes: (14861 4485 2589)
+ mode formal length: 1746
+ top formal lengths: (3597 1746)
+ mode type annotation size: 1778
+ top type annotation sizes: (3599 1778)
+ ;process time: 660 (660 RUN + 0 GC); real time: 662
+ Stage eliminate-interprocedural-dead-code on 27510 pairs + 5379 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 4485
+ top expression sizes: (15081 4485 2589)
+ mode formal length: 1746
+ top formal lengths: (3597 1746)
+ mode type annotation size: 1778
+ top type annotation sizes: (3599 1778)
+ ;process time: 590 (590 RUN + 0 GC); real time: 593
+ Stage reverse-anf on 8436 pairs + 91 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 2639
+ top expression sizes: (4820 2639 905)
+ mode formal length: 29
+ top formal lengths: (31 29)
+ mode type annotation size: 33
+ top type annotation sizes: (56 33)
+ ;process time: 580 (580 RUN + 0 GC); real time: 575
+ Final output has 4506 pairs + 91 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 1289
+ top expression sizes: (2678 1289 467)
+ mode formal length: 29
+ top formal lengths: (31 29)
+ mode type annotation size: 33
+ top type annotation sizes: (56 33)
+ ;Value: code
+
+ (define code (compile-to-fol (dvl-source "examples/celestial.dvl") volubly)) ; Through Neptune
+ Stage analyze on 2725 pairs + 0 pairs of type annotations
+ 0 procedure definitions
+ mode expression size: 2725
+ top expression sizes: (2725)
+ ;process time: 25610 (20360 RUN + 5250 GC); real time: 25633
+ Stage generate on analysis of size 31625116
+ ;process time: 38170 (30180 RUN + 7990 GC); real time: 38193
+ Stage structure-definitions->vectors on 602769 pairs + 579862 pairs of type annotations
+ 9640 procedure definitions
+ mode expression size: 19
+ top expression sizes: (102 102 102 102 102 102 102 102 102 102)
+ mode formal length: 2
+ top formal lengths: (2 2 2 2 2 2 2 2 2 2)
+ mode type annotation size: 34
+ top type annotation sizes: (1570 1570 1273 1273 1271 1097 973 973 956 956)
+ ;process time: 1650 (1650 RUN + 0 GC); real time: 1657
+ Stage check-fol-types on 332590 pairs + 16506853 pairs of type annotations
+ 9640 procedure definitions
+ mode expression size: 19
+ top expression sizes: (113 113 113 113 113 113 113 113 113 113)
+ mode formal length: 2
+ top formal lengths: (2 2 2 2 2 2 2 2 2 2)
+ mode type annotation size: 236
+ top type annotation sizes: (44677 44677 44532 44531 44530 44529 44065 44065 33515 33515)
+ ;process time: 1490 (1490 RUN + 0 GC); real time: 1491
+ Stage inline on 332590 pairs + 16506853 pairs of type annotations
+ 9640 procedure definitions
+ mode expression size: 19
+ top expression sizes: (113 113 113 113 113 113 113 113 113 113)
+ mode formal length: 2
+ top formal lengths: (2 2 2 2 2 2 2 2 2 2)
+ mode type annotation size: 236
+ top type annotation sizes: (44677 44677 44532 44531 44530 44529 44065 44065 33515 33515)
+ ;process time: 54150 (44950 RUN + 9200 GC); real time: 54180
+ Stage a-normal-form on 14346421 pairs + 33086 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 5150902
+ top expression sizes: (9173579 5150902 21925)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10896
+ top type annotation sizes: (22188 10896)
+ ;process time: 4880 (3310 RUN + 1570 GC); real time: 4885
+ Stage alpha-rename on 24125278 pairs + 33086 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 8823088
+ top expression sizes: (15269636 8823088 32539)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10896
+ top type annotation sizes: (22188 10896)
+ ;process time: 28070 (16720 RUN + 11350 GC); real time: 28087
+ Stage lift-lets on 24125278 pairs + 33086 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 8823088
+ top expression sizes: (15269636 8823088 32539)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10896
+ top type annotation sizes: (22188 10896)
+ ;process time: 4250 (1580 RUN + 2670 GC); real time: 4248
+ Stage intraprocedural-cse on 28047061 pairs + 33086 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 10235176
+ top expression sizes: (17773658 10235176 38212)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10896
+ top type annotation sizes: (22188 10896)
+ ;process time: 78630 (40560 RUN + 38070 GC); real time: 78676
+ Stage eliminate-intraprocedural-dead-code on 528665 pairs + 33086 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 252663
+ top expression sizes: (270529 252663 5458)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10896
+ top type annotation sizes: (22188 10896)
+ ;process time: 940 (940 RUN + 0 GC); real time: 941
+ Stage scalar-replace-aggregates on 16499 pairs + 33086 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 5036
+ top expression sizes: (9888 5036 1560)
+ mode formal length: 1
+ top formal lengths: (2 1)
+ mode type annotation size: 10896
+ top type annotation sizes: (22188 10896)
+ ;process time: 50 (50 RUN + 0 GC); real time: 42
+ Stage lift-lets on 164211 pairs + 5400 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 68189
+ top expression sizes: (68771 68189 21882)
+ mode formal length: 1753
+ top formal lengths: (3604 1753)
+ mode type annotation size: 1792
+ top type annotation sizes: (3606 1792)
+ ;process time: 10 (10 RUN + 0 GC); real time: 9
+ Stage intraprocedural-cse on 293214 pairs + 5400 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 116705
+ top expression sizes: (132206 116705 38934)
+ mode formal length: 1753
+ top formal lengths: (3604 1753)
+ mode type annotation size: 1792
+ top type annotation sizes: (3606 1792)
+ ;process time: 240 (240 RUN + 0 GC); real time: 235
+ Stage eliminate-intraprocedural-dead-code on 30234 pairs + 5400 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 4703
+ top expression sizes: (15932 4703 4230)
+ mode formal length: 1753
+ top formal lengths: (3604 1753)
+ mode type annotation size: 1792
+ top type annotation sizes: (3606 1792)
+ ;process time: 720 (720 RUN + 0 GC); real time: 725
+ Stage eliminate-interprocedural-dead-code on 30502 pairs + 5400 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 4703
+ top expression sizes: (16200 4703 4230)
+ mode formal length: 1753
+ top formal lengths: (3604 1753)
+ mode type annotation size: 1792
+ top type annotation sizes: (3606 1792)
+ ;process time: 740 (740 RUN + 0 GC); real time: 729
+ Stage reverse-anf on 11483 pairs + 111 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 4291
+ top expression sizes: (5983 4291 1123)
+ mode formal length: 36
+ top formal lengths: (38 36)
+ mode type annotation size: 40
+ top type annotation sizes: (69 40)
+ ;process time: 1120 (1120 RUN + 0 GC); real time: 1131
+ Final output has 6059 pairs + 111 pairs of type annotations
+ 2 procedure definitions
+ mode expression size: 2083
+ top expression sizes: (3313 2083 577)
+ mode formal length: 36
+ top formal lengths: (38 36)
+ mode type annotation size: 40
+ top type annotation sizes: (69 40)
+ ;Value: code
+
+|#
+;;; Here is a nice little summary of that data (large numbers are
+;;; sizes, proc columns are counts of FOL procedures):
+;; | N | Analysis | raw-fol | proc | to-inline | post-inline | proc |     peak |
+;; |---+----------+---------+------+-----------+-------------+------+----------|
+;; | 2 | 18697240 |  233254 | 4149 |    146155 |    04851134 |    1 | 09456017 |
+;; | 3 | 22926708 |  338175 | 5764 |    203491 |    05111669 |    2 | 10040894 |
+;; | 4 | 27214251 |  457527 | 7547 |    263797 |    08860330 |    2 | 17354383 |
+;; | 5 | 31625116 |  602769 | 9640 |    332590 |    14346421 |    2 | 28047061 |
