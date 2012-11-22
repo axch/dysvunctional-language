@@ -71,9 +71,17 @@
       (dvl-source forms)
       (dvl-prepare (vlad->dvl `(let () ,@(expand-toplevel-source forms basepath))))))
 
-(define (dvl-run-file filename)
+(define (dvl-file->fol-file filename)
   (let* ((program (dvl-source filename))
          (compiled-program (compile-to-fol program)))
+    (let ((fol-file (->namestring (pathname-new-type filename "fol"))))
+      (with-output-to-file fol-file
+        (lambda ()
+          (pp compiled-program)))
+      compiled-program)))
+
+(define (dvl-run-file filename)
+  (let* ((compiled-program (dvl-file->fol-file filename)))
     (let ((scm-file (->namestring (pathname-new-type filename #f))))
       (fol->floating-mit-scheme compiled-program scm-file)
       (fluid-let ((load/suppress-loading-message? #t))
