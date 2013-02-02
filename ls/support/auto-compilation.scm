@@ -66,4 +66,3 @@
 
 (define (load-relative-compiled filename #!optional environment)
   (self-relatively (lambda () (load-compiled filename environment))))
-
