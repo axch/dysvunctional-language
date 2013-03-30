@@ -12,6 +12,14 @@
       (fact 4)))
 
  (define-each-check
-   (equal? '()
+   (equal? '((labels
+              ((fact (n)
+                (declare (type double-float n))
+                (declare (values double-float))
+                (if (= n (coerce 0. 'double-float))
+                    (coerce 1. 'double-float)
+                    (* n (fact (- n (coerce 1. 'double-float))))))
+               (__main__ () (fact (coerce 4. 'double-float))))
+              (setf (fdefinition '__main__) (function __main__))))
            (prepare-for-common-lisp factorial)))
  )

@@ -86,7 +86,7 @@
                        (cdr program)
                        (list program))))
         `(,@(map compile-type-definition types)
-          (labels (,@(map compile-definition (cdr (except-last-pair code)))
+          (labels (,@(map compile-definition (except-last-pair code))
                    ,(compile-entry-point (last code)))
                   (setf (fdefinition '__main__) (function __main__)))))))
   (compile-program (alpha-rename program)))
