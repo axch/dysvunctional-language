@@ -179,7 +179,8 @@
   %reverse-anf
   ;; TODO Does it really preserve lets-lifted?
   (destroys a-normal-form)
-  ;; TODO Remove this dependency after testing the backends
+  ;; TODO Remove this dependency after defining dead-type-elimination
+  ;; (so that tests that examine compiler output pass).
   (requires structures-as-vectors)
   (requires syntax-checked unique-names))
 
