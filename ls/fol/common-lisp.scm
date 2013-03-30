@@ -48,7 +48,7 @@
                   ;; error unless some construction attempt omits the
                   ;; initialization parameter.
                   `(,slot nil :type ,(fol-shape->type-specifier type) :read-only t))
-                `(defstruct (,name (constructor ,(symbol 'make- name) ,slots))
+                `(defstruct (,name (:constructor ,(symbol 'make- name) ,slots))
                    ,@(map slot-declaration slots types)))))
       (define compile-definition
         (rule `(define ((? name ,fol-var?) (?? formals))

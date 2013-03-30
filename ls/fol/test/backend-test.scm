@@ -32,7 +32,7 @@
               (setf (fdefinition '__main__) (function __main__))))
            (prepare-for-common-lisp factorial))
 
-   (equal? '((defstruct (point (constructor make-point (x y)))
+   (equal? '((defstruct (point (:constructor make-point (x y)))
                (x nil :type double-float :read-only t)
                (y nil :type double-float :read-only t))
              (labels
