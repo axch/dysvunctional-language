@@ -421,7 +421,7 @@
        (study-access kind arg extra live-out))
       ((values-form subforms)
        (study-values subforms live-out))
-      ((pair operator operands) ; general application
+      ((pair operator operands)         ; general application
        (study-application operator operands live-out))))
   (define (study-if predicate consequent alternate live-out)
     (let ((pred-needs (loop predicate (list #t)))
@@ -460,8 +460,9 @@
           (select-masked live-out subforms))))
   (define (study-application operator operands live-out)
     (outputs-needed! liveness-map operator live-out)
-    (let* (;; The default in the hash table get is the full operands list because
-           ;; needed primitives are assumed to always need everything.
+    (let* (;; The default in the hash table get is the full operands
+           ;; list because needed primitives and implicit procedures
+           ;; are assumed to always need everything.
            (operands-live (hash-table/get input-liveness-map operator operands)))
       (var-set-union*
        (map (lambda (operand) (loop operand (list #t)))
@@ -490,7 +491,13 @@
                  'ok))
            needed-outputs
            live)
-          ;; I don't care which outputs of primitives are needed.
+          ;; I don't care which outputs of primitives and implicit
+          ;; procedures are needed.
+          ;; By tracking the needfulness of implicit accessors, this
+          ;; could gather sufficient information to perform a round of
+          ;; dead slot elimination afterwards.  This is not necessary,
+          ;; however, because only the needed accessors will be
+          ;; retained in the output code anyway.
           'ok)))
   (improve-liveness-map defn))
 
