@@ -32,6 +32,18 @@
               (setf (fdefinition '__main__) (function __main__))))
            (prepare-for-common-lisp factorial))
 
-   (equal? '()
+   (equal? '((defstruct (point (constructor make-point (x y)))
+               (x nil :type double-float :read-only t)
+               (y nil :type double-float :read-only t))
+             (labels
+              ((magnitude (v)
+                (declare (type point v))
+                (declare (values double-float))
+                (sqrt (+ (* (point-x v) (point-x v)) (* (point-y v) (point-y v)))))
+               (__main__
+                ()
+                (magnitude
+                 (make-point (coerce 1. 'double-float) (coerce 1. 'double-float)))))
+              (setf (fdefinition '__main__) (function __main__))))
            (prepare-for-common-lisp magnitude)))
  )
