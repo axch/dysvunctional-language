@@ -386,7 +386,7 @@
         'ok)
     type-map))
 
-;;; Every structure type defintion of the form (define-type foo (bar real))
+;;; Every structure type defintion of the form (define-type foo (structure (bar real)))
 ;;; defines implicit constructor and accessor procedures, in this case
 ;;; make-foo :: real -> foo and foo-bar :: foo -> real.  This function
 ;;; computes the names and types of those procedures from a type map.
