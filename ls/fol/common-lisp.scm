@@ -37,6 +37,18 @@
       (define (lookup-inferred-type expr)
         (or (hash-table/get inferred-type-map expr #f)
             (error "Looking up unknown expression" expr)))
+      (define compile-type-definition
+        (rule `(define-type (? name ,fol-var?) (structure (?? slots-and-types)))
+              (let ((slots (map car slots-and-types))
+                    (types (map cadr slots-and-types)))
+                (define (slot-declaration slot type)
+                  ;; According to the Hyperspec, nil is not a type
+                  ;; error unless some construction attempt omits the
+                  ;; initialization parameter.
+                  `(,slot nil :type ,(fol-shape->type-specifier type) :read-only t))
+                `(defstruct (,name (constructor ,(symbol 'make- name)
+                                                ,@slots))
+                   ,@(map slot-declaration slots types)))))
       (define compile-definition
         (rule `(define ((? name ,fol-var?) (?? formals))
                  (argument-types (?? formal-types) (? return-type))
@@ -64,14 +76,18 @@
       ;; declaration facilities enough that the inferred type map is
       ;; not necessary and all the type information this translation
       ;; needs can be read off the input FOL program.
-      (let ((program (let->let* program)))
+      (let* ((program (let->let* program))
+             (types (if (begin-form? program)
+                        (filter type-definition? program)
+                        '()))
+             (code (if (begin-form? program)
+                       (cdr program)
+                       (list program))))
         `((declaim (optimize (speed 3) (safety 0)))
           ,@prelude
-          (labels (,@(if (begin-form? program)
-                         `(,@(map compile-definition
-                                  (cdr (except-last-pair program)))
-                           ,(compile-entry-point (last program)))
-                         (list (compile-entry-point program))))
+          ,@(map compile-type-definition types)
+          (labels (,@(map compile-definition (cdr (except-last-pair code)))
+                   ,(compile-entry-point (last code)))
                   (setf (fdefinition '__main__) (function __main__)))))))
   (compile-program (alpha-rename program)))
 
