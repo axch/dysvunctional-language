@@ -45,7 +45,14 @@
                 (magnitude
                  (make-point (coerce 1. 'double-float) (coerce 1. 'double-float)))))
               (setf (fdefinition '__main__) (function __main__))))
-           (prepare-for-common-lisp magnitude)))
+           (prepare-for-common-lisp magnitude))
+
+   (equal? '((define (magnitude v)
+               (sqrt
+                (+ (* (vector-ref v 0) (vector-ref v 0))
+                   (* (vector-ref v 1) (vector-ref v 1)))))
+             (write (magnitude (vector 1. 1.))))
+           (prepare-for-stalin magnitude)))
 
  (for-each
   (lambda (program)

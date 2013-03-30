@@ -50,13 +50,12 @@
 (define (prepare-for-stalin program)
   (write-last-value
    (stalinize
-    (replace-user-structs
-     (replace-nulls
-      (replace-let-values
-       (strip-begin
-        (strip-argument-types
-         (structure-definitions->vectors ; Does Stalin even support user product types?
-          program)))))))))
+    (replace-nulls
+     (replace-let-values
+      (strip-begin
+       (strip-argument-types
+        (structure-definitions->vectors ; Does Stalin even support user product types?
+         program))))))))
 
 ;;; TODO This is very similar to flonumize from mit-scheme.scm; abstract commonalities
 (define (stalinize program)
