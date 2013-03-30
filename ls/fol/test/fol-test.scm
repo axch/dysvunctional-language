@@ -308,4 +308,20 @@
       type-safely))
    (check (= (fol-eval processed) answer)))
 
+ (define-test (dead-code-elimination-should-respect-structure-types)
+   (define program
+     '(begin
+        (define-type point (structure (x real) (y real)))
+        (define (magnitude v)
+          (argument-types point real)
+          (sqrt (+ (* (point-x v) (point-x v))
+                   (* (point-y v) (point-y v)))))
+        (magnitude (make-point 1 1))))
+   (define answer (sqrt 2))
+   (check (= (fol-eval program) answer))
+   (check (equal? program
+                  (eliminate-interprocedural-dead-code program type-safely)))
+   (check (equal? (inline program)
+                  (eliminate-interprocedural-dead-code (inline program)))))
+
  )

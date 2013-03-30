@@ -168,8 +168,6 @@
   interprocedural-dead-code-elimination
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
-  ;; TODO Remove this dependency
-  (requires structures-as-vectors)
   (generates no-interprocedural-dead-variables)
   ;; By running intraprocedural as a post-pass
   (generates no-intraprocedural-dead-variables)
@@ -181,6 +179,8 @@
   %reverse-anf
   ;; TODO Does it really preserve lets-lifted?
   (destroys a-normal-form)
+  ;; TODO Remove this dependency after testing the backends
+  (requires structures-as-vectors)
   (requires syntax-checked unique-names))
 
 ;;; Standard ordering
