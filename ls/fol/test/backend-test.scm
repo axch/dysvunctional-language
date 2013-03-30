@@ -47,6 +47,13 @@
               (setf (fdefinition '__main__) (function __main__))))
            (prepare-for-common-lisp magnitude))
 
+   (equal? '((define (fact n)
+               (if (= n 0.)
+                   1.
+                   (* n (fact (- n 1.)))))
+             (write (fact 4.)))
+           (prepare-for-stalin factorial))
+
    (equal? '((define (magnitude v)
                (sqrt
                 (+ (* (vector-ref v 0) (vector-ref v 0))
