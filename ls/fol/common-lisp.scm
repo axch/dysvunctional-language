@@ -102,6 +102,9 @@
          'null)
         ((eq? shape 'escaping-function)
          'function)
+        ((fol-var? shape)
+         ;; Assume it's a user-defined struct
+         shape)
         ((eq? 'cons (car shape))
          `(cons ,(fol-shape->type-specifier (cadr  shape))
                 ,(fol-shape->type-specifier (caddr shape))))
