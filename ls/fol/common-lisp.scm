@@ -83,7 +83,7 @@
                         (filter type-definition? program)
                         '()))
              (code (if (begin-form? program)
-                       (cdr program)
+                       (filter (lambda (d) (not (type-definition? d))) (cdr program))
                        (list program))))
         `(,@(map compile-type-definition types)
           (labels (,@(map compile-definition (except-last-pair code))
