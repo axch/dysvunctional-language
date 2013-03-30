@@ -131,8 +131,7 @@
         (lambda (x)
           (+ x 1)))))
 
-   (equal? #f (procedure-definitions->program
-               (program->procedure-definitions #f)))
+   (equal? #f (definitions->program (program->definitions #f)))
 
    ;; Interprocedural-dead-code-elimination should catch loops that
    ;; carry but do not use variables.
