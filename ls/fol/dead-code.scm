@@ -297,7 +297,7 @@
 ;;;    clean up (all procedure calls now do need all their inputs).
 ;;;    After this, there should be no tombstones.
 
-(define (program->procedure-definitions program)
+(define (program->definitions program)
   (define (expression->procedure-definition entry-point return-type)
     `(define (%%main)
        (argument-types ,return-type)
@@ -308,18 +308,18 @@
                 (list (expression->procedure-definition (last program) return-type)))
         (list (expression->procedure-definition program return-type)))))
 
-(define (procedure-definitions->program defns)
+(define (definitions->program defns)
   (tidy-begin
    `(begin
       ,@(except-last-pair defns)
       ,(cadddr (last defns)))))
 
 (define (%interprocedural-dead-code-elimination program)
-  (let* ((defns (program->procedure-definitions program)))
+  (let* ((defns (program->definitions program)))
     (receive (liveness-map input-liveness-map)
       (compute-liveness-maps defns)
       (let ((rewritten (rewrite-definitions liveness-map input-liveness-map defns)))
-        (procedure-definitions->program
+        (definitions->program
          rewritten)))))
 
 (define (interprocedural-dead-code-elimination program)
