@@ -164,7 +164,7 @@
   ;; technically does not preserve type correctness, because it
   ;; inserts tombstones which currently do not type properly.  In
   ;; fact, this criticism can be levelled against the composition
-  ;; well, in general.
+  ;; as well, in general.
   interprocedural-dead-code-elimination
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
