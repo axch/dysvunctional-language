@@ -9,7 +9,7 @@
         (if (= n 0)
             1
             (* n (fact (- n 1)))))
-      (fact 4)))
+      (fact 4.0)))
 
  (define magnitude
    '(begin
@@ -46,4 +46,25 @@
                  (make-point (coerce 1. 'double-float) (coerce 1. 'double-float)))))
               (setf (fdefinition '__main__) (function __main__))))
            (prepare-for-common-lisp magnitude)))
+
+ (for-each
+  (lambda (program)
+    (for-each
+     (lambda (method)
+       (define-each-check
+         (equal? (fol-eval program) (method program))))
+     (map (lambda (compile run)
+            (lambda (program)
+              (with-output-to-string
+                (lambda ()
+                  (compile program "test-compiler-output")))
+              (run "test-compiler-output")))
+          (list fol->mit-scheme
+                fol->common-lisp)
+          (list run-mit-scheme
+                (lambda (base)
+                  (with-input-from-string
+                      (with-output-to-string (lambda () (run-common-lisp base)))
+                    read))))))
+  (list factorial magnitude))
  )
