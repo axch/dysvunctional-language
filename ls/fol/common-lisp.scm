@@ -6,7 +6,9 @@
 (define (fol->common-lisp program #!optional base)
   (if (default-object? base)
       (set! base "comozzle"))
-  (let ((code (prepare-for-common-lisp program))
+  (let ((code `((declaim (optimize (speed 3) (safety 0)))
+                ,@prelude
+                ,@(prepare-for-common-lisp program)))
         (file (pathname-new-type base "lisp")))
     (with-output-to-file file
       (lambda ()
@@ -83,9 +85,7 @@
              (code (if (begin-form? program)
                        (cdr program)
                        (list program))))
-        `((declaim (optimize (speed 3) (safety 0)))
-          ,@prelude
-          ,@(map compile-type-definition types)
+        `(,@(map compile-type-definition types)
           (labels (,@(map compile-definition (cdr (except-last-pair code)))
                    ,(compile-entry-point (last code)))
                   (setf (fdefinition '__main__) (function __main__)))))))
