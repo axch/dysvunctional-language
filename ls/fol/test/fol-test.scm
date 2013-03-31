@@ -324,4 +324,17 @@
    (check (equal? (inline program)
                   (eliminate-interprocedural-dead-code (inline program)))))
 
+ (define-test (dead-type-elimination-should-keep-programs-type-checking)
+   ;; I expect no programs like this to arise as outputs of processing
+   ;; steps, but dead-type-elimination should work on them anyway.
+   (define program
+     '(begin
+        (define-type a (structure (b b)))
+        (define-type b (structure (x real)))
+        (define (need-a a)
+          (argument-types a a)
+          a)
+        3))
+;   (check (equal? program (dead-type-elimination program)))
+   (check (equal? 3 (fol-optimize program))))
  )
