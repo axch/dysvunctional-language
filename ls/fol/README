@@ -505,6 +505,7 @@ inline.scm          Inliner
 cse.scm             Common subexpression elimination
   simplification.txt  Issues with simplifying algebra in a compiler
 dead-code.scm       Dead variable elimination
+dead-types.scm      Dead type elimination
 sra.scm             Scalar replacement of aggregates
 
 type-check.scm      Type checker
