@@ -47,6 +47,7 @@
    "inline"
    "a-normal-form"
    "sra"
+   "dead-types"
    "cse"
    "dead-code"
    "optimize"

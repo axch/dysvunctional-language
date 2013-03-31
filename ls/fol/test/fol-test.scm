@@ -335,6 +335,6 @@
           (argument-types a a)
           a)
         3))
-;   (check (equal? program (dead-type-elimination program)))
+   (check (equal? program (%dead-type-elimination program)))
    (check (equal? 3 (fol-optimize program))))
  )
