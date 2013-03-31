@@ -63,7 +63,10 @@
   (destroys no-common-subexpressions)
   ;; Because SRA (currently) operates only on vectors and conses
   (destroys aggregates-replaced)
-  (generates structures-as-vectors))
+  (generates structures-as-vectors)
+  ;; Actually also generates dead-types-eliminated, but I don't want the
+  ;; stage system looking here for that.
+  )
 
 (define-stage check-fol-types
   check-program-types
@@ -100,6 +103,10 @@
   (destroys lets-lifted)
   ;; Because of copying procedure bodies
   (destroys unique-names no-common-subexpressions)
+  ;; By removing procedure definitions (only comes into play if a
+  ;; procedure declared an argument of some otherwise-dead type but
+  ;; didn't use it).
+  (destroys dead-types-eliminated)
   ;; Because of removing procedure boundaries
   (destroys no-intraprocedural-dead-variables)
   ;; Because of specializing to different places
@@ -127,11 +134,18 @@
   (sra-may-destroy aggregates-replaced)
   ;; Because of reconstruction and let-values simplification (?)
   (destroys lets-lifted)
+  ;; By removing uses of structure types
+  (destroys dead-types-eliminated)
   ;; By making aliases, and exposing structure slots to CSE
   (destroys no-common-subexpressions)
   ;; By exposing structure slots as variables
   (destroys no-intraprocedural-dead-variables
             no-interprocedural-dead-variables))
+
+(define-stage eliminate-dead-types
+  %dead-type-elimination
+  (requires syntax-checked)
+  (generates dead-types-eliminated))
 
 (define-stage intraprocedural-cse
   %intraprocedural-cse
@@ -156,6 +170,8 @@
   (requires syntax-checked unique-names)
   ;; Because of inserting let-values around procedure calls
   (destroys lets-lifted)
+  ;; By removing expressions
+  (destroys dead-types-eliminated)
   )
 
 (define-stage eliminate-interprocedural-dead-code
@@ -173,6 +189,8 @@
   (generates no-intraprocedural-dead-variables)
   ;; Because of inserting let-values around procedure calls
   (destroys lets-lifted)
+  ;; By removing expressions
+  (destroys dead-types-eliminated)
   )
 
 (define-stage reverse-anf
