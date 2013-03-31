@@ -206,11 +206,12 @@ These are the individual FOL stages:
 (scalar-replace-aggregates <program>)
   Performs scalar replacement of aggregates and returns the resulting
   program.  All possible data structure allocations (namely, instances
-  of CONS and VECTOR) are replaced by appropriate use of VALUES and
-  LET-VALUES.  This is the stage that first introduces them.  If the
-  input program is union-free, this will eliminate all consing except
-  for the construction of the final answer that is returned from the
-  entry point, should that be a structure.
+  of CONS, VECTOR, and user-defined constructors) are replaced by
+  appropriate use of VALUES and LET-VALUES.  This is the stage that
+  first introduces them.  If the input program is union-free, this
+  will eliminate all consing except for the construction of the final
+  answer that is returned from the entry point, should that be a
+  structure.
 
 (eliminate-interprocedural-dead-code <program>)
   Detects circumstances when some value is passed around from one
