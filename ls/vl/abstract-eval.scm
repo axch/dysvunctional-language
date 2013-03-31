@@ -109,26 +109,23 @@
          (error "Refining an application of a known non-procedure"
                 proc arg analysis))))
 
-(define (refine-analysis analysis)
-  (map (lambda (binding)
-         (let ((part1 (binding-part1 binding))
-               (part2 (binding-part2 binding))
-               (value (binding-value binding)))
-           (let ((new-value ((if (eval-binding? binding)
-                                 refine-eval
-                                 refine-apply)
-                             part1 part2 analysis)))
-             ;; This abstract union requires an explanation.  Why are
-             ;; we taking the union of the old value of the binding
-             ;; with the new, refined value?  The thing is,
-             ;; REFINE-EVAL is not monotonic; i.e., it can return
-             ;; ABSTRACT-NONE even for a binding that is already known
-             ;; to evaluate to a non-bottom; see an example below.
-             ;; This does not cause progress starvation if we refine
-             ;; all the bindings of the analysis at once, but adding
-             ;; the union here is good defensive programming.
-             (make-binding part1 part2 (abstract-union value new-value)))))
-       (analysis-bindings analysis)))
+(define ((refine-binding analysis) binding)
+  (let ((part1 (binding-part1 binding))
+        (part2 (binding-part2 binding))
+        (value (binding-value binding)))
+    (let ((new-value ((if (eval-binding? binding)
+                          refine-eval
+                          refine-apply)
+                      part1 part2 analysis)))
+      ;; This abstract union requires an explanation.  Why take the
+      ;; union of the old value of the binding with the new, refined
+      ;; value?  The thing is, REFINE-EVAL is not monotonic; i.e., it
+      ;; can return ABSTRACT-NONE even for a binding that is already
+      ;; known to evaluate to a non-bottom; see an example below.
+      ;; This does not cause progress starvation if we refine all the
+      ;; bindings of the analysis at once, but adding the union here
+      ;; is good defensive programming.
+      (make-binding part1 part2 (abstract-union value new-value)))))
 
 ;; Example that shows that REFINE-EVAL is not monotonic:
 #|
@@ -146,6 +143,9 @@
 ;; TODO The wrapper my-* in this example is an artifact of the time in
 ;; history when refining applications was inlined into refine-eval,
 ;; instead of indirecting through apply bindings in the analysis.
+
+(define (refine-analysis analysis)
+  (map (refine-binding analysis) (analysis-bindings analysis)))
 
 ;;;; Expansion
 
