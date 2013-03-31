@@ -344,8 +344,8 @@
 (define analyze-and-generate
   (stage-pipeline generate-stage analyze-stage))
 
-(define compile-to-raw-fol
-  (stage-pipeline structure-definitions->vectors analyze-and-generate))
+;; This used not to be just an alias
+(define compile-to-raw-fol analyze-and-generate)
 
 (define compile-to-fol
   (stage-pipeline fol-optimize analyze-and-generate))
