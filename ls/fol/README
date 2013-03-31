@@ -367,7 +367,7 @@ return-shape = <shape> | (values <shape> ...)
 
 shape      = real | bool | gensym | () | <type-var>
            | (cons <shape> <shape>) | (vector <shape> ...)
-           | function ; for escaping functions only
+           | escaping-function ; for escaping functions only
 
 expression = <data-var>
            | <number> | <boolean> | ()
