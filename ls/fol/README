@@ -336,6 +336,10 @@ Common Lisp.
   Dumps the given FOL program into basename.lisp and compiles that
   with SBCL.  The result is a fasl file that can be loaded into SBCL.
 
+(run-common-lisp [<basename>])
+  Call out to SBCL from the Scheme REPL to run a fasl file generated
+  by fol->common-lisp.
+
 
 Writing FOL
 
