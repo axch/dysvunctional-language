@@ -384,9 +384,13 @@ expression = <data-var>
 access = (car <expression>)
        | (cdr <expression>)
        | (vector-ref <expression> <integer>)
+       ;; Also accessor procedures implied by DEFINE-TYPE
+       | (<proc-var> <expression>)
 
 construction = (cons <expression> <expression>)
              | (vector <expression> ...)
+             ;; Also constructor procedures implied by DEFINE-TYPE
+             | (<proc-var> <expression> ...)
 
 FOL has three namespaces for variables: one for types, one for
 procedures, and one for data; all variables are represented as Scheme

@@ -39,7 +39,7 @@
 ;;;            | (if <symbolic> <symbolic> <symbolic>)
 ;;;            | (values <canonical> ...)
 ;;;            | (constructor <canonical> ...)
-;;;            | (accessor <canonical> ...) # Includes values-ref
+;;;            | (accessor <canonical> ...) ; Includes values-ref
 ;;;            | (proc-var <canonical> ...)
 ;;;            | unique-tag
 ;;;
@@ -59,7 +59,7 @@
 ;;;            | (if <symbolic> <symbolic> <symbolic>)
 ;;;            | (values <symbolic> ...)
 ;;;            | (constructor <symbolic> ...)
-;;;            | (accessor <symbolic> ...) # Includes values-ref
+;;;            | (accessor <symbolic> ...) ; Includes values-ref
 ;;;            | (proc-var <symbolic> ...)
 ;;;            | unique-tag
 

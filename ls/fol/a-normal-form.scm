@@ -38,9 +38,13 @@
 ;;; access = (car <simple-expression>)
 ;;;        | (cdr <simple-expression>)
 ;;;        | (vector-ref <simple-expression> <integer>)
+;;;        ;; Also accessor procedures implied by DEFINE-TYPE
+;;;        | (<proc-var> <simple-expression>)
 ;;;
 ;;; construction = (cons <simple-expression> <simple-expression>)
 ;;;              | (vector <simple-expression> ...)
+;;;              ;; Also constructor procedures implied by DEFINE-TYPE
+;;;              | (<proc-var> <simple-expression> ...)
 
 ;;; The following program converts an arbitrary FOL expression into
 ;;; approximate ANF.  The way to do this is to recur down the

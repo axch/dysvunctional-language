@@ -68,9 +68,13 @@
 ;;; access = (car <simple-expression>)
 ;;;        | (cdr <simple-expression>)
 ;;;        | (vector-ref <simple-expression> <integer>)
+;;;        ;; Also accessor procedures implied by DEFINE-TYPE
+;;;        | (<proc-var> <simple-expression>)
 ;;;
 ;;; construction = (cons <simple-expression> <simple-expression>)
 ;;;              | (vector <simple-expression> ...)
+;;;              ;; Also constructor procedures implied by DEFINE-TYPE
+;;;              | (<proc-var> <simple-expression> ...)
 ;;;
 ;;; This is the grammar of the output of APPROXIMATE-ANF.
 

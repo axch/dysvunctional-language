@@ -53,9 +53,13 @@
 ;;; access = (car <non-let>)
 ;;;        | (cdr <non-let>)
 ;;;        | (vector-ref <non-let> <integer>)
+;;;        ;; Also accessor procedures implied by DEFINE-TYPE
+;;;        | (<proc-var> <non-let>)
 ;;;
 ;;; construction = (cons <non-let> <non-let>)
 ;;;              | (vector <non-let> ...)
+;;;              ;; Also constructor procedures implied by DEFINE-TYPE
+;;;              | (<proc-var> <non-let> ...)
 
 ;;; TODO Describe the algorithm.
 
