@@ -84,7 +84,7 @@
            (if (and (not (abstract-none? car-answer))
                     (not (abstract-none? cdr-answer)))
                (cons car-answer cdr-answer)
-               abstract-none)))
+               abstract-none)))  ; VL is strict
         ((application? exp)
          (analysis-get
           (analysis-get (operator-subform exp) env analysis)
@@ -96,7 +96,7 @@
 
 ;;; REFINE-APPLY is \bar A from [1].
 (define (refine-apply proc arg analysis)
-  (cond ((abstract-none? arg) abstract-none)
+  (cond ((abstract-none? arg) abstract-none)  ; VL is strict
         ((abstract-none? proc) abstract-none)
         ((primitive? proc)
          ((primitive-abstract-implementation proc) arg analysis))
