@@ -142,10 +142,11 @@ let->let*, and let*->let).
 You can also get the output from the code generator, examine it, and
 optimize it separately.
 
+(analyze-and-generate <vl-or-dvl>)
 (compile-to-raw-fol <vl-or-dvl>)
   Performs flow analysis on the given VL or DVL program (both VL and
-  DVL define compile-to-raw-fol routines) and generates unoptimized
-  FOL that does the same job.
+  DVL define analyze-and-generate routines (compile-to-raw-fol is an
+  alias)) and generates unoptimized FOL that does the same job.
 
 (check-fol-types <program>)
   Verifies that the given FOL program is syntactically correct and
@@ -268,38 +269,23 @@ which the FOL stages know whether to run a given normalization or not.
 
 
 In addition to the optimizer and its individual stages, FOL also
-provides some legibility aids.  On one side, there is a utility to
-remove the argument type declarations if desired.  The result will no
-longer type check (obviously), and will cease to be acceptable as
-input to several of the optimization stages, but will still execute in
-MIT Scheme, and may be easier to read.
+provides some legibility aids.  There is a utility to remove the
+argument type declarations if desired.  The result will no longer type
+check (obviously), and will cease to be acceptable as input to several
+of the optimization stages, but will still execute in MIT Scheme, and
+may be easier to read.
 
 (strip-argument-types <program>)
   Removes the argument type declarations from a FOL program and
   returns the result (which can no longer be properly called a FOL
   program).
 
-As a legibility aid on the opposite end of the spectrum, you can also
-ask VL or DVL to generate FOL with a stronger type system.  Instead of
-using Scheme vectors for everything, this variant of FOL uses Scheme
-record types (introduced with a typed variant of DEFINE-STRUCTURE),
-which may improve legibility.
-
-(analyze-and-generate <vl-or-dvl>)
-  Performs flow analysis on the given VL or DVL program (both VL and
-  DVL define analyze-and-generate routines) and generates FOL with
-  DEFINE-TYPE forms that does the same job.
-
-The optimizer accepts this FOL variant as input, but since it does not
-understand DEFINE-TYPE natively, it just converts everything to
-vectors in a prepass.  You can do that manually as well, if you wish:
+There is also a utility to convert user structure definitions to
+vectors (constructors become VECTOR and accesses become VECTOR-REF).
 
 (structure-definitions->vectors <program>)
   Replaces Scheme record types with Scheme vectors in a FOL program
   and returns the result.  Said result has no DEFINE-TYPE forms.
-
-The simpler-to-use COMPILE-TO-RAW-FOL could be defined as
-ANALYZE-AND-GENERATE followed by STRUCTURE-DEFINITIONS->VECTORS.
 
 Finally, you can also compress staircases of LETs into LET* forms,
 if that helps you read them.
