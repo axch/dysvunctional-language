@@ -296,7 +296,7 @@
 
 ;;; Reserved words
 
-(define fol-reserved '(cons car cdr vector vector-ref begin define if let let-values values))
+(define fol-reserved '(cons car cdr vector vector-ref begin define-type define if let let-values values))
 
 ;;;; "Runtime system"
 

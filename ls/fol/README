@@ -452,10 +452,11 @@ FOL reserves the tokens that appear in the grammar as names to which
 procedures and formal parameters may not be bound.  The set of FOL
 reserved words is:
 
-  BEGIN, DEFINE, IF, LET, LET-VALUES, VALUES, CONS, CAR, CDR, VECTOR,
-  and VECTOR-REF.
+  BEGIN, DEFINE-TYPE, DEFINE, IF, LET, LET-VALUES, VALUES, CONS, CAR,
+  CDR, VECTOR, and VECTOR-REF.
 
-These all behave as in Scheme.  In addition, FOL predefines the
+These all behave as in Scheme, except DEFINE-TYPE, which is a typed
+variant of Scheme's DEFINE-STRUCTURE.  In addition, FOL predefines the
 following procedures:
 
   ABS, EXP, LOG, SIN, COS, TAN, ASIN, ACOS, SQRT, +, -, *, /, ATAN,
