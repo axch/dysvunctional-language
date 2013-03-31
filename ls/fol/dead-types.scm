@@ -11,7 +11,8 @@
             (queue '())
             (type-map (type-map program)))
         (define (live-type! type)
-          (cond ((symbol? type)
+          (cond ((null? type) 'ok)
+                ((symbol? type)
                  (hash-table/lookup live-types type
                   (lambda (datum)
                     'ok)
@@ -39,8 +40,9 @@
               (begin
                 (live-type! (hash-table/get type-map next #f))
                 (loop (a-live-type!)))))
-        (filter (lambda (item)
-                  (or (not (type-definition? item))
-                      (hash-table/get live-types (cadr item) #f)))
-                program))
+        (tidy-begin
+         (filter (lambda (item)
+                   (or (not (type-definition? item))
+                       (hash-table/get live-types (cadr item) #f)))
+                 program)))
       program))

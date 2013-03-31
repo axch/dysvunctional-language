@@ -207,6 +207,7 @@
 (define fol-optimize
   (stage-pipeline
    reverse-anf
+   eliminate-dead-types
    eliminate-interprocedural-dead-code
 ;   eliminate-intraprocedural-dead-code ; This is slow and mostly redundant
    intraprocedural-cse
@@ -220,6 +221,7 @@
    reverse-anf
    (loop-while-shrinks
     (stage-pipeline
+     eliminate-dead-types
      eliminate-interprocedural-dead-code
      intraprocedural-cse
      scalar-replace-aggregates

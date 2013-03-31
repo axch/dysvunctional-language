@@ -93,6 +93,7 @@
      intraprocedural-cse
      eliminate-intraprocedural-dead-code
      scalar-replace-aggregates
+     eliminate-dead-types
      eliminate-interprocedural-dead-code
      reverse-anf
 
