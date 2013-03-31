@@ -337,4 +337,27 @@
         3))
    (check (equal? program (%dead-type-elimination program)))
    (check (equal? 3 (fol-optimize program))))
+
+ (define-test (sra-should-deal-with-recursive-types)
+   (define program
+     '(begin
+        (define-type a (structure (a a)))
+        (define (need-a a)
+          (argument-types a a)
+          a)
+        1))
+   ;; TODO This breaks because SRA tries to expand the A structure
+   ;; forever.
+   ; (check (equal? '() (scalar-replace-aggregates program)))
+   ;; This works, however, because the inliner flushes the unused
+   ;; procedure, masking the problem from SRA.
+   (check (equal? 1 (fol-optimize program)))
+   (define after-inlining
+     '(begin
+        (define-type a (structure (a a)))
+        1))
+   (check (equal? after-inlining (inline program)))
+   (check (equal? after-inlining
+                  (scalar-replace-aggregates after-inlining)))
+   )
  )
