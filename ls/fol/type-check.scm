@@ -129,6 +129,8 @@
           (check-entry-point-types (last program)))
         (check-entry-point-types program))))
 
+(define for-each-fol-expression check-program-types)
+
 (define (check-expression-types expr env global-type #!optional proc)
   ;; A type environment maps every bound local name to its type.  The
   ;; global-type procedure returns the (function) type of any global

@@ -35,7 +35,7 @@
         `(values ,thing)))
   (define (compile-program program)
     (let ((inferred-type-map (make-eq-hash-table)))
-      (check-program-types program
+      (for-each-fol-expression program
        (lambda (expr type)
          (hash-table/put! inferred-type-map expr type)))
       (define (lookup-inferred-type expr)
