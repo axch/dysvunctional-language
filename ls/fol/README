@@ -352,12 +352,21 @@ FOL follows the following grammar:
 program    = <expression>
            | (begin <definition> ... <expression>)
 
-definition = (define (<proc-var> <data-var> ...)
+definition = <def-type>
+           | <def-proc>
+
+def-type   = (define-type <type-var> <named-type>)
+
+def-proc   = (define (<proc-var> <data-var> ...)
                (argument-types <shape> ... <return-shape>)
                <expression>)
 
-shape      = real | bool | gensym | ()
-           | (cons <shape> <shape>) | (vector <shape> ...) | (values <shape> ...)
+named-type = (structure (<field-name> <shape>) ...)
+
+return-shape = <shape> | (values <shape> ...)
+
+shape      = real | bool | gensym | () | <type-var>
+           | (cons <shape> <shape>) | (vector <shape> ...)
            | function ; for escaping functions only
 
 expression = <data-var>
@@ -378,12 +387,6 @@ access = (car <expression>)
 
 construction = (cons <expression> <expression>)
              | (vector <expression> ...)
-
-type-definition = (define-type <type-var> <named-type>)
-
-named-type = (structure (<field-name> <type>) ...)
-
-type = shape ; values are not allowed in recursive positions
 
 FOL distinguishes two types of variables, one for holding procedures
 and one for holding data; both are represented as Scheme symbols.  The
