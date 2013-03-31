@@ -388,17 +388,20 @@ access = (car <expression>)
 construction = (cons <expression> <expression>)
              | (vector <expression> ...)
 
-FOL distinguishes two types of variables, one for holding procedures
-and one for holding data; both are represented as Scheme symbols.  The
-procedure variables have global scope, must be globally unique, may
-only be bound by DEFINE forms, and may not shadow primitive
-procedures.  The data variables are lexically scoped with shadowing,
-and may be bound by LET forms, LAMBDA forms, and the formal parameter
-positions of DEFINE forms.  Procedures may only be defined at the top
-level.  The lambda form is provided only for wrapping FOL procedures
-for export across the foreign interface.  Applications may only apply
-procedures directly by name.  This serves to make FOL a first-order
-language.
+FOL has three namespaces for variables: one for types, one for
+procedures, and one for data; all variables are represented as Scheme
+symbols.  The type variables and the procedure variables have global
+scope and must be globally unique.  The type variables may only be
+bound by DEFINE-TYPE forms and may not shadow primitive types or type
+constructors.  The procedure variables may only be bound by DEFINE
+forms, and may not shadow primitive procedures or procedures implied
+by type declarations.  The data variables are lexically scoped with
+shadowing, and may be bound by LET forms, LAMBDA forms, and the formal
+parameter positions of DEFINE forms.  Types and procedures may only be
+defined at the top level.  The lambda form is provided only for
+wrapping FOL procedures for export across the foreign interface.
+Applications may only apply procedures directly by name.  This serves
+to make FOL a first-order language.
 
 FOL being first-order was the point.  The restrictions on FOL make the
 targets of all control transfers (except procedure returns) statically
@@ -419,10 +422,9 @@ type declarations are used to perform scalar replacement of
 aggregates, and also serve as a useful sanity check when debugging the
 FOL optimizer or the code generator that gives it input.
 
-The FOL type system does not at present admit user-specified types,
-union types, or recursive types.  This will be changed when FOL is
-extended to accept the results of compiliing non-union-free VL or DVL
-programs.
+The FOL type system does not at present admit union types or recursive
+types.  This will be changed when FOL is extended to accept the
+results of compiliing non-union-free VL or DVL programs.
 
 FOL supports multiple value returns from procedures and expressions
 via the standard Scheme VALUES construct, and multiple value binding
