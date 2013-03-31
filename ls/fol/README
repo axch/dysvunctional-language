@@ -219,6 +219,10 @@ These are the individual FOL stages:
   storage of those values.  Includes elimination of intraprocedural
   dead code.
 
+(eliminate-dead-types <program>)
+  Removes unused type definitions from the given program and returns
+  the result.
+
 (reverse-anf <program>)
   Inlines the definitions of variables that are used only once.  This
   is useless to the compiler, but clarifies the output.
