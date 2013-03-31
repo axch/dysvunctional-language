@@ -213,6 +213,14 @@
                         (my-* n (fact (- n 1)))))))
      (fact (real 5))))
 |#
+;; The non-monotonicity arises at the point where the application of
+;; my-* to <abstract-real> and 1 is already known to produce
+;; <abstract-real>, but the application of my-* to <abstract-real> and
+;; <abstract-real> is still only known to produce <abstract-none>.
+;; The wrapper my-* in this example is an artifact of the time in
+;; history when refining applications was inlined into refine-eval,
+;; instead of indirecting through apply bindings in the analysis.
+
 ;; TODO Rather than sprinkling ABSTRACT-UNION in the places where
 ;; REFINE-EVAL is used, the definition of REFINE-EVAL needs to be
 ;; changed in order to make REFINE-EVAL monotonic.
