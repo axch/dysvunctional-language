@@ -35,7 +35,9 @@
         `(values ,thing)))
   (define (compile-program program)
     (let ((inferred-type-map (make-eq-hash-table)))
-      (check-program-types program inferred-type-map)
+      (check-program-types program
+       (lambda (expr type)
+         (hash-table/put! inferred-type-map expr type)))
       (define (lookup-inferred-type expr)
         (or (hash-table/get inferred-type-map expr #f)
             (error "Looking up unknown expression" expr)))

@@ -32,7 +32,7 @@
 ;; (eventually) be recursive); and then, that in hand, proceed to
 ;; check the syntax and then the typology of the procedure definitions
 ;; the way I do here.
-(define (check-program-types program #!optional inferred-type-map)
+(define (check-program-types program #!optional proc)
   (define (check-type-defn-syntax definition)
     (if (not (= 3 (length definition)))
         (error "Malformed type definition" definition))
@@ -110,7 +110,7 @@
                 body
                 (augment-type-env! (empty-type-env) (cdr formals)
                                    (arg-types (lookup-type (car formals))))
-                lookup-type inferred-type-map)))
+                lookup-type proc)))
           (if (not (equal? (last types) body-type))
               (error "Return type declaration doesn't match"
                      definition (last types) body-type))
@@ -118,7 +118,7 @@
     (define (check-entry-point-types expression)
       (check-expression-types
        expression (empty-type-env)
-       lookup-type inferred-type-map))
+       lookup-type proc))
     (if (begin-form? program)
         (begin
           (check-unique-names
@@ -129,7 +129,7 @@
           (check-entry-point-types (last program)))
         (check-entry-point-types program))))
 
-(define (check-expression-types expr env global-type #!optional inferred-type-map)
+(define (check-expression-types expr env global-type #!optional proc)
   ;; A type environment maps every bound local name to its type.  The
   ;; global-type procedure returns the (function) type of any global
   ;; name passed to it.  CHECK-EXPRESSION-TYPES either returns the
@@ -143,8 +143,8 @@
          (memq (car expr) '(cons vector values))))
   (define (loop expr env)
     (let ((type (%loop expr env)))
-      (if (not (default-object? inferred-type-map))
-          (hash-table/put! inferred-type-map expr type))
+      (if (not (default-object? proc))
+          (proc expr type))
       type))
   (define (%loop expr env)
     (cond ((fol-var? expr) (lookup-type expr env))
