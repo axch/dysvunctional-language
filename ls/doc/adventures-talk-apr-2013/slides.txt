@@ -1,26 +1,31 @@
 References:
 
-Jeffrey Mark Siskind and Barak A. Pearlmutter, "Using Polyvariant
-Union-Free Flow Analysis to Compile a Higher-Order Functional
-Programming Language with a First-Class Derivative Operator to
-Efficient Fortran-like Code."  Purdue University ECE Technical Report,
-2008.  http://docs.lib.purdue.edu/ecetr/367 is the inspiration for
-this particular code
+Jeffrey Mark Siskind and Barak A. Pearlmutter,
+"Using Polyvariant Union-Free Flow Analysis to
+Compile a Higher-Order Functional Programming
+Language with a First-Class Derivative Operator
+to Efficient Fortran-like Code."  Purdue
+University ECE Technical Report, 2008.
+http://docs.lib.purdue.edu/ecetr/367
+is the inspiration for this particular code
 
-Jones, Gomard, and Sestoft 1993 "Partial Evaluation and Automatic
-Program Generation" is a canonical book
+Jones, Gomard, and Sestoft 1993 "Partial
+Evaluation and Automatic Program Generation" is a
+canonical book
 
-Neil Mitchell, "Rethinking Supercompilation", ICFP 2010 is the only
-comprehensible paper on supercompilation (super stands for
-"supervised", not "superior") that I found
+Neil Mitchell, "Rethinking Supercompilation",
+ICFP 2010 is the only comprehensible paper on
+supercompilation that I found
 
 Credits:
 
-I worked on this at the Hamilton Institute at the National University
-of Ireland, Maynooth
+I worked on this at the Hamilton Institute at the
+National University of Ireland, Maynooth
 
-With Barak A. Pearlmutter, Jeffrey Mark Siskind (Purdue University),
-Oleksandr Manzyuk, and David Rush.
+With Barak A. Pearlmutter, Jeffrey Mark Siskind
+(Purdue University), Oleksandr Manzyuk, and David
+Rush.
 
-Now working at Docurated, a small but funded startup that is hiring
-awesome hackers (interns and full-time)
+Now working at Docurated, a small but funded
+startup that is hiring awesome hackers (interns
+and full-time)
