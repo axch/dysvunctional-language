@@ -14,8 +14,7 @@ Lisp compilers give comparable performance, but
 only without those same modularity constructs.
 
 There is another way; it has its own price.
-
-What's the trouble with modularity?  Can't
+What's the trouble with modularity?  Can't
 optimize across module boundaries.
 - (map f lst): don't know f, don't know where the
   lst came from
@@ -32,8 +31,7 @@ Local optimizations are mostly useless, because
 (good) programmers tend to write fairly optimal
 code within modularity boundaries (e.g.,
 functions).
-
-The only game in town for fixing this is copying
+The only game in town for fixing this is copying
 and specialization in some form.
 
 Inlining: make copies of revelant functions that
@@ -52,8 +50,7 @@ with the reduction.
 I will show you another way to organize copying
 and specialization, from the perspective of flow
 analysis.
-
-Fundamentally, any kind of compiler has to have
+Fundamentally, any kind of compiler has to have
 an interpreter in it.
 
 This interpreter has a problem: it has to go both
@@ -98,15 +95,14 @@ abstract-real)
 - mention what would happen if we went from the
   top down
 
-Show interpreters, expand and "refine"
+<Show> interpreters, expand and "refine"
 - On hand: driver loop, analysis data structure
 - On hand: code generator?
 
 IF is done as a primitive procedure that takes
 closures
 - Show IF?
-
-So that's about it.
+So that's about it.
 
 References, credits
 
