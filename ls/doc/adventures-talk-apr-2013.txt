@@ -1,0 +1,104 @@
+A great deal of this class has been about modularity and flexibility.
+I want to spend a lecture talking about a way to avoid its costs.
+
+Can get Steel Bank Common Lisp to within 2-3x of Fortran
+- but only by writing your program in Lisptran (with nice macros)
+
+Fortran is fast simply because it doesn't give you any modularity
+constructs that would confuse the compilers.
+
+Lisp compilers give comparable performance, but only if you eschew
+those same modularity constructs.
+
+There is another way, but it comes with its own price.
+
+What's the trouble with modularity?  Can't optimize across module
+boundaries.
+- (map f lst): don't know f, don't know where the lst came from
+- modularity means map can be used in many places; can't improve
+  the one global map
+- small example: loop fusion
+  - Want to write (sum (map square (iota 10)))
+  - Want to get integrated loop
+    - Aside about semantics of evaluation order
+- bigger example: ODE simulation
+
+Local optimizations are mostly useless, because (good) programmers
+tend to write fairly optimal code within modularity boundaries (e.g.,
+functions).
+
+The only game in town for fixing this is copying and specialization
+in some form.
+
+Inlining: make copies of revelant functions that are used only here,
+then do local optimizations.
+- e.g., map-over-iota
+
+Big problem: intermediate expression bulge.  You have to copy (which
+costs) before seeing optimizations (benefits).  This tends to get
+combinatorially large.
+
+Partial evaluation, supercompilation are all attempts to organize
+interleaving the copying with the reduction.
+
+I will show you another way to organize copying and specialization,
+from the perspective of flow analysis.
+
+Fundamentally, any kind of compiler has to have an interpreter in it.
+
+This interpreter has a problem: it has to go both ways on IF.
+
+To keep from running forever, have to stop somewhere.
+
+Can stop at module boundaries, but that defeats today's purpose.
+
+Other way: keep some representation of what's been seen, stop if you
+see the "same thing" again.
+
+So the analysis structure is a kind of cache for loop detection.
+
+In this program, an analysis looks like this:
+<draw bindings on the board>
+- expression-environment -> value
+- operator-argument -> value
+- abstract values
+
+A binding here is two things:
+- An assertion that this value is the smallest cover of things this
+  expression is known to return in this environment
+  - Aside about purity
+- A desire to find more possible things
+
+We are going from the bottom up in order to find the tightest solution
+- Avoid temptation: Start precise, become sound
+
+<draw lattice of abstract values>
+- bottom, constants, abstract-boolean, abstract-real, (),
+  cons, environments, closures with all possible bodies, top
+- this lattice is simple, but only good for a limited but still
+  interesting set of programs
+
+Walk through example of factorial
+- mention what would happen if we went from the top down
+
+Show interpreters, expand and "refine"
+- On hand: driver loop, analysis data structure
+- On hand: code generator?
+
+IF is done as a primitive procedure that takes closures
+- Show IF?
+
+So that's about it.
+
+References:
+- Tech report was the direct inspiration for this code
+- 1993 partial evaluation book Jones, Gomard, Sestoft is canonical
+- Rethinking Supercompilation by Neil Mitchell
+
+Credits:
+- I worked on this at the Hamilton Institute at the National
+  University of Ireland, Maynooth
+- With Barak A. Pearlmutter, Jeffrey Mark Siskind (Purdue), Oleksandr
+  Manzyuk, and David Rush.
+- Now working at Docurated, a small startup that is hiring
+  awesome hackers (interns and full-time)
