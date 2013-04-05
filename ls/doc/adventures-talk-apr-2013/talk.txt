@@ -78,7 +78,7 @@ We are going from the bottom up in order to find the tightest solution
 - this lattice is simple, but only good for a limited but still
   interesting set of programs
 
-Walk through example of factorial
+Walk through example of factorial (on abstract-real)
 - mention what would happen if we went from the top down
 
 Show interpreters, expand and "refine"
