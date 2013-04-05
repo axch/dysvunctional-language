@@ -10,5 +10,5 @@ celestial-out.ps: celestial-out.scm
 %.pdf: %.ps
 	ps2pdf $< $@
 
-presentation.pdf: mandelbrot.pdf celestial.pdf celestial-out.pdf slides.pdf
-	pdfjoin -o $@ $^
+presentation.pdf: mandelbrot.pdf celestial.pdf celestial-out.pdf analysis.pdf slides.pdf
+	pdfjoin -o $@ mandelbrot.pdf celestial.pdf celestial-out.pdf - celestial.pdf 1 analysis.pdf slides.pdf

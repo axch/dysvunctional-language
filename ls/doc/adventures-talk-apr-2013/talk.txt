@@ -97,11 +97,23 @@ abstract-real)
 
 <Show> interpreters, expand and "refine"
 - On hand: driver loop, analysis data structure
-- On hand: code generator?
 
 IF is done as a primitive procedure that takes
 closures
 - Show IF?
+On code generation:
+
+Can generate first-order code directly from the
+analysis.
+
+Every apply binding (with unsolved return)
+becomes a new procedure
+- Already closure-converted
+- IF requires some care, as usual
+
+Result will have tons of small functions; not
+efficient yet, but now amenable to standard
+techniques since all call sites now known.
 So that's about it.
 
 References, credits
