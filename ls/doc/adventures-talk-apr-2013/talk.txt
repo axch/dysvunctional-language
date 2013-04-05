@@ -13,7 +13,7 @@ the compilers.
 Lisp compilers give comparable performance, but
 only without those same modularity constructs.
 
-There is another way; has its own price.
+There is another way; it has its own price.
 
 What's the trouble with modularity?  Can't
 optimize across module boundaries.
@@ -21,10 +21,10 @@ optimize across module boundaries.
   lst came from
 - modularity means map can be used in many
   places; can't improve the one global map
-- small example: loop fusion
-  - Want to write (sum (map square (iota 10)))
-  - Want to get integrated loop <show>
-    - Aside about semantics of evaluation order
+- small example: mandelbrot
+  - Want to write (iterate (real 100) (step c) 0)
+  - Want to get integrated arithmetic
+    <show source, output>
 - bigger example: ODE simulation <show source,
   output>
 
