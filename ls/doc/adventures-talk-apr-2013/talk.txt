@@ -23,10 +23,10 @@ optimize across module boundaries.
   places; can't improve the one global map
 - small example: mandelbrot
   - Want to write (iterate (real 100) (step c) 0)
-  - Want to get integrated arithmetic
-    <show source, output>
+  - Want to get integrated arithmetic <show>
+    no consing, no stack, just arithmetic
 - bigger example: ODE simulation <show source,
-  output>
+  pages of crap output>
 
 Local optimizations are mostly useless, because
 (good) programmers tend to write fairly optimal
