@@ -12,3 +12,6 @@ celestial-out.ps: celestial-out.scm
 
 presentation.pdf: mandelbrot.pdf celestial.pdf celestial-out.pdf analysis.pdf slides.pdf
 	pdfjoin -o $@ mandelbrot.pdf celestial.pdf celestial-out.pdf - celestial.pdf 1 analysis.pdf slides.pdf
+
+transparencies.pdf: mandelbrot.pdf celestial.pdf celestial-out.pdf analysis.pdf slides.pdf
+	pdfjoin -o $@ mandelbrot.pdf celestial.pdf - celestial-out.pdf 1-4 analysis.pdf slides.pdf
