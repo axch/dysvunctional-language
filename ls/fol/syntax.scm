@@ -14,6 +14,11 @@
       (cadr form)
       form))
 
+(define (definitions program)
+  (if (begin-form? program)
+      (except-last-pair (cdr program))
+      '()))
+
 (define (entry-point program)
   (if (begin-form? program)
       (last program)
