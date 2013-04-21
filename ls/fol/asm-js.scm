@@ -76,7 +76,7 @@
       (return %%main))))
 
 (define (js-heap-read name index)
-  `(assign ,name ,(access heap-view ,index))) ; TODO Understand shifting
+  `(assign ,name (access heap-view ,index))) ; TODO Understand shifting
 
 (define (js-heap-write expr index)
   `(assign (access heap-view ,index) ; TODO Understand shifting
@@ -115,12 +115,17 @@
 ;;; expressions instead (except for 'return').
 
 (define (asm.js-syntax->printable syntax)
+  (define (return-void? thing)
+    (and (pair? thing)
+         (null? (cdr thing))
+         (eq? 'return (car thing))))
   (define-algebraic-matcher module-form (tagged-list? 'module) cadr cddr)
   (define-algebraic-matcher view-heap-form (tagged-list? 'view-heap) cadr caddr)
   (define-algebraic-matcher function-def (tagged-list? 'function) cadr caddr cdddr)
   (define-algebraic-matcher assign-form (tagged-list? 'assign) cadr caddr)
   (define-algebraic-matcher if-stmt-form (tagged-list? 'if-stmt) cadr caddr cadddr)
   (define-algebraic-matcher apply-form (tagged-list? 'apply) cadr caddr)
+  (define-algebraic-matcher return-void-form return-void?)
   (define-algebraic-matcher return-form (tagged-list? 'return) cadr)
   (define-algebraic-matcher unary-form (tagged-list? 'unary) cadr caddr)
   (define-algebraic-matcher binary-form (tagged-list? 'binary) cadr caddr cadddr)
@@ -159,6 +164,8 @@
          "}" nl))
       ((apply-form func args)
        `(,func "(" ,@(intersperse (map loop args) '("," breakable-space)) ")"))
+      ((return-void-form)
+       `("return;" nl))
       ((return-form exp)
        `("return " ,(loop exp) ";" nl))
       ;; TODO Try to use precedence rules to minimize the number of
