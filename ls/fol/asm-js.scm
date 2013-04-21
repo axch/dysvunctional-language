@@ -89,7 +89,7 @@
                           (expt . "Math.pow")
                           (abs  . "Math.abs")))
       ,@(map compile-definition (filter procedure-definition? defns))
-      (return %%main))))
+      (return __main__))))
 
 (define (js-heap-read name index)
   `(assign ,name (access heap_view ,index))) ; TODO Understand shifting
@@ -120,7 +120,9 @@
       thing))
 
 (define (js-identifier thing)
-  (string-replace (display->string thing) #\- #\_))
+  (if (eq? thing '%%main)
+      '__main__
+      (string-replace (display->string thing) #\- #\_)))
 
 ;;; The grammar that would be easy to translate to JS statements is
 ;;; block = <expression>
