@@ -33,7 +33,7 @@
               '())))
     (case* exp
       (let-form => compile-let-statement)
-      (let-values->form => compile-let-values-statement)
+      (let-values-form => compile-let-values-statement)
       (if-form => compile-if-statement)
       (values-form => compile-values-statement)
       (_ (if (tail-position?)
