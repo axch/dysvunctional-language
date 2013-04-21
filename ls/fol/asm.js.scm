@@ -53,7 +53,7 @@
              (argument-types (?? arg-types) (? return))
              (? body))
           `(function ,name ,formals
-            ,@(map parameter-type-setter formals arg-types)
+            ,@(map js-parameter-type-setter formals arg-types)
             ,@(local-variable-declarations body)
             ,@(compile-statement body return))))
   (let ((defns (program->definitions program)))
@@ -72,6 +72,9 @@
 
 (define (js-coerce exp type)
   `(+ ,exp)) ; Always "real" for now
+
+(define (js-parameter-type-setter name type)
+  `(assign ,name (+ ,name))) ; Always "real" for now
 
 ;;; The grammar that would be easy to translate to JS statements is
 ;;; block = <expression>
