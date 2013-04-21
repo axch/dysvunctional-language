@@ -75,6 +75,10 @@
   var sqrt = stdlib.Math.sqrt;
   var expt = stdlib.Math.pow;
   var abs = stdlib.Math.abs;
+  function real(x) {
+    x = (+x);
+    return x;
+  }
   function fact(n) {
     n = (+n);
     if ((n==0)) {
@@ -104,6 +108,10 @@
   var sqrt = stdlib.Math.sqrt;
   var expt = stdlib.Math.pow;
   var abs = stdlib.Math.abs;
+  function real(x) {
+    x = (+x);
+    return x;
+  }
   function iteration(count, c_real, c_imag, z_real, z_imag) {
     count = (+count);
     c_real = (+c_real);
