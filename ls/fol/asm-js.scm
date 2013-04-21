@@ -124,9 +124,10 @@
   (define-algebraic-matcher function-def (tagged-list? 'function) cadr caddr cdddr)
   (define-algebraic-matcher assign-form (tagged-list? 'assign) cadr caddr)
   (define-algebraic-matcher if-stmt-form (tagged-list? 'if-stmt) cadr caddr cadddr)
-  (define-algebraic-matcher apply-form (tagged-list? 'apply) cadr caddr)
   (define-algebraic-matcher return-void-form return-void?)
   (define-algebraic-matcher return-form (tagged-list? 'return) cadr)
+  (define-algebraic-matcher statement-form (tagged-list? 'statement) cadr)
+  (define-algebraic-matcher apply-form (tagged-list? 'apply) cadr caddr)
   (define-algebraic-matcher unary-form (tagged-list? 'unary) cadr caddr)
   (define-algebraic-matcher binary-form (tagged-list? 'binary) cadr caddr cadddr)
   (define (intersperse items sublist)
@@ -162,12 +163,14 @@
          (indent
           ,@(map loop alt))
          "}" nl))
-      ((apply-form func args)
-       `(,func "(" ,@(intersperse (map loop args) '("," breakable-space)) ")"))
       ((return-void-form)
        `("return;" nl))
       ((return-form exp)
        `("return " ,(loop exp) ";" nl))
+      ((statement-form exp)
+       `(,(loop exp) ";" nl))
+      ((apply-form func args)
+       `(,func "(" ,@(intersperse (map loop args) '("," breakable-space)) ")"))
       ;; TODO Try to use precedence rules to minimize the number of
       ;; emitted parens?
       ((unary-form op arg)
