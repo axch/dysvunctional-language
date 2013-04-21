@@ -156,10 +156,12 @@
        `(,func "(" ,@(intersperse (map loop args) '("," breakable-space)) ")"))
       ((return-form exp)
        `("return " ,(loop exp) ";" nl))
+      ;; TODO Try to use precedence rules to minimize the number of
+      ;; emitted parens?
       ((unary-form op arg)
-       `(,op ,(loop arg)))
+       `("(" ,op ,(loop arg) ")"))
       ((binary-form op left right)
-       `(,(loop left) ,op ,(loop right)))
+       `("(" ,(loop left) ,op ,(loop right) ")"))
       ((fol-var var) var)
       ((fol-const const) const))))
 
