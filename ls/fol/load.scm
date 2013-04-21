@@ -53,7 +53,8 @@
    "optimize"
    "mit-scheme"
    "stalin"
-   "common-lisp"))
+   "common-lisp"
+   "asm.js.scm"))
 
 ;;; Exports
 

@@ -59,7 +59,24 @@
                 (+ (* (vector-ref v 0) (vector-ref v 0))
                    (* (vector-ref v 1) (vector-ref v 1)))))
              (write (magnitude (vector 1. 1.))))
-           (prepare-for-stalin magnitude)))
+           (prepare-for-stalin magnitude))
+
+   (equal? "function fol-program(stdlib, foreign, heap) {
+  \"use asm\";
+  var heap-view = stdlib.type(heap);
+  function fact(n) {
+    n = (+n);
+    if ((n==0)) {
+      return (+1);
+    } else {
+      return (+(n*(fact(n)-1)));
+    }
+  }
+  function %%main() {
+    return (+fact(4));
+  }
+  return %%main;
+}" (prepare-for-asm.js factorial)))
 
  (for-each
   (lambda (program)

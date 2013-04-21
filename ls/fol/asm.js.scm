@@ -3,6 +3,11 @@
 (declare (integrate-external "../support/pattern-matching"))
 ;;;; Simplistic FOL to asm.js compiler
 
+(define (prepare-for-asm.js program)
+  (printable->string
+   (asm.js-syntax->printable
+    (fol->asm.js-syntax program))))
+
 (define (fol->asm.js-syntax program)
   (define (compile-statement exp #!optional type)
     (define (tail-position?)
