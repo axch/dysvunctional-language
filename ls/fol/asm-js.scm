@@ -204,10 +204,7 @@
           ((pair? (car instructions))
            (forced-width (append (car instructions) (cdr instructions))))
           (else
-           (+ (string-length
-               (with-output-to-string
-                 (lambda ()
-                   (display (car instructions)))))
+           (+ (string-length (display->string (car instructions)))
               (forced-width (cdr instructions))))))
   (with-output-to-string
     (lambda ()
@@ -251,10 +248,13 @@
                 (loop indent-level position (car instructions))
                 (cdr instructions)))
               (else ; displayable object
-               (let ((string (with-output-to-string
-                               (lambda ()
-                                 (display (car instructions))))))
+               (let ((string (display->string (car instructions))))
                  (loop
                   indent-level
                   (+ position (show string))
                   (cdr instructions)))))))))
+
+(define (display->string thing)
+  (with-output-to-string
+    (lambda ()
+      (display thing))))
