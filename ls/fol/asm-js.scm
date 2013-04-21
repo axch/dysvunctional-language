@@ -18,11 +18,11 @@
     (define (compile-binding b)
       (let ((name (car b))
             (exp (cadr b)))
-        `(assign ,name ,(compile-expression exp))))
+        `(assign ,(js-identifier name) ,(compile-expression exp))))
     (define (compile-let-values-statement names subexpr body)
       `(,@(compile-statement subexpr) ; Not tail position
         ,@(map js-heap-read ; Do I need to coerce types when reading from the heap?
-               names
+               (map js-identifier names)
                (iota (length names)))
         ,@(compile-statement body type)))
     (define (compile-if-statement pred cons alt)
@@ -46,7 +46,7 @@
              `((statement ,(compile-expression exp)))))))
   (define (compile-expression exp)
     (case* exp
-      ((fol-var var) var)
+      ((fol-var var) (js-identifier var))
       ((fol-const const) const)
       ((lambda-form _ _) (error "Escaping procedures not supported for asm.js"))
       ((pair operator operands)
@@ -56,30 +56,31 @@
                   'binary)
              ,(js-operator operator)
              ,@(map compile-expression operands))
-           `(apply ,operator ,(map compile-expression operands))))))
+           `(apply ,(js-identifier operator) ,(map compile-expression operands))))))
   (define (local-variable-declarations body)
     '()) ; TODO
   (define compile-definition
     (rule `(define ((? name) (?? formals))
              (argument-types (?? arg-types) (? return))
              (? body))
-          `(function ,name ,formals
-            ,@(map js-parameter-type-setter formals arg-types)
+          `(function ,(js-identifier name) ,(map js-identifier formals)
+            ,@(map js-parameter-type-setter
+                   (map js-identifier formals) arg-types)
             ,@(local-variable-declarations body)
             ,@(compile-statement body return))))
   (let ((defns (program->definitions program)))
     `(module
       fol-program
       ;; View the heap as a collection of 32-bit floats
-      (view-heap heap-view "Float32Array")
+      (view-heap heap_view "Float32Array")
       ,@(map compile-definition (filter procedure-definition? defns))
       (return %%main))))
 
 (define (js-heap-read name index)
-  `(assign ,name (access heap-view ,index))) ; TODO Understand shifting
+  `(assign ,name (access heap_view ,index))) ; TODO Understand shifting
 
 (define (js-heap-write expr index)
-  `(assign (access heap-view ,index) ; TODO Understand shifting
+  `(assign (access heap_view ,index) ; TODO Understand shifting
            ,expr))
 
 (define (js-coerce exp type)
@@ -102,6 +103,9 @@
   (if (eq? thing '=)
       '==
       thing))
+
+(define (js-identifier thing)
+  (string-replace (display->string thing) #\- #\_))
 
 ;;; The grammar that would be easy to translate to JS statements is
 ;;; block = <expression>
@@ -138,6 +142,7 @@
   (define-algebraic-matcher unary-form (tagged-list? 'unary) cadr caddr)
   (define-algebraic-matcher binary-form (tagged-list? 'binary) cadr caddr cadddr)
   (define-algebraic-matcher heap-access-form (tagged-list? 'access) cadr caddr)
+  (define-algebraic-matcher string string? id-project)
   (define (intersperse items sublist)
     (if (null? items)
         '()
@@ -188,6 +193,7 @@
        `("(" ,(loop left) ,op ,(loop right) ")"))
       ((heap-access-form view index)
        `(,view "[" ,index "]")) ; TODO understand shifting?
+      ((string var) var)
       ((fol-var var) var)
       ((fol-const const) const))))
 
