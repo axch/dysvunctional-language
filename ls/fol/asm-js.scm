@@ -154,7 +154,7 @@
           ,@(map loop body))
          "}" nl))
       ((view-heap-form name type)
-       `("var " ,name " = stdlib." type "(heap);" nl))
+       `("var " ,name " = new stdlib." ,type "(heap);" nl))
       ((function-def name args body)
        `("function " ,name "("
          (align
