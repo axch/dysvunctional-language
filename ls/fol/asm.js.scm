@@ -145,3 +145,50 @@
        `(,op ,(loop arg)))
       ((fol-var var) var)
       ((fol-const const) const))))
+
+(define (printable->string instructions)
+  (define width 80)
+  (with-output-to-string
+    (lambda ()
+      (let loop ((indent-level 0)
+                 (position 0)
+                 (instructions instructions))
+        (define (at-new-line?)
+          (= position 0))
+        (define (show string)
+          (if (at-new-line?)
+              (begin
+                (for-each (lambda (i)
+                            (display " "))
+                          (iota indent-level))
+                (display string)
+                (+ (string-length string) indent-level))
+              (begin
+                (display string)
+                (string-length string))))
+        (cond ((null? instructions) position)
+              ((eq? (car instructions) 'nl)
+               (newline)
+               (loop indent-level 0 (cdr instructions)))
+              ((eq? (car instructions) 'indent)
+               (loop (+ indent-level 2) position (cdr instructions)))
+              ((eq? (car instructions) 'breakable-space)
+               ;; TODO optionally break
+               (loop
+                indent-level
+                (+ position (show " "))
+                (cdr instructions)))
+              ((pair? (car instructions))
+               (loop
+                indent-level ; Unindent from subloops
+                ;; but preserve the position
+                (loop indent-level position (car instructions))
+                (cdr instructions)))
+              (else ; displayable object
+               (let ((string (with-output-to-string
+                               (lambda ()
+                                 (display (car instructions))))))
+                 (loop
+                  indent-level
+                  (+ position (show string))
+                  (cdr instructions)))))))))
