@@ -61,9 +61,20 @@
              (write (magnitude (vector 1. 1.))))
            (prepare-for-stalin magnitude))
 
-   (equal? "function fol-program(stdlib, foreign, heap) {
+   (equal? "function fol_program(stdlib, foreign, heap) {
   \"use asm\";
-  var heap-view = stdlib.type(heap);
+  var heap_view = new stdlib.Float32Array(heap);
+  var acos = stdlib.Math.acos;
+  var asin = stdlib.Math.asin;
+  var atan = stdlib.Math.atan2;
+  var cos = stdlib.Math.cos;
+  var sin = stdlib.Math.sin;
+  var tan = stdlib.Math.tan;
+  var exp = stdlib.Math.exp;
+  var log = stdlib.Math.log;
+  var sqrt = stdlib.Math.sqrt;
+  var expt = stdlib.Math.pow;
+  var abs = stdlib.Math.abs;
   function fact(n) {
     n = (+n);
     if ((n==0)) {
@@ -72,12 +83,74 @@
       return (+(n*fact((n-1))));
     }
   }
-  function %%main() {
+  function __main__() {
     return (+fact(4.));
   }
-  return %%main;
+  return __main__;
 }
-" (prepare-for-asm.js factorial)))
+" (prepare-for-asm.js factorial))
+
+   (equal? "function fol_program(stdlib, foreign, heap) {
+  \"use asm\";
+  var heap_view = new stdlib.Float32Array(heap);
+  var acos = stdlib.Math.acos;
+  var asin = stdlib.Math.asin;
+  var atan = stdlib.Math.atan2;
+  var cos = stdlib.Math.cos;
+  var sin = stdlib.Math.sin;
+  var tan = stdlib.Math.tan;
+  var exp = stdlib.Math.exp;
+  var log = stdlib.Math.log;
+  var sqrt = stdlib.Math.sqrt;
+  var expt = stdlib.Math.pow;
+  var abs = stdlib.Math.abs;
+  function iteration(count, c_real, c_imag, z_real, z_imag) {
+    count = (+count);
+    c_real = (+c_real);
+    c_imag = (+c_imag);
+    z_real = (+z_real);
+    z_imag = (+z_imag);
+    if ((count<=0)) {
+      heap_view[0] = z_real;
+      heap_view[1] = z_imag;
+      return;
+    } else {
+      return iteration((count-1), c_real, c_imag,
+                       (((z_real*z_real)-(z_imag*z_imag))+c_real),
+                       (((z_real*z_imag)+(z_imag*z_real))+c_imag));
+    }
+  }
+  function __main__() {
+    iteration(100, .5, .7, 0, 0);
+    ans_real = heap_view[0];
+    ans_imag = heap_view[1];
+    return ((sqrt(((ans_real*ans_real)+(ans_imag*ans_imag)))<2)|0);
+  }
+  return __main__;
+}
+" (prepare-for-asm.js
+   '(begin
+      (define (iteration count c-real c-imag
+                         z-real z-imag)
+        (argument-types real real real real real (values real real))
+        (if (<= count 0)
+            (values z-real z-imag)
+            (iteration (- count 1)
+                       c-real c-imag
+                       (+ (- (* z-real z-real)
+                             (* z-imag z-imag))
+                          c-real)
+                       (+ (+ (* z-real z-imag)
+                             (* z-imag z-real))
+                          c-imag))))
+      (let-values
+          (((ans-real ans-imag)
+            (iteration 100 .5 .7 0 0)))
+        (< (sqrt
+            (+ (* ans-real ans-real)
+               (* ans-imag ans-imag)))
+           2))))))
+
 
  (for-each
   (lambda (program)
@@ -100,3 +173,4 @@
                     read))))))
   (list factorial magnitude))
  )
+
