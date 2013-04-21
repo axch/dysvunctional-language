@@ -45,7 +45,13 @@
       ((fol-const const) const)
       ((lambda-form _ _) (error "Escaping procedures not supported for asm.js"))
       ((pair operator operands)
-       `(apply ,operator ,(map compile-expression operands)))))
+       (if (js-operator? operator)
+           `(,(if (< (length operands) 2)
+                  'unary
+                  'binary)
+             ,operator
+             ,@(map compile-expression operands))
+           `(apply ,operator ,(map compile-expression operands))))))
   (define (local-variable-declarations body)
     '()) ; TODO
   (define compile-definition
@@ -77,6 +83,9 @@
 (define (js-parameter-type-setter name type)
   `(assign ,name (unary + ,name))) ; Always "real" for now
 
+(define (js-operator? thing)
+  (memq thing '(+ - * / = <= >= < >)))
+
 ;;; The grammar that would be easy to translate to JS statements is
 ;;; block = <expression>
 ;;;       | (let ((<data-var> <expression>) ...) <block>)
@@ -104,6 +113,7 @@
   (define-algebraic-matcher apply-form (tagged-list? 'apply) cadr caddr)
   (define-algebraic-matcher return-form (tagged-list? 'return) cadr)
   (define-algebraic-matcher unary-form (tagged-list? 'unary) cadr caddr)
+  (define-algebraic-matcher binary-form (tagged-list? 'binary) cadr caddr cadddr)
   (define (intersperse items sublist)
     (if (null? items)
         '()
@@ -143,6 +153,8 @@
        `("return " ,(loop exp) ";" nl))
       ((unary-form op arg)
        `(,op ,(loop arg)))
+      ((binary-form op left right)
+       `(,(loop left) ,op ,(loop right)))
       ((fol-var var) var)
       ((fol-const const) const))))
 
