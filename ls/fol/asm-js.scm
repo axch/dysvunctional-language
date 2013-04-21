@@ -130,6 +130,7 @@
   (define-algebraic-matcher apply-form (tagged-list? 'apply) cadr caddr)
   (define-algebraic-matcher unary-form (tagged-list? 'unary) cadr caddr)
   (define-algebraic-matcher binary-form (tagged-list? 'binary) cadr caddr cadddr)
+  (define-algebraic-matcher heap-access-form (tagged-list? 'access) cadr caddr)
   (define (intersperse items sublist)
     (if (null? items)
         '()
@@ -154,7 +155,7 @@
           ,@(map loop body))
          "}" nl))
       ((assign-form var exp)
-       `(,var " = " ,(loop exp) ";" nl))
+       `(,(loop var) " = " ,(loop exp) ";" nl))
       ((if-stmt-form pred cons alt)
        `(if " (" ,(loop pred) ") {" nl
          (indent
@@ -177,6 +178,8 @@
        `("(" ,op ,(loop arg) ")"))
       ((binary-form op left right)
        `("(" ,(loop left) ,op ,(loop right) ")"))
+      ((heap-access-form view index)
+       `(,view "[" ,index "]")) ; TODO understand shifting?
       ((fol-var var) var)
       ((fol-const const) const))))
 
