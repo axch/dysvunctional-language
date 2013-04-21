@@ -140,8 +140,8 @@
        `("function " ,name "("
          ,@(intersperse args '("," breakable-space)) ") {" nl
          (indent
-          ,@(map loop body)
-          "}" nl)))
+          ,@(map loop body))
+         "}" nl))
       ((assign-form var exp)
        `(,var " = " ,(loop exp) ";" nl))
       ((if-stmt-form pred cons alt)
