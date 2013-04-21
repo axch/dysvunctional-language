@@ -110,7 +110,7 @@
 ;;; expressions instead (except for 'return').
 
 (define (asm.js-syntax->printable syntax)
-  (define-algebraic-matcher module-form (tagged-list? 'module) cadr caddr cdddr)
+  (define-algebraic-matcher module-form (tagged-list? 'module) cadr cddr)
   (define-algebraic-matcher view-heap-form (tagged-list? 'view-heap) cadr caddr)
   (define-algebraic-matcher function-def (tagged-list? 'function) cadr caddr cdddr)
   (define-algebraic-matcher assign-form (tagged-list? 'assign) cadr caddr)
@@ -128,7 +128,7 @@
                           (cdr items)))))
   (let loop ((code syntax))
     (case* code
-      ((module-form name args body)
+      ((module-form name body)
        `("function " ,name "(stdlib, foreign, heap) {" nl
          (indent
           "\"use asm\";" nl
