@@ -74,7 +74,7 @@
       `(std-import ,name ,source)))
   (let ((defns (program->definitions program)))
     `(module
-      fol-program
+      fol_program
       ;; View the heap as a collection of 32-bit floats
       (view-heap heap_view "Float32Array")
       ,@(map std-import '((acos . "Math.acos")
