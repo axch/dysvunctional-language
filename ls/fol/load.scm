@@ -72,6 +72,7 @@
      fol->stalin
      fol->common-lisp
      run-common-lisp
+     fol->asm.js
 
      ;; Optimization
      equal-type? ; TODO

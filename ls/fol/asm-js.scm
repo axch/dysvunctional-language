@@ -3,6 +3,15 @@
 (declare (integrate-external "../support/pattern-matching"))
 ;;;; Simplistic FOL to asm.js compiler
 
+(define (fol->asm.js program #!optional base)
+  (if (default-object? base)
+      (set! base "jsozzle"))
+  (let ((code (prepare-for-asm.js program))
+        (file (pathname-new-type base "js")))
+    (with-output-to-file file
+      (lambda ()
+        (display code)))))
+
 (define (prepare-for-asm.js program)
   (printable->string
    (asm.js-syntax->printable
