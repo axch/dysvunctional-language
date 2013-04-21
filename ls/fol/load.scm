@@ -54,7 +54,7 @@
    "mit-scheme"
    "stalin"
    "common-lisp"
-   "asm.js.scm"))
+   "asm-js"))
 
 ;;; Exports
 
