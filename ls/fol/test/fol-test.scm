@@ -12,14 +12,14 @@
          (argument-types real real)
          (if (= n 0)
              1
-             (* n (- (fact n) 1))))
+             (* n (fact (- n 1)))))
        (fact 4))
     '(begin
        (define (fiction m)
          (argument-types real real)
          (if (= m 0)
              1
-             (* m (- (fiction m) 1))))
+             (* m (fiction (- m 1)))))
        (fiction 4)))
 
    (equal?
