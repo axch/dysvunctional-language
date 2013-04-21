@@ -2,8 +2,16 @@
   <head>
   </head>
   <body>
-    <p>Generate the Mandelbrot tester from the DVL program, adjust it
-    to accept two arguments, and then click "Do it"</p>
+    <ol>
+      <li>Generate the Mandelbrot tester function from its DVL program
+      with <code>(fol->asm.js (fol-optimize (compile-to-fol
+      (dvl-source "examples/mandel.dvl")))
+      "examples/mandel-tester.js")</code></li>
+      <li>adjust the <code>__main__</code> function to accept two
+      arguments and use them in place of the .5 and .7, respectively</li>
+      <li>reload this page</li>
+      <li>then click "Do it".  If you see a blue canvas, make sure you
+      got step 2 right.</li></ol>
     <button onclick="doit()">Do it</button> <br />
     <canvas id="it" width="400" height="400"></canvas>
     <script src="mandel-tester.js" type="text/javascript"></script>
