@@ -49,7 +49,7 @@
            `(,(if (< (length operands) 2)
                   'unary
                   'binary)
-             ,operator
+             ,(js-operator operator)
              ,@(map compile-expression operands))
            `(apply ,operator ,(map compile-expression operands))))))
   (define (local-variable-declarations body)
@@ -85,6 +85,11 @@
 
 (define (js-operator? thing)
   (memq thing '(+ - * / = <= >= < >)))
+
+(define (js-operator thing)
+  (if (eq? thing '=)
+      '==
+      thing))
 
 ;;; The grammar that would be easy to translate to JS statements is
 ;;; block = <expression>
