@@ -143,7 +143,7 @@
         '()
         (cons (car items)
               (append-map (lambda (item)
-                            (list sublist item))
+                            (append sublist (list item)))
                           (cdr items)))))
   (let loop ((code syntax))
     (case* code
@@ -192,6 +192,20 @@
 
 (define (printable->string instructions)
   (define width 80)
+  (define (forced-width instructions)
+    (cond ((null? instructions) 0)
+          ((eq? (car instructions) 'nl) 0)
+          ((eq? (car instructions) 'indent)
+           (forced-width (cdr instructions)))
+          ((eq? (car instructions) 'breakable-space) 0)
+          ((pair? (car instructions))
+           (forced-width (append (car instructions) (cdr instructions))))
+          (else
+           (+ (string-length
+               (with-output-to-string
+                 (lambda ()
+                   (display (car instructions)))))
+              (forced-width (cdr instructions))))))
   (with-output-to-string
     (lambda ()
       (let loop ((indent-level 0)
@@ -217,11 +231,13 @@
               ((eq? (car instructions) 'indent)
                (loop (+ indent-level 2) position (cdr instructions)))
               ((eq? (car instructions) 'breakable-space)
-               ;; TODO optionally break
                (loop
                 indent-level
-                (+ position (show " "))
-                (cdr instructions)))
+                position
+                (cons (if (> (+ position (forced-width (cdr instructions))) width)
+                          'nl
+                          " ")
+                      (cdr instructions))))
               ((pair? (car instructions))
                (loop
                 indent-level ; Unindent from subloops
