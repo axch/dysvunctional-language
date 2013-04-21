@@ -69,14 +69,15 @@
     if ((n==0)) {
       return (+1);
     } else {
-      return (+(n*(fact(n)-1)));
+      return (+(n*fact((n-1))));
     }
   }
   function %%main() {
-    return (+fact(4));
+    return (+fact(4.));
   }
   return %%main;
-}" (prepare-for-asm.js factorial)))
+}
+" (prepare-for-asm.js factorial)))
 
  (for-each
   (lambda (program)
