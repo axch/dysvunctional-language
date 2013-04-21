@@ -58,9 +58,9 @@
             ,@(compile-statement body return))))
   (let ((defns (program->definitions program)))
     `(module
-      (stdlib foreign heap)
+      fol-program
       ;; View the heap as a collection of 32-bit floats
-      (var heap-view (apply (new (dot stdlib Float32Array)) (heap)))
+      (view-heap heap-view "Float32Array")
       ,@(map compile-definition (filter procedure-definition? defns))
       (return %%main))))
 
@@ -94,3 +94,49 @@
 ;;; out of lets and if conditionals, which would lead to code
 ;;; duplication.  So I'll try to translate FOL entirely to JS
 ;;; expressions instead (except for 'return').
+
+(define (asm.js-syntax->printable syntax)
+  (define-algebraic-matcher module-form (tagged-list? 'module) cadr caddr cdddr)
+  (define-algebraic-matcher view-heap-form (tagged-list? 'view-heap) cadr caddr)
+  (define-algebraic-matcher function-def (tagged-list? 'function) cadr caddr cdddr)
+  (define-algebraic-matcher assign-form (tagged-list? 'assign) cadr caddr)
+  (define-algebraic-matcher if-stmt-form (tagged-list? 'if-stmt) cadr caddr cadddr)
+  (define-algebraic-matcher apply-form (tagged-list? 'apply) cadr caddr)
+  (define-algebraic-matcher return-form (tagged-list? 'return) cadr)
+  (define (intersperse items sublist)
+    (if (null? items)
+        '()
+        (cons (car items)
+              (append-map (lambda (item)
+                            (append sublist item))
+                          (cdr items)))))
+  (let loop ((code syntax))
+    (case* code
+      ((module-form name args body)
+       `("function " ,name "(stdlib, foreign, heap) {" nl
+         (indent
+          "\"use asm\";" nl
+          ,@(map loop body))
+         "}" nl))
+      ((view-heap-form name type)
+       `("var " ,name " = stdlib." type "(heap);" nl))
+      ((function-def name args body)
+       `("function " ,name "("
+         ,@(intersperse args '("," breakable-space)) ") {" nl
+         (indent
+          ,@(map loop body)
+          "}" nl)))
+      ((assign-form var exp)
+       `(,var " = " ,(loop exp) ";" nl))
+      ((if-stmt-form pred cons alt)
+       `(if " (" ,(loop pred) ") {" nl
+         (indent
+          ,@(map loop cons))
+         "} else {" nl
+         (indent
+          ,@(map loop alt))
+         "}" nl))
+      ((apply-form func args)
+       `(,func "(" ,@(intersperse (map loop args) '("," breakable-space)) ");" nl))
+      ((return-form exp)
+       `("return " ,(loop exp) ";" nl)))))
