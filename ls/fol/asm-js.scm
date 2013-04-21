@@ -68,11 +68,26 @@
                    (map js-identifier formals) arg-types)
             ,@(local-variable-declarations body)
             ,@(compile-statement body return))))
+  (define (std-import pair)
+    (let ((name (car pair))
+          (source (cdr pair)))
+      `(std-import ,name ,source)))
   (let ((defns (program->definitions program)))
     `(module
       fol-program
       ;; View the heap as a collection of 32-bit floats
       (view-heap heap_view "Float32Array")
+      ,@(map std-import '((acos . "Math.acos")
+                          (asin . "Math.asin")
+                          (atan . "Math.atan2")
+                          (cos  . "Math.cos")
+                          (sin  . "Math.sin")
+                          (tan  . "Math.tan")
+                          (exp  . "Math.exp")
+                          (log  . "Math.log")
+                          (sqrt . "Math.sqrt")
+                          (expt . "Math.pow")
+                          (abs  . "Math.abs")))
       ,@(map compile-definition (filter procedure-definition? defns))
       (return %%main))))
 
@@ -131,6 +146,7 @@
          (null? (cdr thing))
          (eq? 'return (car thing))))
   (define-algebraic-matcher module-form (tagged-list? 'module) cadr cddr)
+  (define-algebraic-matcher std-import-form (tagged-list? 'std-import) cadr caddr)
   (define-algebraic-matcher view-heap-form (tagged-list? 'view-heap) cadr caddr)
   (define-algebraic-matcher function-def (tagged-list? 'function) cadr caddr cdddr)
   (define-algebraic-matcher assign-form (tagged-list? 'assign) cadr caddr)
@@ -158,6 +174,8 @@
           "\"use asm\";" nl
           ,@(map loop body))
          "}" nl))
+      ((std-import-form name source)
+       `("var " ,name " = stdlib." ,source ";" nl))
       ((view-heap-form name type)
        `("var " ,name " = new stdlib." ,type "(heap);" nl))
       ((function-def name args body)
