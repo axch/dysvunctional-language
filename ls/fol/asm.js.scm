@@ -138,7 +138,7 @@
           ,@(map loop alt))
          "}" nl))
       ((apply-form func args)
-       `(,func "(" ,@(intersperse (map loop args) '("," breakable-space)) ");" nl))
+       `(,func "(" ,@(intersperse (map loop args) '("," breakable-space)) ")"))
       ((return-form exp)
        `("return " ,(loop exp) ";" nl))
       ((unary-form op arg)
