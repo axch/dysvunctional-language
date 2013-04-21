@@ -83,7 +83,14 @@
            ,expr))
 
 (define (js-coerce exp type)
-  `(unary + ,exp)) ; Always "real" for now
+  (cond ((eq? type 'real)
+         `(unary + ,exp))
+        ((eq? type 'bool)
+         ;; Booleans in asm.js are integers
+         `(binary "|" ,exp 0))
+        ((pair? type)
+         ;; Multiple values are passed out of band
+         exp)))
 
 (define (js-parameter-type-setter name type)
   `(assign ,name (unary + ,name))) ; Always "real" for now
