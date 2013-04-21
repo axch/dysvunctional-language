@@ -157,7 +157,8 @@
        `("var " ,name " = stdlib." type "(heap);" nl))
       ((function-def name args body)
        `("function " ,name "("
-         ,@(intersperse args '("," breakable-space)) ") {" nl
+         (align
+          ,@(intersperse args '("," breakable-space))) ") {" nl
          (indent
           ,@(map loop body))
          "}" nl))
@@ -178,7 +179,7 @@
       ((statement-form exp)
        `(,(loop exp) ";" nl))
       ((apply-form func args)
-       `(,func "(" ,@(intersperse (map loop args) '("," breakable-space)) ")"))
+       `(,func "(" (align ,@(intersperse (map loop args) '("," breakable-space))) ")"))
       ;; TODO Try to use precedence rules to minimize the number of
       ;; emitted parens?
       ((unary-form op arg)
@@ -196,6 +197,8 @@
     (cond ((null? instructions) 0)
           ((eq? (car instructions) 'nl) 0)
           ((eq? (car instructions) 'indent)
+           (forced-width (cdr instructions)))
+          ((eq? (car instructions) 'align)
            (forced-width (cdr instructions)))
           ((eq? (car instructions) 'breakable-space) 0)
           ((pair? (car instructions))
@@ -230,6 +233,9 @@
                (loop indent-level 0 (cdr instructions)))
               ((eq? (car instructions) 'indent)
                (loop (+ indent-level 2) position (cdr instructions)))
+              ((eq? (car instructions) 'align)
+               ;; TODO First indent if necessary?
+               (loop position position (cdr instructions)))
               ((eq? (car instructions) 'breakable-space)
                (loop
                 indent-level
