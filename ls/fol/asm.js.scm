@@ -62,7 +62,7 @@
       ;; View the heap as a collection of 32-bit floats
       (var heap-view (apply (new (dot stdlib Float32Array)) (heap)))
       ,@(map compile-definition (filter procedure-definition? defns))
-      %%main)))
+      (return %%main))))
 
 (define (js-heap-read name index)
   `(assign ,name ,(access heap-view ,index))) ; TODO Understand shifting
