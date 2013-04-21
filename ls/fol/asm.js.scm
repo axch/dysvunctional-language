@@ -72,10 +72,10 @@
            ,expr))
 
 (define (js-coerce exp type)
-  `(+ ,exp)) ; Always "real" for now
+  `(unary + ,exp)) ; Always "real" for now
 
 (define (js-parameter-type-setter name type)
-  `(assign ,name (+ ,name))) ; Always "real" for now
+  `(assign ,name (unary + ,name))) ; Always "real" for now
 
 ;;; The grammar that would be easy to translate to JS statements is
 ;;; block = <expression>
@@ -103,12 +103,13 @@
   (define-algebraic-matcher if-stmt-form (tagged-list? 'if-stmt) cadr caddr cadddr)
   (define-algebraic-matcher apply-form (tagged-list? 'apply) cadr caddr)
   (define-algebraic-matcher return-form (tagged-list? 'return) cadr)
+  (define-algebraic-matcher unary-form (tagged-list? 'unary) cadr caddr)
   (define (intersperse items sublist)
     (if (null? items)
         '()
         (cons (car items)
               (append-map (lambda (item)
-                            (append sublist item))
+                            (list sublist item))
                           (cdr items)))))
   (let loop ((code syntax))
     (case* code
@@ -139,4 +140,8 @@
       ((apply-form func args)
        `(,func "(" ,@(intersperse (map loop args) '("," breakable-space)) ");" nl))
       ((return-form exp)
-       `("return " ,(loop exp) ";" nl)))))
+       `("return " ,(loop exp) ";" nl))
+      ((unary-form op arg)
+       `(,op ,(loop arg)))
+      ((fol-var var) var)
+      ((fol-const const) const))))
