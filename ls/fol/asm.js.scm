@@ -46,6 +46,8 @@
       ((lambda-form _ _) (error "Escaping procedures not supported for asm.js"))
       ((pair operator operands)
        `(apply ,operator ,(map compile-expression operands)))))
+  (define (local-variable-declarations body)
+    '()) ; TODO
   (define compile-definition
     (rule `(define ((? name) (?? formals))
              (argument-types (?? arg-types) (? return))
