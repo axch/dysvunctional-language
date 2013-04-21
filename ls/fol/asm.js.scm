@@ -59,7 +59,8 @@
   (let ((defns (program->definitions program)))
     `(module
       (stdlib foreign heap)
-      ;; TODO Maybe declare heap views
+      ;; View the heap as a collection of 32-bit floats
+      (var heap-view (apply (new (dot stdlib Float32Array)) (heap)))
       ,@(map compile-definition (filter procedure-definition? defns))
       %%main)))
 
