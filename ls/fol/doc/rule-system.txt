@@ -9,7 +9,7 @@ of stuff, good for a few lectures of Sussman's MIT class Adventures in
 Advanced Symbolic Programming.  It works, and it's very good for
 peephole manipulations of structured expressions (like the output of
 the VL code generator).  If you really want to see it, though, it's
-included in support/rule-system.
+included in support/rules.
 
 Rules for the term-rewriting system consist of a pattern to try to
 match and an expression to evaluate to compute a replacement for that
