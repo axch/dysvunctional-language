@@ -1,0 +1,104 @@
+This is a story about the local transformations that SRA does all of
+in one sweep.
+
+Consider an isomorphism of datatypes.  For example, in the presence
+of
+
+(define-type p2 (structure (x real) (y real)))
+
+we have an obvious isomorphism between
+
+(define-type p3 (structure (base p2) (z real)))
+
+and 
+
+(define-type p3' (structure (x real) (y real) (z real)))
+
+Let this isomorphism be implemented by p3->p3' and p3'->p3.
+
+There is a set of local transformations that incrementally migrates a
+program using p3 into one that uses p3' (or back, if desired).
+
+A) You can always introduce (well-typed) identities
+   e :: p3  -> (p3'->p3 (p3->p3' e))
+   e :: p3' -> (p3->p3' (p3'->p3 e))
+
+This combines with standard transforms to change the type of a
+variable from p3 to p3':
+
+(let ((a e)) b)
+ -> (let ((a (p3'->p3 (p3->p3' e)))) b)
+ -> (let ((a' (p3->p3' e)))
+      (let ((a (p3'->p3 a)))
+        b))
+ -> (let ((a' (p3->p3' e)))
+      (inline a in b))
+
+B) You can migrate isomorphims into compound syntax
+   (p3->p3' (let bs e)) -> (let bs (p3->p3' e))
+   (p3->p3' (if p c a)  -> (if p (p3->p3' c) (p3->p3' a))
+
+C) You can eliminate identities
+   (p3->p3' (p3'->p3 e)) -> e
+   (p3'->p3 (p3->p3' e)) -> e
+
+A, B, and C combine with standard transforms to convert any
+interrelated cluster of variables (inside a procedure body) from one
+type to the other (stopping at function calls, including constructors
+and accessors).
+
+D) Constructors, deconstructors, and transforms obey algebraic
+identities (which can be deduced from the definitions of the
+transforms as procedures in terms of constructors and
+deconstructors).
+   (p3->p3' (make-p3 e1 e2)) ->
+   (deconstruct e1 (x y)
+     (make-p3' x y e2))
+
+   (p3'->p3 (make-p3 e1 e2 e3)) ->
+   (make-p3 (make-p2 e1 e2) e3)
+
+   (p3-p2 (p3'->p3 e)) ->
+   (deconstruct e (x y z)
+     (make-p2 x y))
+
+   (p3'-x (p3->p3' e)) ->
+   (p2-x (p3-p2 e))
+
+E) Given any function that accepts a p3 as an argument or returns one
+as a value, one can always introduce a new function that accepts or
+returns a p3' instead.
+   (define (f x) e) -> (define (f' x') (let ((x (p3'->p3 x'))) e))
+   (define (f x) e) -> (define (f' x) (p3->p3' e))
+
+(Using A, B, C, and D the body of this new function can be rewritten
+in terms of p3' except in places where it itself calls functions that
+require p3s).
+
+E') One can rewrite any call site to a function that needed a p3 to a
+call site to the new function:
+   (f x) -> (f' (p3->p3' x))
+   (f x) -> (p3'->p3 (f x))
+
+F) Any type that includes a p3 member admits an obvious isomorphism
+to a new type that includes a p3' member in that place instead (whose
+own algebraic laws for D are even simpler).  The pairs of transforms
+obey appropriate cancelation laws.
+
+By aggressive use of the above transforms (and standard things like
+the introduction and inlining of variables, or the deletion of
+non-escaping procedures that have no remaining call sites) it is
+possible to convert any desired region of a program to use whichever
+of p3 or p3' is desired.  In fact, a reasonable definition of "region
+boundary" for this purpose is the set of places where the above
+transforms remain.
+
+The preceding discussion is not specific to SRA, as it applies to any
+type isomorphism.  SRA fits into the above framework, with the
+restriction that the source type must be a product, and the "result
+type" is actually held in several variables.  The local
+transformations go through, mutatis mutandis, except that they cannot
+be applied to injections into sum types because those absolutely
+require the injectee to fit into one variable.  SRA as implemented
+runs these transformations to convergence (in the direction of fewer
+constructed product types) in one pass.

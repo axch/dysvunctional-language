@@ -122,6 +122,14 @@
           ,@histogram)
         answer)))
 
+(define (tree-of? pred thing)
+  (cond ((pred thing) #t)
+        ((pair? thing)
+         (and (tree-of? pred (car thing))
+              (tree-of? pred (cdr thing))))
+        ((null? thing) #t)
+        (else #f)))
+
 (define (occurs-in-tree? thing tree)
   (cond ((equal? thing tree) #t)
         ((pair? tree)

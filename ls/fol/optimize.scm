@@ -63,13 +63,15 @@
   (destroys no-common-subexpressions)
   ;; Because SRA (currently) operates only on vectors and conses
   (destroys aggregates-replaced)
-  (generates structures-as-vectors))
+  (generates structures-as-vectors)
+  ;; Actually also generates dead-types-eliminated, but I don't want the
+  ;; stage system looking here for that.
+  )
 
 (define-stage check-fol-types
   check-program-types
   (computes type)
-  (generates syntax-checked)
-  (requires structures-as-vectors))
+  (generates syntax-checked))
 
 (define-stage alpha-rename
   %alpha-rename
@@ -101,11 +103,15 @@
   (destroys lets-lifted)
   ;; Because of copying procedure bodies
   (destroys unique-names no-common-subexpressions)
+  ;; By removing procedure definitions (only comes into play if a
+  ;; procedure declared an argument of some otherwise-dead type but
+  ;; didn't use it).
+  (destroys dead-types-eliminated)
   ;; Because of removing procedure boundaries
   (destroys no-intraprocedural-dead-variables)
   ;; Because of specializing to different places
   (destroys no-interprocedural-dead-variables)
-;  (requires syntax-checked) ; Commenting this is a hack to cut down in IEB from s-d->v
+  (requires syntax-checked)
   (generates fully-inlined))                  ; not really, but on current examples
 
 (define (sra-may-destroy property)
@@ -128,19 +134,26 @@
   (sra-may-destroy aggregates-replaced)
   ;; Because of reconstruction and let-values simplification (?)
   (destroys lets-lifted)
+  ;; By removing uses of structure types
+  (destroys dead-types-eliminated)
   ;; By making aliases, and exposing structure slots to CSE
   (destroys no-common-subexpressions)
   ;; By exposing structure slots as variables
   (destroys no-intraprocedural-dead-variables
             no-interprocedural-dead-variables))
 
+(define-stage eliminate-dead-types
+  %dead-type-elimination
+  (requires syntax-checked)
+  (generates dead-types-eliminated))
+
 (define-stage intraprocedural-cse
   %intraprocedural-cse
-  (requires syntax-checked)
-  (requires unique-names) ; Because it does some internal let-lifting
   ;; These two requirements are not really requirements, but it works
   ;; much better this way.
   (requires a-normal-form lets-lifted)
+  (requires unique-names) ; Because it does some internal let-lifting
+  (requires syntax-checked)
   (generates no-common-subexpressions)
   ;; By leaving some dead aliases around
   (destroys no-intraprocedural-dead-variables
@@ -157,6 +170,8 @@
   (requires syntax-checked unique-names)
   ;; Because of inserting let-values around procedure calls
   (destroys lets-lifted)
+  ;; By removing expressions
+  (destroys dead-types-eliminated)
   )
 
 (define-stage eliminate-interprocedural-dead-code
@@ -165,7 +180,7 @@
   ;; technically does not preserve type correctness, because it
   ;; inserts tombstones which currently do not type properly.  In
   ;; fact, this criticism can be levelled against the composition
-  ;; well, in general.
+  ;; as well, in general.
   interprocedural-dead-code-elimination
   ;; TODO Does it really require unique names?
   (requires syntax-checked unique-names)
@@ -174,6 +189,8 @@
   (generates no-intraprocedural-dead-variables)
   ;; Because of inserting let-values around procedure calls
   (destroys lets-lifted)
+  ;; By removing expressions
+  (destroys dead-types-eliminated)
   )
 
 (define-stage reverse-anf
@@ -187,6 +204,7 @@
 (define fol-optimize
   (stage-pipeline
    reverse-anf
+   eliminate-dead-types
    eliminate-interprocedural-dead-code
 ;   eliminate-intraprocedural-dead-code ; This is slow and mostly redundant
    intraprocedural-cse
@@ -200,6 +218,7 @@
    reverse-anf
    (loop-while-shrinks
     (stage-pipeline
+     eliminate-dead-types
      eliminate-interprocedural-dead-code
      intraprocedural-cse
      scalar-replace-aggregates

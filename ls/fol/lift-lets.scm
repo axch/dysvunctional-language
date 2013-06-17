@@ -53,9 +53,13 @@
 ;;; access = (car <non-let>)
 ;;;        | (cdr <non-let>)
 ;;;        | (vector-ref <non-let> <integer>)
+;;;        ;; Also accessor procedures implied by DEFINE-TYPE
+;;;        | (<proc-var> <non-let>)
 ;;;
 ;;; construction = (cons <non-let> <non-let>)
 ;;;              | (vector <non-let> ...)
+;;;              ;; Also constructor procedures implied by DEFINE-TYPE
+;;;              | (<proc-var> <non-let> ...)
 
 ;;; TODO Describe the algorithm.
 
@@ -67,6 +71,8 @@
       (lift-lets-expression program)))
 
 (define lift-lets-definition
+  ;; By a fortunate coincidence, this does exactly the right thing
+  ;; with type definitions -- nothing.
   (rule `(define (? formals)
            (argument-types (?? stuff))
            (? body))

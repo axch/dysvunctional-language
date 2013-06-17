@@ -142,10 +142,11 @@ let->let*, and let*->let).
 You can also get the output from the code generator, examine it, and
 optimize it separately.
 
+(analyze-and-generate <vl-or-dvl>)
 (compile-to-raw-fol <vl-or-dvl>)
   Performs flow analysis on the given VL or DVL program (both VL and
-  DVL define compile-to-raw-fol routines) and generates unoptimized
-  FOL that does the same job.
+  DVL define analyze-and-generate routines (compile-to-raw-fol is an
+  alias)) and generates unoptimized FOL that does the same job.
 
 (check-fol-types <program>)
   Verifies that the given FOL program is syntactically correct and
@@ -206,17 +207,22 @@ These are the individual FOL stages:
 (scalar-replace-aggregates <program>)
   Performs scalar replacement of aggregates and returns the resulting
   program.  All possible data structure allocations (namely, instances
-  of CONS and VECTOR) are replaced by appropriate use of VALUES and
-  LET-VALUES.  This is the stage that first introduces them.  If the
-  input program is union-free, this will eliminate all consing except
-  for the construction of the final answer that is returned from the
-  entry point, should that be a structure.
+  of CONS, VECTOR, and user-defined constructors) are replaced by
+  appropriate use of VALUES and LET-VALUES.  This is the stage that
+  first introduces them.  If the input program is union-free, this
+  will eliminate all consing except for the construction of the final
+  answer that is returned from the entry point, should that be a
+  structure.
 
 (eliminate-interprocedural-dead-code <program>)
   Detects circumstances when some value is passed around from one
   procedure to another but never used, and flushes the computation and
   storage of those values.  Includes elimination of intraprocedural
   dead code.
+
+(eliminate-dead-types <program>)
+  Removes unused type definitions from the given program and returns
+  the result.
 
 (reverse-anf <program>)
   Inlines the definitions of variables that are used only once.  This
@@ -263,40 +269,23 @@ which the FOL stages know whether to run a given normalization or not.
 
 
 In addition to the optimizer and its individual stages, FOL also
-provides some legibility aids.  On one side, there is a utility to
-remove the argument type declarations if desired.  The result will no
-longer type check (obviously), and will cease to be acceptable as
-input to several of the optimization stages, but will still execute in
-MIT Scheme, and may be easier to read.
+provides some legibility aids.  There is a utility to remove the
+argument type declarations if desired.  The result will no longer type
+check (obviously), and will cease to be acceptable as input to several
+of the optimization stages, but will still execute in MIT Scheme, and
+may be easier to read.
 
 (strip-argument-types <program>)
   Removes the argument type declarations from a FOL program and
   returns the result (which can no longer be properly called a FOL
   program).
 
-As a legibility aid on the opposite end of the spectrum, you can also
-ask VL or DVL to generate FOL with a stronger type system.  Instead of
-using Scheme vectors for everything, this variant of FOL uses Scheme
-record types (introduced with a typed variant of DEFINE-STRUCTURE),
-which may improve legibility.
-
-(analyze-and-generate <vl-or-dvl>)
-  Performs flow analysis on the given VL or DVL program (both VL and
-  DVL define analyze-and-generate routines) and generates FOL with
-  DEFINE-TYPED-STRUCTURE forms that does the same job.
-
-The optimizer accepts this FOL variant as input, but since it does not
-understand DEFINE-TYPED-STRUCTURE natively, it just converts
-everything to vectors in a prepass.  You can do that manually as well,
-if you wish:
+There is also a utility to convert user structure definitions to
+vectors (constructors become VECTOR and accesses become VECTOR-REF).
 
 (structure-definitions->vectors <program>)
   Replaces Scheme record types with Scheme vectors in a FOL program
-  and returns the result.  Said result has no DEFINE-TYPED-STRUCTURE
-  forms.
-
-The simpler-to-use COMPILE-TO-RAW-FOL could be defined as
-ANALYZE-AND-GENERATE followed by STRUCTURE-DEFINITIONS->VECTORS.
+  and returns the result.  Said result has no DEFINE-TYPE forms.
 
 Finally, you can also compress staircases of LETs into LET* forms,
 if that helps you read them.
@@ -347,6 +336,10 @@ Common Lisp.
   Dumps the given FOL program into basename.lisp and compiles that
   with SBCL.  The result is a fasl file that can be loaded into SBCL.
 
+(run-common-lisp [<basename>])
+  Call out to SBCL from the Scheme REPL to run a fasl file generated
+  by fol->common-lisp.
+
 
 Writing FOL
 
@@ -359,13 +352,22 @@ FOL follows the following grammar:
 program    = <expression>
            | (begin <definition> ... <expression>)
 
-definition = (define (<proc-var> <data-var> ...)
+definition = <def-type>
+           | <def-proc>
+
+def-type   = (define-type <type-var> <named-type>)
+
+def-proc   = (define (<proc-var> <data-var> ...)
                (argument-types <shape> ... <return-shape>)
                <expression>)
 
-shape      = real | bool | gensym | ()
-           | (cons <shape> <shape>) | (vector <shape> ...) | (values <shape> ...)
-           | function ; for escaping functions only
+named-type = (structure (<field-name> <shape>) ...)
+
+return-shape = <shape> | (values <shape> ...)
+
+shape      = real | bool | gensym | () | <type-var>
+           | (cons <shape> <shape>) | (vector <shape> ...)
+           | escaping-function ; for escaping functions only
 
 expression = <data-var>
            | <number> | <boolean> | ()
@@ -382,21 +384,28 @@ expression = <data-var>
 access = (car <expression>)
        | (cdr <expression>)
        | (vector-ref <expression> <integer>)
+       ;; Also accessor procedures implied by DEFINE-TYPE
+       | (<proc-var> <expression>)
 
 construction = (cons <expression> <expression>)
              | (vector <expression> ...)
+             ;; Also constructor procedures implied by DEFINE-TYPE
+             | (<proc-var> <expression> ...)
 
-FOL distinguishes two types of variables, one for holding procedures
-and one for holding data; both are represented as Scheme symbols.  The
-procedure variables have global scope, must be globally unique, may
-only be bound by DEFINE forms, and may not shadow primitive
-procedures.  The data variables are lexically scoped with shadowing,
-and may be bound by LET forms, LAMBDA forms, and the formal parameter
-positions of DEFINE forms.  Procedures may only be defined at the top
-level.  The lambda form is provided only for wrapping FOL procedures
-for export across the foreign interface.  Applications may only apply
-procedures directly by name.  This serves to make FOL a first-order
-language.
+FOL has three namespaces for variables: one for types, one for
+procedures, and one for data; all variables are represented as Scheme
+symbols.  The type variables and the procedure variables have global
+scope and must be globally unique.  The type variables may only be
+bound by DEFINE-TYPE forms and may not shadow primitive types or type
+constructors.  The procedure variables may only be bound by DEFINE
+forms, and may not shadow primitive procedures or procedures implied
+by type declarations.  The data variables are lexically scoped with
+shadowing, and may be bound by LET forms, LAMBDA forms, and the formal
+parameter positions of DEFINE forms.  Types and procedures may only be
+defined at the top level.  The lambda form is provided only for
+wrapping FOL procedures for export across the foreign interface.
+Applications may only apply procedures directly by name.  This serves
+to make FOL a first-order language.
 
 FOL being first-order was the point.  The restrictions on FOL make the
 targets of all control transfers (except procedure returns) statically
@@ -417,10 +426,9 @@ type declarations are used to perform scalar replacement of
 aggregates, and also serve as a useful sanity check when debugging the
 FOL optimizer or the code generator that gives it input.
 
-The FOL type system does not at present admit user-specified types,
-union types, or recursive types.  This will be changed when FOL is
-extended to accept the results of compiliing non-union-free VL or DVL
-programs.
+The FOL type system does not at present admit union types or recursive
+types.  This will be changed when FOL is extended to accept the
+results of compiliing non-union-free VL or DVL programs.
 
 FOL supports multiple value returns from procedures and expressions
 via the standard Scheme VALUES construct, and multiple value binding
@@ -448,10 +456,11 @@ FOL reserves the tokens that appear in the grammar as names to which
 procedures and formal parameters may not be bound.  The set of FOL
 reserved words is:
 
-  BEGIN, DEFINE, IF, LET, LET-VALUES, VALUES, CONS, CAR, CDR, VECTOR,
-  and VECTOR-REF.
+  BEGIN, DEFINE-TYPE, DEFINE, IF, LET, LET-VALUES, VALUES, CONS, CAR,
+  CDR, VECTOR, and VECTOR-REF.
 
-These all behave as in Scheme.  In addition, FOL predefines the
+These all behave as in Scheme, except DEFINE-TYPE, which is a typed
+variant of Scheme's DEFINE-STRUCTURE.  In addition, FOL predefines the
 following procedures:
 
   ABS, EXP, LOG, SIN, COS, TAN, ASIN, ACOS, SQRT, +, -, *, /, ATAN,
@@ -500,6 +509,7 @@ inline.scm          Inliner
 cse.scm             Common subexpression elimination
   simplification.txt  Issues with simplifying algebra in a compiler
 dead-code.scm       Dead variable elimination
+dead-types.scm      Dead type elimination
 sra.scm             Scalar replacement of aggregates
 
 type-check.scm      Type checker

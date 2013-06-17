@@ -5,3 +5,4 @@
 *.fol-scm
 *.bfo
 stanozzle*
+test-compiler-output*

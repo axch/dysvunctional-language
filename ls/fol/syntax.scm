@@ -14,6 +14,11 @@
       (cadr form)
       form))
 
+(define (definitions program)
+  (if (begin-form? program)
+      (except-last-pair (cdr program))
+      '()))
+
 (define (entry-point program)
   (if (begin-form? program)
       (last program)
@@ -21,10 +26,10 @@
 
 ;;; Define
 
-(define definition? (tagged-list? 'define))
+(define procedure-definition? (tagged-list? 'define))
 
 (define (normalize-definition definition)
-  (cond ((not (definition? definition))
+  (cond ((not (procedure-definition? definition))
          (error "Trying to normalize a non-definition" definition))
         ((pair? (cadr definition))
          (normalize-definition
@@ -48,7 +53,7 @@
             ,@body))))
 
 ;; Wins with formals, type declaration, and body
-(define-algebraic-matcher definition definition? cadr caddr cadddr)
+(define-algebraic-matcher definition procedure-definition? cadr caddr cadddr)
 
 ;;; Simple forms
 
@@ -154,7 +159,8 @@
 
 (define (accessor? expr)
   (or (cons-ref? expr)
-      (vector-ref? expr)))
+      (vector-ref? expr)
+      (implicit-acessor? expr)))
 ; Produces accessor, object, and extra (that being either a null or a
 ; list containing the index for vector-ref).
 (define-algebraic-matcher accessor accessor? car cadr cddr)
@@ -165,10 +171,34 @@
 
 (define vector-ref? (tagged-list? 'vector-ref))
 
-(define (construction? expr)
+(define (implicit-acessor? expr)
   (and (pair? expr)
-       (memq (car expr) '(cons vector))))
+       *accessor-constructor-map*
+       (integer? (*accessor-constructor-map* (car expr)))))
+
+(define (access-index access-form)
+  (cond ((eq? (car access-form) 'car) 0)
+        ((eq? (car access-form) 'cdr) 1)
+        ((eq? (car access-form) 'vector-ref)
+         (caddr access-form))
+        ((and *accessor-constructor-map*
+              (integer? (*accessor-constructor-map* (car access-form))))
+         (*accessor-constructor-map* (car access-form)))
+        (else (error "Not a valid accessor" (car access-form)))))
+
+(define (select-by-access thing access-form)
+  (list-ref (cdr thing) (access-index access-form)))
+
+(define (construction? expr)
+  (or (and (pair? expr)
+           (memq (car expr) '(cons vector)))
+      (implicit-construction? expr)))
 (define-algebraic-matcher construction construction? car cdr)
+
+(define (implicit-construction? expr)
+  (and (pair? expr)
+       *accessor-constructor-map*
+       (eq? 'constructor (*accessor-constructor-map* (car expr)))))
 
 (define values-form? (tagged-list? 'values))
 (define-algebraic-matcher values-form values-form? cdr)
@@ -179,13 +209,23 @@
       (cadr exp)
       exp))
 
+(define (smart-values-subforms form)
+  (if (values-form? form)
+      (cdr form)
+      (list form)))
+
+(define (append-values values-forms)
+  (tidy-values
+   `(values ,@(append-map smart-values-subforms values-forms))))
+
 ;;; Measurements
 
 (define (print-fol-size program)
   (let ((size (count-pairs program))
-        (stripped-size (count-pairs (strip-argument-types program))))
-    (format #t "~A pairs + ~A pairs of type annotations"
-            stripped-size (- size stripped-size))
+        (stripped-size (count-pairs (strip-argument-types program)))
+        (struct-size (count-pairs (filter structure-definition? program))))
+    (format #t "~A pairs + ~A pairs of structure definitions + ~A pairs of type annotations"
+            (- stripped-size struct-size) struct-size (- size stripped-size))
     (newline))
   program)
 
@@ -193,7 +233,7 @@
   (let* ((program (if (begin-form? program)
                       program
                       `(begin ,program)))
-         (defns (filter definition? program))
+         (defns (filter procedure-definition? program))
          (defn-count (length defns))
          (structure-defns (filter structure-definition? program))
          (struct-count (length structure-defns)))
@@ -220,7 +260,7 @@
   (let* ((program (if (begin-form? program)
                       program
                       `(begin ,program)))
-         (defns (filter definition? program))
+         (defns (filter procedure-definition? program))
          (defn-stats (map defn-statistics defns))
          (body-sizes (cons (count-pairs (last program))
                            (map cadr defn-stats)))
@@ -261,7 +301,7 @@
 
 ;;; Reserved words
 
-(define fol-reserved '(cons car cdr vector vector-ref begin define if let let-values values))
+(define fol-reserved '(cons car cdr vector vector-ref begin define-type define if let let-values values))
 
 ;;;; "Runtime system"
 

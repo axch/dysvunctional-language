@@ -47,6 +47,7 @@
    "inline"
    "a-normal-form"
    "sra"
+   "dead-types"
    "cse"
    "dead-code"
    "optimize"
@@ -92,6 +93,7 @@
      intraprocedural-cse
      eliminate-intraprocedural-dead-code
      scalar-replace-aggregates
+     eliminate-dead-types
      eliminate-interprocedural-dead-code
      reverse-anf
 

@@ -197,6 +197,11 @@
                     `(values ,@new-elts))
                 (var-set-union* elts-need)))))
   (define (eliminate-in-application operator operands live-out)
+    ;; This will include calls to the implicit procedures defined by
+    ;; structure definitions, but that turns out to be OK.  I could
+    ;; also reuse the hack CSE used to communicate with itself to
+    ;; reclassify implicit constructions and accesses as constructions
+    ;; and accesses, respectively.
     (receive (new-args args-need) (loop* operands)
       (define (all-wanted? live-out)
         (or (equal? live-out #t)
@@ -292,7 +297,7 @@
 ;;;    clean up (all procedure calls now do need all their inputs).
 ;;;    After this, there should be no tombstones.
 
-(define (program->procedure-definitions program)
+(define (program->definitions program)
   (define (expression->procedure-definition entry-point return-type)
     `(define (%%main)
        (argument-types ,return-type)
@@ -303,18 +308,18 @@
                 (list (expression->procedure-definition (last program) return-type)))
         (list (expression->procedure-definition program return-type)))))
 
-(define (procedure-definitions->program defns)
+(define (definitions->program defns)
   (tidy-begin
    `(begin
       ,@(except-last-pair defns)
       ,(cadddr (last defns)))))
 
 (define (%interprocedural-dead-code-elimination program)
-  (let* ((defns (program->procedure-definitions program)))
+  (let* ((defns (program->definitions program)))
     (receive (liveness-map input-liveness-map)
       (compute-liveness-maps defns)
       (let ((rewritten (rewrite-definitions liveness-map input-liveness-map defns)))
-        (procedure-definitions->program
+        (definitions->program
          rewritten)))))
 
 (define (interprocedural-dead-code-elimination program)
@@ -416,7 +421,7 @@
        (study-access kind arg extra live-out))
       ((values-form subforms)
        (study-values subforms live-out))
-      ((pair operator operands) ; general application
+      ((pair operator operands)         ; general application
        (study-application operator operands live-out))))
   (define (study-if predicate consequent alternate live-out)
     (let ((pred-needs (loop predicate (list #t)))
@@ -455,8 +460,9 @@
           (select-masked live-out subforms))))
   (define (study-application operator operands live-out)
     (outputs-needed! liveness-map operator live-out)
-    (let* (;; The default in the hash table get is the full operands list because
-           ;; needed primitives are assumed to always need everything.
+    (let* (;; The default in the hash table get is the full operands
+           ;; list because needed primitives and implicit procedures
+           ;; are assumed to always need everything.
            (operands-live (hash-table/get input-liveness-map operator operands)))
       (var-set-union*
        (map (lambda (operand) (loop operand (list #t)))
@@ -485,13 +491,19 @@
                  'ok))
            needed-outputs
            live)
-          ;; I don't care which outputs of primitives are needed.
+          ;; I don't care which outputs of primitives and implicit
+          ;; procedures are needed.
+          ;; By tracking the needfulness of implicit accessors, this
+          ;; could gather sufficient information to perform a round of
+          ;; dead slot elimination afterwards.  This is not necessary,
+          ;; however, because only the needed accessors will be
+          ;; retained in the output code anyway.
           'ok)))
   (improve-liveness-map defn))
 
 (define (rewrite-definitions liveness-map input-liveness-map defns)
   ;; This bogon has to do with the entry point being a definition now
-  (define the-type-map (type-map `(begin ,@defns 'bogon)))
+  (define the-type-map (procedure-type-map `(begin ,@defns 'bogon)))
   (define (rewrite-definition name args arg-types return body)
     (let* ((needed-outputs (hash-table/get liveness-map name #f))
            (needed-inputs (hash-table/get input-liveness-map name #f))
@@ -516,7 +528,7 @@
             (if all-outs-needed?
                 the-body ; All the outs of the entry point will always be needed
                 (let ((output-names
-                       (invent-names-for-parts 'receipt return)))
+                       (invent-names-for-factors 'receipt return)))
                   (tidy-let-values
                    `(let-values ((,output-names ,the-body))
                       ,(tidy-values
@@ -530,7 +542,7 @@
          (rewrite-definition name args arg-types return body))
    defns))
 
-(define (rewrite-call-sites type-map liveness-map input-liveness-map form)
+(define (rewrite-call-sites procedure-type-map liveness-map input-liveness-map form)
   (define (procedure? name)
     (hash-table/get liveness-map name #f))
   (define (rewrite-call-site operator operands)
@@ -542,8 +554,8 @@
         (if all-outs-needed?
             the-call
             (let* ((output-names
-                    (invent-names-for-parts
-                     'receipt (return-type (type-map operator))))
+                    (invent-names-for-factors
+                     'receipt (return-type (procedure-type-map operator))))
                    (needed-names
                     (select-masked needed-outputs output-names)))
               (tidy-let-values

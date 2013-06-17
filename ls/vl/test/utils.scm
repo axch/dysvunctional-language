@@ -59,6 +59,8 @@
     (if (and (present? 'aggregates-replaced program)
              (present? 'a-normal-form program))
         (check (equal? program (scalar-replace-aggregates program))))
+    (if (present? 'dead-types-eliminated program)
+        (check (equal? program (eliminate-dead-types program))))
     (if (and (present? 'no-common-subexpressions program)
              (present? 'a-normal-form program)
              (present? 'lets-lifted program))

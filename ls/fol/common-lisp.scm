@@ -6,7 +6,9 @@
 (define (fol->common-lisp program #!optional base)
   (if (default-object? base)
       (set! base "comozzle"))
-  (let ((code (prepare-for-common-lisp program))
+  (let ((code `((declaim (optimize (speed 3) (safety 0)))
+                ,@prelude
+                ,@(prepare-for-common-lisp program)))
         (file (pathname-new-type base "lisp")))
     (with-output-to-file file
       (lambda ()
@@ -33,10 +35,23 @@
         `(values ,thing)))
   (define (compile-program program)
     (let ((inferred-type-map (make-eq-hash-table)))
-      (check-program-types program inferred-type-map)
+      (for-each-fol-expression program
+       (lambda (expr type)
+         (hash-table/put! inferred-type-map expr type)))
       (define (lookup-inferred-type expr)
         (or (hash-table/get inferred-type-map expr #f)
             (error "Looking up unknown expression" expr)))
+      (define compile-type-definition
+        (rule `(define-type (? name ,fol-var?) (structure (?? slots-and-types)))
+              (let ((slots (map car slots-and-types))
+                    (types (map cadr slots-and-types)))
+                (define (slot-declaration slot type)
+                  ;; According to the Hyperspec, nil is not a type
+                  ;; error unless some construction attempt omits the
+                  ;; initialization parameter.
+                  `(,slot nil :type ,(fol-shape->type-specifier type) :read-only t))
+                `(defstruct (,name (:constructor ,(symbol 'make- name) ,slots))
+                   ,@(map slot-declaration slots types)))))
       (define compile-definition
         (rule `(define ((? name ,fol-var?) (?? formals))
                  (argument-types (?? formal-types) (? return-type))
@@ -64,14 +79,16 @@
       ;; declaration facilities enough that the inferred type map is
       ;; not necessary and all the type information this translation
       ;; needs can be read off the input FOL program.
-      (let ((program (let->let* program)))
-        `((declaim (optimize (speed 3) (safety 0)))
-          ,@prelude
-          (labels (,@(if (begin-form? program)
-                         `(,@(map compile-definition
-                                  (cdr (except-last-pair program)))
-                           ,(compile-entry-point (last program)))
-                         (list (compile-entry-point program))))
+      (let* ((program (let->let* program))
+             (types (if (begin-form? program)
+                        (filter type-definition? program)
+                        '()))
+             (code (if (begin-form? program)
+                       (filter (lambda (d) (not (type-definition? d))) (cdr program))
+                       (list program))))
+        `(,@(map compile-type-definition types)
+          (labels (,@(map compile-definition (except-last-pair code))
+                   ,(compile-entry-point (last code)))
                   (setf (fdefinition '__main__) (function __main__)))))))
   (compile-program (alpha-rename program)))
 
@@ -86,6 +103,9 @@
          'null)
         ((eq? shape 'escaping-function)
          'function)
+        ((fol-var? shape)
+         ;; Assume it's a user-defined struct
+         shape)
         ((eq? 'cons (car shape))
          `(cons ,(fol-shape->type-specifier (cadr  shape))
                 ,(fol-shape->type-specifier (caddr shape))))

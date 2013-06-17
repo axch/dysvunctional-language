@@ -194,12 +194,13 @@
 ;;; values.  The slots are ordered by their VL variable names.
 (define (abstract-value->structure-definition value)
   (cond ((closure? value)
-         `(define-typed-structure ,(abstract-closure->scheme-structure-name value)
-            ,@(map (lambda (var)
-                     `(,(vl-variable->scheme-field-name var)
-                       ,(shape->type-declaration (lookup var (closure-env value)))))
-                   (interesting-variables
-                    (closure-free-variables value) (closure-env value)))))
+         `(define-type ,(abstract-closure->scheme-structure-name value)
+            (structure
+             ,@(map (lambda (var)
+                      `(,(vl-variable->scheme-field-name var)
+                        ,(shape->type-declaration (lookup var (closure-env value)))))
+                    (interesting-variables
+                     (closure-free-variables value) (closure-env value))))))
         (else
          (error "Not compiling non-closure aggregates to Scheme structures"
                 value))))
@@ -343,8 +344,8 @@
 (define analyze-and-generate
   (stage-pipeline generate-stage analyze-stage))
 
-(define compile-to-raw-fol
-  (stage-pipeline structure-definitions->vectors analyze-and-generate))
+;; This used not to be just an alias
+(define compile-to-raw-fol analyze-and-generate)
 
 (define compile-to-fol
   (stage-pipeline fol-optimize analyze-and-generate))

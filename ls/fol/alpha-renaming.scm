@@ -49,11 +49,14 @@
            (->let (loop (->lambda exp))))
           ((let-values-form? exp)
            (->let-values (loop (->lambda exp))))
-          ((definition? exp)
+          ((procedure-definition? exp)
            ;; Assume the definiendum is already unique
            (reconstitute-definition
             `(define ,(definiendum exp)
                ,(loop (definiens exp)))))
+          ((type-definition? exp)
+           ;; Type names are global anyway, in their own namespace
+           exp)
           ((pair? exp)
            (cons (loop (car exp))
                  (loop (cdr exp))))
@@ -82,8 +85,8 @@
           ;; Do I want to mess with the fact that the order of
           ;; definitions is semantically insignificant?
           ((and (begin-form? exp1) (begin-form? exp2))
-           (let* ((names1 (map definiendum (filter definition? exp1)))
-                  (names2 (map definiendum (filter definition? exp2)))
+           (let* ((names1 (map definiendum (filter procedure-definition? exp1)))
+                  (names2 (map definiendum (filter procedure-definition? exp2)))
                   (new-env (append (map cons names1 names2) env)))
              (apply boolean/and
               (map (lambda (form1 form2)
@@ -91,11 +94,14 @@
                    exp1 exp2))))
           ;; At this point, the environment has already accounted
           ;; for the scope of the definitions
-          ((and (definition? exp1) (definition? exp2))
+          ((and (procedure-definition? exp1) (procedure-definition? exp2))
            (let ((name1 (definiendum exp1))
                  (name2 (definiendum exp2)))
              (and (loop name1 name2 env)
                   (loop (definiens exp1) (definiens exp2) env))))
+          ((and (type-definition? exp1) (type-definition? exp2))
+           ;; TODO Accept alpha renamings of types as well?
+           (equal? exp1 exp2))
           ((and (pair? exp1) (pair? exp2))
            (and (loop (car exp1) (car exp2) env)
                 (loop (cdr exp1) (cdr exp2) env)))

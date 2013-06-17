@@ -1,4 +1,5 @@
 (declare (usual-integrations))
+(declare (integrate-externals "pattern-matching"))
 ;;;; Turning record structures into vectors
 
 ;;; VL and DVL emit code that defines Scheme records to serve as
@@ -8,7 +9,7 @@
 ;;; support for union types.
 
 ;;; Every structure definition of the form
-;;; (define-typed-structure foo (bar bar-type) (baz baz-type))
+;;; (define-type foo (structure (bar bar-type) (baz baz-type)))
 ;;; entails the constructor MAKE-FOO, accessors FOO-BAR and FOO-BAZ,
 ;;; and the type FOO.  Fortunately, all are used only in call
 ;;; position, so they are easy to search for and replace.  The
@@ -17,9 +18,17 @@
 ;;; corresponding fully-expanded tree of VECTOR, CONS, etc.
 ;;; Thereafter, the structure definitions can be dropped.
 
+(define type-definition? (tagged-list? 'define-type))
+
+(define structure-type? (tagged-list? 'structure))
+
 (define (structure-definition? form)
-  (and (pair? form)
-       (eq? (car form) 'define-typed-structure)))
+  (and (type-definition? form)
+       (structure-type? (caddr form))))
+;; Wins with the name and the slot-type list of the structure
+;; definition.
+(define-algebraic-matcher
+  structure-definition structure-definition? cadr cdaddr)
 
 (define (%structure-definitions->vectors program)
   (if (begin-form? program)
@@ -61,8 +70,9 @@
          (structure-map (make-eq-hash-table)))
     (hash-table/put-alist!
      structure-map
-     (map (lambda (defn)
-            (cons (cadr defn) `(vector ,@(map cadr (cddr defn)))))
+     (map (lambda-case*
+           ((structure-definition name fields)
+            (cons name `(vector ,@(map cadr fields)))))
           structure-definitions))
     (define basic-tree
       (lambda (type)
@@ -79,17 +89,20 @@
 
     (hash-table/put-alist!
      structure-map
-     (map (lambda (name) (cons (symbol 'make- name) 'constructor))
-          structure-names))
+     (map (lambda-case*
+           ((structure-definition name _)
+            (cons (symbol 'make- name) 'constructor)))
+          structure-definitions))
 
     (hash-table/put-alist!
      structure-map
      (append-map
-      (lambda (defn)
+      (lambda-case*
+       ((structure-definition name fields)
         (map (lambda (field index)
-               (cons (symbol (cadr defn) '- field) index))
-             (map car (cddr defn))
-             (iota (length (cddr defn)))))
+               (cons (symbol name '- field) index))
+             (map car fields)
+             (iota (length fields)))))
       structure-definitions))
     (define (classify name)
       (hash-table/get structure-map name #f))

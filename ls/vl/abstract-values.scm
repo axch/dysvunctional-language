@@ -76,7 +76,8 @@
   (strong-hash-table/constructor abstract-hash-mod abstract-equal? #t))
 
 ;;; Union of shapes --- can be either this or that.  ABSTRACT-UNION is
-;;; only used on the return values of IF statements.
+;;; used on the return values of IF statements and to merge the
+;;; results of successive refinements of the same binding.
 
 (define (abstract-union thing1 thing2)
   (cond ((abstract-equal? thing1 thing2)

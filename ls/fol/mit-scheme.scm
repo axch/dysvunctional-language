@@ -3,7 +3,7 @@
 
 ;;; The basic strategy is to write a FOL program out into a file and
 ;;; invoke the MIT Scheme compiler on it.  Writing out will have the
-;;; effect of rendering and fol-name objects as symbols.
+;;; effect of rendering any fol-name objects as symbols.
 
 ;;; Compiles FOL to machine code via MIT Scheme assuming that the
 ;;; result will be given the FOL runtime system separately.

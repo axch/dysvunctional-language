@@ -38,9 +38,13 @@
 ;;; access = (car <simple-expression>)
 ;;;        | (cdr <simple-expression>)
 ;;;        | (vector-ref <simple-expression> <integer>)
+;;;        ;; Also accessor procedures implied by DEFINE-TYPE
+;;;        | (<proc-var> <simple-expression>)
 ;;;
 ;;; construction = (cons <simple-expression> <simple-expression>)
 ;;;              | (vector <simple-expression> ...)
+;;;              ;; Also constructor procedures implied by DEFINE-TYPE
+;;;              | (<proc-var> <simple-expression> ...)
 
 ;;; The following program converts an arbitrary FOL expression into
 ;;; approximate ANF.  The way to do this is to recur down the
@@ -54,6 +58,7 @@
 
 (define (approximate-anf expr)
   (define-algebraic-matcher begin-form begin-form? id-project)
+  (define-algebraic-matcher type-definition type-definition? id-project)
   (define-case* loop
     ((simple-form expr) expr)
     (if-form => approximate-anf-if)
@@ -62,6 +67,7 @@
     (lambda-form => approximate-anf-lambda)
     ((begin-form expr) (map loop expr))
     (definition => approximate-anf-definition)
+    ((type-definition expr) expr)
     (expr   ; access, construction, application, or multiple value return
      (approximate-anf-application expr)))
   (define (approximate-anf-if pred cons alt)

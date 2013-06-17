@@ -68,9 +68,13 @@
 ;;; access = (car <simple-expression>)
 ;;;        | (cdr <simple-expression>)
 ;;;        | (vector-ref <simple-expression> <integer>)
+;;;        ;; Also accessor procedures implied by DEFINE-TYPE
+;;;        | (<proc-var> <simple-expression>)
 ;;;
 ;;; construction = (cons <simple-expression> <simple-expression>)
 ;;;              | (vector <simple-expression> ...)
+;;;              ;; Also constructor procedures implied by DEFINE-TYPE
+;;;              | (<proc-var> <simple-expression> ...)
 ;;;
 ;;; This is the grammar of the output of APPROXIMATE-ANF.
 
@@ -91,7 +95,7 @@
 ;;; (see RECONSTRUCT-PRE-SRA-SHAPE).
 
 (define (%scalar-replace-aggregates program)
-  (let ((lookup-type (type-map program)))
+  (let ((lookup-type (procedure-type-map program)))
     ;; TODO This is not idempotent because if repeated on an entry
     ;; point that has to produce a structure, it will re-SRA the
     ;; reconstruction code and then add more reconstruction code to
@@ -104,21 +108,26 @@
                (argument-types (?? arg-shapes) (? return))
                (? body))
             (let* ((new-name-sets
-                    (map invent-names-for-parts formals arg-shapes))
+                    (map invent-names-for-factors formals arg-shapes))
                    (env (augment-env
                          (empty-env) formals new-name-sets arg-shapes))
                    (new-names (apply append new-name-sets)))
               `(define (,name ,@new-names)
                  (argument-types
-                  ,@(append-map primitive-fringe arg-shapes)
-                  ,(tidy-values `(values ,@(primitive-fringe return))))
+                  ,@(append-map atomic-fringe arg-shapes)
+                  ,(tidy-values `(values ,@(atomic-fringe return))))
                  ,(sra-expression body env lookup-type
                                   (lambda (new-body shape) new-body))))))
-    (if (begin-form? program)
-        (append
-         (map sra-definition (except-last-pair program))
-         (list (sra-entry-point (last program))))
-        (sra-entry-point program))))
+    (fluid-let ((*accessor-constructor-map* (accessor-constructor-map program))
+                (*type-map* (type-map program)))
+      (if (begin-form? program)
+          (append
+           (map sra-definition (except-last-pair program))
+           (list (sra-entry-point (last program))))
+          (sra-entry-point program)))))
+
+;; TODO this is another instance of the hack described in cse.scm.
+(define *type-map* #f)
 
 (define (sra-expression expr env lookup-type win)
   ;; An SRA environment maps every bound name to two things: the shape
@@ -131,8 +140,9 @@
   ;; return before SRA.
   ;; For this purpose, a VALUES is the same as any other construction.
   (define (construction? expr)
-    (and (pair? expr)
-         (memq (car expr) '(cons vector values))))
+    (or (and (pair? expr)
+             (memq (car expr) '(cons vector values)))
+        (implicit-construction? expr)))
   (define-algebraic-matcher construction construction? car cdr)
   (define (loop expr env)
     (case* expr
@@ -166,7 +176,7 @@
   (define (sra-let bindings body env)
     (receive (new-bind-expressions bind-shapes) (loop* (map cadr bindings) env)
       (let ((new-name-sets
-             (map invent-names-for-parts
+             (map invent-names-for-factors
                   (map car bindings) bind-shapes)))
         (receive (new-body body-shape)
           (loop body (augment-env env (map car bindings) new-name-sets bind-shapes))
@@ -186,12 +196,12 @@
   (define (sra-let-values names exp body env)
     (receive (new-exp exp-shape) (loop exp env)
       (let ((new-name-sets
-             (map invent-names-for-parts names (sra-parts exp-shape))))
+             (map invent-names-for-factors names (sra-factors exp-shape))))
         ;; The previous line is not idempotent because it renames
         ;; all the bindings, even those that used to hold
         ;; non-structured values.
         (receive (new-body body-shape)
-          (loop body (augment-env env names new-name-sets (sra-parts exp-shape)))
+          (loop body (augment-env env names new-name-sets (sra-factors exp-shape)))
           (values (tidy-let-values
                    `(let-values ((,(apply append new-name-sets) ,new-exp))
                       ,new-body))
@@ -206,12 +216,15 @@
               'escaping-function)))
   (define (sra-access expr env)
     (receive (new-cadr cadr-shape) (loop (cadr expr) env)
-      (values (slice-values-by-access new-cadr cadr-shape expr)
-              (select-from-shape-by-access cadr-shape expr))))
+      (let ((index (access-index expr))
+            (factors (sra-factors cadr-shape)))
+        (values (slice-values-by-index
+                 index (smart-values-subforms new-cadr) factors)
+                (list-ref factors index)))))
   (define (sra-construction ctor operands env)
     (receive (new-terms terms-shapes) (loop* operands env)
       (values (append-values new-terms)
-              (construct-shape terms-shapes ctor))))
+              (construct-type terms-shapes ctor))))
   (define (sra-application operator operands env)
     (receive (new-args args-shapes) (loop* operands env)
       ;; The type checker should have ensured this
@@ -285,29 +298,24 @@
 
 (define (reconstruct-pre-sra-shape new-expr shape)
   (define (walk shape names)
-    (cond ((primitive-shape? shape)
+    (cond ((atomic-type? shape)
            (values (car names) (cdr names)))
           ((null? shape)
            (values '() names))
-          ((eq? 'cons (car shape))
-           (receive (car-expr names-left) (walk (cadr shape) names)
-             (receive (cdr-expr names-left) (walk (caddr shape) names-left)
-               (values `(cons ,car-expr ,cdr-expr) names-left))))
-          ((eq? 'vector (car shape))
-           (receive (new-args names-left)
-             (let walk* ((args-left (cdr shape))
-                         (names-left names))
-               (if (null? args-left)
-                   (values '() names-left)
-                   (receive (new-arg names-left) (walk (car args-left) names-left)
-                     (receive (new-args names-left) (walk* (cdr args-left) names-left)
-                       (values (cons new-arg new-args) names-left)))))
-             (values `(vector ,@new-args) names-left)))
+          ((construction? shape)
+           (receive (new-exprs names-left) (walk* (cdr shape) names)
+             (values `(,(car shape) ,@new-exprs) names-left)))
           (else
            (error "Weird shape" shape))))
-  (if (primitive-shape? shape)
+  (define (walk* shapes-left names-left)
+    (if (null? shapes-left)
+        (values '() names-left)
+        (receive (new-expr names-left) (walk (car shapes-left) names-left)
+          (receive (new-exprs names-left) (walk* (cdr shapes-left) names-left)
+            (values (cons new-expr new-exprs) names-left)))))
+  (if (atomic-type? shape)
       new-expr
-      (let ((piece-names (invent-names-for-parts 'receipt shape)))
+      (let ((piece-names (invent-names-for-factors 'receipt shape)))
         (tidy-let-values
          `(let-values ((,piece-names ,new-expr))
             ,(approximate-anf
@@ -316,6 +324,8 @@
                 shape)))))))
 
 ;;; SRA supporting procedures
+
+;; Type environments
 
 (define (empty-env) '())
 (define (augment-env env old-names name-sets shapes)
@@ -327,61 +337,40 @@
 (define (get-names name env)
   (let ((binding (assq name env)))
     (cadr binding)))
-(define (count-meaningful-parts shape)
+
+;; Atomic expansions of given types
+
+(define (count-atomic-factors shape)
   (cond ((null? shape) 0)
-        ((primitive-shape? shape) 1)
-        (else (reduce + 0 (map count-meaningful-parts (sra-parts shape))))))
-(define (primitive-shape? shape)
-  (or (function-type? shape)
-      (memq shape '(real bool gensym escaping-function))))
-(define (primitive-fringe shape)
+        ((atomic-type? shape) 1)
+        (else (reduce + 0 (map count-atomic-factors (sra-factors shape))))))
+(define (atomic-fringe shape)
   (cond ((null? shape) '())
-        ((primitive-shape? shape) (list shape))
-        (else (append-map primitive-fringe (sra-parts shape)))))
-(define (sra-parts shape)
-  (cond ((construction? shape)
-         (cdr shape))
-        ((values-form? shape)
-         (cdr shape))
-        (else (list shape))))
-(define (invent-names-for-parts basename shape)
-  (let ((count (count-meaningful-parts shape)))
+        ((atomic-type? shape) (list shape))
+        (else (append-map atomic-fringe (sra-factors shape)))))
+(define (atomic-type? shape)
+  ;; In due course, SRA may choose to leave some non-primitive types
+  ;; unexpanded.
+  (primitive-type? shape))
+(define (sra-factors shape)
+  (if (atomic-type? shape)
+      (list shape)
+      (type-factors shape)))
+(define (invent-names-for-factors basename shape)
+  (let ((count (count-atomic-factors shape)))
     (if (= 1 count)
         (list basename)
         (map (lambda (i) (make-name basename))
              (iota count)))))
-(define (smart-values-subforms form)
-  (if (values-form? form)
-      (cdr form)
-      (list form)))
-(define (append-values values-forms)
-  (tidy-values `(values ,@(append-map smart-values-subforms values-forms))))
-(define (construct-shape subshapes kind)
-  `(,kind ,@subshapes))
-(define (slice-values-by-access values-form old-shape access-form)
-  (let ((the-subforms (smart-values-subforms values-form)))
-    (tidy-values
-     (cond ((eq? (car access-form) 'car)
-            `(values ,@(take the-subforms
-                             (count-meaningful-parts (cadr old-shape)))))
-           ((eq? (car access-form) 'cdr)
-            `(values ,@(drop the-subforms
-                             (count-meaningful-parts (cadr old-shape)))))
-           ((eq? (car access-form) 'vector-ref)
-            (let loop ((index-left (caddr access-form))
-                       (names-left the-subforms)
-                       (shape-left (cdr old-shape)))
-              (if (= 0 index-left)
-                  `(values ,@(take names-left
-                                   (count-meaningful-parts (car shape-left))))
-                  (loop (- index-left 1)
-                        (drop names-left
-                              (count-meaningful-parts (car shape-left)))
-                        (cdr shape-left)))))))))
-(define (select-from-shape-by-access old-shape access-form)
-  (cond ((eq? (car access-form) 'car)
-         (cadr old-shape))
-        ((eq? (car access-form) 'cdr)
-         (caddr old-shape))
-        ((eq? (car access-form) 'vector-ref)
-         (list-ref (cdr old-shape) (caddr access-form)))))
+(define (slice-values-by-index index names shape)
+  (tidy-values
+   (let loop ((index-left index)
+              (names-left names)
+              (shape-left shape))
+     (if (= 0 index-left)
+         `(values ,@(take names-left
+                          (count-atomic-factors (car shape-left))))
+         (loop (- index-left 1)
+               (drop names-left
+                     (count-atomic-factors (car shape-left)))
+               (cdr shape-left))))))

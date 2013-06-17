@@ -5,4 +5,5 @@
    (load-relative-compiled file fol-environment))
  '("fol-test"
    "cse-test"
-   "interactions-test"))
+   "interactions-test"
+   "backend-test"))

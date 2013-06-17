@@ -21,10 +21,23 @@
        (fiction 4)))
 
    (equal?
+    'real
+    (check-program-types
+     '(begin
+        (define-type foo (structure (bar real) (baz real)))
+        (foo-bar (make-foo 1 2)))))
+
+   (equal?
     '(vector-ref (vector 1 2) 0)
     (structure-definitions->vectors
      '(begin
-        (define-typed-structure foo (bar real) (baz real))
+        (define-type foo (structure (bar real) (baz real)))
+        (foo-bar (make-foo 1 2)))))
+
+   (equal? 1
+    (fol-eval
+     '(begin
+        (define-type foo (structure (bar real) (baz real)))
         (foo-bar (make-foo 1 2)))))
 
    (lset= eq? '(c a) (feedback-vertex-set '((a b c d) (b a) (c d) (d c) (e a))))
@@ -118,8 +131,7 @@
         (lambda (x)
           (+ x 1)))))
 
-   (equal? #f (procedure-definitions->program
-               (program->procedure-definitions #f)))
+   (equal? #f (definitions->program (program->definitions #f)))
 
    ;; Interprocedural-dead-code-elimination should catch loops that
    ;; carry but do not use variables.
@@ -242,9 +254,10 @@
                       (fact 5)))
    (present! 'lets-lifted program)
    (present! 'unique-names program)
+   (check-fol-types program)
    (for-each (lambda (stage)
                (stage program)
-               (check (equal? '((unique-names . #t) (lets-lifted . #t))
+               (check (equal? '((syntax-checked . #t) (type . real) (unique-names . #t) (lets-lifted . #t))
                               (hash-table/get eq-properties program #f))))
              (list inline intraprocedural-cse
                    eliminate-intraprocedural-dead-code
@@ -295,4 +308,56 @@
       type-safely))
    (check (= (fol-eval processed) answer)))
 
+ (define-test (dead-code-elimination-should-respect-structure-types)
+   (define program
+     '(begin
+        (define-type point (structure (x real) (y real)))
+        (define (magnitude v)
+          (argument-types point real)
+          (sqrt (+ (* (point-x v) (point-x v))
+                   (* (point-y v) (point-y v)))))
+        (magnitude (make-point 1 1))))
+   (define answer (sqrt 2))
+   (check (= (fol-eval program) answer))
+   (check (equal? program
+                  (eliminate-interprocedural-dead-code program type-safely)))
+   (check (equal? (inline program)
+                  (eliminate-interprocedural-dead-code (inline program)))))
+
+ (define-test (dead-type-elimination-should-keep-programs-type-checking)
+   ;; I expect no programs like this to arise as outputs of processing
+   ;; steps, but dead-type-elimination should work on them anyway.
+   (define program
+     '(begin
+        (define-type a (structure (b b)))
+        (define-type b (structure (x real)))
+        (define (need-a a)
+          (argument-types a a)
+          a)
+        3))
+   (check (equal? program (%dead-type-elimination program)))
+   (check (equal? 3 (fol-optimize program))))
+
+ (define-test (sra-should-deal-with-recursive-types)
+   (define program
+     '(begin
+        (define-type a (structure (a a)))
+        (define (need-a a)
+          (argument-types a a)
+          a)
+        1))
+   ;; TODO This breaks because SRA tries to expand the A structure
+   ;; forever.
+   ; (check (equal? '() (scalar-replace-aggregates program)))
+   ;; This works, however, because the inliner flushes the unused
+   ;; procedure, masking the problem from SRA.
+   (check (equal? 1 (fol-optimize program)))
+   (define after-inlining
+     '(begin
+        (define-type a (structure (a a)))
+        1))
+   (check (equal? after-inlining (inline program)))
+   (check (equal? after-inlining
+                  (scalar-replace-aggregates after-inlining)))
+   )
  )
