@@ -118,8 +118,8 @@ procedure `ge' (ge stands for Go to Environment).
 
 All of VL, DVL, FOL, and SLAD use some none-too-interesting common
 utility stuff that can be found in the support/ directory.  There is
-also a rule-based term-rewriting system in support/rule-system, which
-FOL uses extensively (and DVL uses lightly) to manipulate source code.
+also a rule-based term-rewriting system in support/rules, which FOL
+uses extensively (and DVL uses lightly) to manipulate source code.
 
 
 Cheat Sheet
@@ -131,7 +131,7 @@ Directories
  slad/        Implementation of SLAD (some refers to vl/)
  eval1/       Old crufty experiment
  support/     General libraries
- support/rule-system/   Rule-based term-rewriting system
+ support/rules/   Rule-based term-rewriting system
  testing/     Unit test framework (external library in source form)
  */test/      Unit tests for *
 

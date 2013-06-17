@@ -13,7 +13,7 @@
   (self-relatively (lambda () (load filename))))
 
 (load-relative "../support/auto-compilation")
-(load-relative "../support/rule-system/load")
+(load-relative "../support/rules/load")
 (load-relative "../fol/load")
 
 (for-each

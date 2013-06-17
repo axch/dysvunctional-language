@@ -21,7 +21,7 @@
 (environment-define fol-environment 'fol-environment fol-environment)
 (environment-define fol-environment '*environment* fol-environment)
 
-(load-relative "../support/rule-system/load" fol-environment)
+(load-relative "../support/rules/load" fol-environment)
 
 (load-option 'format)
 
