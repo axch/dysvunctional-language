@@ -53,7 +53,8 @@
    "optimize"
    "mit-scheme"
    "stalin"
-   "common-lisp"))
+   "common-lisp"
+   "asm-js"))
 
 ;;; Exports
 
@@ -71,6 +72,7 @@
      fol->stalin
      fol->common-lisp
      run-common-lisp
+     fol->asm.js
 
      ;; Optimization
      equal-type? ; TODO
