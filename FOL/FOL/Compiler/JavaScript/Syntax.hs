@@ -6,7 +6,7 @@ import FOL.Language.Expression ()
 import FOL.Language.Pretty
 
 import Data.Maybe
-import Data.Monoid
+import Data.Monoid hiding ((<>))
 
 data JsProg = JsProg [JsDefn]
               deriving Show
