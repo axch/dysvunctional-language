@@ -106,7 +106,7 @@ compileProgAsModule module_name prog
                ty_defns
                sc_defns
     where
-      pragmas  = [HsPragma "{-# LANGUAGE MagicHash, UnboxedTuples #-}"]
+      pragmas  = [HsPragma "{-# LANGUAGE MagicHash, UnboxedTuples, BangPatterns #-}"]
       sc_defns = prelude ++ compileProg ann_prog
       ann_prog = ann prog
       ty_defns = [HsTyDefn (translateShape s) | s <- lambdasInProg ann_prog]
