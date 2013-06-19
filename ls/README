@@ -1,3 +1,66 @@
+DVL
+===
+
+A prototype compiler for running the code you want to write as fast as
+the code you have to write (as long as it's numerical).
+
+By which I mean that DVL is a langauge and compiler for writing the
+numerical kernel of your system in, instead of Fortran or C.  The DVL
+input language is much nicer and higher level, a dialect of Lisp; but
+more important, *high level DVL constructs compile to efficient code*.
+
+Why yet another compiler?  Can't any competent Common Lisper or
+Haskeller get to within 3-5x of Fortran with a little care already?
+Yes, but only by writing Fortran in parentheses (or in monads).  I
+know of no compiler where modularity is costless.
+
+It's not costless in DVL either, but in DVL you pay for it with
+resource-intensive compilations rather than slow runtimes.  In the
+numeric context, all the modularity constructs you know and love: data
+structures, closures, higher-order functions, abstraction boundaries
+of every stripe -- even automatic differentiation -- are just
+scaffolding for carrying numbers hither and yon to be added and
+multiplied.  DVL solves the scaffolding at compile time and emits
+efficient code to do the arithmetic at runtime.
+
+Disclaimer: DVL is a *prototype*.  The language is minimal (but you
+don't need much to predict the positions of the planets); the error
+messages are inscrutable; and the commandline interface is inflexible.
+DVL is not polished enough to be really used by someone who does not
+have time to understand its internals.  You have been warned.
+
+- [So where do I get it?](#installation)
+- [So how do I use it?](#invocation)
+- [What's with the name?](#nomenclature)
+- [Where did this come from?](#history)
+- [I can haz legal?](#license)
+
+Installation
+============
+
+DVL is written primarily in MIT Scheme and distributed in source form,
+so you will need to install that first.  If you want to use any other
+backend besides compiling through MIT Scheme, you will need to install
+that system.  In particular, the Haskell backend, in addition to
+generating Haskell, is written in Haskell, so you will need GHC twice
+for that.
+
+When ready, just `git clone` this repository and then `git submodule
+init` and `git submodule update` to pull in code dependencies.  Then
+
+```
+dysvunctional-language/dvl <backend> <dvl-program-file>
+```
+
+and you're off to the races.  Or fire up your MIT Scheme and
+
+```scheme
+(load "dysvunctional-language/load")
+```
+
+to use the REPL interface.
+
+
                               BCL-AD/ls/
             A collection of AD and compilation prototypes
 
