@@ -32,13 +32,12 @@ boxShape :: HsShape -> HsShape
 boxShape HsUnboxedDoubleSh = HsBoxedDoubleSh
 boxShape shape = shape
 
-compileProg :: AnnProg Type -> [HsSCDefn]
-compileProg (prog_type, AnnProg defns expr)
+compileProg :: Name -> AnnProg Type -> [HsSCDefn]
+compileProg export_name (prog_type, AnnProg defns expr)
     = map compileDefn defns ++ [entry_point]
     where
       entry_point
-          = HsSCDefn (translateType prog_type)
-            (Name "__main__") [] (compileExpr expr)
+          = HsSCDefn (translateType prog_type) export_name [] (compileExpr expr)
 
 compileDefn :: AnnDefn Type -> HsSCDefn
 compileDefn (proc_type, AnnDefn proc args expr)
@@ -97,17 +96,17 @@ lambdasInDefn (_, AnnDefn _ _ body) = lambdasInExpr body
 lambdasInExpr :: AnnExpr Type -> [Shape]
 lambdasInExpr (_, e) = [s | AnnLambda x (PrimTy s, _) <- universe e]
 
-compileProgAsModule :: Name -> Prog -> HsModule
-compileProgAsModule module_name prog
+compileProgAsModule :: Name -> Name -> Prog -> HsModule
+compileProgAsModule module_name export_name prog
     = HsModule pragmas
                module_name
-               [Name "__main__"]
+               [export_name]
                [HsImport "GHC.Exts"]
                ty_defns
                sc_defns
     where
       pragmas  = [HsPragma "{-# LANGUAGE MagicHash, UnboxedTuples, BangPatterns #-}"]
-      sc_defns = prelude ++ compileProg ann_prog
+      sc_defns = prelude ++ compileProg export_name ann_prog
       ann_prog = ann prog
       ty_defns = [HsTyDefn (translateShape s) | s <- lambdasInProg ann_prog]
 
