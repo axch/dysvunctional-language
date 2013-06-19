@@ -68,9 +68,24 @@ data HsPat
 ppTuple :: [Doc] -> Doc
 ppTuple = parens . sep . punctuate comma
 
+-- The GHC cannot handle arbitrarily long unboxed tuples (the maximum
+-- supported size is 62 on my 32 bit machine).  However, as of 7.6.3,
+-- unboxed tuples can be nested (an unboxed tuple has kind #).
+maxTupleSize :: Int
+maxTupleSize = 62
+
 ppUnboxedTuple :: [Doc] -> Doc
-ppUnboxedTuple = hashedParens . sep . punctuate comma
+ppUnboxedTuple xs = ppUnboxedTuple' xs (length xs)
     where
+      k = maxTupleSize - 1
+
+      ppUnboxedTuple' xs n =
+        hashedParens . sep . punctuate comma $
+          if n <= maxTupleSize
+          then xs
+          else let (xs', xs'') = splitAt k xs
+               in xs' ++ [ppUnboxedTuple' xs'' (n - k)]
+
       hashedParens x = text "(# " <> x <> text " #)"
 
 newline :: Doc
