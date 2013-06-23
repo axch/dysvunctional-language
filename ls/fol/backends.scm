@@ -9,7 +9,9 @@
   name
   synopsis
   compile
-  execute)
+  compiling-problem
+  execute
+  executing-problem)
 
 (define the-backends '())
 
@@ -21,22 +23,42 @@
        (set! the-backends
              (append the-backends (list (cons 'name name))))))))
 
+(define (executable-present? name)
+  (let ((location
+         (with-output-to-string
+           (lambda ()
+             (run-shell-command (string-append "which " name))))))
+    (> (string-length location) 0)))
+
+(define always-can (lambda () #f))
+(define (never-can msg) (lambda () msg))
+(define (needs-executable name)
+  (lambda ()
+    (if (executable-present? name)
+        #f
+        (string-append "the " name " program is not on the path"))))
+
 (define-backend mit-scheme
   "Compile to native code via MIT Scheme"
-  fol->mit-scheme run-mit-scheme)
+  fol->mit-scheme always-can
+  run-mit-scheme always-can)
 
 (define-backend floating-mit-scheme
   "Like mit-scheme, but force floating-point arithmetic"
-  fol->floating-mit-scheme run-mit-scheme)
+  fol->floating-mit-scheme always-can
+  run-mit-scheme always-can)
 
 (define-backend standalone-mit-scheme
   "Like mit-scheme, but include FOL runtime"
-  fol->standalone-mit-scheme #f)
+  fol->standalone-mit-scheme always-can
+  #f (never-can "cannot execute standalone MIT Scheme code")) ; TODO
 
 (define-backend stalin
   "Compile to native code via the Stalin Scheme compiler"
-  fol->stalin #f)
+  fol->stalin (needs-executable "stalin")
+  #f (never-can "cannot execute stalin output")) ; TODO
 
 (define-backend common-lisp
   "Generate Common Lisp and compile to native code via SBCL"
-  fol->common-lisp run-common-lisp)
+  fol->common-lisp (needs-executable "sbcl")
+  run-common-lisp (needs-executable "sbcl"))

@@ -77,6 +77,21 @@
   (set-task-adverbs! the-task (reverse (delete-duplicates (task-adverbs the-task))))
   the-task)
 
+(define (check-feasibility task)
+  (let* ((backend (task-backend task))
+         (verb (task-verb task))
+         (problem (cond ((eq? verb 'compile)
+                         ((backend-compiling-problem backend)))
+                        ((eq? verb 'run)
+                         (or ((backend-compiling-problem backend))
+                             ((backend-executing-problem backend))))
+                        (else #f))))
+    (if problem
+        (command-line-error
+         "Cannot" verb (error-irritant/noise " via")
+         (backend-name backend) (error-irritant/noise " because ")
+         (error-irritant/noise problem) (error-irritant/noise ".")))))
+
 (define (command-line-error msg . irritants)
   (format-error-message msg irritants (current-output-port))
   (newline)
@@ -149,6 +164,7 @@ The possible options are
          (file (symbol->string (car args)))
          (args (cdr args))
          (task (parse-task verb args)))
+    (check-feasibility task)
     (let* ((program (with-input-from-file file read))
            (optimized-program (apply (optimization-step task) program (task-adverbs task))))
       (with-output-to-file (pathname-new-type file "opt")
