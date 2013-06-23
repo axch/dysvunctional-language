@@ -1,3 +1,4 @@
+(declare (usual-integrations))
 ;; The commandline script lands here
 
 ;; optimize n times; compile [via backend] are independent; execute
