@@ -104,4 +104,4 @@ env.scm
 nomenclature.scm
 code-generator.scm
 
-DVL, like VL, also relies on the FOL compiler in ../vl/fol/, which see.
+DVL, like VL, also relies on the FOL compiler in ../fol/, which see.
