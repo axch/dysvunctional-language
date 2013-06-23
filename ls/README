@@ -107,6 +107,18 @@ sufficient for an implementation of AD in user space, without having
 to increase the (already considerable) complexity of the compiler with
 it.  Thus was born the DysVunctional Language.
 
+I have been the primary author of DVL to date, but my coworkers at the
+Hamilton Institute cannot go unmentioned.  I am indebted to Professor
+Pearlmutter himself, to David Rush, and to Oleksandr Manzyuk.  In
+particular, the GHC and Javascript backends are due to him.  The
+project also would not have been possible without access to Professor
+Siskind, both for inspiration from the Stalingrad sources, and for
+numerous technical conversations.  The early and, so far, majority of
+the development of DVL was supported by Science Foundation Ireland
+Principal Investigator grant 09/IN.1/I2637.
+
+--Alexey Radul, Boston, 2013
+
 
                               BCL-AD/ls/
             A collection of AD and compilation prototypes
