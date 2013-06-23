@@ -103,7 +103,7 @@
          (modifiers (parse-modifiers args)))
     (pp `(,verb ,file ,modifiers))
     (let* ((program (with-input-from-file file read))
-           (optimized-program ((optimization-step verb modifiers) program)))
+           (optimized-program (apply (optimization-step verb modifiers) program (modifiers-adverbs modifiers))))
       (if (dump-optimized? verb modifiers)
           (with-output-to-file (pathname-new-type file "opt")
             (lambda ()
