@@ -18,7 +18,7 @@ optimizing compiler from FOL to itself, a runtime library for
 executing FOL as MIT Scheme, and compilers from FOL to native code via
 MIT Scheme and SBCL.
 
-The remainder of this document consists of four sections,
+The remainder of this document consists of five sections,
 corresponding to the reasons why you might wish to peruse it:
 
 - [Reading FOL](#reading-fol) If you just want to understand the final
@@ -30,6 +30,8 @@ corresponding to the reasons why you might wish to peruse it:
   optimizations.
 - [Implementing FOL](#implementing-fol) If you want to know how the
   FOL optimizer itself works.
+- [Future of FOL](#future-of-fol) If you want to know the evolution
+  plans.
 
 
 Reading FOL
@@ -57,10 +59,10 @@ macro that expands into nothing.  As to the primitives, FOL comes
 with the following procedures predefined:
 
 ```
-  CONS, CAR, CDR, VECTOR, VECTOR-REF, ABS, EXP, LOG, SIN, COS, TAN,
-  ASIN, ACOS, SQRT, +, -, *, /, ATAN, EXPT, <, <=, >, >=, =, ZERO?,
-  POSITIVE?, NEGATIVE?, READ-REAL, WRITE-REAL, REAL, GENSYM, GENSYM=,
-  and GENSYM<.
+CONS, CAR, CDR, VECTOR, VECTOR-REF, ABS, EXP, LOG, SIN, COS, TAN,
+ASIN, ACOS, SQRT, +, -, *, /, ATAN, EXPT, <, <=, >, >=, =, ZERO?,
+POSITIVE?, NEGATIVE?, READ-REAL, WRITE-REAL, REAL, GENSYM, GENSYM=,
+and GENSYM<.
 ```
 
 Those with Scheme equivalents have the same semantics.  `real` is the
@@ -88,7 +90,7 @@ emit, so that it has some hope of being read by a person, and doesn't
 reach too far outside the expectations of any subsequent compiler to
 whose input language FOL may be translated.
 
-Specifically, VL and DVL produces huge piles of tiny procedures that
+Specifically, VL and DVL produce huge piles of tiny procedures that
 pass each other huge piles of data structures (mostly closure records)
 that contain each other, with many useless layers and redundant paths.
 To clean this up, the FOL optimizer aggressively inlines procedures,
@@ -110,7 +112,7 @@ You can modify the compilation process by passing `compile-to-fol` an
 adverb for how to do the job.  For example, calling
 
 ```scheme
-  (compile-to-fol (dvl-source "examples/celestial.dvl") visibly)
+(compile-to-fol (dvl-source "examples/celestial.dvl") visibly)
 ```
 
 will do the same compilation process as plain `compile-to-fol`, but also
@@ -170,7 +172,7 @@ optimize it separately.
 
   Completely optimizes the given FOL program and returns the result.
 
-FOL Optimization proceeds as a cascade of stages, which you can also
+FOL optimization proceeds as a cascade of stages, which you can also
 run one by one to see their effect.  The stages are all
 self-contained, in that you can run them in any order.  Some stages
 rely on the program being normalized in one way or another; they will
@@ -502,8 +504,8 @@ procedures and formal parameters may not be bound.  The set of FOL
 reserved words is:
 
 ```
-  BEGIN, DEFINE-TYPE, DEFINE, IF, LET, LET-VALUES, VALUES, CONS, CAR,
-  CDR, VECTOR, and VECTOR-REF.
+BEGIN, DEFINE-TYPE, DEFINE, IF, LET, LET-VALUES, VALUES, CONS, CAR,
+CDR, VECTOR, and VECTOR-REF.
 ```
 
 These all behave as in Scheme, except `define-type`, which is a typed
@@ -511,9 +513,9 @@ variant of Scheme's `define-structure`.  In addition, FOL predefines the
 following procedures:
 
 ```
-  ABS, EXP, LOG, SIN, COS, TAN, ASIN, ACOS, SQRT, +, -, *, /, ATAN,
-  EXPT, <, <=, >, >=, =, ZERO?, POSITIVE?, NEGATIVE?, READ-REAL,
-  WRITE-REAL, REAL, GENSYM, GENSYM=, and GENSYM<.
+ABS, EXP, LOG, SIN, COS, TAN, ASIN, ACOS, SQRT, +, -, *, /, ATAN,
+EXPT, <, <=, >, >=, =, ZERO?, POSITIVE?, NEGATIVE?, READ-REAL,
+WRITE-REAL, REAL, GENSYM, GENSYM=, and GENSYM<.
 ```
 
 whose semantics are given in [Reading FOL](#reading-fol).
