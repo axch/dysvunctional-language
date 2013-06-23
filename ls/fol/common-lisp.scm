@@ -25,7 +25,7 @@
   (let ((file (pathname-new-type base "fasl")))
     (run-shell-command
      (format #f
-      "sbcl --noinform --eval '(progn (load ~S) (write (__main__)) (quit))'"
+      "sbcl --noinform --eval '(progn (load ~S) (write (__main__)) (terpri) (quit))'"
       (->namestring file)))))
 
 (define (prepare-for-common-lisp program)

@@ -29,7 +29,8 @@
   (fol->mit-scheme (flonumize program) output-base))
 
 ;;; Runs a previously compiled FOL program with the FOL runtime
-;;; system.
+;;; system.  Unlike other run-* procedures, returns the result as a
+;;; value instead of printing it, because it can.
 (define (run-mit-scheme #!optional output-base)
   (if (default-object? output-base)
       (set! output-base "frobnozzle"))
@@ -67,7 +68,7 @@
       (set! output-base "frobnozzle"))
   (run-shell-command
    (format #f
-    "mit-scheme --heap 6000 --batch-mode --eval '(begin (pp (load ~S)) (%exit 0))'"
+    "mit-scheme --heap 6000 --batch-mode --eval '(begin (pp (load ~S)) (flush-output) (%exit 0))'"
     (->namestring (pathname-new-type output-base "com")))))
 
 (define (internalize-definitions program)

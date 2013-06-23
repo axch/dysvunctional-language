@@ -41,12 +41,15 @@
 (define-backend mit-scheme
   "Compile to native code via MIT Scheme"
   fol->mit-scheme always-can
-  run-mit-scheme always-can)
+  ;; run-mit-scheme returns the value without printing it, which
+  ;; behavior needs to be preserved until a cleaner library linkage
+  ;; mechanism is defined.
+  (lambda args (pp (apply run-mit-scheme args))) always-can)
 
 (define-backend floating-mit-scheme
   "Like mit-scheme, but force floating-point arithmetic"
   fol->floating-mit-scheme always-can
-  run-mit-scheme always-can)
+  (lambda args (pp (apply run-mit-scheme args))) always-can)
 
 (define-backend standalone-mit-scheme
   "Like mit-scheme, but include FOL runtime"

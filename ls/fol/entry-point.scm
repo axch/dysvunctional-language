@@ -172,5 +172,6 @@ The possible options are
           (pp program)
           (newline)))
       ((compilation-step task) program file)
-      (pp ((execution-step task) file))
+      ((execution-step task) file)
+      (flush-output)
       (%exit 0))))
