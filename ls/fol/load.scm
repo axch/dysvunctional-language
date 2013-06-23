@@ -54,7 +54,8 @@
    "mit-scheme"
    "stalin"
    "common-lisp"
-   "asm-js"))
+   "asm-js"
+   "entry-point"))
 
 ;;; Exports
 
@@ -121,6 +122,9 @@
      present? property-value
      name execution-function
      reads computes generates preserves destroys
+
+     ;; The entry point for the command line
+     fol-main
      ))
   (environment-define-macro
    client-environment 'define-stage
