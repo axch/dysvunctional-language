@@ -1,0 +1,12 @@
+#!/bin/bash
+
+SELFDIR=$(dirname $0)
+
+if [ `uname -m` == 'x86_64' ]; then
+    HEAP=150000
+else
+    HEAP=6000
+fi
+
+exec mit-scheme --heap $HEAP --stack 2000 --batch-mode --no-init-file \
+     --load "${SELFDIR}/load.scm" --eval "(fol-main \"$*\")"
