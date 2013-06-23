@@ -72,6 +72,28 @@ source is intended to be legible.
 That said, read `dvl/README` to get started, or the `dvl` shell script
 to see the entry points.
 
+The code tree is organized as follows:
+
+Directories
+
+- `fol/`         Implementation of FOL (intermediate target for VL and DVL)
+- `vl/`          Implementation of VL (uses fol/)
+- `dvl/`         Implementation of DVL (some refers to vl/; uses fol/)
+- `support/`     General libraries
+- `support/rules/`   Rule-based term-rewriting system
+- `testing/`     Unit test framework
+- `*/test/`      Unit tests for *
+
+Important Files
+
+- `./run-tests`  Run all the test suites from the command line
+- `*/run-tests`  Run the test suite for * from the command line
+- `*/load.scm`   Scheme entry point for *
+- `./README`     This document
+- `*/README`     Entry point for * documentation
+- `vl/vl`        Commandline entry point for VL
+- `dvl/dvl`      Commandline entry point for DVL
+
 History
 =======
 
