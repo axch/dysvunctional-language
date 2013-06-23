@@ -55,6 +55,7 @@
    "stalin"
    "common-lisp"
    "asm-js"
+   "backends"
    "entry-point"))
 
 ;;; Exports

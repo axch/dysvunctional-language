@@ -1,5 +1,5 @@
 (declare (usual-integrations))
-;; The commandline script lands here
+;;;; The commandline script lands here
 
 ;; optimize n times; compile [via backend] are independent; execute
 ;; implies compile, but admits "interpreted fol" backend, for which
@@ -9,27 +9,6 @@
 ;; Haskell are all standalone.
 
 ;; How to link to the compiled output afterwards?
-
-(define backend-compilers
-  `((mit-scheme . ,fol->mit-scheme)
-    (floating-mit-scheme . ,fol->floating-mit-scheme)
-    (standalone-mit-scheme . ,fol->standalone-mit-scheme)
-    (stalin . ,fol->stalin)
-    (common-lisp . ,fol->common-lisp)))
-
-(define backend-runners
-  `((mit-scheme . ,run-mit-scheme)
-    (floating-mit-scheme . ,run-mit-scheme)
-    (standalone-mit-scheme . #f)
-    (stalin . #f)
-    (common-lisp . ,run-common-lisp)))
-
-(define backend-synopses
-  '((mit-scheme . "Compile to native code via MIT Scheme")
-    (floating-mit-scheme . "Like mit-scheme, but force floating-point arithmetic")
-    (standalone-mit-scheme . "Like mit-scheme, but include FOL runtime")
-    (stalin . "Compile to native code via the Stalin Scheme compiler")
-    (common-lisp . "Generate Common Lisp and compile to native code via SBCL")))
 
 (define-structure
   (task
@@ -48,11 +27,11 @@
 (define (compilation-step task)
   (if (eq? (task-verb task) 'optimize)
       (lambda args 'ok)
-      (cdr (assq (task-backend task) backend-compilers))))
+      (backend-compile (task-backend task))))
 
 (define (execution-step task)
   (if (eq? (task-verb task) 'run)
-      (cdr (assq (task-backend task) backend-runners))
+      (backend-execute (task-backend task))
       (lambda args 'done)))
 
 (define (parse-task verb args)
@@ -64,8 +43,8 @@
       (type-safely . ,type-safely)))
   (define the-task (make-task verb 'mit-scheme 1 '()))
   (define (backend choice)
-    (if (memq choice (map car backend-compilers))
-        (set-task-backend! the-task choice)
+    (if (assq choice the-backends)
+        (set-task-backend! the-task (cdr (assq choice the-backends)))
         (command-line-error "Unknown backend:" choice)))
   (define (opt-count choice)
     (define counts '((never . 0) (once . 1) (twice . 2) (thrice . 3)))
@@ -128,7 +107,10 @@ The possible options are
                  See help adverbs for a list.
 "))
         ((eq? (car topics) 'backends)
-         (synopsis-list "backends" backend-synopses))
+         (synopsis-list "backends"
+          (map cons
+               (map car the-backends)
+               (map backend-synopsis (map cdr the-backends)))))
         ((eq? (car topics) 'adverbs)
          (synopsis-list "adverbs"
           `((visibly . "With short progress reports")
