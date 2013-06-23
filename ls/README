@@ -91,6 +91,7 @@ Important Files
 - `*/load.scm`   Scheme entry point for *
 - `./README`     This document
 - `*/README`     Entry point for * documentation
+- `fol/fol`      Commandline entry point for FOL
 - `vl/vl`        Commandline entry point for VL
 - `dvl/dvl`      Commandline entry point for DVL
 
