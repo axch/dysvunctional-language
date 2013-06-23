@@ -93,11 +93,19 @@ built-in operators for invoking AD.
 
 I had the privilege of having a post-doctoral appointment with
 Professor Pearlmutter between the fall of 2010 and the summer of 2012,
-and of working on compilation for numerical computing and automatic
+working on compilation for numerical computing and automatic
 differentiation.  During that time, I rewrote the non-AD portion of
 VLAD in a system called, appropriately enough, VL (included in the
 `vl/` directory) as a more expository implementation of the
 compilation technique at the heart of Stalingrad.
+
+After VL, I found myself taking this same compilation method in a
+slightly different direction than VLAD and Stalingrad.  I noticed that
+it essentially still worked even in the presence of the slight
+language impurity of being able to generate unique objects -- which is
+sufficient for an implementation of AD in user space, without having
+to increase the (already considerable) complexity of the compiler with
+it.  Thus was born the DysVunctional Language.
 
 
                               BCL-AD/ls/
