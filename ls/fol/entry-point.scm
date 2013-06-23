@@ -167,7 +167,6 @@ The possible options are
          (file (symbol->string (car args)))
          (args (cdr args))
          (task (parse-task verb args)))
-    (pp `(,verb ,file ,task))
     (let* ((program (with-input-from-file file read))
            (optimized-program (apply (optimization-step task) program (task-adverbs task))))
       (with-output-to-file (pathname-new-type file "opt")
