@@ -9,7 +9,7 @@
 
 ;; How to link to the compiled output afterwards?
 
-;; fol [verb] file [via backend] [optimizing never|once|twice|thrice|n|until convergence] [dumping <big-stage>] [adverb]*
+;; fol [verb] file [via backend] [optimizing never|once|twice|thrice|n] [dumping <big-stage>] [adverb]*
 (define (fol-main arg)
   (define (find-verb args)
     (cond ((null? args)
@@ -17,6 +17,18 @@
           ((memq (car args) '(optimize compile run))
            (car args))
           (else #f)))
+  (define backend-compilers
+    `((mit-scheme . ,fol->mit-scheme)
+      (floating-mit-scheme . ,fol->floating-mit-scheme)
+      (standalone-mit-scheme . ,fol->standalone-mit-scheme)
+      (stalin . ,fol->stalin)
+      (common-lisp . ,fol->common-lisp)))
+  (define backend-runners
+    `((mit-scheme . ,run-mit-scheme)
+      (floating-mit-scheme . ,run-mit-scheme)
+      (standalone-mit-scheme . #f)
+      (stalin . #f)
+      (common-lisp . ,run-common-lisp)))
   (define-structure
     (modifiers
      (print-procedure
@@ -34,11 +46,13 @@
         (measuring-memory . ,measuring-memory)
         (watching-memory . ,watching-memory)
         (type-safely . ,type-safely)))
-    (define the-mods (make-modifiers #f 1 '() '()))
+    (define the-mods (make-modifiers 'mit-scheme 1 '() '()))
     (define (backend choice)
-      (set-modifiers-backend! the-mods choice))
+      (if (memq choice (map car backend-compilers))
+          (set-modifiers-backend! the-mods choice)
+          (error "Unknown backend" choice)))
     (define (opt-count choice)
-      (define counts '((never . 0) (once . 1) (twice . 2) (thrice . 3) (max . #t)))
+      (define counts '((never . 0) (once . 1) (twice . 2) (thrice . 3)))
       (set-modifiers-optimization! the-mods
        (if (assq choice counts)
            (cdr (assq choice counts))
@@ -63,21 +77,29 @@
              (adverb (cdr (assq (car args) adverbs)))
              (loop (cdr args)))
             (else
-             (error "Confusion option" (car args)))))
+             (error "Confusing option" (car args)))))
     (set-modifiers-dumps! the-mods (reverse (delete-duplicates (modifiers-dumps the-mods))))
     (set-modifiers-adverbs! the-mods (reverse (delete-duplicates (modifiers-adverbs the-mods))))
     the-mods)
-  ;; (define (optimization-step verb modifiers)
-  ;;   )
-  ;; (define (compilation-step verb modifiers)
-  ;;   )
-  ;; (define (execution-step verb modifiers)
-  ;;   )
+  (define (optimization-step verb modifiers)
+    (repeat-stage fol-optimize (modifiers-optimization modifiers)))
+  (define (compilation-step verb modifiers)
+    (if (eq? verb 'optimize)
+        #f
+        (cdr (assq (modifiers-backend modifiers) backend-compilers))))
+  (define (execution-step verb modifiers)
+    (and (eq? verb 'run)
+         (cdr (assq (modifiers-backend modifiers) backend-runners))))
   (let* ((args (with-input-from-string (string-append "(" arg ")") read))
          (verb (find-verb args))
          (args (if verb (cdr args) args))
+         (verb (or verb 'run))
          (file (symbol->string (car args)))
          (args (cdr args))
          (modifiers (parse-modifiers args)))
     (pp `(,verb ,file ,modifiers))
-    (%exit 0)))
+    (let* ((program (with-input-from-file file read))
+           (optimized-program ((optimization-step verb modifiers) program)))
+      ((compilation-step verb modifiers) program file)
+      ((execution-step verb modifiers) file)
+      (%exit 0))))

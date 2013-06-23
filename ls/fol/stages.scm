@@ -207,6 +207,22 @@
       `((,name . ,substage))
       #f))))
 
+(define (repeat-stage substage count)
+  (define (loop substage-alist)
+    (let ((substage (cdar substage-alist)))
+      (lambda (program)
+        (let repeat ((program program) (count count))
+          (if (<= count 0)
+              program
+              (repeat (substage program) (- count 1)))))))
+  (let ((name (stage-name substage)))
+    (stage-data->stage
+     (%make-stage-data
+      `(repeat ,name ,count)
+      loop
+      `((,name . ,substage))
+      #f))))
+
 ;;; We define a nice language for specifying stages.  For example,
 ;;;
 ;;; (define-stage scalar-replace-aggregates
