@@ -59,7 +59,7 @@
 (define-backend stalin
   "Compile to native code via the Stalin Scheme compiler"
   fol->stalin (needs-executable "stalin")
-  #f (never-can "cannot execute stalin output")) ; TODO
+  run-stalin always-can)
 
 (define-backend common-lisp
   "Generate Common Lisp and compile to native code via SBCL"

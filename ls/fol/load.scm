@@ -69,9 +69,11 @@
      fol-eval
      fol->mit-scheme
      fol->floating-mit-scheme
-     fol->standalone-mit-scheme
      run-mit-scheme
+     fol->standalone-mit-scheme
+     run-standalone-mit-scheme
      fol->stalin
+     run-stalin
      fol->common-lisp
      run-common-lisp
      fol->asm.js

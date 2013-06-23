@@ -24,6 +24,12 @@
                   output)))
     (run-shell-command (string-append "stalin -On -d -q -copt -O2 " (->namestring output-file)))))
 
+;; TODO Install Stalin somewhere and test this.
+(define (run-stalin #!optional output-base)
+  (if (default-object? output-base)
+      (set! output-base "stanozzle"))
+  (run-shell-command (pathname-new-type output-base #f)))
+
 (define replace-let-values
   (rule-simplifier
    (list
