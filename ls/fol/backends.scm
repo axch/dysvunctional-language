@@ -51,7 +51,7 @@
 (define-backend standalone-mit-scheme
   "Like mit-scheme, but include FOL runtime"
   fol->standalone-mit-scheme always-can
-  #f (never-can "cannot execute standalone MIT Scheme code")) ; TODO
+  run-standalone-mit-scheme (needs-executable "mit-scheme"))
 
 (define-backend stalin
   "Compile to native code via the Stalin Scheme compiler"

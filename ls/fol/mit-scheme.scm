@@ -60,6 +60,16 @@
                     (newline)) output)))
     (cf output-file)))
 
+;;; Runs a previously compiled FOL program without the FOL runtime
+;;; system.  Use a fresh MIT Scheme to keep namespaces separate.
+(define (run-standalone-mit-scheme #!optional output-base)
+  (if (default-object? output-base)
+      (set! output-base "frobnozzle"))
+  (run-shell-command
+   (format #f
+    "mit-scheme --heap 6000 --batch-mode --eval '(begin (pp (load ~S)) (%exit 0))'"
+    (->namestring (pathname-new-type output-base "com")))))
+
 (define (internalize-definitions program)
   (let->let*
    (if (begin-form? program)
