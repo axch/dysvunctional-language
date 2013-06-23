@@ -63,7 +63,7 @@
   (define (backend choice)
     (if (memq choice (map car backend-compilers))
         (set-task-backend! the-task choice)
-        (error "Unknown backend" choice)))
+        (command-line-error "Unknown backend" choice)))
   (define (opt-count choice)
     (define counts '((never . 0) (once . 1) (twice . 2) (thrice . 3)))
     (set-task-optimization! the-task
@@ -90,16 +90,19 @@
            (adverb (cdr (assq (car args) adverbs)))
            (loop (cdr args)))
           (else
-           (error "Confusing option" (car args)))))
+           (command-line-error "Confusing option" (car args)))))
   (set-task-dumps! the-task (reverse (delete-duplicates (task-dumps the-task))))
   (set-task-adverbs! the-task (reverse (delete-duplicates (task-adverbs the-task))))
   the-task)
+
+(define (command-line-error msg irritants)
+  (apply error msg irritants))
 
 ;; fol [verb] file [via backend] [optimizing never|once|twice|thrice|n] [dumping <big-stage>] [adverb]*
 (define (fol-main arg)
   (define (find-verb args)
     (cond ((null? args)
-           (error "Need non-empty argument list"))
+           (command-line-error "At least one argument is required."))
           ((memq (car args) '(optimize compile run))
            (car args))
           (else #f)))
