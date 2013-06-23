@@ -23,6 +23,13 @@
     (stalin . #f)
     (common-lisp . ,run-common-lisp)))
 
+(define backend-synopses
+  '((mit-scheme . "Compile to native code via MIT Scheme")
+    (floating-mit-scheme . "Like mit-scheme, but force floating-point arithmetic")
+    (standalone-mit-scheme . "Like mit-scheme, but include FOL runtime")
+    (stalin . "Compile to native code via the Stalin Scheme compiler")
+    (common-lisp . "Generate Common Lisp and compile to native code via SBCL")))
+
 (define-structure
   (task
    (print-procedure
@@ -96,7 +103,51 @@
   the-task)
 
 (define (command-line-error msg irritants)
-  (apply error msg irritants))
+  (format-error-message msg irritants (current-output-port))
+  (usage)
+  (%exit 1))
+
+(define (usage)
+  (display "Usage: fol help [topic] OR fol [verb] file [adverb]...")
+  (newline))
+
+(define (help topics)
+  (cond ((null? topics)
+         (usage)
+         (display "
+The FOL subcommands are
+  help      show this help, or describe backends or adverbs
+  run       [default] optimize, compile, and execute FILE
+  optimize  only optimize FILE, write result with .opt extension
+  compile   optimize and compile FILE
+
+The possible options are
+  via <backend>  compile (and run) using the given backend.
+                 See help backends for a list.
+  optimizing n   Iterate optimization this many times.  In addition
+                 to numbers, the words never, once, twice, and thrice
+                 are accepted.
+  <adverb>       Instrument optimization with the given adverb.
+                 See help adverbs for a list.
+"))
+        ((eq? (car topics) 'backends)
+         (synopsis-list "backends" backend-synopses))
+        ((eq? (car topics) 'adverbs)
+         (synopsis-list "adverbs"
+          `((visibly . "With short progress reports")
+            (volubly . "With longer statistics")
+            (watching-memory . "With reports about memory use")
+            (measuring-memory . "With reports about memory use and data size [expensive]")
+            (type-safely . "Double-checking types of intermediate states"))))))
+
+(define (synopsis-list topic synopses)
+  (format #t "The supported ~A are\n" topic)
+  (for-each
+   (lambda (name-synopsis)
+     (format #t "  ~21A  ~A\n" (car name-synopsis) (cdr name-synopsis)))
+   synopses)
+  (display "For more information, see the README or the source.")
+  (newline))
 
 ;; fol [verb] file [via backend] [optimizing never|once|twice|thrice|n] [dumping <big-stage>] [adverb]*
 (define (fol-main arg)
@@ -105,6 +156,9 @@
            (command-line-error "At least one argument is required."))
           ((memq (car args) '(optimize compile run))
            (car args))
+          ((eq? (car args) 'help)
+           (help (cdr args))
+           (%exit 0))
           (else #f)))
   (let* ((args (with-input-from-string (string-append "(" arg ")") read))
          (verb (find-verb args))
