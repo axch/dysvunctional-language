@@ -1,0 +1,78 @@
+            On Type Annotation for FFI and Unions for DVL
+                             Alexey Radul
+                             July 1, 2013
+
+DVL's foreign interface problem and union type problem can be solved
+with optional type annotations, as follows:
+
+Define a type definition construct, which allows for named products,
+named sums, named functions, and maybe anonymous combinations; and has
+appropriate primitives (ideally, one would be able to spell any
+abstract value this way, but much can be accomplished even without
+being able to describe closure pointers).  You can define named types
+anywhere, and they are scoped.
+
+Then, additional type information can be added to any object, by
+syntax that accepts a type and an object, and returns an object with
+augmented information.  One should be able to augment information in
+the following ways:
+- (Warn) I expect this object to have this type, warn me if not
+- (Error) This object ought to have this type, reject the program if not
+- (Assert) This object has this type, treat it as though it did, whether it does or no.
+Also, there are four possible relationships between the type specified
+and the type that the analysis deduces for the object:
+- Equality (neither broader nor narrower)
+- Specified type is strictly broader
+- Specified type is strictly narrower
+- Incomparable (both broader and narrower)
+The programmer should be able to specify actions based on any of these
+relationships, for a total of 12 possible kinds of declarations (some
+of which are presumably more useful than others).  In the case of
+narrowing asserts, there should also be an option to insert a runtime
+check, or not.
+
+Now, how can this solve DVL's problems?  Well, it allows introduction
+of arbitrary (including recursive) unions by a broader assert
+annotation -- any union of finite length lists will compare narrower
+than the recursive union type List, so this is a way to manually force
+the analysis to broaden to a union it would never have constructed on
+its own.
+
+It also allows specification of foreign interface types, by narrowing
+assertions about the objects that come in from the outside.  Said
+assertions can include checks for safety or drop them for speed, on a
+case by case basis.
+
+Issues:
+
+1. Imprecise specification of procedure types.  Obviously, a
+traditional function type is a much broader type than DVL's current
+abstract values for functions.  [In fact, it's not even obvious how to
+check whether a given abstract closure actually meets a given function
+type -- another round of abstract evaluation?  This might never end,
+for recursive function types.]  However, a traditional function type
+can still supply information about a closure, which could be attached
+to it and applied at its call sites appropriately.  [In fact, function
+types may only be actually needed for functions that come in from the
+outside, because everything else might be doable by annotating the
+arguments and results.]
+
+Speaking of functions that come in from the outside, if any -- they
+produce issues of their own.  In particular, if I want the compiler to
+respect their side effects, I may need to annotate them with monadic
+types, and get into that whole mess.  But, maybe, I can accept pure
+functions from the outside using this type annotation mechanism and be
+happy.
+
+2. Conditional type assertion.  It seems useful to be able to
+conditionalize these assertions based on the deduced types of other
+objects in scope.  For example, in the definition of iota, it may be
+desirable to broaden-assert the return type to be a list of unknown
+length; but it may also be desirable to do this only if the input is
+an unknown number, and let iota generate a list of known length if the
+number is known (and, perhaps, small).  Is there a way to keep such
+conditions to the type level, or should they be reflected into the
+value level as well?  Can I have a "type annotation" that says "if
+this object is known at analysis time, return the object #t, otherwise
+the object #f"?  This would break monotonicity.  Is it good for
+anything?
