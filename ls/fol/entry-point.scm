@@ -143,6 +143,17 @@ The possible options are
   (display "For more information, see the README or the source.")
   (newline))
 
+;; A "verby command parser" parses command line strings of the form
+;; command [verb] file [option]...
+;; where the name of the command is assumed stripped from the string,
+;; the verb is an optional item from a short list, and the file to
+;; operate on is unique and required.
+;;
+;; The first verb in the argument list is the default if no verb is
+;; supplied.  The win procedure is called with the specified verb and
+;; the rest of the command after the file.  If the user wrote "help"
+;; in the verb position, calls the help procedure to produce a help
+;; message and exits.
 (define (verby-command-parser help verbs win)
   (define (find-verb args)
     (cond ((null? args)
