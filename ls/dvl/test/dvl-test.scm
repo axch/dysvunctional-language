@@ -312,7 +312,7 @@
        (lambda ()
          (fluid-let ((sf:noisy? #f)
                      (compiler:noisy? #f))
-           (pp (dvl-run-file "../vl/euler-integral.scm"))))))))
+           (pp (dvl-run-file "../vl/euler-integral.vl"))))))))
 
 ;; TODO This one is just slow (2 seconds on moria on Sep 12, 2011)
 #;

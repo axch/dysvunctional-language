@@ -12,7 +12,7 @@
       (set! output-base "frobnozzle"))
   (let* ((output `((declare (usual-integrations))
                    ,(internalize-definitions program)))
-         (output-file (pathname-new-type output-base "fol-scm")))
+         (output-file (pathname-new-type output-base "scm")))
     (with-output-to-file output-file
       (lambda ()
         (for-each (lambda (form)
@@ -53,7 +53,7 @@
           `(,@srfi-11                   ; includes usual-integrations
             ,@(cdr runtime)             ; remove usual-integrations
             ,(internalize-definitions program)))
-         (output-file (pathname-new-type output-base "fol-scm")))
+         (output-file (pathname-new-type output-base "scm")))
     (with-output-to-file output-file
       (lambda ()
         (for-each (lambda (form)

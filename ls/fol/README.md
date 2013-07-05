@@ -344,9 +344,9 @@ Common Lisp.
 
 - `(fol->mit-scheme <program> [<basename>])`
 
-  Dumps the given FOL program into `<basename>.fol-scm` and compiles
-  that with MIT Scheme.  The result can be executed by loading it into
-  an environment that already contains the FOL runtime.  The basename
+  Dumps the given FOL program into `<basename>.scm` and compiles that
+  with MIT Scheme.  The result can be executed by loading it into an
+  environment that already contains the FOL runtime.  The basename
   defaults to `frobnozzle`, local to the current directory.
 
 - `(fol->floating-mit-scheme <program> [<basename>])`
