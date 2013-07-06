@@ -92,6 +92,7 @@
         (parse-task (access parse-task fol-environment))
         (check-feasibility (access check-feasibility fol-environment))
         (task-verb (access task-verb fol-environment))
+        (task-adverbs (access task-adverbs fol-environment))
         (execute-task (access execute-task fol-environment))
         (fol-help (access help fol-environment)))
     (define (usage)
@@ -122,7 +123,7 @@ The possible options are
     (receive (task file) ((verby-command-parser help '(run optimize compile raw-fol) parse-task) arg)
       (check-feasibility task)
       (let* ((program (dvl-source file))
-             (fol-program (analyze-and-generate program))
+             (fol-program (apply analyze-and-generate program (task-adverbs task)))
              (fol-file (->namestring (pathname-new-type file "fol")))
              (verb (task-verb task)))
         ;; TODO Maybe avoid dumping the (large!) intermediate program if
