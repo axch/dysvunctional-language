@@ -1,0 +1,3 @@
+[submodule "support/rules"]
+	path = support/rules
+	url = git://github.com/axch/rules.git
