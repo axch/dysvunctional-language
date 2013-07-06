@@ -1,3 +1,0 @@
-[submodule "ls/support/rules"]
-	path = ls/support/rules
-	url = git://github.com/axch/rules.git
