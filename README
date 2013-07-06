@@ -4,7 +4,7 @@ DVL
 A prototype compiler for running the code you want to write as fast as
 the code you have to write (as long as it's numerical).
 
-By which I mean that DVL is a langauge and compiler for writing the
+By which I mean that DVL is a language and compiler for writing the
 numerical kernel of your system in, instead of Fortran or C.  The DVL
 input language is much nicer and higher level, a dialect of Lisp; but
 more important, *high level DVL constructs compile to efficient code*.
