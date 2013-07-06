@@ -87,3 +87,48 @@
       (fluid-let ((load/suppress-loading-message? #t))
         (run-mit-scheme scm-file)))))
 
+(define (dvl-main arg)
+  (let ((verby-command-parser (access verby-command-parser fol-environment))
+        (parse-task (access parse-task fol-environment))
+        (check-feasibility (access check-feasibility fol-environment))
+        (task-verb (access task-verb fol-environment))
+        (execute-task (access execute-task fol-environment))
+        (fol-help (access help fol-environment)))
+    (define (usage)
+      (display "Usage: dvl help [topic] OR dvl [verb] file [adverb]...")
+      (newline))
+    (define (help topics)
+      (if (null? topics)
+          (begin
+            (usage)
+            (display "
+The DVL subcommands are
+  help      show this help, or describe backends or adverbs
+  run       [default] analyze, optimize, compile, and execute FILE
+  raw-fol   only analyze FILE, write unoptimized FOL with .fol extension
+  optimize  analyze FILE to optimized FOL, write result with .opt extension
+  compile   analyze, optimize and compile FILE
+
+The possible options are
+  via <backend>  compile (and run) using the given backend.
+                 See help backends for a list.
+  optimizing n   Iterate optimization this many times.  In addition
+                 to numbers, the words never, once, twice, and thrice
+                 are accepted.
+  <adverb>       Instrument optimization with the given adverb.
+                 See help adverbs for a list.
+"))
+          (fol-help topics)))
+    (receive (task file) ((verby-command-parser help '(run optimize compile raw-fol) parse-task) arg)
+      (check-feasibility task)
+      (let* ((program (dvl-source file))
+             (fol-program (analyze-and-generate program))
+             (fol-file (->namestring (pathname-new-type file "fol")))
+             (verb (task-verb task)))
+        ;; TODO Maybe avoid dumping the (large!) intermediate program if
+        ;; the verb is not analyze?
+        (with-output-to-file fol-file
+          (lambda ()
+            (pp fol-program)))
+        (if (not (eq? 'analyze verb))
+            (execute-task task fol-file))))))
