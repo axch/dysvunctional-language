@@ -1,3 +1,6 @@
 [submodule "support/rules"]
 	path = support/rules
 	url = git://github.com/axch/rules.git
+[submodule "testing"]
+	path = testing
+	url = git://github.com/axch/test-manager.git
