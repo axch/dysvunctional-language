@@ -34,7 +34,8 @@
 (define (run-mit-scheme #!optional output-base)
   (if (default-object? output-base)
       (set! output-base "frobnozzle"))
-  (load output-base fol-environment))
+  (let ((output-file (pathname-new-type output-base #f)))
+    (load output-file fol-environment)))
 
 (define my-path (directory-namestring (self-relatively current-load-pathname)))
 
