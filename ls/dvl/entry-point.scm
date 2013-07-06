@@ -87,6 +87,7 @@
       (fluid-let ((load/suppress-loading-message? #t))
         (run-mit-scheme scm-file)))))
 
+;; dvl [verb] file [via backend] [optimizing never|once|twice|thrice|n] [adverb]*
 (define (dvl-main arg)
   (let ((verby-command-parser (access verby-command-parser fol-environment))
         (parse-task (access parse-task fol-environment))
