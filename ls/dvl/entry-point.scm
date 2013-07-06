@@ -131,5 +131,8 @@ The possible options are
         (with-output-to-file fol-file
           (lambda ()
             (pp fol-program)))
-        (if (not (eq? 'analyze verb))
+        (if (eq? 'raw-fol verb)
+            (begin
+              (flush-output)
+              (%exit 0))
             (execute-task task fol-file))))))
