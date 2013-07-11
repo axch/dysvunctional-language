@@ -1,6 +1,6 @@
 (declare (usual-integrations))
 (declare (integrate-external "syntax"))
-(declare (integrate-external "../support/pattern-matching"))
+(declare (integrate-external "../support/pattern-case/pattern-case"))
 ;;;; Dead type elimination
 
 ;;; Eliminating unused type declarations

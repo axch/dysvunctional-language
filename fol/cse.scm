@@ -1,6 +1,6 @@
 (declare (usual-integrations))
 (declare (integrate-external "syntax"))
-(declare (integrate-external "../support/pattern-matching"))
+(declare (integrate-external "../support/pattern-case/pattern-case"))
 ;;;; Common subexpression elimination
 
 ;;; Common subexpression elimination (CSE) is the process of removing

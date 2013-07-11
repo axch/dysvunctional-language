@@ -4,3 +4,6 @@
 [submodule "testing"]
 	path = testing
 	url = git://github.com/axch/test-manager.git
+[submodule "support/pattern-case"]
+	path = support/pattern-case
+	url = git://github.com/axch/pattern-case.git

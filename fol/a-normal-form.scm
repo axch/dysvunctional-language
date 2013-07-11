@@ -1,6 +1,6 @@
 (declare (usual-integrations))
 (declare (integrate-external "syntax"))
-(declare (integrate-external "../support/pattern-matching"))
+(declare (integrate-external "../support/pattern-case/pattern-case"))
 ;;;; (Approximate) A-normal form conversion
 
 ;;; In order to do a good job of scalar replacement of aggregates, the

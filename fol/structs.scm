@@ -1,5 +1,5 @@
 (declare (usual-integrations))
-(declare (integrate-externals "pattern-matching"))
+(declare (integrate-external "../support/pattern-case/load"))
 ;;;; Turning record structures into vectors
 
 ;;; VL and DVL emit code that defines Scheme records to serve as

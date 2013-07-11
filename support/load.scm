@@ -11,4 +11,4 @@
 (load-relative "auto-compilation")
 
 (load-relative-compiled "utils")
-(load-relative-compiled "pattern-matching")
+(load-relative-compiled "pattern-case/load")

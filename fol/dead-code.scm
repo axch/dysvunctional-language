@@ -1,6 +1,6 @@
 (declare (usual-integrations))
 (declare (integrate-external "syntax"))
-(declare (integrate-external "../support/pattern-matching"))
+(declare (integrate-external "../support/pattern-case/pattern-case"))
 ;;;; Dead code elimination
 
 ;;; Variables that hold values that are never used can be eliminated.

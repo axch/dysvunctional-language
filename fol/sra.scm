@@ -1,6 +1,6 @@
 (declare (usual-integrations))
 ;(declare (integrate-external "syntax")) ; Because SRA overrides CONSTRUCTION, below
-(declare (integrate-external "../support/pattern-matching"))
+(declare (integrate-external "../support/pattern-case/pattern-case"))
 ;;;; Scalar Replacement of Aggregates (SRA)
 
 ;;; Imagine a program like this:

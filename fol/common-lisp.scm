@@ -1,6 +1,6 @@
 (declare (usual-integrations))
 (declare (integrate-external "syntax"))
-(declare (integrate-external "../support/pattern-matching"))
+(declare (integrate-external "../support/pattern-case/pattern-case"))
 ;;;; Simplistic FOL to Common Lisp compiler.
 
 (define (fol->common-lisp program #!optional base)

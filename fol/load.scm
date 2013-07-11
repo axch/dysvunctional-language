@@ -32,7 +32,7 @@
    "../support/hash-tables"
    "../support/two-way-table"
    "../support/srfi-11"
-   "../support/pattern-matching"
+   "../support/pattern-case/load"
    "stages"
    "nomenclature"
    "syntax"
