@@ -167,5 +167,5 @@
      "(-9.223456610994083e-3 . 1.0078886869645214)\n"
      (with-output-to-string
        (lambda ()
-         (vl-run-file "euler-integral.vl"))))))
+         (vl-run-file "examples/euler-integral.vl"))))))
  )
