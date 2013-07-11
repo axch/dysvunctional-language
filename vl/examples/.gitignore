@@ -1,0 +1,5 @@
+*.fol
+*.lisp
+*.scm
+*.opt
+*.fasl

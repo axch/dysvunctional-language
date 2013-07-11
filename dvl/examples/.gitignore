@@ -1,1 +1,10 @@
-mandel-tester.js
+*.fol
+*.opt
+*.scm
+!*driver.scm
+!essential-examples.scm
+*.lisp
+!*driver.lisp
+*.js
+!*driver.js
+!mandel.js
