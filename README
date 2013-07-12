@@ -86,8 +86,6 @@ Directories
 
 Important Files
 
-- `./run-tests`  Run all the test suites from the command line
-- `*/run-tests`  Run the test suite for * from the command line
 - `*/load.scm`   Scheme entry point for *
 - `./README`     This document
 - `*/README`     Entry point for * documentation
