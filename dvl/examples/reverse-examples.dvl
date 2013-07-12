@@ -11,8 +11,8 @@
 
 (gradient-r-at * (cons (real 4) (real 7))) ===> (7 . 4)
 
-;;; These are copies of ls/slad/essential-examples.scm, but using
-;;; reverse mode.
+;;; These are copies of derivative-examples.dvl, but using reverse
+;;; mode.
 
 (define (derivative-r f)
   (gradient-r f))

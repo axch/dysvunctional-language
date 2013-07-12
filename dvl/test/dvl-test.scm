@@ -264,7 +264,7 @@
                              (g:+ x n)))
                          (((derivative adder) (real 3)) (real 4))))))))
 
- (for-each-example "../examples/essential-examples.scm"
+ (for-each-example "../examples/derivative-examples.dvl"
   (lambda (program #!optional value)
     (define-loose-union-free-example-test
       (dvl-prepare (vlad->dvl program)) value)))
