@@ -250,7 +250,7 @@
      (check (equal? 7 (proc 2)))
      (check (equal? 0 (proc -5)))))
 
- (for-each-example "../../vl/examples.scm"
+ (for-each-example "../../vl/examples/small.vl"
                    define-loose-union-free-example-test)
  (for-each-example "../../vl/test/test-vl-programs.scm"
                    define-loose-union-free-example-test)

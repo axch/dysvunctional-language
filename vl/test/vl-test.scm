@@ -158,7 +158,7 @@
  ;; VL is too slow and too not-under-active-development to run these,
  ;; especially since dvl-test.scm runs the same programs under DVL
  ;; anyway.
-; (for-each-example "../examples.scm" define-union-free-example-test)
+; (for-each-example "../examples/small.vl" define-union-free-example-test)
 ; (for-each-example "test-vl-programs.scm" define-union-free-example-test)
 #;
  (define-test (executable-entry-point)

@@ -193,14 +193,14 @@ repl and try
        (cons (map increment (real 1) (real 2) (real 3) ())
 	     (map double (real 4) (real 5) ()))))))
 
-There are more example VL programs in examples.scm.  You can paste the
-compiled output straight into your repl and it will run.  Try removing
-calls to REAL from some of the examples and see what happens to the
-compiled output.
+There are more example VL programs in examples/small.vl.  You can
+paste the compiled output straight into your repl and it will run.
+Try removing calls to REAL from some of the examples and see what
+happens to the compiled output.
 
 If you like to read code, here's a good order:
 
-examples.scm         Example VL programs
+examples/small.vl    Example VL programs
 abstract-eval.scm    The main interesting guts of the program; Stage 2
 code-generator.scm   The other interesting guts of the program; Stage 3
 macro.scm            Syntax preprocessor; Stage 1
