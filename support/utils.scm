@@ -1,5 +1,5 @@
 ;;; ----------------------------------------------------------------------
-;;; Copyright 2010-2013 Alexey Radul.
+;;; Copyright 2011 National University of Ireland.
 ;;; ----------------------------------------------------------------------
 ;;; This file is part of DysVunctional Language.
 ;;; 
