@@ -159,7 +159,7 @@
  ;; especially since dvl-test.scm runs the same programs under DVL
  ;; anyway.
 ; (for-each-example "../examples/small.vl" define-union-free-example-test)
-; (for-each-example "test-vl-programs.scm" define-union-free-example-test)
+; (for-each-example "test-programs.vl" define-union-free-example-test)
 #;
  (define-test (executable-entry-point)
    (check

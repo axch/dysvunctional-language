@@ -252,7 +252,7 @@
 
  (for-each-example "../../vl/examples/small.vl"
                    define-loose-union-free-example-test)
- (for-each-example "../../vl/test/test-vl-programs.scm"
+ (for-each-example "../../vl/test/test-programs.vl"
                    define-loose-union-free-example-test)
 
  (define-test (tangent-of-function)
