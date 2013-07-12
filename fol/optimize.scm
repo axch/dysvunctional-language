@@ -127,7 +127,8 @@
 
 (define-stage scalar-replace-aggregates
   %scalar-replace-aggregates
-  ;; TODO Does it require unique-names?
+  ;; TODO Does it require unique-names?  It may, if it deparallelizes
+  ;; let-values (in its post-processor).
   (requires syntax-checked a-normal-form)
   (generates aggregates-replaced)
   ;; Because of the reconstruction

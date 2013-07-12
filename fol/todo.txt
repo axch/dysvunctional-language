@@ -1,14 +1,7 @@
-Expository explanations
-- Push TIDY into its own file?
-- Explain the rule system
-- Sweep TODOs
-- Actually explain SRA
-- Update explanation of VL (and DVL?) to reflect FOL's separate
-  identity
-- Make FOL executable standalone, releasable, workbookable
 - Do I want to make all the analysis stages treat the entry point
   as yet another definition?
-- General destructurer of definitions, instead of all these rules?
+- Do I want to define a general destructurer of definitions, instead
+  of all these rules?
 
 NB: SRA can remove call graph edges by eliminating contentless
   expressions that contain calls to procedures.  However, all
@@ -23,16 +16,6 @@ NB: The reason that some of my recursions are broken into expression
   loops and a toplevel crunch is that the top level is the only
   place that introduces bindings with letrec scope.
 
-NB: From the compiler writer's perspective, FOL is a funny
-  representation for a dataflow graph: a list of trees of
-  single-predecessor nodes.  This facilitates writing dataflow and
-  optimization passes that cascade over said single-predecessor nodes.
-  With the important difference that the stack, the heap, and
-  procedure returns are implicit.  In particular, knoweldge of returns
-  gives me flow information that Appel-style data flow analyses don't
-  have: which node will be the target of a return-jump, given
-  the node that was the source of the call-jump.
-
 NB: INTERPROCEDURAL-DEAD-CODE-ELIMINATION is solving the following
   liveness equations: TODO
 
@@ -42,9 +25,6 @@ Interprocedural must-alias analysis?
 - Can this collapse identical perturbations and recover tower mode on
   (D (D (lambda (x) ...)))?
 - Can this collapse primals and recover stack tangent mode?
-
-Write inlining of used-once bindings (post-SRA); undoes ANF
-- This is the intraprocedural analog of inlining procedures (I think)
 
 
 Sussman's example of where differentiating functions that output
@@ -74,9 +54,6 @@ Software-validate the following assertions:
 - de-aliasing does not generate work for inlining and SRA
 - dead variable elimination does not generate work for SRA or de-aliasing
 
-Rename vector to closure, to distinguish it from (variable-length)
-arrays (that may be accessed at computed indecies).
-
 (begin
  (define (foo x y)
    (argument-types real real real)
@@ -84,14 +61,3 @@ arrays (that may be accessed at computed indecies).
  (let ((foo 3))
    (foo 1 2)))
 breaks horribly on inlining (global vs local name clash)
-
-INLINE breaks alpha renaming by duplicating code bodies.
-
-SRA depends on alpha renaming because it deparallelizes LET-VALUES (in
-its post-processor).
-
-de-aliasing depends on alpha renaming when checking whether a variable
-is aliased to something in scope at its binding site (this may be
-fixable).
-
-TIDY depends on alpha renaming because it lifts LETs.
