@@ -2,7 +2,6 @@
 module FOL.Compiler.JavaScript.Syntax where
 
 import FOL.Language.Common
-import FOL.Language.Expression ()
 import FOL.Language.Pretty
 
 import Data.Maybe

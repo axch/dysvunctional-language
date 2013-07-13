@@ -36,3 +36,6 @@ symbol = text
 
 ppForm :: Pretty a => String -> [a] -> Doc
 ppForm name xs = ppList $ symbol name : map pp xs
+
+instance Pretty Name where
+    pp (Name n) = symbol n

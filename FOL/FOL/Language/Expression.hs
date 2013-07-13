@@ -111,9 +111,6 @@ fv (ProcCall _ args) = concatMap fv args
 
 -- Pretty-printing of programs
 
-instance Pretty Name where
-    pp (Name n) = symbol n
-
 instance Pretty Prog where
     pp (Prog []    expr) = pp expr
     pp (Prog defns expr) = parens $ symbol "begin" $+$ body
