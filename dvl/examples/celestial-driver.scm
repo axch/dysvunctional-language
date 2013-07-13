@@ -59,14 +59,15 @@
 ;; Compile the DVL program with
 ;(fol->mit-scheme (compile-to-fol (dvl-source "examples/celestial.dvl") visibly))
 ;; or compile the DVL program with
-;$ dvl2fol celestial.dvl
-;; at the command line, and then compile the resulting FOL code only with
-;(fol->mit-scheme (with-input-from-file "celestial.fol" read))
+;$ dvl compile example/celestial.dvl
+;; at the command line.
 
 ;; If the MIT Scheme compiler complains with an interminable pile of
 ;Warning: Wrong number of arguments #[liar:procedure 83 lambda-2010] (#[liar:reference 71 |#[continuation]|] #[liar:reference 72 #[uninterned-symbol 73 value-0]] #[liar:reference 74 #[uninterned-symbol 75 value-1]] #[liar:reference 76 #[uninterned-symbol 77 value-2]] #[liar:reference 78 #[uninterned-symbol 79 value-3]] ...)
 ;; then add an extra round of fol optimization, thus:
-;(fol->mit-scheme (fol-optimize (with-input-from-file "celestial.fol" read)))
+;(fol->mit-scheme (fol-optimize (compile-to-fol (dvl-source "examples/celestial.dvl") visibly)))
+;; or thus:
+;$ dvl compile example/celestial.dvl optimizing twice
 
 ;; Then run with
 #;
