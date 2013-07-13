@@ -381,4 +381,19 @@
    (check (equal? after-inlining
                   (scalar-replace-aggregates after-inlining)))
    )
+
+ #;
+ (define-test (namespace-collisions-should-not-cause-trouble)
+   (define program
+     '(begin
+        (define (foo x y)
+          (argument-types real real real)
+          (+ x y))
+        (let ((foo 3)) ; procedure name reused as local var name
+          (foo 1 2))))
+   ;; TODO This program should either be rejected by
+   ;; check-program-types, or handled gracefully by the FOL chain.
+   (check (equal? 'real (check-program-types program)))
+   (check (equal? 3 (fol-eval program)))
+   (check (equal? 3 (fol-eval (inline program)))))
  )
