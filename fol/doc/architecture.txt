@@ -77,7 +77,7 @@ Inlining can decrease the program size by removing unused procedures,
 and by removing type annotations (procedures are annotated as to type,
 but body expressions are not).  Inlining can also increase the program
 size by replicating the bodies of procedures that are called more than
-once.  The latter can lead to a combinatorial explosion of cide size,
+once.  The latter can lead to a combinatorial explosion of code size,
 so the current inliner computes a threshold for itself that controls
 how large of a program size increase it is willing to commit before it
 stops inlining.
