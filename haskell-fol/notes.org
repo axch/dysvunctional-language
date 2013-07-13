@@ -1,0 +1,186 @@
+* Alpha renaming
+
+The purpose of alpha renaming is to ensure that every variable has at
+most one binding cite.  A variable needs renaming at its binding cite
+if it is known to be bound at some other cite.  Other variables must
+be renamed to what they were renamed to at their immediate binding
+cites.  Hence the following algorithm:
+
+- Traverse the expression recursively carrying around an environment
+  =E= mapping variables in the scope to new names and a set =B= of
+  variables that are known to be bound somewhere.
+
+- Every instance of =Var m= is renamed to =Var n=, where =n= is the
+  new name =m= is bound to in the environment =E=.
+
+- When traversing =Let [(x1, e1), ..., (xn, en)] e=, for each variable
+  =xi= decide whether it requires renaming by checking whether it is
+  contained in =B=; for each of the names that are not in =B= the
+  renaming is the name itself.  Generate these new names:
+  #+begin_example
+  x1 ~> x1', ..., xn ~> xn'
+  #+end_example
+
+- Rename the body =e= of =Let= using the environment =E= extended with
+  the bindings =(x1, x1')=, ..., =(xn, xn')= and the set of names =B=
+  extended with =x1=, ..., =xn=.  Rename, sequentially, =e1=, ...,
+  =en= starting with the old environment =E= and the set of names
+  produced by the renaming the body of =Let=.  (This particular order
+  is arbitrary.)
+
+- Ditto for =LetValues=.
+
+What kind of monad do we need here?
+
+It appears that =Expr= should be parametrized over the type of names
+used to represent variables and then eventually =rename= should take
+an expression of type =Expr Name= and return an expression of type
+=Expr (Unique Name)=:
+#+begin_src haskell
+rename :: Expr Name -> Expr (Unique Name)
+#+end_src
+Then we need to turn =Expr (Unique Name)= into =Unique (Expr Name)=,
+which suggests that =Expr= should be declared an instance of
+=Traversable= (then the necessary commutation morphism is =sequence=
+from =Traversable= class), which it almost certainly is.
+
+Also, to carry the set of names known to be bound we can employ a
+version of the state monad.
+#+begin_src haskell
+type Rename = State Names
+type Names  = [Name]
+
+rename' :: Expr Name -> [(Name, Unique Name)] -> Rename (Expr (Unique Name))
+rename' (Var x) env = return (Var x')
+    where
+      x' = fromMaybe (return x) (lookup x env)
+rename' (Let bindings body) = do
+  used_names <- get
+  let (xs, es) = unzip bindings
+      maybeRename x | x `elem` used_names = uniqueName x
+                    | otherwise = return x
+      xs' = map maybeRename xs
+  put (xs `union` used_names)
+  body' <- rename' body (zip xs xs' ++ env)
+  es' <- mapM (flip rename' env) es
+  let bindings' = zip xs' es'
+  return (Let bindings' body')
+#+end_src
+
+The idea that renaming turns =Expr Name= into =Expr (Unique Name)=
+doesn't work, and in retrospect it is obvious why: when we transform
+=Expr (Unique Name)= into =Unique (Expr Name)=, we chain the actions
+of type =Unique Name=, and as a result things that must be named the
+same are given different names.
+
+An observation: the composition of two =StateT= monad transformers is
+again a =StateT= monad transformer, namely:
+#+begin_example
+StateT s (StateT s' m) ~ StateT (s, s') m
+
+StateT s' m a == s' -> m (a, s')
+
+StateT s (StateT s' m) a
+    ~ s -> (StateT s' m) (a, s)
+    ~ s -> (s' -> m ((a, s), s'))
+    ~ (s, s') -> m (a, (s, s'))
+    ~ StateT (s, s') m a
+#+end_example
+The isomorphism is given explicitly by:
+#+begin_src haskell
+iso :: Monad m => StateT s (StateT t m) a -> StateT (s, t) m a
+iso (StateT f) = StateT $ \(s, t) -> let StateT g = f s
+                                     in do ((x, s'), t') <- g t
+                                           return (x, (s', t'))
+#+end_src
+
+* Type checker
+
+I would like to implement a type checker for FOL.  Because FOL is a
+first-order language with explicit type annotations for procedures,
+type checking it should not be too hard.  The plan is as follows:
+
+- for each definition, check, assuming the supplied types of the
+  definitions, that the inferred type of the procedure agrees with
+  the supplied type;
+
+- infer the type of the expression.
+
+This is not the same (or so it seems) as to type check the implicit
+=letrec= of which the definitions are bindings.
+
+For that, I've decided to change the nomenclature a bit: what was
+called =Type= is called =Shape= now.  Shapes are abstractions of
+values.  Because procedures are not first-class values in FOL, they
+don't have shapes.  Initially, I wanted to add one clause =ProcTy
+[Type] Type= to the definition of =Type= (called =Shape= now), but
+that would be wrong as it would allow types of higher-order
+procedures.  Instead, I'm going to have two separate types: =Shape=
+and =Type= defined as
+#+begin_src haskell
+data Type = PrimTy Shape
+          | ProcTy [Shape] Shape
+#+end_src
+I have done that and the result is pretty ugly.  Some of its ugliness
+is avoidable, but my attempt to make error messages informative turned
+into a mess.  Furthermore, there is at least one subtle bug having to
+do with laziness: type checking an expression is lazy in the
+environment argument, which, as currently implemented, may result in,
+say, LET expressions about which the type checker thinks that they are
+well-typed although some of the bindings may be ill-typed.
+
+The next thing I am going to do is switch to a proper error messaging
+mechanism: monads.  That is going to solve the laziness problem as
+well, hopefully.
+
+Wrapped error messaging into a monad.  Also introduced a data type to
+encode various kinds of errors the type checker may throw.  The code
+looks better but still pretty ugly.  I am getting tired of polishing
+it, so I guess it is time to move on.
+
+Testing that the inliner preserves types of programs revealed a bug: I
+was type-checking each definition assuming the declared types of
+*other* definitions, which doesn't work for self-recursive procedures.
+The fix is easy: type-check each definition assuming the declared
+types of *all* definitions (in a sense, we simply check that the
+declared types are a solution to the fixed point equation).
+
+Type-checking IF expressions makes sure that the consequent and
+alternate have the same type.
+
+*Bug*: according to FOL definition, VALUES cannot be bound to
+variables, stored in data structures, or used as procedure arguments.
+They also can't be nested in more VALUES. *FIXED*
+
+* A-normal form
+
+Implemented (approximate) A-normal form conversion.  The
+implementation is not completely satisfactory in a few ways:
+
+- expressions in ANF have a grammar that is different from the grammar
+  of ordinary expressions, however I'm reusing =Expr= type, instead of
+  capturing the invariants of expressions in ANF (e.g., CONS can only
+  be applied to variables or constants) in a type.  That would be more
+  Haskellish and generally a Good Thing.  However, I don't know if the
+  subsequent stages of the optimizer are going to need ANF or not.
+
+- recursive traversal in =anfExpr= doesn't benefit for SYB techniques,
+  nor from other generic programming techniques.
+
+  *Question*: how do I apply SYB to data types like =Expr=?  The paper
+  tells me how to deal with lots of mutually recursive data types, but
+  not with one recursive data type.
+
+  Can I write a generic fold function for folding over expressions?
+  Ideally, I would like to be able to specify, in declarative manner,
+  for each node type, which functions to apply the children of that
+  node, and how to combine the results.
+
+  I see how I can do that with "Data Types A La Carte" approach, but
+  it implies boilerplate of other kind: writing down instances for
+  each node type.
+
+  I was also a little discouraged to find out, but grepping the source
+  tree of GHC, that they doesn't use SYB techniques (only in libraries
+  but not in the compiler code).  Apparently, doing so would introduce
+  unnecessary complexity.

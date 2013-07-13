@@ -1,0 +1,9 @@
+  cabal configure
+  cabal build
+  cabal install --user
+
+should build two executables, fol2haskell (the FOL to Haskell
+compiler), and fol2js (the FOL to Javascript compiler), and install
+them to $HOME/.cabal/bin, so that they become available from the
+command line.  If you don't want to install them, you can find the
+executables somewhere in the dist/ directory.
