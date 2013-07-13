@@ -54,6 +54,10 @@
 ;; computes reads
 ;; name
 
+;;; TODO Use software validation techniques to prove that these stages
+;;; conserve or destroy the properties they say they converse or
+;;; destroy?
+
 ;;; Form normalizers
 
 (define-stage structure-definitions->vectors
