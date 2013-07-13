@@ -6,7 +6,7 @@ import FOL.Language.Expression ()
 import FOL.Language.Pretty
 
 import Data.Maybe
-import Data.Monoid hiding ((<>))
+import Data.Monoid -- hiding ((<>)) In GHC 7.0.4, Data.Monoid does not export (<>)
 
 data JsProg = JsProg [JsDefn]
               deriving Show
