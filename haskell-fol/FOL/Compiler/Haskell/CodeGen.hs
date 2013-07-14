@@ -51,12 +51,16 @@ boxShape :: HsShape -> HsShape
 boxShape HsUnboxedDoubleSh = HsBoxedDoubleSh
 boxShape shape = shape
 
+boxType :: HsType -> HsType
+boxType (HsPrimType t) = HsPrimType (boxShape t)
+boxType t = t
+
 compileProg :: Name -> AnnProg Type -> [HsSCDefn]
 compileProg export_name (prog_type, AnnProg defns expr)
     = map compileDefn defns ++ [entry_point]
     where
       entry_point
-          = HsSCDefn (translateType prog_type) export_name [] (compileExpr expr)
+          = HsSCDefn (boxType $ translateType prog_type) export_name [] (compileExprBoxed expr)
 
 compileDefn :: AnnDefn Type -> HsSCDefn
 compileDefn (proc_type, AnnDefn proc args expr)
