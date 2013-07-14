@@ -1,1 +1,4 @@
-celestial.js
+*.js
+!*driver.js
+*.hs
+!*driver.hs
