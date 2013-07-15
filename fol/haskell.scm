@@ -38,3 +38,8 @@
   ;; TODO Increase the accuracy of this model
   (string-set! string 0 (char-upcase (string-ref string 0)))
   string)
+
+(define (run-haskell #!optional output-base)
+  (if (default-object? output-base)
+      (set! output-base "hanozzle"))
+  (run-shell-command (as-haskell-module-name (pathname-name output-base))))
