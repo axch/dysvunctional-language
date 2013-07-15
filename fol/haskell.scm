@@ -25,8 +25,14 @@
       (set! output-base "hanozzle"))
   (let* ((module-name (as-haskell-module-name (pathname-name output-base)))
          (written-program (with-output-to-string (lambda () (pp program)))))
-    (run-shell-command (string-append "fol2hs -e main -m " module-name)
-                       'input (open-input-string written-program))))
+    (let ((generation-result
+           (run-shell-command (string-append "fol2hs -e value -m " module-name)
+                              'input (open-input-string written-program))))
+      (if (not (= 0 generation-result))
+          (error "Generating Haskell with fol2hs failed"))
+      (let* ((file (->namestring (pathname-new-type module-name "hs")))
+             (cmd (format #f "ghc ~S -main-is ~S.main" file module-name)))
+        (pp cmd) (run-shell-command cmd)))))
 
 (define (as-haskell-module-name string)
   ;; TODO Increase the accuracy of this model
