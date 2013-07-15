@@ -1,4 +1,9 @@
 *.fasl
 *.opt
 *.scm
+!*driver.scm
 *.lisp
+!*driver.lisp
+*.hs
+!*driver.hs
+Factorial
