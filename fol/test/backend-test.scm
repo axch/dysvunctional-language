@@ -180,21 +180,24 @@
 
  (for-each
   (lambda (backend)
-    (in-test-group
-     ,(backend-name backend)
-     (for-each
-      (lambda (name program)
-        (define-test (,name)
-          (with-output-to-string
-            (lambda ()
-              ((backend-compile backend) program "test-compiler-output")))
-          (define result
-            (with-input-from-string
-                (with-output-to-string (lambda () ((backend-execute backend) "test-compiler-output")))
-              read))
-          (check (equal? (fol-eval program) result))))
-      '(factorial magnitude)
-      (list factorial magnitude))))
+    (let ((problem (backend-problem backend 'run)))
+      (if problem
+          (warn "Skipping" (backend-name backend) (error-irritant/noise " because") problem)
+          (in-test-group
+           ,(backend-name backend)
+           (for-each
+            (lambda (name program)
+              (define-test (,name)
+                (with-output-to-string
+                  (lambda ()
+                    ((backend-compile backend) program "test-compiler-output")))
+                (define result
+                  (with-input-from-string
+                      (with-output-to-string (lambda () ((backend-execute backend) "test-compiler-output")))
+                    read))
+                (check (equal? (fol-eval program) result))))
+            '(factorial magnitude)
+            (list factorial magnitude))))))
   (map cdr the-backends))
  )
 
