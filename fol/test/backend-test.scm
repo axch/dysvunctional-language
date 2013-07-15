@@ -192,7 +192,7 @@
             (with-input-from-string
                 (with-output-to-string (lambda () ((backend-execute backend) "test-compiler-output")))
               read))
-          (equal? (fol-eval program) result)))
+          (check (equal? (fol-eval program) result))))
       (map cdr the-backends))))
   '(factorial magnitude)
   (list factorial magnitude))
