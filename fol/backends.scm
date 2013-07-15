@@ -51,11 +51,12 @@
 
 (define always-can (lambda () #f))
 (define (never-can msg) (lambda () msg))
-(define (needs-executable name)
+(define (needs-executable name #!optional msg)
   (lambda ()
     (if (executable-present? name)
         #f
-        (string-append "the " name " program is not on the path"))))
+        (string-append "the " name " program is not on the path"
+                       (if (default-object? msg) "" msg)))))
 
 (define-backend mit-scheme
   "Compile to native code via MIT Scheme"
@@ -84,3 +85,8 @@
   "Generate Common Lisp and compile to native code via SBCL"
   fol->common-lisp (needs-executable "sbcl")
   run-common-lisp (needs-executable "sbcl"))
+
+(define-backend haskell
+  "Generate Haskell source and compile to native code via GHC"
+  fol->haskell (needs-executable "fol2hs" "; did you cabal install from haskell-fol?") ; Also ghc
+  run-haskell always-can)
