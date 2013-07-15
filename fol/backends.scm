@@ -56,6 +56,14 @@
   execute
   executing-problem)
 
+(define (backend-problem backend verb)
+  (cond ((eq? verb 'compile)
+         ((backend-compiling-problem backend)))
+        ((eq? verb 'run)
+         (or ((backend-compiling-problem backend))
+             ((backend-executing-problem backend))))
+        (else #f)))
+
 (define the-backends '())
 
 (define-syntax define-backend

@@ -99,12 +99,7 @@
 (define (check-feasibility task)
   (let* ((backend (task-backend task))
          (verb (task-verb task))
-         (problem (cond ((eq? verb 'compile)
-                         ((backend-compiling-problem backend)))
-                        ((eq? verb 'run)
-                         (or ((backend-compiling-problem backend))
-                             ((backend-executing-problem backend))))
-                        (else #f))))
+         (problem (backend-problem backend verb)))
     (if problem
         (command-line-error
          "Cannot" verb (error-irritant/noise " via")

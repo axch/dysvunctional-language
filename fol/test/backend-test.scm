@@ -179,12 +179,12 @@
            2))))))
 
  (for-each
-  (lambda (name program)
+  (lambda (backend)
     (in-test-group
-     ,name
+     ,(backend-name backend)
      (for-each
-      (lambda (backend)
-        (define-test (,(backend-name backend))
+      (lambda (name program)
+        (define-test (,name)
           (with-output-to-string
             (lambda ()
               ((backend-compile backend) program "test-compiler-output")))
@@ -193,8 +193,8 @@
                 (with-output-to-string (lambda () ((backend-execute backend) "test-compiler-output")))
               read))
           (check (equal? (fol-eval program) result))))
-      (map cdr the-backends))))
-  '(factorial magnitude)
-  (list factorial magnitude))
+      '(factorial magnitude)
+      (list factorial magnitude))))
+  (map cdr the-backends))
  )
 
