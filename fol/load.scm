@@ -73,6 +73,7 @@
    "mit-scheme"
    "stalin"
    "common-lisp"
+   "haskell"
    "asm-js"
    "backends"
    "entry-point"))
