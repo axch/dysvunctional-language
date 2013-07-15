@@ -95,6 +95,8 @@
      run-stalin
      fol->common-lisp
      run-common-lisp
+     fol->haskell
+     run-haskell
      fol->asm.js
 
      ;; Optimization
