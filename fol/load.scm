@@ -41,6 +41,7 @@
 (environment-define fol-environment '*environment* fol-environment)
 
 (load-relative "../support/rules/load" fol-environment)
+(load-relative "../support/pattern-case/load" fol-environment)
 
 (load-option 'format)
 
@@ -51,7 +52,6 @@
    "../support/hash-tables"
    "../support/two-way-table"
    "../support/srfi-11"
-   "../support/pattern-case/load"
    "stages"
    "nomenclature"
    "syntax"
