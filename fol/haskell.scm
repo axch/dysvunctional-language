@@ -32,7 +32,7 @@
           (error "Generating Haskell with fol2hs failed"))
       (let* ((file (->namestring (pathname-new-type module-name "hs")))
              (cmd (format #f "ghc ~S -main-is ~S.main" file module-name)))
-        (pp cmd) (run-shell-command cmd)))))
+        (run-shell-command cmd)))))
 
 (define (as-haskell-module-name string)
   ;; TODO Increase the accuracy of this model
