@@ -178,26 +178,23 @@
                (* ans-imag ans-imag)))
            2))))))
 
-
  (for-each
-  (lambda (program)
-    (for-each
-     (lambda (method)
-       (define-each-check
-         (equal? (fol-eval program) (method program))))
-     (map (lambda (compile run)
-            (lambda (program)
-              (with-output-to-string
-                (lambda ()
-                  (compile program "test-compiler-output")))
-              (run "test-compiler-output")))
-          (list fol->mit-scheme
-                fol->common-lisp)
-          (list run-mit-scheme
-                (lambda (base)
-                  (with-input-from-string
-                      (with-output-to-string (lambda () (run-common-lisp base)))
-                    read))))))
+  (lambda (name program)
+    (in-test-group
+     ,name
+     (for-each
+      (lambda (backend)
+        (define-test (,(backend-name backend))
+          (with-output-to-string
+            (lambda ()
+              ((backend-compile backend) program "test-compiler-output")))
+          (define result
+            (with-input-from-string
+                (with-output-to-string (lambda () ((backend-execute backend) "test-compiler-output")))
+              read))
+          (equal? (fol-eval program) result)))
+      (map cdr the-backends))))
+  '(factorial magnitude)
   (list factorial magnitude))
  )
 
