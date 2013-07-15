@@ -24,6 +24,30 @@
 ;;; To facilitate selecting them dynamically, and checking whether a
 ;;; given operation is possible.
 
+;;; The interface of a backend is as follows:
+;;; - The name is an identifying symbol.
+;;; - The synopsis is a descriptive string suitable for short-form help
+;;; - The compile field is a procedure that accepts a fol program and
+;;;   an optional basename, and compiles that program with this
+;;;   backend, leaving the results in a file whose name is derived
+;;;   appropriately from that one.  Returns nothing useful and signals
+;;;   an error on failure.
+;;; - The compiling-problem field is a nullary procedure that examines
+;;;   the surrounding system for resources, if any, needed to compile
+;;;   with this backend (external executables, etc).  Returns either
+;;;   #f (no problem) if the system has all needed resources, or a
+;;;   string describing the problem if not.
+;;; - The execute field is a procedure that accepts an optional
+;;;   basename and executes a fol program previously compiled by the
+;;;   compile procedure with that basename.  Any value returned by the
+;;;   toplevel form of the fol program is printed to standard output.
+;;;   Returns nothing useful and signals an error on failure.
+;;; - The executing-problem field is a nullary procedure that examines
+;;;   the surrounding system for resources, if any, needed to execute
+;;;   programs compiled with this backend (external executables, etc).
+;;;   Returns either #f (no problem) if the system has all needed
+;;;   resources, or a string describing the problem if not.
+
 (define-structure backend
   name
   synopsis
