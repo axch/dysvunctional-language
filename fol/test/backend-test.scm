@@ -188,12 +188,14 @@
            (for-each
             (lambda (name program)
               (define-test (,name)
+                (define basename (format #f "test-output/~S/~S" (backend-name backend) name))
+                (force-shell-command (format #f "mkdir -p test-output/~S/" (backend-name backend)))
                 (with-output-to-string
                   (lambda ()
-                    ((backend-compile backend) program "test-compiler-output")))
+                    ((backend-compile backend) program basename)))
                 (define result
                   (with-input-from-string
-                      (with-output-to-string (lambda () ((backend-execute backend) "test-compiler-output")))
+                      (with-output-to-string (lambda () ((backend-execute backend) basename)))
                     read))
                 (check (equal? (fol-eval program) result))))
             '(factorial magnitude)
