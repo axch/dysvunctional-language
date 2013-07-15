@@ -123,15 +123,19 @@ compileProgAsModule :: Name -> Name -> Prog -> HsModule
 compileProgAsModule module_name export_name prog
     = HsModule pragmas
                module_name
-               [export_name]
+               [export_name, Name "main"]
                [HsImport "GHC.Exts"]
                ty_defns
                sc_defns
+               extras
     where
       pragmas  = [HsPragma "{-# LANGUAGE MagicHash, UnboxedTuples, BangPatterns #-}"]
       sc_defns = prelude ++ compileProg export_name ann_prog
       ann_prog = ann prog
       ty_defns = [HsTyDefn (translateShape s) | s <- lambdasInProg ann_prog]
+      -- TODO Is there a more pleasant way to do this?  Without adding
+      -- just strings into the generated module?
+      extras   = ["", "main :: IO ()", "main = putStrLn $ show " ++ (pprint export_name) ]
 
 program = parse "(begin (define (operation-19 the-closure-141 the-closure-142 the-formals-143 the-formals-144) (argument-types real real real real real) (if (< (abs (- the-formals-143 the-formals-144)) .00001) the-formals-144 (operation-19 the-closure-142 the-closure-142 the-formals-144 (/ (+ the-formals-144 (/ the-closure-141 the-formals-144)) 2)))) (let ((the-formals-92 (real 2))) (let ((anf-79 (real 1.))) (cons 1.4142135623730951 (operation-19 the-formals-92 the-formals-92 anf-79 (/ (+ anf-79 (/ the-formals-92 anf-79)) 2))))))"
 

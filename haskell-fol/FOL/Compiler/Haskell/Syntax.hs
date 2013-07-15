@@ -28,7 +28,7 @@ import Data.List
 import Data.Maybe
 
 data HsModule
-    = HsModule [HsPragma] Name [Name] [HsImport] [HsTyDefn] [HsSCDefn]
+    = HsModule [HsPragma] Name [Name] [HsImport] [HsTyDefn] [HsSCDefn] [String]
       deriving Show
 
 -- An algebraic data type would be more appropriate, but we only need
@@ -111,7 +111,7 @@ newline :: Doc
 newline = char '\n'
 
 instance Pretty HsModule where
-    pp (HsModule pragmas name exported_names imports type_defns sc_defns)
+    pp (HsModule pragmas name exported_names imports type_defns sc_defns extras)
         = vcat (pragma_decls : module_body)
         where
           pragma_decls = vcat (map pp pragmas)
@@ -125,7 +125,7 @@ instance Pretty HsModule where
                          ( module_decl
                          : import_decls
                          : type_decls
-                         : map pp sc_defns)
+                         : map pp sc_defns) ++ map text extras
 
 instance Pretty HsPragma where
     pp (HsPragma pragma) = text pragma
