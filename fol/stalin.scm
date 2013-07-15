@@ -41,12 +41,12 @@
                     (pp form)
                     (newline))
                   output)))
-    (run-shell-command (string-append "stalin -On -d -q -copt -O2 " (->namestring output-file)))))
+    (force-shell-command (string-append "stalin -On -d -q -copt -O2 " (->namestring output-file)))))
 
 (define (run-stalin #!optional output-base)
   (if (default-object? output-base)
       (set! output-base "stanozzle"))
-  (run-shell-command (->namestring (pathname-new-type output-base #f))))
+  (force-shell-command (->namestring (pathname-new-type output-base #f))))
 
 (define replace-let-values
   (rule-simplifier

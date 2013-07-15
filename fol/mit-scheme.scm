@@ -86,7 +86,7 @@
 (define (run-standalone-mit-scheme #!optional output-base)
   (if (default-object? output-base)
       (set! output-base "frobnozzle"))
-  (run-shell-command
+  (force-shell-command
    (format #f
     "mit-scheme --heap 6000 --batch-mode --eval '(begin (pp (load ~S)) (flush-output) (%exit 0))'"
     (->namestring (pathname-new-type output-base "com")))))

@@ -33,7 +33,7 @@
       (lambda ()
         (fluid-let ((flonum-unparser-cutoff '(normal 0 scientific)))
           (for-each pp code))))
-    (run-shell-command
+    (force-shell-command
      (format #f
       "sbcl --eval '(progn (compile-file ~S :verbose t :print t) (quit))'"
       (->namestring file)))))
@@ -42,7 +42,7 @@
   (if (default-object? base)
       (set! base "comozzle"))
   (let ((file (pathname-new-type base "fasl")))
-    (run-shell-command
+    (force-shell-command
      (format #f
       "sbcl --noinform --eval '(progn (load ~S) (write (__main__)) (terpri) (quit))'"
       (->namestring file)))))

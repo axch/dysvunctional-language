@@ -295,3 +295,10 @@
 (define (estimate-space-used-by-prime-numbers-stream)
   (* 4 (prime-numbers-stream-forced-length
         (access prime-numbers-stream (->environment '(runtime hash-table))))))
+
+(define (force-shell-command . args)
+  "Like run-shell-command, but returns nothing useful and raises a
+condition on error."
+  (let ((result (apply run-shell-command args)))
+    (if (not (= 0 result))
+        (error "Command" (car args) (error-irritant/noise " exited with status") result))))
