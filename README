@@ -80,6 +80,7 @@ Directories
 - `vl/`          Implementation of VL (uses fol/)
 - `dvl/`         Implementation of DVL (some refers to vl/; uses fol/)
 - `support/`     General libraries
+- `support/pattern-case/`   Schemely pattern-matching macro (submodule)
 - `support/rules/`   Rule-based term-rewriting system (submodule)
 - `testing/`     Unit test framework (submodule)
 - `*/test/`      Unit tests for *
