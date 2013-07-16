@@ -50,7 +50,7 @@ When ready, just `git clone` this repository and then `git submodule
 init` and `git submodule update` to pull in code dependencies.  Then
 
 ```
-dysvunctional-language/dvl <backend> <dvl-program-file>
+dysvunctional-language/dvl <dvl-program-file>
 ```
 
 and you're off to the races.  Or fire up your MIT Scheme and
@@ -59,7 +59,7 @@ and you're off to the races.  Or fire up your MIT Scheme and
 (load "dysvunctional-language/load")
 ```
 
-to use the REPL interface.
+to use DVL as a library.
 
 Usage
 =====
