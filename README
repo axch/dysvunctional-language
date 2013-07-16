@@ -9,8 +9,8 @@ numerical kernel of your system in, instead of Fortran or C.  The DVL
 input language is much nicer and higher level, a dialect of Lisp; but
 more important, *high level DVL constructs compile to efficient code*.
 
-Why yet another compiler?  Can't any competent Common Lisper or
-Haskeller get to within 3-5x of Fortran with a little care already?
+Why yet another compiler?  Isn't it already possible to get within
+3-5x of Fortran with a little annotation of Common Lisp or Haskell?
 Yes, but only by writing Fortran in parentheses (or in monads).  I
 know of no compiler where modularity is costless (except research
 systems along the lines of DVL).
