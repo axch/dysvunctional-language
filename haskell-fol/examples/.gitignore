@@ -2,3 +2,8 @@
 !*driver.js
 *.hs
 !*driver.hs
+*.lisp
+!*driver.lisp
+*.scm
+!*driver.scm
+*.opt
