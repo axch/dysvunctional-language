@@ -29,16 +29,19 @@ import Control.Applicative
 import System.Console.GetOpt
 import System.Environment
 import System.Exit
+import Data.Maybe(fromMaybe)
 
 data Conf = Conf
   { moduleName :: String
   , exportName :: String
+  , directory :: Maybe String
   } deriving Show
 
 defaultConf :: Conf
 defaultConf = Conf
   { moduleName = abort "You must specify a module name"
   , exportName = abort "You must specify an exported function name"
+  , directory = Nothing
   }
 
 usage :: String
@@ -60,6 +63,9 @@ options =
   , Option ['e'] ["export"]
       (ReqArg (\e conf -> return conf { exportName = e }) "NAME")
       "exported function NAME"
+  , Option ['d'] ["directory"]
+      (OptArg (\d conf -> return conf { directory = d }) "PATH")
+      "output directory PATH"
   ]
 
 main :: IO ()
@@ -75,7 +81,7 @@ main = do
                                    (Name exportName)
              . parse
              $ input
-      outputFile = moduleName ++ ".hs"
+      outputFile = (fromMaybe "" directory) ++ moduleName ++ ".hs"
   writeFile outputFile output
     where
       parseOpts = foldl (>>=) (return defaultConf)

@@ -25,12 +25,13 @@
       (set! output-base "hanozzle"))
   (let* ((module-name (as-haskell-module-name (pathname-name output-base)))
          (directory (->namestring (pathname-new-name output-base #f)))
+         (path (->namestring (pathname-new-name output-base module-name)))
          (written-program (with-output-to-string (lambda () (pp program)))))
-    (force-shell-command (string-append "fol2hs -e value -m " module-name)
+    (force-shell-command (format #f "fol2hs -e value -m ~A --directory=~A" module-name directory)
                          'input (open-input-string written-program))
-    (let* ((file (->namestring (pathname-new-type module-name "hs")))
-           (cmd (format #f "ghc ~A -main-is ~A.main -outputdir ~A -o ~A~A"
-                        file module-name directory directory module-name)))
+    (let* ((file (->namestring (pathname-new-type path "hs")))
+           (cmd (format #f "ghc ~A -main-is ~A.main -outputdir ~A -o ~A"
+                        file module-name directory path)))
       (force-shell-command cmd))))
 
 (define (as-haskell-module-name string)
