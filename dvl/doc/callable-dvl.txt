@@ -1,4 +1,6 @@
                            On Callable DVL
+                          September 9, 2011
+                             Alexey Radul
 
 Assuming you know how standard DVL works, this essay describes how to
 modify the flow analysis to analyze programs that can produce
