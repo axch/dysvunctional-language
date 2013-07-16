@@ -1,4 +1,6 @@
                             FOL Cost Model
+                             Jun 10, 2011
+                             Alexey Radul
 
 A precise cost model for FOL is very difficult to specify.  In part,
 this is because this job is very hard even for the assembly

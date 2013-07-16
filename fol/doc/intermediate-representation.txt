@@ -1,4 +1,6 @@
                 FOL as an Intermediate Representation
+                             June 8, 2011
+                             Alexey Radul
 
 FOL is not really a programming language; it's an intermediate
 representation for the insides of a compiler.  It happens to be stored

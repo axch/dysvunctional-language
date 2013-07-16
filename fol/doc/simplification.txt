@@ -1,4 +1,6 @@
                        Algebraic Simplification
+                             June 1, 2011
+                             Alexey Radul
 
 The FOL common subexpression eliminator performs some algebraic
 simplification of the program to expose additional common

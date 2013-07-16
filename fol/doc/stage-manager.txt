@@ -1,5 +1,6 @@
                           FOL Stage Manager
-
+                          September 20, 2011
+                             Alexey Radul
 
 Motivation / Purpose
 

@@ -1,4 +1,6 @@
                            FOL Architecture
+                          September 22, 2011
+                             Alexey Radul
 
 The FOL optimizer consists of several stages:
 - INLINE

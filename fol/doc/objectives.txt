@@ -1,4 +1,6 @@
                           Objectives of FOL
+                            March 5, 2012
+                             Alexey Radul
 
 If I were to push FOL out as a thing in its own right, what would be
 its distinguishing characteristics, that would make people want to use

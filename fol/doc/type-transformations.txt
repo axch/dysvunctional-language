@@ -1,3 +1,7 @@
+       Scalar Replacement of Aggregates by Local Transformation
+                           August 19, 2012
+                             Alexey Radul
+
 This is a story about the local transformations that SRA does all of
 in one sweep.
 
