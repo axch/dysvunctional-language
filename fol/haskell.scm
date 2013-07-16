@@ -24,11 +24,13 @@
   (if (default-object? output-base)
       (set! output-base "hanozzle"))
   (let* ((module-name (as-haskell-module-name (pathname-name output-base)))
+         (directory (->namestring (pathname-new-name output-base #f)))
          (written-program (with-output-to-string (lambda () (pp program)))))
     (force-shell-command (string-append "fol2hs -e value -m " module-name)
                          'input (open-input-string written-program))
     (let* ((file (->namestring (pathname-new-type module-name "hs")))
-           (cmd (format #f "ghc ~S -main-is ~S.main" file module-name)))
+           (cmd (format #f "ghc ~A -main-is ~A.main -outputdir ~A -o ~A~A"
+                        file module-name directory directory module-name)))
       (force-shell-command cmd))))
 
 (define (as-haskell-module-name string)
@@ -39,4 +41,6 @@
 (define (run-haskell #!optional output-base)
   (if (default-object? output-base)
       (set! output-base "hanozzle"))
-  (force-shell-command (as-haskell-module-name (pathname-name output-base))))
+  (let* ((module-name (as-haskell-module-name (pathname-name output-base)))
+         (path (->namestring (pathname-new-name output-base module-name))))
+   (force-shell-command path)))
