@@ -189,7 +189,7 @@
             (lambda (name program)
               (define-test (,name)
                 (define basename (format #f "test-output/~S/~S" (backend-name backend) name))
-                (force-shell-command (format #f "mkdir -p test-output/~S/" (backend-name backend)))
+                (make-empty-directory (format #f "test-output/~S/" (backend-name backend)))
                 (with-output-to-string
                   (lambda ()
                     ((backend-compile backend) program basename)))
@@ -203,3 +203,7 @@
   (map cdr the-backends))
  )
 
+(define (make-empty-directory name)
+  (force-shell-command (format #f "mkdir -p ~A" name))
+  (force-shell-command (format #f "rm -rf ~A" name))
+  (force-shell-command (format #f "mkdir -p ~A" name)))
