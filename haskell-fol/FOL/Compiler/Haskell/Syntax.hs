@@ -135,11 +135,14 @@ instance Pretty HsImport where
 
 instance Pretty HsTyDefn where
     pp (HsTyDefn shape)
-        = text "newtype" <+> text "Function" <+> equals <+> lhs
+        = defn $$ show_instance
         where
-          lhs =     text "Function"
-                <+> (parens $ sep [text "Double#", arrow, pp shape])
+          defn = text "newtype" <+> text "Function" <+> equals <+> lhs
+          lhs = text "Function" <+> (parens $ sep [text "Double#", arrow, pp shape])
           arrow = text "->"
+          show_instance = header $$ nest 2 body
+          header = text "instance" <+> text "Show" <+> text "Function" <+> text "where"
+          body = text "show" <+> text "_" <+> equals <+> (doubleQuotes $ text "Function")
 
 instance Pretty HsSCDefn where
     pp (HsSCDefn sc_type sc_name sc_args sc_body)

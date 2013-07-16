@@ -1,0 +1,7 @@
+(begin
+  (define (fact n)
+    (argument-types real real)
+    (if (= n 0)
+        1
+        (* n (fact (- n 1)))))
+  (lambda (x) (fact x)))
