@@ -102,25 +102,25 @@ DVL consists of three main pieces:
 1. DVL proper,
 2. VL, a more expository and less capable compiler sharing a lot
    of code with DVL, and
-3. FOL, which serves as a compilation target for DVL and VL, an in
+3. FOL, which serves as a compilation target for DVL and VL, and in
    turn compiles to (low-level, efficient) Scheme, Lisp, or Haskell.
 
 In reverse order,
 
-1) FOL is the intermediate language for VL and DVL.  Instead of being
+3) FOL is the intermediate language for VL and DVL.  Instead of being
 entirely internal, FOL is a standalone compiler for a statically typed
 first-order language with Scheme syntax (which makes it easy to
 generate programmatically).  The FOL compiler is dominated by a FOL to
 FOL optimizer, which performs inlining, scalar replacement of
 aggregates, dead code elimination, common subexpression elimination,
 and some algebraic simplification.  Optimized FOL can then be compiled
-to machine code via any of several backends.
+to linkable libraries or executables via any of several backends.
 
 2) VL is a compiler implementing union-free polyvariant flow analysis
 on a (almost) functional source language.  It generates FOL, and
 therefore does not itself contain any post-analysis optimization.
 
-3) DVL is a variation on VL extended to be able to reason about
+1) DVL is a variation on VL extended to be able to reason about
 gensyms (unique values); DVL the language adds the primitives GENSYM
 and GENSYM= to VL.  Gensyms are sufficient to implement forward mode
 AD correctly by operator overloading; the flow analysis suffices to
