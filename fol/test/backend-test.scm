@@ -39,6 +39,29 @@
                  (* (point-y v) (point-y v)))))
       (magnitude (make-point 1 1))))
 
+ (define mandelbrot
+   '(begin
+      (define (iteration count c-real c-imag
+                         z-real z-imag)
+        (argument-types real real real real real (values real real))
+        (if (<= count 0)
+            (values z-real z-imag)
+            (iteration (- count 1)
+                       c-real c-imag
+                       (+ (- (* z-real z-real)
+                             (* z-imag z-imag))
+                          c-real)
+                       (+ (+ (* z-real z-imag)
+                             (* z-imag z-real))
+                          c-imag))))
+      (let-values
+          (((ans-real ans-imag)
+            (iteration 10 .5 .7 0 0)))
+        (< (sqrt
+            (+ (* ans-real ans-real)
+               (* ans-imag ans-imag)))
+           2))))
+
  (define-each-check
    (equal? '((labels
               ((fact (n)
@@ -148,35 +171,14 @@
     }
   }
   function __main__() {
-    iteration(100, .5, .7, 0, 0);
+    iteration(10, .5, .7, 0, 0);
     ans_real = heap_view[0];
     ans_imag = heap_view[1];
     return ((sqrt(((ans_real*ans_real)+(ans_imag*ans_imag)))<2)|0);
   }
   return __main__;
 }
-" (prepare-for-asm.js
-   '(begin
-      (define (iteration count c-real c-imag
-                         z-real z-imag)
-        (argument-types real real real real real (values real real))
-        (if (<= count 0)
-            (values z-real z-imag)
-            (iteration (- count 1)
-                       c-real c-imag
-                       (+ (- (* z-real z-real)
-                             (* z-imag z-imag))
-                          c-real)
-                       (+ (+ (* z-real z-imag)
-                             (* z-imag z-real))
-                          c-imag))))
-      (let-values
-          (((ans-real ans-imag)
-            (iteration 100 .5 .7 0 0)))
-        (< (sqrt
-            (+ (* ans-real ans-real)
-               (* ans-imag ans-imag)))
-           2))))))
+" (prepare-for-asm.js mandelbrot)))
 
  (for-each
   (lambda (backend)
@@ -201,12 +203,11 @@
                             (lambda ()
                               ((backend-compile backend) program basename)))))
                        (define result
-                         (with-input-from-string
-                             (with-output-to-string (lambda () ((backend-execute backend) basename)))
-                           read))
+                         (interpret-foreign-result
+                          (with-output-to-string (lambda () ((backend-execute backend) basename)))))
                        (check (equal? (fol-eval program) result))))))
-            '(factorial magnitude)
-            (list factorial magnitude))))))
+            '(factorial magnitude mandelbrot)
+            (list factorial magnitude mandelbrot))))))
   (map cdr the-backends))
  )
 
@@ -214,3 +215,9 @@
   (force-shell-command (format #f "mkdir -p ~A" name))
   (force-shell-command (format #f "rm -rf ~A" name))
   (force-shell-command (format #f "mkdir -p ~A" name)))
+
+(define (interpret-foreign-result str)
+  (let ((candidate (with-input-from-string str read)))
+    (cond ((eq? candidate 'nil) #f) ; Common Lisp for "false"
+          ((eq? candidate 'false) #f) ; Haskell for "false"
+          (else candidate))))
