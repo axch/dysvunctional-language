@@ -190,9 +190,12 @@
               (define-test (,name)
                 (define basename (format #f "test-output/~S/~S" (backend-name backend) name))
                 (make-empty-directory (format #f "test-output/~S/" (backend-name backend)))
-                (with-output-to-string
-                  (lambda ()
-                    ((backend-compile backend) program basename)))
+                (with-notification-output-port
+                 (open-output-string)
+                 (lambda ()
+                   (with-output-to-string
+                     (lambda ()
+                       ((backend-compile backend) program basename)))))
                 (define result
                   (with-input-from-string
                       (with-output-to-string (lambda () ((backend-execute backend) basename)))
