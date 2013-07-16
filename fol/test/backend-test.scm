@@ -187,20 +187,24 @@
            ,(backend-name backend)
            (for-each
             (lambda (name program)
-              (define-test (,name)
-                (define basename (format #f "test-output/~S/~S" (backend-name backend) name))
-                (make-empty-directory (format #f "test-output/~S/" (backend-name backend)))
-                (with-notification-output-port
-                 (open-output-string)
-                 (lambda ()
-                   (with-output-to-string
-                     (lambda ()
-                       ((backend-compile backend) program basename)))))
-                (define result
-                  (with-input-from-string
-                      (with-output-to-string (lambda () ((backend-execute backend) basename)))
-                    read))
-                (check (equal? (fol-eval program) result))))
+              (cond ((and (eq? 'haskell (backend-name backend))
+                          (eq? 'magnitude name))
+                     (warn "The haskell backend does not support type definitions yet"))
+                    (else
+                     (define-test (,name)
+                       (define basename (format #f "test-output/~S/~S" (backend-name backend) name))
+                       (make-empty-directory (format #f "test-output/~S/" (backend-name backend)))
+                       (with-notification-output-port
+                        (open-output-string)
+                        (lambda ()
+                          (with-output-to-string
+                            (lambda ()
+                              ((backend-compile backend) program basename)))))
+                       (define result
+                         (with-input-from-string
+                             (with-output-to-string (lambda () ((backend-execute backend) basename)))
+                           read))
+                       (check (equal? (fol-eval program) result))))))
             '(factorial magnitude)
             (list factorial magnitude))))))
   (map cdr the-backends))
