@@ -237,6 +237,25 @@
 ;; history when refining applications was inlined into refine-eval,
 ;; instead of indirecting through apply bindings in the analysis.
 
+;; I conjecture that this is the only way that REFINE-EVAL can be
+;; non-monotonic -- namely, the closure or arguments of an abstract
+;; application broaden, causing it not to be found in the analysis
+;; datastructure.  In this kind of situation, it is semantically ok to
+;; abstract-union with the previous value: if we had previously
+;; determined that a particular (concrete) application could return
+;; some range of values, then that deduction remains true if the
+;; operator or arguments of the application are broadened, even though
+;; the program may not have deduced that yet.
+
+;; I further conjecture that this scenario can arise in programs ;;
+;; only in the presence of recursion, and then probably only if there
+;; is an IF in the recursive cycle.  Why?  Well, to actually lose
+;; information, refine-eval must have already returned some non-bottom
+;; value, which means that the application must have had a non-bottom
+;; argument (because the analysis we're doing is modeling a strict
+;; language); and if it had a non-bottom argument that can still go up
+;; the lattice, something recursive must have been going on.
+
 ;; TODO Rather than sprinkling ABSTRACT-UNION in the places where
 ;; REFINE-EVAL is used, the definition of REFINE-EVAL needs to be
 ;; changed in order to make REFINE-EVAL monotonic.
