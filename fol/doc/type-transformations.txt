@@ -33,7 +33,7 @@ variable from p3 to p3':
 (let ((a e)) b)
  -> (let ((a (p3'->p3 (p3->p3' e)))) b)
  -> (let ((a' (p3->p3' e)))
-      (let ((a (p3'->p3 a)))
+      (let ((a (p3'->p3 a')))
         b))
  -> (let ((a' (p3->p3' e)))
       (inline a in b))
@@ -59,7 +59,7 @@ deconstructors).
    (deconstruct e1 (x y)
      (make-p3' x y e2))
 
-   (p3'->p3 (make-p3 e1 e2 e3)) ->
+   (p3'->p3 (make-p3' e1 e2 e3)) ->
    (make-p3 (make-p2 e1 e2) e3)
 
    (p3-p2 (p3'->p3 e)) ->
