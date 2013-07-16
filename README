@@ -50,13 +50,13 @@ When ready, just `git clone` this repository and then `git submodule
 init` and `git submodule update` to pull in code dependencies.  Then
 
 ```
-dysvunctional-language/dvl <dvl-program-file>
+dysvunctional-language/dvl/dvl <dvl-program-file>
 ```
 
 and you're off to the races.  Or fire up your MIT Scheme and
 
 ```scheme
-(load "dysvunctional-language/load")
+(load "dysvunctional-language/dvl/load")
 ```
 
 to use DVL as a library.
