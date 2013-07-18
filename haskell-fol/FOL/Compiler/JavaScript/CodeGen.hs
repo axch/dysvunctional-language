@@ -2,17 +2,17 @@
 -- Copyright 2010-2011 National University of Ireland.
 -- ----------------------------------------------------------------------
 -- This file is part of DysVunctional Language.
--- 
+--
 -- DysVunctional Language is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU Affero General Public License as
 -- published by the Free Software Foundation, either version 3 of the
 --  License, or (at your option) any later version.
--- 
+--
 -- DysVunctional Language is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.
--- 
+--
 -- You should have received a copy of the GNU Affero General Public License
 -- along with DysVunctional Language.  If not, see <http://www.gnu.org/licenses/>.
 -- ----------------------------------------------------------------------
@@ -25,7 +25,6 @@ import FOL.Compiler.JavaScript.Parser
 import FOL.Compiler.JavaScript.Syntax
 
 import FOL.Language.Common
-import FOL.Language.Pretty
 
 compileProg :: Prog -> JsProg
 compileProg (Prog defns block)
@@ -90,6 +89,7 @@ ops = [ (Name "+", Add)
       , (Name "<",  Lt)
       ]
 
+prelude :: [JsDefn]
 prelude = [ JsDefn (Name "real") [x]
             (JsBlck [JsReturn (JsVar x)])
           , JsDefn (Name "isZero") [x]
@@ -105,8 +105,11 @@ prelude = [ JsDefn (Name "real") [x]
     where
       x = Name "x"
 
+program :: Prog
 program = parse "(begin (define (operation-19 the-closure-141 the-closure-142 the-formals-143 the-formals-144) (argument-types real real real real real) (if (< (abs (- the-formals-143 the-formals-144)) .00001) the-formals-144 (operation-19 the-closure-142 the-closure-142 the-formals-144 (/ (+ the-formals-144 (/ the-closure-141 the-formals-144)) 2)))) (let ((the-formals-92 (real 2))) (let ((anf-79 (real 1.))) (cons 1.4142135623730951 (operation-19 the-formals-92 the-formals-92 anf-79 (/ (+ anf-79 (/ the-formals-92 anf-79)) 2))))))"
 
+program2 :: Prog
 program2 = parse "(begin (define (operation-19 the-formals-95) (argument-types real bool) (if (= the-formals-95 0) #t (let ((the-formals-99 (- the-formals-95 1))) (if (= the-formals-99 0) #f (operation-19 (- the-formals-99 1)))))) (operation-19 (real 5)))"
 
+program3 :: Prog
 program3 = parse "(begin (define (operation-363 the-formals-7993 the-formals-7994 the-formals-7995) (argument-types real real real (values real real)) (if (= the-formals-7995 0) (values the-formals-7993 the-formals-7994) (let-values (((the-formals-8282 the-formals-8283) (operation-423 (real .001) the-formals-7994))) (operation-363 (operation-576 the-formals-7993 the-formals-8282) (operation-576 the-formals-7994 the-formals-8283) (+ the-formals-7995 -1))))) (define (operation-423 the-formals-9125 the-formals-9127) (argument-types real real (values real real)) (values the-formals-9125 (* the-formals-9125 the-formals-9127))) (define (operation-576 the-formals-9141 the-formals-9142) (argument-types real real real) (+ the-formals-9141 the-formals-9142)) (let-values (((receipt-7721 receipt-7722) (operation-363 (real 0) (real 1) (real 1000)))) (cons receipt-7721 receipt-7722)))"

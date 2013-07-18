@@ -2,17 +2,17 @@
 -- Copyright 2010-2011 National University of Ireland.
 -- ----------------------------------------------------------------------
 -- This file is part of DysVunctional Language.
--- 
+--
 -- DysVunctional Language is free software; you can redistribute it and/or modify
 -- it under the terms of the GNU Affero General Public License as
 -- published by the Free Software Foundation, either version 3 of the
 --  License, or (at your option) any later version.
--- 
+--
 -- DysVunctional Language is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.
--- 
+--
 -- You should have received a copy of the GNU Affero General Public License
 -- along with DysVunctional Language.  If not, see <http://www.gnu.org/licenses/>.
 -- ----------------------------------------------------------------------
@@ -22,7 +22,6 @@ module FOL.Language.TypeCheck where
 
 import FOL.Language.Common
 import FOL.Language.Expression
-import FOL.Language.Parser (parse)
 import FOL.Language.Pretty
 
 import Control.Applicative
@@ -72,7 +71,8 @@ data TCError
     -- in the definition) number of arguments.
     | ProcArgsNumMismatch
         Name           -- procedure name
-        Type           -- procedure type
+        [Shape]        -- shapes of arguments
+        Shape          -- shape of return value
         Int            -- number of arguments given
     -- Procedure argument has the wrong (different from declared)
     -- shape.
@@ -136,7 +136,7 @@ instance Pretty TCError where
                , text "doesn't match the number of values returned from"
                , nest 2 (pp expr)
                ]
-    pp (ProcArgsNumMismatch proc_name proc_type@(ProcTy arg_shapes _) n)
+    pp (ProcArgsNumMismatch proc_name arg_shapes ret_shape n)
         = fsep [ text "The procedure"
                , pp proc_name
                , text "is applied to"
@@ -147,6 +147,8 @@ instance Pretty TCError where
                , text "has"
                , int (length arg_shapes)
                ]
+          where
+            proc_type = ProcTy arg_shapes ret_shape
     pp (ProcArgTypeMismatch proc_call arg arg_type arg_shape)
         = sep [ text "The argument"
               , nest 2 (pp arg)
@@ -399,14 +401,14 @@ annExpr env (Lambda x body)
     where
       env' = (x, PrimTy RealSh) : env
 annExpr env e@(ProcCall proc args)
-    | Just proc_type@(ProcTy arg_shapes ret_shape) <- lookup proc env
+    | Just (ProcTy arg_shapes ret_shape) <- lookup proc env
     , let nargs       = length args
     , let narg_shapes = length arg_shapes
     = if nargs == narg_shapes
       then do ann_args <- mapM (annExpr env) args
               zipWithM_ check_arg_type arg_shapes ann_args
               return (PrimTy ret_shape, AnnProcCall proc ann_args)
-      else tcFail $ ProcArgsNumMismatch proc proc_type nargs
+      else tcFail $ ProcArgsNumMismatch proc arg_shapes ret_shape nargs
     | otherwise
     = tcFail $ UndefinedProc proc
     where
@@ -421,7 +423,7 @@ annExpr env e@(ProcCall proc args)
 
 -- The declared type of a given procedure.
 declProcType :: Defn -> Type
-declProcType (Defn proc args body) = ProcTy arg_shapes ret_shape
+declProcType (Defn proc args _body) = ProcTy arg_shapes ret_shape
     where
       ret_shape  = snd proc
       arg_shapes = map snd args
