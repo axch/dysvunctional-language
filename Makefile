@@ -20,9 +20,10 @@
 clean:
 	@find . -regextype posix-extended -regex ".*\.(bci|bin|com|ext)$$" -delete
 
-test:
-	make -C fol test
-	make -C vl test
-	make -C dvl test
+test: test-fol test-vl test-dvl
 
-.PHONY: clean
+test-fol: ; $(MAKE) -C fol test
+test-vl:  ; $(MAKE) -C vl  test
+test-dvl: ; $(MAKE) -C dvl test
+
+.PHONY: clean test test-fol test-vl test-dvl
