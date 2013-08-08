@@ -20,28 +20,22 @@ along with DysVunctional Language.  If not, see <http://www.gnu.org/licenses/>.
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Mandelbrot demo</title>
+    <title>Boston Scheme and Lisp Demo</title>
     <script src="mandel.js"></script>
     <script src="mandel-driver.js"></script>
   </head>
   <style>
-    #timings {float: right; font-size: 300%;}
+    body {padding-top: 2em;}
+    #side {float: right; font-size: 300%;}
+    button {font-size: 100%}
     #timings td, #timings th {padding: 0 0.5em 0 0.5em;}
   </style>
   <body>
-    <ol>
-      <li>Generate the Mandelbrot tester function from its DVL program
-      with <code>(fol->asm.js (fol-optimize (compile-to-fol
-      (dvl-source "examples/mandel.dvl")))
-      "examples/mandel.js")</code></li>
-      <li>adjust the <code>__main__</code> function to accept two
-      arguments and use them in place of the .5 and .7, respectively</li>
-      <li>reload this page</li>
-      <li>then click "Do it".  If you see just a gray square, make
-      sure you got step 2 right (and reload this page).</li></ol>
-    <button onclick="doit()">Do it</button> <br />
     <center>
-      <table id="timings"><tr><th>Resolution</th><th>Mflops</th><th>Time (ms)</th></table>
+      <div id="side">
+        <button onclick="doit()">Go!</button> <br />
+        <table id="timings"><tr><th>Resolution</th><th>Mflops</th><th>Time (ms)</th></table>
+      </div>
       <canvas id="it" width="1000" height="1000"></canvas>
     </center>
   </body>
