@@ -1,0 +1,118 @@
+<mandel demo> (with timings of Mflops per second)
+- Explain what people are looking at; iteration formula
+- Stupid algorithm to flagellate the computer
+
+What do you think the inner loop of that program looks like?
+You might be forgiven for thinking it looks like this:
+<show asm.js source>
+<point out extreme non-modularity>
+- Maybe say where the various complex number operations are?
+
+But the source code I actually wrote for that looks like this:
+<slide with DVL sources>
+- Look how modular this code is
+
+Modularity is inherently expensive because it's the ability to reuse
+the same idea in many different ways and in many different places.
+- In this case, iterate a different function; or use the step function
+  in a different way
+- Its price is generic linkage between the "idea" and the "places"
+- The linkage is its own cost, and it impedes optimizations that
+  span parts of the "idea" and the "place"
+
+The only way I know to have modularity without paying that price at
+runtime is automatic specialization
+
+Back to example: can't to anything to iterate from its definition
+because don't know f.  Can't do anything to the interface of (step c)
+because don't know all the places it is called.
+- Could inline c:+ and c:*, but still tons of allocation and reference
+- But by tracing a little of the control+data flow of this program,
+  we can discover that f is (step c), and that (step c) gets called
+  only at (f x), which will enable all sorts of boundary-crossing
+  optimizations down the line (like getting rid of the allocation
+  and reference)
+
+So, how to gather useful information from flow?
+
+One slide for the cognoscenti:
+- Whole-program polyvariant flow analysis by abstract interpretation
+- Fine-grained abstract value domain
+  (every closure body makes a distinct abstract value)
+- No bounds on the polyvariance
+- Imprecision introduced by programmer annotation
+- This is probably equivalent to some form of online partial
+  evaluation (with partially static data and closure environments) or
+  some form of (positive) supercompilation, but I haven't done my
+  homework well enough to say for sure
+- If the analysis terminates, you have all the information you need.
+
+<draw the abstract value domain>
+
+Interpret the program abstractly, indirecting through a table of
+possible abstract states.
+- For a functional language, the state is exp-env or operator-operand,
+  and the (abstract) return value is the only possible result.
+- Do one step of interpretation at a time and indirect through the table
+  for all the unknowns; expand the table when you need more stuff
+
+<walk through iterate example>
+
+Now that you've got this, what do you do with it?
+
+One more slide for the cognoscenti
+- Generate closure-converted intermediate language
+- This is now first-order, with all call sites known statically
+- Then beat it to death with standard optimizations
+- Inlining, common subexpression elimination, algebraic
+  simplification, dead code elimination, scalar replacement of
+  aggregates
+
+For every operator-operand state, generate one (toplevel,
+closure-converted) procedure in the intermediate language.  You know
+the operator-operand shapes of all calls it makes, so generate static
+calls to those procedures.  This accomplishes constant propagation and
+type-directed specialization (for a very fine-grained and informative
+system of types).
+<show>
+
+If there's time, show the result of fully optimized FOL, right before
+translation to asm.js.
+- This intermediate language emerged before I had ever heard of
+  asm.js
+- And then it took about a week to write the translator
+- Also have backends to MIT Scheme, SBCL, GHC
+
+Caveats:
+- Analysis may not terminate, and may use huge amounts of RAM even when
+  it does
+- Depends upon programmer annotations to introduce imprecision, otherwise
+  will execute the program slowly at compile time
+- Research prototype quality software in general
+  (type error in the program gives prompt debugging the compiler)
+- The hope is to get it to be better than doing the same
+  specializations by hand
+
+By the way, I suspect that flowing information from uses to
+definitions is what people actually do when they come up with
+optimizations that seem obvious but their compiler is not Sufficiently
+Clever to find.
+
+----------------------------------------------------------------------
+Uncertainties about the audience:
+- How much do they know about language implementation/compilers
+- How much do they know about partial evaluation/flow analysis
+
+
+
+Partial evaluation, supercompilation, and the flow analysis in DVL all
+specialize to all possible contexts at compile time.  JITs specialize
+to observed contexts at runtime.
+
+
+
+I could optionally mention that DVL is one step better than this
+because it handles gensyms, and that handling gensyms is enough to
+enable automatic differentiation as a user-space library
+
+N.B.: Work in meaning of the term "call site"
