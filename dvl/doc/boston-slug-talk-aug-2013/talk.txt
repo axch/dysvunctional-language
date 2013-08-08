@@ -1,4 +1,6 @@
-Prep: draw the abstract value lattice
+Prep:
+write the definition of the Mandelbrot set
+draw the abstract value lattice
 draw the flow analysis example
 
 <mandel demo> (with timings of Mflops per second)
@@ -56,6 +58,10 @@ c), and that (step c) gets called only at (f x)
 - This will enable all sorts of boundary-crossing
   optimizations down the line (like getting rid
   of the allocations and references)
+
+I suspect that this is what humans do when they
+notice their compilers are not Sufficiently
+Clever.
 
 So, how to gather useful information from flow?
 
@@ -135,6 +141,13 @@ asm.js.
   translator
 - Also have backends to MIT Scheme, SBCL, GHC
 
+Functional but also support automatic
+differentiation (but that's another talk)
+
+Not too complex -- modular constructs are
+scaffolding, which needs to be solvable at
+compile time.
+
 Caveats:
 - Analysis may not terminate, and may use huge
   amounts of RAM even when it does
@@ -148,14 +161,7 @@ Caveats:
   debugging the compiler)
 
 - The hope is to get it to be better than doing
-  the same specializations by hand
-
-- The target is numerical programs where the
-  modular stuff is scaffolding for pushing
-  floating-point numbers around
-  - Which solve at compile time
-  - Like automatic differentiation
-
+  the same specializations by hand
 By the way, I suspect that flowing information
 from uses to definitions is what people actually
 do when they come up with optimizations that seem

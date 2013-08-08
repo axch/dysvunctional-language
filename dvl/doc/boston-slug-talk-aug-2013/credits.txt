@@ -1,4 +1,19 @@
-Credits:
+So, what do we have?
+
+Can write modular programs
+
+Let compiler specialize abstractions for speed
+
+On general programs, challenge is when to stop
+
+Prototype intended for numerical kernels
+- functional
+- not too complex
+
+Lots of caveats
+
+https://github.com/axch/dysvunctional-language
+Credits:
 
 I worked on this at the Hamilton Institute at the
 National University of Ireland, Maynooth
@@ -6,9 +21,6 @@ National University of Ireland, Maynooth
 With Barak A. Pearlmutter, Jeffrey Mark Siskind
 (Purdue University), Oleksandr Manzyuk, and David
 Rush.
-
-Now released as free software
-https://github.com/axch/dysvunctional-language
 References:
 
 Jeffrey Mark Siskind and Barak A. Pearlmutter,
