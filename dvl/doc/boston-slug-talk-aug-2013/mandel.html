@@ -25,13 +25,16 @@ along with DysVunctional Language.  If not, see <http://www.gnu.org/licenses/>.
     <script src="mandel-driver.js"></script>
   </head>
   <style>
-    body {padding-top: 2em;}
-    #side {float: right; font-size: 300%;}
-    button {font-size: 100%}
+    #side {float: right; font-size: 250%;}
+    button {font-size: 100%;}
     #timings td, #timings th {padding: 0 0.5em 0 0.5em;}
+    h1 {font-size: 300%; margin-top: 0em; margin-bottom: 0em;}
+    h2 {font-size: 200%; margin-top: 0em; font-weight: normal;}
   </style>
   <body>
     <center>
+      <h1>Mandelbrot Set in Pure Javascript</h1>
+      <h2>(don't worry, the Lisp will appear soon)</h2>
       <div id="side">
         <button onclick="doit()">Go!</button> <br />
         <table id="timings"><tr><th>Resolution</th><th>Mflops</th><th>Time (ms)</th></table>
