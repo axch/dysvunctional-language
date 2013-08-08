@@ -1,24 +1,22 @@
-;; This is iterate, specialized to f being (step c) and x having shape
-;; (R . R)
-(define (operation-231 self-env count f-env x)
-   (type env-226 real env-235 (cons real real)
-         (cons real real))
-   (if (<= count 0)
-       x
-       ;; It calls itself because the arguments to the recursive call
-       ;; have the same shapes
-       (operation-231 self-env
-                      (- count 1)
-                      f-env
-                      (operation-23 f-env x))))
+;; This is iterate, specialized to f being
+;; (step c) and x having shape (R . R)
+(define (op-231 self-env count f-env x)
+  (type env-226 real env-235 (cons real real)
+        (cons real real))
+  (if (<= count 0)
+      x
+      ;; Calls itself because the arguments to
+      ;; the recursive call have the same shapes
+      (op-231 self-env (- count 1)
+              f-env (op-23 f-env x))))
 
-;; This is the (step c) lambda where c is (R . R) and
-;; the argument is (R . R)
-(define (operation-23 self-env z)
+;; This is (step c) specialized to c having shape
+;; (R . R) and z having shape (R . R)
+(define (op-23 self-env z)
   (type env-235 (cons real real)
         (cons real real))
-  (operation-423 ; Complex addition
+  (op-423 ; complex +
    (env-235-c:+-env self-env)
-   (operation-249 ; Complex multiplication
+   (op-249 ; complex *
     (env-235-c:*-env self-env) z z)
    (env-235-c self-env)))

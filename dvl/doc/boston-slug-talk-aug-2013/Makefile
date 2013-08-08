@@ -24,7 +24,7 @@
 	enscript -r -M letter --highlight=scheme --color -fCourier-Bold24 -o $@ $<
 
 %-fol.ps: %.fol
-	enscript -r -M letter --highlight --color -fCourier-Bold24 -o $@ $<
+	enscript -r -M letter --highlight=scheme --color -fCourier-Bold24 -o $@ $<
 
 %-js.ps: %.js
 	enscript -r -M letter --highlight --color -fCourier-Bold24 -o $@ $<
@@ -32,5 +32,5 @@
 %.pdf: %.ps
 	ps2pdf $< $@
 
-presentation.pdf: mandel-js.pdf mandel-dvl.pdf analyzed-fol.pdf
-	pdfjoin -o $@ mandel-js.pdf mandel-dvl.pdf analyzed-fol.pdf
+presentation.pdf: mandel-js.pdf mandel-dvl.pdf cognoscenti.pdf analyzed-fol.pdf credits.pdf
+	pdfjoin -o $@ mandel-js.pdf mandel-dvl.pdf cognoscenti.pdf analyzed-fol.pdf credits.pdf
