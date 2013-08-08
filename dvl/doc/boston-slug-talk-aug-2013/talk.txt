@@ -1,3 +1,6 @@
+Prep: draw the abstract value lattice
+draw the flow analysis example
+
 <mandel demo> (with timings of Mflops per second)
 - This is the Mandelbrot set
   - c is colored black if iterating z = z^2 + c
@@ -26,16 +29,6 @@ looks like this:
 - But if you just tried to compile this on a
   normal system, it would be dog slow (unless you
   got lucky because this is such a tiny example)
-
-I should say now that this is a pure-functional
-language intended for compute-intensive inner
-loops only.
-- The mechanism I will show you does not do well
-  on "large complex programs".
-- Scientific computing kernels where the floating
-  point is what's interesting are a good fit.
-- Solve the scaffolding at compile time, do the
-  arithmetic at runtime.
 
 Modularity is inherently expensive because it's
 the ability to reuse the same idea in many
@@ -47,14 +40,8 @@ different ways and in many different places.
 - The linkage is its own cost, and it impedes
   optimizations that span parts of the "idea" and
   the "place"
-
-The only way I know not to pay the price is to
-specialize.
-
-The only way I know to keep modularity is to
-specialize automatically.
 
-Back to example
+What's the trouble here?
 
 Can't to anything to iterate from its definition
 because don't know f.
@@ -62,13 +49,9 @@ because don't know f.
 Can't do anything to the interface of (step c)
 because don't know all the places it is called.
 
-- Could inline c:+ and c:*, but still tons of
-  allocation and reference
-
-- But by tracing a little of the control+data
-  flow of this program, we can discover that f is
-  (step c), and that (step c) gets called only at
-  (f x)
+But by tracing a little of the control+data flow
+of this program, we can discover that f is (step
+c), and that (step c) gets called only at (f x)
 
 - This will enable all sorts of boundary-crossing
   optimizations down the line (like getting rid
@@ -76,6 +59,16 @@ because don't know all the places it is called.
 
 So, how to gather useful information from flow?
 
+I should say now that this is a pure-functional
+language intended for compute-intensive inner
+loops only.
+- The mechanism I will show you does not do well
+  on "large complex programs".
+- Scientific computing kernels where the floating
+  point is what's interesting are a good fit.
+- Solve the scaffolding at compile time, do the
+  arithmetic at runtime.
+
 One slide for the cognoscenti
 
 Idea for the rest of us:

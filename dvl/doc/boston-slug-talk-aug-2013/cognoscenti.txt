@@ -11,8 +11,6 @@
     partially static data and closure
     environments) and/or
   - some form of (positive) supercompilation, but
-  - I haven't done my homework well enough to say
-    for sure
 - If the analysis terminates, you have all the
   information you need.
     One more slide for the cognoscenti
