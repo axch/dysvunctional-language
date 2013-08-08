@@ -1,0 +1,30 @@
+          One slide for the cognoscenti
+
+- Whole-program polyvariant flow analysis
+  by abstract interpretation
+- Fine-grained abstract value domain (every
+  closure body makes a distinct abstract value)
+- No bounds on the polyvariance
+- Imprecision introduced by programmer annotation
+- This is probably equivalent to
+  - some form of online partial evaluation (with
+    partially static data and closure
+    environments) and/or
+  - some form of (positive) supercompilation, but
+  - I haven't done my homework well enough to say
+    for sure
+- If the analysis terminates, you have all the
+  information you need.
+    One more slide for the cognoscenti
+
+- Generate closure-converted intermediate
+  language
+- This is now first-order, with all call sites
+  known statically
+- Then beat it to death with standard
+  optimizations
+  - Inlining
+  - Common subexpression elimination
+  - Algebraic simplification
+  - Dead code elimination
+  - Scalar replacement of aggregates
