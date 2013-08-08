@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<!--
+Copyright 2013 Alexey Radul.
+
+This file is part of DysVunctional Language.
+
+DysVunctional Language is free software; you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+ License, or (at your option) any later version.
+
+DysVunctional Language is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with DysVunctional Language.  If not, see <http://www.gnu.org/licenses/>.
+-->
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Mandelbrot demo</title>
+    <script src="mandel.js"></script>
+    <script src="mandel-driver.js"></script>
+  </head>
+  <style>
+    #timings {float: right; font-size: 300%;}
+    #timings td, #timings th {padding: 0 0.5em 0 0.5em;}
+  </style>
+  <body>
+    <ol>
+      <li>Generate the Mandelbrot tester function from its DVL program
+      with <code>(fol->asm.js (fol-optimize (compile-to-fol
+      (dvl-source "examples/mandel.dvl")))
+      "examples/mandel.js")</code></li>
+      <li>adjust the <code>__main__</code> function to accept two
+      arguments and use them in place of the .5 and .7, respectively</li>
+      <li>reload this page</li>
+      <li>then click "Do it".  If you see just a gray square, make
+      sure you got step 2 right (and reload this page).</li></ol>
+    <button onclick="doit()">Do it</button> <br />
+    <center>
+      <table id="timings"><tr><th>Resolution</th><th>Mflops</th><th>Time (ms)</th></table>
+      <canvas id="it" width="1000" height="1000"></canvas>
+    </center>
+  </body>
+</html>
