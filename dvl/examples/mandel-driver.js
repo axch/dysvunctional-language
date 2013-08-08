@@ -28,7 +28,7 @@ function setPixel(imageData, x, y, r, g, b, a) {
 }
 
 function dataFor(width, height) {
-    console.time("compute loop");
+    var start = new Date();
     var aliasDepth = 2;
     var answer = new Array(width);
     for (var i = 0; i < width; i++) {
@@ -49,8 +49,26 @@ function dataFor(width, height) {
             answer[i][j] = color;
         }
     }
-    console.timeEnd("compute loop");
+    var done = new Date();
+    // 10 flops per iteration by 400 iterations per point
+    var flops = 10*400*width*height*aliasDepth*aliasDepth;
+    reportTime('' + width + "x" + height, flops, done-start);
     return answer;
+}
+
+function reportTime(res, flops, time) {
+    var row = document.createElement('tr');
+    var datum1 = document.createElement('td');
+    datum1.appendChild(document.createTextNode(res));
+    var datum2 = document.createElement('td');
+    datum2.appendChild(document.createTextNode(flops/1000000));
+    var datum3 = document.createElement('td');
+    datum3.appendChild(document.createTextNode(time));
+    row.appendChild(datum1);
+    row.appendChild(datum2);
+    row.appendChild(datum3);
+    var table = document.getElementById('timings');
+    table.appendChild(row);
 }
 
 function scaleit(scale) {
@@ -58,8 +76,8 @@ function scaleit(scale) {
     context = canvas.getContext("2d");
     width = canvas.width;
     height = canvas.height;
-    imageData = context.createImageData(width, height);
     colorData = dataFor(width/scale, height/scale);
+    imageData = context.createImageData(width, height);
     for (var i = 0; i < width/scale; i++) {
         for (var j = 0; j < height/scale; j++) {
             color = colorData[i][j];
@@ -74,5 +92,13 @@ function scaleit(scale) {
 }
             
 function doit() {
-    scaleit(1);
+    walkScales(0);
+}
+
+function walkScales(i) {
+    var scales = [10,5,2,1];
+    scaleit(scales[i]);
+    if (i+1 < scales.length) {
+        window.setTimeout(walkScales, 10, i+1);
+    }
 }

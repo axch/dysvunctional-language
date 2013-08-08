@@ -24,6 +24,10 @@ along with DysVunctional Language.  If not, see <http://www.gnu.org/licenses/>.
     <script src="mandel.js"></script>
     <script src="mandel-driver.js"></script>
   </head>
+  <style>
+    #timings {float: right; font-size: 300%;}
+    #timings td, #timings th {padding: 0 0.5em 0 0.5em;}
+  </style>
   <body>
     <ol>
       <li>Generate the Mandelbrot tester function from its DVL program
@@ -36,6 +40,9 @@ along with DysVunctional Language.  If not, see <http://www.gnu.org/licenses/>.
       <li>then click "Do it".  If you see just a gray square, make
       sure you got step 2 right (and reload this page).</li></ol>
     <button onclick="doit()">Do it</button> <br />
-    <center><canvas id="it" width="1000" height="1000"></canvas></center>
+    <center>
+      <table id="timings"><tr><th>Resolution</th><th>Mflops</th><th>Time (ms)</th></table>
+      <canvas id="it" width="1000" height="1000"></canvas>
+    </center>
   </body>
 </html>
