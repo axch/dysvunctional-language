@@ -53,19 +53,26 @@ function dataFor(width, height) {
     return answer;
 }
 
-function doit() {
+function scaleit(scale) {
     canvas = document.getElementById("it");
     context = canvas.getContext("2d");
     width = canvas.width;
     height = canvas.height;
     imageData = context.createImageData(width, height);
-    colorData = dataFor(width, height);
-    for (var i = 0; i < width; i++) {
-        for (var j = 0; j < height; j++) {
+    colorData = dataFor(width/scale, height/scale);
+    for (var i = 0; i < width/scale; i++) {
+        for (var j = 0; j < height/scale; j++) {
             color = colorData[i][j];
-            setPixel(imageData, i, j, color, color, color, 255);
+            for (var ii = 0; ii < scale; ii++) {
+                for (var jj = 0; jj < scale; jj++) {
+                    setPixel(imageData, i*scale + ii, j*scale + jj, color, color, color, 255);
+                }
+            }
         }
     }
     context.putImageData(imageData, 0, 0);
 }
             
+function doit() {
+    scaleit(1);
+}
