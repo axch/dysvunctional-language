@@ -1,12 +1,16 @@
 <mandel demo> (with timings of Mflops per second)
-- Explain what people are looking at; iteration formula
+- This is the Mandelbrot set
+  - c is colored black if iterating z = z^2 + c does not escape
+  - in this case, in 400 steps
+  - antialiased for your viewing pleasure
 - Stupid algorithm to flagellate the computer
+  - 10 flops per step x 400 steps per point x 4 points per pixel
 
 What do you think the inner loop of that program looks like?
 You might be forgiven for thinking it looks like this:
 <show asm.js source>
 <point out extreme non-modularity>
-- Maybe say where the various complex number operations are?
+- Say where the various complex number operations are?
 
 But the source code I actually wrote for that looks like this:
 <slide with DVL sources>

@@ -21,7 +21,7 @@
 	enscript -r -M letter --highlight --color -fCourier-Bold24 -o $@ $<
 
 %-dvl.ps: %.dvl
-	enscript -r -M letter --highlight --color -fCourier-Bold24 -o $@ $<
+	enscript -r -M letter --highlight=scheme --color -fCourier-Bold24 -o $@ $<
 
 %-fol.ps: %.fol
 	enscript -r -M letter --highlight --color -fCourier-Bold24 -o $@ $<
