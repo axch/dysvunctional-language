@@ -6,6 +6,9 @@ National University of Ireland, Maynooth
 With Barak A. Pearlmutter, Jeffrey Mark Siskind
 (Purdue University), Oleksandr Manzyuk, and David
 Rush.
+
+Now released as free software
+https://github.com/axch/dysvunctional-language
 References:
 
 Jeffrey Mark Siskind and Barak A. Pearlmutter,
