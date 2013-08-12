@@ -20,10 +20,13 @@
 FONT1=Courier-Bold24
 
 %.ps: %
-	enscript -r -M letter --highlight$(ENSCRIPT_HIGHLIGHT_EQ_LANG) --color -f$(FONT1) -o $@ $<
+	enscript -r -M letter --header=$(ENSCRIPT_HEADER) -E$(ENSCRIPT_HIGHLIGHT_LANG) --color --font=$(FONT1) -o $@ $<
 
-%.dvl.ps: ENSCRIPT_HIGHLIGHT_EQ_LANG==scheme
-%.fol.ps: ENSCRIPT_HIGHLIGHT_EQ_LANG==scheme
+%.dvl.ps: ENSCRIPT_HIGHLIGHT_LANG=scheme
+%.fol.ps: ENSCRIPT_HIGHLIGHT_LANG=scheme
+
+ENSCRIPT_HEADER='||$$n ($$%/$$=)'
+%.txt.ps: ENSCRIPT_HEADER=
 
 %.pdf: %.ps
 	ps2pdf $< $@
