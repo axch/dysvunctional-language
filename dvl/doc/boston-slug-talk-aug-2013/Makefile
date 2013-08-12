@@ -17,20 +17,22 @@
 ### along with DysVunctional Language.  If not, see <http://www.gnu.org/licenses/>.
 ### ----------------------------------------------------------------------
 
+FONT1=Courier-Bold24
+
 %.ps: %.txt
-	enscript -r -M letter --highlight --color -fCourier-Bold24 -o $@ $<
+	enscript -r -M letter --highlight --color -f$(FONT1) -o $@ $<
 
-%-dvl.ps: %.dvl
-	enscript -r -M letter --highlight=scheme --color -fCourier-Bold24 -o $@ $<
+%.dvl.ps: %.dvl
+	enscript -r -M letter --highlight=scheme --color -f$(FONT1) -o $@ $<
 
-%-fol.ps: %.fol
-	enscript -r -M letter --highlight=scheme --color -fCourier-Bold24 -o $@ $<
+%.fol.ps: %.fol
+	enscript -r -M letter --highlight=scheme --color -f$(FONT1) -o $@ $<
 
-%-js.ps: %.js
-	enscript -r -M letter --highlight --color -fCourier-Bold24 -o $@ $<
+%.js.ps: %.js
+	enscript -r -M letter --highlight --color -f$(FONT1) -o $@ $<
 
 %.pdf: %.ps
 	ps2pdf $< $@
 
-presentation.pdf: mandel-js.pdf mandel-dvl.pdf cognoscenti.pdf analyzed-fol.pdf credits.pdf
-	pdfjoin -o $@ mandel-js.pdf mandel-dvl.pdf cognoscenti.pdf analyzed-fol.pdf credits.pdf
+presentation.pdf: mandel.js.pdf mandel.dvl.pdf cognoscenti.pdf analyzed.fol.pdf credits.pdf
+	pdfjoin -o $@ $+
