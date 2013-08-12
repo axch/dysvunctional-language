@@ -19,7 +19,7 @@
 
 FONT1=Courier-Bold24
 
-%.ps: %.txt
+%.txt.ps: %.txt
 	enscript -r -M letter --highlight --color -f$(FONT1) -o $@ $<
 
 %.dvl.ps: %.dvl
@@ -34,5 +34,5 @@ FONT1=Courier-Bold24
 %.pdf: %.ps
 	ps2pdf $< $@
 
-presentation.pdf: mandel.js.pdf mandel.dvl.pdf cognoscenti.pdf analyzed.fol.pdf credits.pdf
+presentation.pdf: mandel.js.pdf mandel.dvl.pdf cognoscenti.txt.pdf analyzed.fol.pdf credits.txt.pdf
 	pdfjoin -o $@ $+
