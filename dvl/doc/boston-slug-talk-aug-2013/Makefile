@@ -19,17 +19,11 @@
 
 FONT1=Courier-Bold24
 
-%.txt.ps: %.txt
-	enscript -r -M letter --highlight --color -f$(FONT1) -o $@ $<
+%.ps: %
+	enscript -r -M letter --highlight$(ENSCRIPT_HIGHLIGHT_EQ_LANG) --color -f$(FONT1) -o $@ $<
 
-%.dvl.ps: %.dvl
-	enscript -r -M letter --highlight=scheme --color -f$(FONT1) -o $@ $<
-
-%.fol.ps: %.fol
-	enscript -r -M letter --highlight=scheme --color -f$(FONT1) -o $@ $<
-
-%.js.ps: %.js
-	enscript -r -M letter --highlight --color -f$(FONT1) -o $@ $<
+%.dvl.ps: ENSCRIPT_HIGHLIGHT_EQ_LANG==scheme
+%.fol.ps: ENSCRIPT_HIGHLIGHT_EQ_LANG==scheme
 
 %.pdf: %.ps
 	ps2pdf $< $@
