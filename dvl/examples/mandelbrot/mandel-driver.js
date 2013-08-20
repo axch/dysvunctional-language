@@ -92,6 +92,7 @@ function scaleit(scale) {
 }
             
 function doit() {
+    document.getElementById('spinner').style.display = "inline";
     walkScales(0);
 }
 
@@ -100,5 +101,7 @@ function walkScales(i) {
     scaleit(scales[i]);
     if (i+1 < scales.length) {
         window.setTimeout(walkScales, 10, i+1);
+    } else {
+        document.getElementById('spinner').style.display = "none";
     }
 }
