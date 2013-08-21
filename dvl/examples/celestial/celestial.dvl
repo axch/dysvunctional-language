@@ -114,11 +114,11 @@
                 (map velocity objects) ; the velocities are the derivatives of the positions
                 (map2 / (forces objects) (map mass objects))))))
 
+(define initial-conditions
+  (cons (real 0) (list sun jupiter saturn uranus neptune
+                       )))
+
 (lambda (downsample)
   (downsampled-stream
-   (step-stream
-    rk4-again
-    state-derivative
-    (cons (real 0) (list sun jupiter saturn uranus neptune
-                         )))
+   (step-stream rk4-again state-derivative initial-conditions)
    downsample))
