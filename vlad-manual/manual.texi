@@ -1,0 +1,1082 @@
+\input texinfo @c -*-texinfo-*-
+@comment %**start of header
+@setfilename manual
+@set EDITION 0.5
+@set VERSION 0.1
+@set UPDATED December 8, 2011
+@settitle VLAD Programmer Manual
+@comment %**end of header
+
+@syncodeindex vr fn
+@allowcodebreaks false
+@setchapternewpage off
+@macro todo{text}
+@strong{TODO: \text\}
+@end macro
+
+@c Major TODO: write the Performance Model section
+@c Major TODO: mechanically confirm the various assertions in the manual
+@c TODO Barak asks: Is forward zero the same as reverse zero?
+@c Does the zero produced by the ZERO procedure come with a perturbation
+@c or sensitivity tag?  Zeros are things that live in vector spaces, not
+@c just floating around by themselves...  Should the zeros be symbolic
+@c identities for PLUS or explicitly built structured objects?
+
+@c Barak answers: Maybe ZERO *should* tag its output as a perturbation,
+@c but it doesn't.  Hence this idiom: (perturb (zero x))
+
+@macro abstract
+VLAD is a functional language with a first-class automatic
+differentiation operator and an aggressively optimizing compiler.  The
+purpose of VLAD is to push the envelope on the speed of numeric
+computing, without sacrificing any essential expressive power; and to
+dispel any myths that automatic differentiation needs to be hard to
+use or slow to execute.
+@end macro
+
+@titlepage
+@title VLAD Programmer Manual
+@subtitle Edition @value{EDITION}
+@subtitle VLAD version @value{VERSION}
+@subtitle @value{UPDATED}
+@author Alexey Radul
+@page
+@center{@strong{Abstract}}
+@quotation
+@abstract
+@end quotation
+@end titlepage
+
+@ifnottex
+@node Top
+@top VLAD Programmer Manual
+
+This manual documents VLAD vesion @value{VERSION}.
+This is edition @value{EDITION} of the manual, up to date as of @value{UPDATED}.
+
+@heading Abstract
+@abstract
+@end ifnottex
+
+@ifnotinfo
+@contents
+@end ifnotinfo
+
+@menu
+* Overview::
+* Installation::
+* Getting Started::
+* Scaffolding::
+* Numerics::
+* Forward AD::
+* Reverse AD::
+* Performance::
+* Options and Environment Variables::
+* Hacking Stalingrad::
+* Index::
+@end menu
+
+@node Overview
+@chapter Overview
+
+VLAD is essentially a subset of Scheme, augmented with functions for
+doing automatic differentiation, and implemented with a compiler that
+does very aggressive optimizations.  In particular, VLAD shares
+Scheme's simple syntax and overall execution model.  The most striking
+differences are the automatic differentiation, destructuring of
+procedure arguments, and how fast programs go once you've compiled
+them.  VLAD is designed to compile to efficient code without
+sacrificing any essential expressive power.  Being a research
+prototype, however, VLAD sacrifices various uninteresting
+conveniences, which are left to user-space libraries and to later
+incarnations of these language design ideas.
+
+@node Installation
+@chapter Installation
+
+Stalingrad is the interpreter and compiler for VLAD.  To install
+Stalingrad, you must have access to the Git repositories at
+@code{cvs.bcl.hamilton.ie}.  You must also have
+@code{dpkg-checkbuilddeps} and @code{fakeroot} to build Stalingrad,
+@code{libgc-dev} to compile programs with Stalingrad, and
+@code{mit-scheme} to run the Stalingrad self-test suite.
+Stalingrad installation is a two-step process:
+
+Zeroth, get dependencies:
+
+@example
+apt-get install dpkg-checkbuilddeps fakeroot libgc-dev mit-scheme
+@end example
+
+First, install the development version of @code{scheme2c}:
+
+@example
+git clone ssh://cvs.bcl.hamilton.ie/home/git/scheme2c.git
+cd scheme2c
+dpkg-checkbuilddeps
+apt-get install @var{anything missing indicated by dpkg-checkbuilddeps}
+fakeroot debian/rules binary
+sudo dpkg --install ../scheme2c_@var{xxx}.deb
+@end example
+
+Then compile and self-check Stalingrad proper:
+
+@example
+git clone ssh://cvs.bcl.hamilton.ie/home/git/stalingrad.git
+cd stalingrad
+autoconf
+./configure
+make
+make test
+@end example
+
+You should now have a working binary of Stalingrad in
+@code{source/stalingrad}, with which you can run VLAD
+programs:
+
+@example
+source/stalingrad @var{foo}.vlad
+@end example
+
+will run the VLAD program in @file{@var{foo}.vlad}, and
+
+@example
+source/stalingrad -compile @var{foo}.vlad
+@end example
+
+will compile the VLAD program in @file{@var{foo}.vlad} into an
+executable named @file{@var{foo}}.  Stalingrad also has many other
+options and modes for controlling the compilation process, emitting
+various partial results thereof, etc.
+
+@node Getting Started
+@chapter Getting Started
+
+A VLAD program is notionally just a single expression.  For example,
+
+@lisp
+(+ 3 4)
+@end lisp
+
+@noindent
+is a perfectly good VLAD program whose result is @code{7}.  Used as an
+interpreter, the Stalingrad program reads a file containing a VLAD
+expression, evaluates it, and prints the result.
+
+As a syntactic convenience, helper procedures can be defined using
+@code{define}.  Also, Stalingrad used as an interpreter will treat
+multiple non-definition expressions in a single source file as
+multiple ``programs'', and execute all of them in turn.  The scope of
+definitions introduced with @code{define} is the entire contiguous block of
+definitions in which that @code{define} appears, and all subsequent
+expressions.
+
+For example,
+
+@lisp
+(define (factorial n)
+  (if (= n 0)
+      1
+      (* n (factorial (- n 1)))))
+
+(write-real (factorial (read-real)))
+@end lisp
+
+@noindent
+is a VLAD program that will read a real number from standrad input and
+write its factorial to standard output.  (If you run this in the
+interpreter, you will see the answer twice: once because
+@code{write-real} prints it itself and once because
+@code{write-real} returns it and the interpreter prints it).
+
+Stalingrad operating as a compiler differs in a few respects from
+Stalingrad operating as an interpreter:
+@itemize
+@item
+A program to be compiled must have only one non-definition expression.
+@item
+The value of that expression is printed by the interpreter but not
+by the compiled executable.
+@item
+The shape of that expression must have some indeterminacy (otherwise
+the flow analysis decides your program is boring, and doesn't even
+deign to print the answer) but must not defeat the analysis completely.
+@item
+The arguments of any calls to @code{write-real} will only be written
+if they are not completely determined by the analysis.
+@item
+The procedure @code{write} is not implemented for compiled code.
+@end itemize
+
+VLAD has the following support for multifile programs: If you have a
+file of definitions named @var{filename}, you can use those
+definitions in another program by writing @code{(include
+"@var{filename}")} as a toplevel form in that program.  This mechanism
+works recursively.  The search path where Stalingrad looks for include
+files is the working directory, any directories given by @code{-I}
+switches when running Stalingrad, and
+@file{/usr/local/stalingrad/include/}, in that order.
+
+
+@node Scaffolding
+@chapter Scaffolding
+
+The basic structure of VLAD code is inherited from Scheme.
+Identifiers are whitespace-delimited.  Expressions are written in
+fully-parenthesized prefix notation.  Comments begin with a semicolon
+character (@code{;}) and last until the end of the line.
+Variables are lexically scoped.  Objects have unlimited extent.
+
+The basic evaluation model of VLAD is also inherited from Scheme.  The
+first subexpression of an expression determines how that expression
+will be evaluated---if it's an identifier naming a special form,
+then the whole form will be evaluated that way; otherwise, the first
+subform will be evaluated, treated as a procedure, and applied to the
+evaluated values of the remaining subforms.
+The empty expression @code{()} is not legal VLAD.
+
+The main syntactic difference between Scheme and VLAD is that VLAD
+has automatic destructuring of bound values.
+For details, see @xref{Destructuring}, but the gist is that
+
+@example
+(let (((cons x y) (cons 1 2)))
+  ... x ... y ...)
+@end example
+
+@noindent
+works and does what you would expect.  This facility is how VLAD
+implements multiple formal parameters to a procedure, multiple
+arguments passed to a procedure at its call site, and multiple return
+values.  All this notional structuring and destructuring is dealt with
+at compile time (@pxref{Performance}) and incurs no runtime overhead.
+
+@todo Detailed lexical syntax of VLAD, differences from Scheme
+
+@menu
+* Destructuring::
+* Literals::
+* Special forms::
+* Procedures::
+* Input and Output::
+* Introducing Imprecision::
+@end menu
+
+@node Destructuring
+@section Destructuring
+
+In VLAD, all procedures take exactly one argument, which they may
+implicitly destructure, depending on the formal parameter
+specification of the procedure.  Dually, all procedure call sites are
+coerced into passing the callee exactly one argument, which is a
+structure that contains all the syntactically apparent arguments.
+
+Syntactically multiple procedure arguments are folded into a
+destructuring that uses @code{cons*}:
+
+@example
+(lambda () @var{e})  @expansion{}  (lambda ((cons*)) @var{e})
+(lambda (x) @var{e})  @expansion{}  (lambda (x) @var{e})
+(lambda (x y z@dots{}) @var{e})  @expansion{}  (lambda ((cons* x y z@dots{})) @var{e})
+@end example
+
+Likewise, syntactically multiple arguments in a procedure call site
+are folded into making a structure with @code{cons*}:
+
+@example
+(@var{f} ())  @expansion{}  (@var{f} (cons*))
+(@var{f} x)  @expansion{}  (@var{f} x)
+(@var{f} x y z@dots{})  @expansion{}  (@var{f} (cons* x y z@dots{}))
+@end example
+
+In addition to the automatic destructuring introduced by syntactically
+multiple formal parameters to a procedure, VLAD supports
+user-specified destructuring by writing @code{cons}, @code{cons*}, or
+@code{list} forms in the formal parameter spec of a procedure.  For example,
+
+@lisp
+((lambda ((cons x y))
+   (+ x y))
+ 1 2)  @result{} 3
+@end lisp
+
+This facility is recursive:
+@lisp
+((lambda ((cons x y) (list z (cons v w)))
+   (+ x (+ y (+ z (+ v w)))))
+ (cons (cons 1 2) (list 3 (cons 4 5))))  @result{}  15
+@end lisp
+
+@noindent
+because the procedure picks apart the incoming structure and finds the
+numbers inside.  The same destructuring rules apply to bindings
+introduced by @code{let} and @code{let*}, but not @code{letrec}.
+
+@lisp
+(let (((cons (cons x y) (list z (cons v w)))
+       (cons (cons 1 2) (list 3 (cons 4 5)))))
+  (+ x (+ y (+ z (+ v w)))))  @result{}  15
+@end lisp
+
+@todo VLAD also destructures (j* foo) (*j foo) (forward foo (perturb bar)) (sensitivity foo), etc.  Investigate and describe.
+
+In principle, VLAD also destructures constants and closures that may
+appear in the formal parameter position of a procedure, but I don't
+know whether this is ever useful outside the internals of AD
+transforms.
+@todo Why does VLAD destructure closures, etc?  What's a @code{variable-access-expression}?
+
+@node Literals
+@section Literals
+
+@defvr Literal #t
+@defvrx Literal #f
+Literal syntax for booleans: like Scheme.
+@end defvr
+
+Literal syntax for numbers is also like Scheme, except that all
+numerals are interpreted as constant IEEE-64 floating point numbers,
+because the only numbers in VLAD are IEEE-64 floating point.
+
+@node Special forms
+@section Special forms
+
+VLAD supports the following special forms.  They are like the
+corresponding Scheme special forms, except for some differences
+pointed out with each one:
+
+@defspec include filename
+Includes the named file in the current program in this location.  May
+only occur as a toplevel expression.  If the filename is relative, it
+is searched for in the working directory of the Stalingrad process,
+any directories given by @code{-I} switches when running Stalingrad,
+and @file{/usr/local/stalingrad/include/}, in that order.
+@end defspec
+
+@defspec lambda formalspec expression
+Like Scheme, except for destructuring the formal parameters given by
+@var{formalspec} (@pxref{Destructuring}) and may only have one
+@var{expression} in the body.
+@end defspec
+
+@defspec define definiendum definiens
+Like Scheme, except may only appear at the top level of a program (no
+internal defines).  Also, via @code{lambda}, supports destructuring
+but does not support multi-expression procedure bodies.  A name may be
+redefined only if a non-definition separates its redefinition from its
+original definition (otherwise the @code{letrec} that the block of
+definitions is turned into has a duplicate variable).  Also,
+@var{definiens} must be a @code{lambda} expression, either explicitly or
+via the @code{(define (@var{name} @var{formals}@dots{}) @dots{})}
+syntax (which is supported).
+@end defspec
+
+@defspec let bindings@dots{} expression
+@defspecx let* bindings@dots{} expression
+@defspecx letrec bindings@dots{} expression
+Like Scheme except may only have one @var{expression} in the body.
+VLAD does not support the ``named let'' Scheme iteration syntax.
+The initialization expressions in the @code{letrec} form must
+be @code{lambda} expressions (this is the common case anyway).
+@todo Are the destructuring rules different for let, let* and letrec?
+@end defspec
+
+@defspec cond clauses@dots{}
+Like Scheme, except the final @code{else} clause is required, and
+the syntaxes
+@code{(cond ... (e) ...)} and @code{(cond ... (e1 => e2) ...)}
+are not supported.  Also, clause bodies must be one expression.
+@end defspec
+
+@defspec if predicate consequent alternate
+Like Scheme; VLAD does not support the one-armed @code{if} syntax.
+@end defspec
+
+@defspec quote datum
+Like Scheme, except VLAD has no symbol datatype, so @var{datum} must
+consist only of pairs and numbers.  VLAD does not support
+@code{quasiquote} or @code{unquote}.
+@end defspec
+
+@defspec and expressions@dots{}
+@defspecx or expressions@dots{}
+Like Scheme.
+@end defspec
+
+@defspec cons car cdr
+@defspecx cons* items@dots{}
+@defspecx list items@dots{}
+These do the same thing as in Scheme, except that they are special
+forms in VLAD, and so may not be passed as function parameters,
+returned from functions, etc.
+@end defspec
+
+@defspec ===>
+Causes the subsequent form to be ignored.  This is equivalent to the
+@code{#;} comment syntax in Scheme.  The purpose of @code{===>} is to
+be able to write example VLAD programs that are annotated with the
+answers they are supposed to produce but do not trip over said
+answers.  For example
+@example
+(+ 1 2) ===> 3
+@end example
+reads as the single VLAD expression @code{(+ 1 2)}, but the test suite
+(@pxref{Hacking Stalingrad})
+knows that that expression is supposed to evaluate to @code{3}.
+@strong{It is an error to use @code{===>} other than at the top level of a code file.}
+@end defspec
+
+
+@node Procedures
+@section Procedures
+
+@defun null? object
+@defunx boolean? object
+@defunx pair? object
+@defunx procedure? object
+What you expect.
+@end defun
+
+@defun if-procedure predicate consequent-thunk alternate-thunk
+Normally, you would use the @code{if} form, but the procedure version
+is provided for completeness.  This is convenient to do because in
+VLAD, @code{if} is a macro that expands as
+
+@example
+(if p c a)  @expansion{}  (if-procedure p (lambda () c) (lambda () a))
+@end example
+
+@noindent
+and @code{if-procedure} is supplied primitively.  @code{if-procedure}
+does what the Scheme procedure
+
+@example
+(define (if-procedure p c a)
+  (if p (c) (a)))
+@end example
+
+@noindent
+would do.
+@end defun
+
+@node Input and Output
+@section Input and Output
+
+VLAD provides three I/O primitives:
+
+@deffn Procedure read-real
+Takes no arguments, reads a real number from the standard input, and
+returns it.
+@end deffn
+
+@deffn Procedure write-real x
+Takes a real number argument, writes it to the standard output, and
+returns it.  Since VLAD does not support multiple expressions in
+procedure bodies, if you want to write and then do something else,
+you should:
+
+@example
+(let ((ignore (write-real foo)))
+  do-something-else)
+@end example
+or equivalent.  A particular common pattern would be inserting
+a @code{write-real} between a procedure and its argument:
+@example
+(do-something-with (write-real foo))
+@end example
+In compiled code, a @code{write-real} will only be executed if the
+compiler cannot determine the argument at compile time.  This behavior
+can be used to investigate the behavior of the static analysis.
+@end deffn
+
+@deffn Procedure write object
+Takes an arbitrary object argument, writes it to the standard output, and
+returns it.  The same usage caveats apply as for @code{write-real}.
+@strong{It is an error to use @code{write} in compiled code.}
+@end deffn
+
+@node Introducing Imprecision
+@section Introducing Imprecision
+
+@defun real x
+At runtime, @code{real} is the identity function on real numbers.  However,
+@code{real} forces the flow analysis to forget the value of its argument, and
+avoid specializing any procedures that use it to its exact value.
+@xref{Performance}.
+@end defun
+
+@noindent
+For example, given
+
+@lisp
+(define (fact x)
+  (if (= x 0)
+      1
+      (* x (fact (- x 1)))))
+@end lisp
+
+@noindent
+writing
+
+@lisp
+(fact 5)
+@end lisp
+
+@noindent
+would cause the flow analysis to unroll the recursion in @code{fact}
+all the way, and completely solve the return value of that form (to
+@code{120}) at compile time.  This could prove prohibitively
+expensive.
+@todo{There are some internal wideners that prevent this absurd
+behavior; how do they work?  Are they good enough that @code{real} is
+wizard-only now?}
+
+In contrast, writing
+
+@lisp
+(fact (real 5))
+@end lisp
+
+@noindent
+would cause the flow analysis to produce a @code{fact} procedure that
+computes the factorials of (positive integer) real numbers, and
+compute the factorial of @code{5} at runtime.
+
+@node Numerics
+@chapter Numerics
+
+The numbers in VLAD are all IEEE-64 floating point.  There is no
+provision for integer arithmetic except as a subset of floating point
+arithmetic, and there is no distinction between exact and inexact
+numbers.
+Numeric constants are written in the standard way (except the literal
+complex number syntax, of course).
+
+The following subset of the Scheme numeric basis is provided as
+primitives:
+
+@defun + x y
+@defunx - x y
+@defunx * x y
+@defunx / x y
+@defunx sqrt x
+@defunx exp x
+@defunx log x
+@defunx sin x
+@defunx cos x
+@defunx atan x y
+@defunx = x y
+@defunx < x y
+@defunx > x y
+@defunx <= x y
+@defunx >= x y
+@defunx zero? x
+@defunx positive? x
+@defunx negative? x
+@defunx real? x
+Agree with standard Scheme semantics, expect for questions of
+arity.  No VLAD primitive takes variable numbers of arguments, so all
+of the above are either unary or binary, as indicated.  Notably,
+@code{atan} is binary; and no unary minus is provided.
+@end defun
+
+@node Forward AD
+@chapter Forward AD
+
+The modus operandi for forward AD is:
+
+@enumerate
+@item
+Bundle the primal input value with a tangent value (representing the
+direction of a directional derivative), with
+@code{(bundle @var{primal} (perturb @var{tangent}))}.
+
+@item
+Transform the function being differentiated to do the right thing with
+such bundles, with @code{(j* @var{f})} which is a non-primitive procedure definable
+as @code{(define (j* @var{f}) (bundle @var{f} (perturb (zero @var{f}))))}; more on this below.
+
+@item
+Push the bundle through the transformed function.
+
+@item
+Extract from the output the primal value and the derivative along that
+direction with
+@code{(primal @var{bundle})} and @code{(unperturb (tangent @var{bundle}))}, respectively,
+or appropriate destructuring.
+@end enumerate
+
+@noindent
+Here are the details of the VLAD procedures that do this:
+
+@defun perturb object
+Type-tags the given @var{object} as being a perturbation.  This may be
+done with any VLAD object, but it is most useful with real numbers
+directly, or structured objects that contain real numbers inside.
+@end defun
+
+@defun perturbation? object
+Detects whether the given @var{object} is a pertubation constructed with
+@code{perturb}.
+@end defun
+
+@defun unperturb perturbation
+Strips the perturbation tag off the given @var{perturbation} and returns the
+underlying object.
+@end defun
+
+@defun bundle primal perturbation
+Bundles a given @var{primal} value and a given @var{perturbation}
+into a primal-tangent bundle.  The primal and the perturbation have to
+have the same shape, differing only in the real numbers they contain.
+This is useful for constructing inputs to forward-mode functions.
+@code{bundle} also operates on functions to transform them to treat
+bundles correctly; see below.
+@end defun
+
+@defun forward? object
+Detects whether the given @var{object} is a bundle constructed with
+@code{bundle}.
+@end defun
+
+@defun primal bundle
+Extracts the primal component of the given @var{bundle}.
+@end defun
+
+@defun tangent bundle
+Extracts the tangent component of the given @var{bundle}.  You
+probably want to call @code{unperturb} on the output of
+@code{tangent}.
+@end defun
+
+@defun zero object
+Constructs an object of the same shape as @var{object}, but with all
+real values replaced with zero.
+@end defun
+
+@todo{The following description is factually correct, but may send the
+wrong message.  The reason I wrote it like this is because I haven't
+thought through all the math underlying the reasons why @code{bundle}
+behaves the way it does.  In particular, I am not convinced that the
+operation @code{bundle} performs on functions is actually the same
+operation as what it does to data, and should have the same name.
+Nonetheless, this is how the current code works, and of course this is
+one of the central features of VLAD so it better be described in the
+documentation.}
+
+The @code{bundle} primitive has slightly different behavior on data and on
+procedures.  @code{bundle} operating on procedures is so arranged that
+the pushforward operator, namely the operator that transforms a primal
+function into one that will operate on bundles and compute derivatives
+therewith, can be defined as:
+
+@example
+(define (j* f)
+  (bundle f (perturb (zero f))))
+@end example
+
+@noindent
+Given such a @code{j*}, one can then write forward-mode
+differentiation procedures as follows:
+
+@example
+(define (derivative-R->Rn-using-j* f)
+  (let ((f-forward (j* f)))
+    (lambda (x)
+      (unperturb (tangent (f-forward (bundle x (perturb 1))))))))
+
+(define (directional-derivative-using-j* f)
+  (let ((f-forward (j* f)))
+    (lambda (x dx)
+      (unperturb (tangent (f-forward (bundle x (perturb dx))))))))
+
+(define (directional-derivative-via-R->Rn-derivative f)
+  (lambda (x dx)
+    ((derivative-R->Rn-using-j*
+      (lambda (r) (f (+ x (* r dx)))))
+     0)))
+@end example
+
+@noindent
+etc, to taste.
+
+@node Reverse AD
+@chapter Reverse AD
+
+The modus operandi for reverse AD is:
+
+@enumerate
+@item
+Tag the primal inputs as things for which sensitivity values are
+desired, with @code{(*j @var{primal})}.
+
+@item
+Transform the function being differentiated to collect a record of the
+primal computation it does, and to assemble a procedure that can use
+that record to compute sensitivity values in reverse, with @code{(*j @var{f})}.
+
+@item
+Run the transformed function on the tagged inputs to create that
+procedure (and also the primal answer).
+
+@item
+Tag a direction in the output space as the initial output sensitivity, with
+@code{(sensitize @var{cotangent})}.
+
+@item
+Apply the reverse procedure to that tagged direction.
+
+@item
+Untag the resulting sensitivity object to extract the corresponding
+input change direction, with @code{(cdr (unsensitize @var{result}))}
+or appropriate destructuring (more below).
+@end enumerate
+
+@noindent
+Here are the details of the VLAD procedures that do this:
+
+@defun *j primal
+Transforms the given @var{primal} object into reverse-AD form.  In the
+case of data, tags it as being the primal value for a reverse AD
+computation.  In the case of functions, transforms them to accept such
+data and produce reverse procedures.  The resulting transformed
+function, when given a tagged input, will produce a pair of the tagged
+primal output and the procedure, called a @dfn{backpropagator}, for
+computing sensitivities in reverse.  The backpropagator, when given a
+sensitivity corresponding to the output (and of the same shape), will
+produce a sensitivity-tagged pair of the sensitivity to the original
+@var{primal} procedure and the sensitivity to the supplied primal
+input.  The type of @code{*j} applied to a function is:
+
+@example
+*j: (-> (-> al be)
+        (-> (r-tag al)
+            (cons (r-tag be)
+                  (-> (sens be)
+                      (sens (cons (-> al be) al)))))
+@end example
+
+Also see below.
+@end defun
+
+@defun *j-inverse reverse-transformed-object
+Undoes the transformation done by @code{*j} and returns the original
+object.
+@end defun
+
+@defun reverse? object
+Returns whether the given @var{object} has been transformed by
+@code{*j}.
+@end defun
+
+@defun sensitize object
+Returns a sensitivity-tagged version of the given @var{object}.
+@end defun
+
+@defun sensitivity? object
+Detects whether the given @var{object} is a sensitivity.
+@end defun
+
+@defun unsensitize sensitivity
+Strips the sensitivity tag off the given @var{sensitivity} and returns
+the underlying object.
+@end defun
+
+@defun plus object1 object2
+Adds the two given @var{object}s pointwise.  They must have the same
+shape.  @code{(plus @var{object} (zero @var{object}))} is an identity
+operation.  This is important in the interior of the reverse
+computation, because this is the reverse transform of the implicit
+fanout of using the same variable more than once.  It is also made
+available to the user.
+@end defun
+
+@noindent
+Given these primitives, one can write procedures for doing
+differentiation in reverse mode such as this:
+
+@example
+(define (gradient-Rn->R-using-*j f)
+  (let ((f-reverse (*j f)))
+    (lambda (x)
+      (let ((backpropagator (cdr (f-reverse (*j x)))))
+        (cdr (unsensitize (backpropagator (sensitize 1))))))))
+@end example
+
+@node Performance
+@chapter Performance
+
+@todo Just how thorough is the flow analysis?  How does one control it?
+
+@node Options and Environment Variables
+@chapter Options and Environment Variables
+
+By default, the call to the C compiler that stalingrad generates is:
+@example
+gcc -o <file> <file>.c -lm -lgc
+@end example
+You can pass additional options by prefixing each option with -copt as
+in:
+@example
+stalingrad -compile -copt -O2 <file>
+@end example
+I (and my standard scripts) usually instead do:
+@example
+stalingrad -compile -c <file>
+post-compile-link-density <file>
+@end example
+The post-compile script which is called by post-compile-link-density
+script does:
+@example
+gcc -S -O3 -march=k8 -mfpmath=sse -fomit-frame-pointer -ffast-math <file>.c
+@end example
+on 32bit and:
+@example
+gcc -S -O3 -ffast-math <file>.c
+@end example
+on 64bit.
+
+On 64bit, @code{-fomit-frame-pointer} is the default. On 32bit without
+@code{-march=k8 -mfpmath=sse} you get the old 80bit x87 instructions which
+yield different rounding behavior. With these options, both 32bit and
+64bit should produce bit-equivalent results.
+
+I sometimes add @code{--param sra-field-structure-ratio=0} when I run stalin
+without @code{-sra} and ask gcc to do SRA. This option tells gcc to put no
+limits on SRA.
+
+There are several important stalingrad code-generation
+options. Stalingrad from triple-a/b/c onward has an internal
+intermediate language (IL). Prior
+to triple-a/b/c it did flow analysis and then immediately generated C
+code directly from the lambda-calculus representation, a higher-order
+representation. The new IL is first-order. With this, after flow
+analysis, stalingrad first generates IL from the lambda calculus and
+then generates C from IL. You can cause stalingrad to print the IL with
+@code{-il}.
+
+There are two different ILs: one called IL and one called IL2. IL2 is
+used when stalingrad does SRA itself. So without the @code{-sra} option,
+stalingrad generates IL then C. With the @code{-sra} option, stalingrad
+generates IL, then IL2, then C. The IL->C and IL2->C are two completely
+different code generators. And SRA is the mapping IL->IL2.
+
+Orthogonal to @code{-sra} is the @code{-inline} option. Inlining is always performed
+on IL, not on IL2. So with @code{-sra}, inlining is performed prior to IL->IL2.
+
+Orthogonal to both @code{-sra} and @code{-inline} is the @code{-alias} option that enables
+alias analysis. Alias analysis is performed on the lambda calculus
+representation before conversion to IL in triple/a and triple/b. In
+triple/c and stalingrad2010, alias analysis is performed on IL after
+potential inlining.  Without @code{-sra}, the IL->C mapping is informed by
+alias analysis. With @code{-sra} the IL->IL2 mapping and the IL2->C mapping are
+informed by alias analysis.
+
+Separate from the above is the @code{-anf-convert} option. This is only
+meaningful without @code{-sra} and causes an IL->IL pass that puts the IL in
+A-normal form. The IL->IL2 mapping only works on IL in ANF so @code{-sra}
+implies @code{-anf-convert}. And IL2 is always maintained in ANF and the IL2->C
+code generator relies on this.
+
+So there are 12 meaningful combinations of @code{-sra}, @code{-alias}, @code{-inline}, and
+@code{-anf-convert} that will all generate different code. For ordinary use,
+the one that would generate the best code is @code{-sra -alias
+-inline}. Alternatively you can set the environment variables
+STALINGRAD_SRA, STALINGRAD_ALIAS, and STALINGRAD_INLINE.
+
+Environment variables and options:
+@example
+STALINGRAD_SRA                        -sra
+STALINGRAD_ALIAS                      -alias
+STALINGRAD_INLINE                     -inline
+STALINGRAD_NO_ASSERT                  -no-assert
+  turns off compiler self checking
+STALINGRAD_ANF_CONVERT                -anf-convert
+STALINGRAD_NUMBER_OF_CALL_SITES       -number-of-call-sites
+  maximum number of call sites for a target that will be inlined
+STALINGRAD_IL                         -il
+  without SRA, print IL; with SRA, print IL2
+STALINGRAD_PROFILE
+  print compiler profile results when done
+STALINGRAD_WRITE_ALIAS_PASS
+  print status of alias analysis on each pass
+STALINGRAD_WRITE_ALIAS_FINAL
+  print result of alias analysis
+STALINGRAD_WRITE_ALIAS_VERBOSE
+  print alias analyses more readably but less concisely
+@end example
+
+Copy propagation is done at various points: after (optional) anf
+conversion, after IL->IL2 (i.e. SRA), and after some IL2->IL2
+optimizations. The user cannot control whether or not copy propagation
+is done.
+
+The IL2->IL2 optimizations include:
+@itemize
+@item removing trivial dispatches
+@item multiplying out dispatches
+@end itemize
+The user has no control over whether or not the former is done. The user
+can control the latter with
+@example
+-no-multiply-out-dispatches-cost-limit
+-multiply-out-dispatches-cost-limit
+@end example
+The defaults for these are reasonable and I rarely override them. But
+setting @code{-multiply-out-dispatches-cost-limit 0} disables this optimization
+and @code{-no-multiply-out-dispatches-cost-limit} cranks it at high as it can
+go.
+
+@node Hacking Stalingrad
+@chapter Hacking Stalingrad
+
+I can't give you that much adivce about that here as I don't
+understand the code base yet myself.  There is, however, a test
+suite, of which you should avail.  The test suite itself is run by
+@command{make}, of whose parallelization facilities you should avail.
+The @file{tool/} directory also contains some scripts that are useful
+for interacting with the test suite, both as it's running and after.
+
+@deffn Command make
+Rebuilds Stalingrad if it has been altered.  The test suite also does
+this on an as-needed basis.
+@end deffn
+
+@menu
+* Running the Test Suite::
+* Writing more Tests::
+@end menu
+
+@node Running the Test Suite
+@section Running the Test Suite
+
+The test suite operates by parsing certain of the
+@file{examples/*.vlad} files to acquire a collection of VLAD programs
+and what they should do if submitted to Stalingrad.  It then writes
+said VLAD programs into files, runs Stalingrad on them, and reads the
+resulting output to see whether it matched the indicated expectation.
+All of these intermediate files, and the files generated in the
+process of testing them, are written to a fresh subdirectory of the
+@file{test-runs/} directory, and remain available for inspection.
+
+Tests are named after the file in @file{examples/} from which they
+were parsed.  The numeric suffix at the end of the test name is the
+expression (one-indexed) in that file that this test corresponds to.
+The prefix @code{compile-}, if present, indicates that this test
+exercises Stalingrad as a compiler as opposed to as an interpreter.
+
+@deffn Command {make test}
+Runs the fast edition of the test suite.  Given @samp{-j 8}, this
+takes about 20 seconds on my machine.  You should strive to ensure
+that you don't introduce new test failures.
+@end deffn
+
+@deffn Command {make full-test}
+Runs the full edition of the test suite.  Given @samp{-j 8}, this
+takes about two hours on my machine.  Some of the examples are known
+to time out.
+@end deffn
+
+@deffn Command {tool/test-failures} [directory]
+Reprints the test failure report from the test run saved in the given
+@var{directory}, by default the last test run.
+@end deffn
+
+@deffn Command {tool/tests-running} [directory]
+Prints the names of the tests that are currently running (useful when
+wondering what the full suite is up to).  For completeness, an
+optional test run @var{directory} can be specified, but I assume this
+is only useful if you are for some reason running multiple test suites
+at once.
+@end deffn
+
+@deffn Command {tool/test-timings} [directory]
+Prints a table of the time each individual test took to run, sorted
+from fastest to slowest, and which ones crashed (or ran out of their
+alloted time or memory).  The optional @var{directory} specifies the
+test run directory to look in; this defaults to the directory for the
+last test run.
+@end deffn
+
+@deffn File {tool/test-driver.scm}
+The test driver program that constructs the test suite and that
+executes each individual test.  If you want to really understand (or
+change) what the test suite does, read (or edit) this.
+@end deffn
+
+@deffn {Symbolic Link} {test-runs/last}
+Always points to the last test run you initiated.
+@end deffn
+
+@deffn {Symbolic Link} {test-runs/last-fast}
+Always points to the last run of the fast test suite you initiated.
+@end deffn
+
+@deffn {Symbolic Link} {test-runs/last-full}
+Always points to the last run of the full test suite you initiated.
+@end deffn
+
+@deffn {File Set} {test-runs/*/*.expect}
+Each of these is a complete description of one test the suite
+attempts.  Each contains the name of the test, whether it should be
+run compiled or interpreted, the program to submit to Stalingrad, and
+the value(s) it should print on standard output when executed.  Read
+@file{tool/test-driver.scm} for complete understanding.
+@end deffn
+
+@deffn {File Set} {test-runs/*/*.vlad}
+The actual VLAD program that constitutes a test.  This is the file that
+Stalingrad is actually invoked on in each test.
+@end deffn
+
+@deffn {File Set} {test-runs/*/*.fail}
+A report of what, if anything, went wrong with this test.  Empty if
+the test passed.
+@end deffn
+
+@deffn {File Set} {test-runs/*/*.time}
+Statistics of the amount of time and other system resources this test
+consumed.
+@end deffn
+
+@deffn {File Set} {test-runs/*/*.c}
+The C source file Stalingrad generated when compiling this test
+(compiled tests only).
+@end deffn
+
+@deffn {File Set} {test-runs/*/* (no extension)}
+The executable Stalingrad generated when compiling this test (compiled
+tests only).
+@end deffn
+
+@deffn Command {cd test-runs/last; make @var{foo}.fail}
+Reruns the individual test @var{foo} without rerunning the whole test
+suite.  This reuses @file{@var{foo}.expect} and regenerates all the
+other related files.
+@end deffn
+
+@node Writing more Tests
+@section Writing more Tests
+
+The actual tests that form the both the fast and the full test suite
+are parsed from several of the files in @file{examples/*.vlad}.  Read
+(or edit) @file{tool/test-driver.scm} to learn (or modify) the exact
+lists.  The test definition files (except @file{examples/one-offs.vlad})
+contain legitimate VLAD programs, together with annotations describing
+what those programs should do when they are run.  Annotations are
+delimited by the identifier @code{===>}.  An annotation which is a
+Scheme value means ``this expression is expected to evaluate to this
+value.''  VLAD defintions are not annotated; an un-annotated
+expression means ``expected to evaluate to @code{#t}.''  There are
+also a few special annotations @todo{which describe}
+whose effects should be readily comprehensible.
+The file @file{examples/one-offs.vlad} contains individual expressions
+or small snippets of VLAD, annotated in the same way, but tested
+separately from each other, rather than as a single VLAD program.
+
+
+@node Index
+@unnumbered Binding Index
+
+@printindex fn
+@bye
