@@ -25,7 +25,7 @@ multiplied.  DVL solves the scaffolding at compile time and emits
 efficient code to do the arithmetic at runtime.
 
 Disclaimer: DVL is a *prototype*.  The language is minimal (but you
-don't need much to predict the positions of the planets); the error
+don't need much to [predict the positions of the planets](https://github.com/axch/dysvunctional-language/tree/master/dvl/examples/celestial)); the error
 messages are inscrutable; and the commandline interface is inflexible.
 DVL is not curretnly polished enough to be really used by someone who
 does not have time to understand its internals.  You have been warned.
