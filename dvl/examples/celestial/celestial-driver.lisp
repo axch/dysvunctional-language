@@ -42,3 +42,13 @@
   (stream-take count
    (constant-arg-for-dvl-stream (coerce dt 'double-float)
     (funcall (__main__) (coerce step 'double-float)))))
+
+;; Compile the DVL program with
+;(fol->common-lisp (compile-to-fol (dvl-source "examples/celestial/celestial.dvl") visibly))
+;; or compile the DVL program with
+;$ dvl compile example/celestial/celestial.dvl via common-lisp
+;; at the command line.
+
+;; Then run with
+;; (fasload "example/celestial/celestial.fasl")
+;; (drive 1000 10.0 100.0)
