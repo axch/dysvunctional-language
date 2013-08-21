@@ -11,13 +11,15 @@ Instructions:
 
 - Generate the Mandelbrot tester function from its DVL program
   with
-  ```scheme
-  (fol->asm.js
-   (fol-optimize
-    (compile-to-fol
-     (dvl-source "examples/mandelbrot/mandel.dvl")))
-   "examples/mandelbrot/mandel.js")
-  ```
+
+    ```scheme
+    (fol->asm.js
+     (fol-optimize
+      (compile-to-fol
+       (dvl-source "examples/mandelbrot/mandel.dvl")))
+     "examples/mandelbrot/mandel.js")
+    ```
+
 - Adjust the `__main__` function to accept two arguments and use them
   in place of the .5 and .7, respectively.
 - Open `mandel.html` in your favorite web browser.
