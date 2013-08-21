@@ -80,17 +80,17 @@ procedures, and they will work (and normalize their inputs according
 to their needs).  You can also pass them adverbs as optional arguments
 to adjust their behavior.  For example,
 
-  (compile-to-fol (dvl-source "examples/celestial.dvl"))
+  (compile-to-fol (dvl-source "examples/celestial/celestial.dvl"))
 
 will compile the given DVL program to FOL (and return it); whereas
 
-  (compile-to-fol (dvl-source "examples/celestial.dvl") visibly)
+  (compile-to-fol (dvl-source "examples/celestial/celestial.dvl") visibly)
 
 will do the same but also print a two-line status report for every
 stage, giving the name of the stage, the size of the input to that
 stage, and the amount of time that stage took to run.  You can also
 
-  (compile-to-fol (dvl-source "examples/celestial.dvl") volubly)
+  (compile-to-fol (dvl-source "examples/celestial/celestial.dvl") volubly)
 
 which will print longer, more detailed progress reports for each
 stage.  The available adverbs are

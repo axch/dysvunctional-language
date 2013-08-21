@@ -189,7 +189,7 @@
 (define dvl-benchmarks
   `(("sqrt"          ((include-definitions "examples/sqrt.dvl")
                       ((derivative nr-sqrt) 4)))
-    ("celestial"     ((include "examples/celestial.dvl")))
+    ("celestial"     ((include "examples/celestial/celestial.dvl")))
     ("saddle-FF"     ((include-definitions "../../../stalingrad/examples/automatic/saddle.vlad")
                       (do-saddle gradient-F gradient-F)))
     ("saddle-FR"     ((include-definitions "../../../stalingrad/examples/automatic/saddle.vlad")

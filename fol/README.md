@@ -112,7 +112,7 @@ You can modify the compilation process by passing `compile-to-fol` an
 adverb for how to do the job.  For example, calling
 
 ```scheme
-(compile-to-fol (dvl-source "examples/celestial.dvl") visibly)
+(compile-to-fol (dvl-source "examples/celestial/celestial.dvl") visibly)
 ```
 
 will do the same compilation process as plain `compile-to-fol`, but also

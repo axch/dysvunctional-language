@@ -1,4 +1,4 @@
-;;; On September 19, on arrakis, four compilations of this went thus:
+;;; On September 19, 2011, on arrakis, four compilations of this went thus:
 #|
  (define code (compile-to-fol (dvl-source "examples/celestial.dvl") volubly)) ; Through Jupiter
  Stage analyze on 2722 pairs + 0 pairs of type annotations
