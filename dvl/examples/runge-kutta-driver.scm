@@ -25,20 +25,6 @@
 
 (define euler (car integrators))
 (define rk4  (cadr integrators))
-#;
-(define (show-1d-ode integrator time-step total-time)
-  (let loop ((result '((0. . 1.)))
-             (current-time 0.)
-             (current-y 1.))
-    (if (>= current-time total-time)
-        (gnuplot-alist (reverse result) '(commanding "with points, exp(x)"))
-        (let ((one-step (((integrator current-time) current-y) time-step)))
-          (let ((new-time (car one-step))
-                (new-y (cdr one-step)))
-            (loop (cons (cons new-time new-y) result)
-                  new-time
-                  new-y))))))
-
 
 (define ((show-1d-ode thing-to-show) integrator time-step total-time)
   (let loop ((result '())
