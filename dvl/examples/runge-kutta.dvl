@@ -85,11 +85,6 @@
 (define euler (step-stream naive-euler-again sin-state-deriv sin-init))
 (define rk4   (step-stream rk4-again sin-state-deriv sin-init))
 
-;; I have verified that rk4-exp and rk4-exp-2 compile to the same code
-;; up to algebraic manipulations (e.g. multiplying by 1/3 instead of
-;; multiplying by 2 and then by 1/6), by symbolically evaluating them
-;; both in ScmUtils.
-
 ;(list euler rk4)
 
 (define (downsampled-stream stream count)
