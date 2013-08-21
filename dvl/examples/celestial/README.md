@@ -1,5 +1,5 @@
-Predicting the Motions of the Planets with Modularity
-=====================================================
+Motions of the Planets, with Modularity
+=======================================
 
 This is the most elaborate DVL exmaple.  What we have here is a
 program to integrate the motions of the four Jovian planets around the
