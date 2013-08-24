@@ -18,7 +18,7 @@
 ;;; ----------------------------------------------------------------------
 
 ;;; Load this after compiling runge-kutta.dvl with
-;;; (fol->floating-mit-scheme (compile-to-fol (dvl-source "examples/runge-kutta.dvl") visibly))
+;;; (fol->floating-mit-scheme (compile-to-fol (dvl-source "examples/runge-kutta/runge-kutta.dvl") visibly))
 ;;; and feel free to draw some pictures.
 
 (define integrators (run-mit-scheme))

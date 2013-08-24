@@ -17,7 +17,7 @@
 ;;; along with DysVunctional Language.  If not, see <http://www.gnu.org/licenses/>.
 ;;; ----------------------------------------------------------------------
 
-(include "../runge-kutta.dvl")
+(include "../runge-kutta/runge-kutta.dvl")
 
 (define (pairwise f lst)
   (cond ((null? lst)
