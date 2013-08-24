@@ -22,7 +22,7 @@
 (define (exp-state-deriv (cons t y))
   (cons 1 y))
 
-(define exp-init (cons (real 0) (real 1)))
+(define exp-init (list (real 0) (real 1)))
 
 (define exp-euler (step-stream naive-euler-again exp-state-deriv exp-init))
 (define exp-rk4   (step-stream rk4-again exp-state-deriv exp-init))
