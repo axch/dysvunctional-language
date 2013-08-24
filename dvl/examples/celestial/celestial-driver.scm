@@ -19,6 +19,42 @@
 
 (declare (usual-integrations))
 
+;;; To play with this, you need the ScmUtils library (for the
+;;; graphics).  Be sure to start it with enough heap and stack space
+;;; (--heap 160000 --stack 40000 works on 64-bit Linux).  Then
+;;; - load dvl with (load "load")
+;;; - load this file
+;;; - compile the dvl program
+;;; - execute an integration
+
+;;; To compile from the REPL (be sure to start Scheme with enough heap
+;;; and stack space; see the dvl script)
+#;
+ (fol->mit-scheme
+  (fol-optimize ; Optimize a second time
+   (compile-to-fol (dvl-source "examples/celestial/celestial.dvl") visibly))
+  "examples/celestial/celestial")
+
+;;; To compile from the command line
+;$ dvl compile example/celestial/celestial.dvl optimizing twice
+
+;;; To run, do something like this:
+; (go 1000 10. 100.)
+
+(define (go num-samples time-step num-steps-per-sample)
+  (stream-take
+   num-samples
+   (stream-for-each
+    (plot-objects window)
+    ((constant-arg-for-dvl-stream (exact->inexact time-step))
+     ((run-mit-scheme compiled-path)
+      (exact->inexact num-steps-per-sample))))))
+
+(define compiled-path
+  (string-append
+   (->namestring (self-relatively working-directory-pathname))
+   "celestial"))
+
 (define (constant-arg-for-dvl-stream argument)
   (lambda (dvl-stream)
     (let loop ((dvl-stream dvl-stream))
@@ -55,25 +91,3 @@
         ((null? state1)
          '())
         (else (/ (- state1 state2) state1))))
-
-;; Compile the DVL program with
-;(fol->mit-scheme (compile-to-fol (dvl-source "examples/celestial/celestial.dvl") visibly))
-;; or compile the DVL program with
-;$ dvl compile example/celestial/celestial.dvl
-;; at the command line.
-
-;; If the MIT Scheme compiler complains with an interminable pile of
-;Warning: Wrong number of arguments #[liar:procedure 83 lambda-2010] (#[liar:reference 71 |#[continuation]|] #[liar:reference 72 #[uninterned-symbol 73 value-0]] #[liar:reference 74 #[uninterned-symbol 75 value-1]] #[liar:reference 76 #[uninterned-symbol 77 value-2]] #[liar:reference 78 #[uninterned-symbol 79 value-3]] ...)
-;; then add an extra round of fol optimization, thus:
-;(fol->mit-scheme (fol-optimize (compile-to-fol (dvl-source "examples/celestial/celestial.dvl") visibly)))
-;; or thus:
-;$ dvl compile example/celestial/celestial.dvl optimizing twice
-
-;; Then run with
-#;
-(stream-take
- 1000
- (stream-for-each
-  (plot-objects window)
-  ((constant-arg-for-dvl-stream 10.)
-   ((run-mit-scheme) 100.))))
