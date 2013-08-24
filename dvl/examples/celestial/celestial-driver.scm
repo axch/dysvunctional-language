@@ -20,8 +20,7 @@
 (declare (usual-integrations))
 
 ;;; To play with this, you need the ScmUtils library (for the
-;;; graphics).  Be sure to start it with enough heap and stack space
-;;; (--heap 160000 --stack 40000 works on 64-bit Linux).  Then
+;;; graphics).  Then
 ;;; - load dvl with (load "load")
 ;;; - load this file
 ;;; - compile the dvl program
@@ -36,7 +35,7 @@
   "examples/celestial/celestial")
 
 ;;; To compile from the command line
-;$ dvl compile example/celestial/celestial.dvl optimizing twice
+;$ dvl compile examples/celestial/celestial.dvl optimizing twice
 
 ;;; To run, do something like this:
 ; (go 1000 10. 100.)
