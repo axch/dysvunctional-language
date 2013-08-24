@@ -53,7 +53,7 @@
         `(assign ,(js-identifier name) ,(compile-expression exp))))
     (define (compile-let-values-statement names subexpr body)
       `(,@(compile-statement subexpr) ; Not tail position
-        ,@(map js-heap-read ; Do I need to coerce types when reading from the heap?
+        ,@(map js-heap-read
                (map js-identifier names)
                (iota (length names)))
         ,@(compile-statement body type)))
@@ -62,7 +62,7 @@
                  ,(compile-statement cons type)
                  ,(compile-statement alt type))))
     (define (compile-values-statement subforms)
-      `(,@(map js-heap-write ; Do I need to coerce types when writing to the heap?
+      `(,@(map js-heap-write
                (map compile-expression subforms)
                (iota (length subforms)))
         ,@(if (tail-position?)
@@ -125,7 +125,7 @@
       (return __main__))))
 
 (define (js-heap-read name index)
-  `(assign ,name (access heap_view ,index))) ; TODO Understand shifting
+  `(assign ,name ,(js-coerce `(access heap_view ,index) 'real))) ; TODO Understand shifting
 
 (define (js-heap-write expr index)
   `(assign (access heap_view ,index) ; TODO Understand shifting
