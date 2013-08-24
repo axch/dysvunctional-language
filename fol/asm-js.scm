@@ -75,7 +75,8 @@
   (define (compile-expression exp)
     (case* exp
       ((fol-var var) (js-identifier var))
-      ((fol-const const) const)
+      ;; All numbers in the program are currently floating point.
+      ((fol-const const) (exact->inexact const))
       ((lambda-form _ _) (error "Escaping procedures not supported for asm.js"))
       ((pair operator operands)
        (if (js-operator? operator)
