@@ -117,16 +117,12 @@
   var sqrt = stdlib.Math.sqrt;
   var expt = stdlib.Math.pow;
   var abs = stdlib.Math.abs;
-  function real(x) {
-    x = (+x);
-    return x;
-  }
   function fact(n) {
     n = (+n);
-    if ((n==0)) {
-      return (+1);
+    if ((n==0.)) {
+      return (+1.);
     } else {
-      return (+(n*fact((n-1))));
+      return (+(n*fact((n-1.))));
     }
   }
   function __main__() {
@@ -150,31 +146,29 @@
   var sqrt = stdlib.Math.sqrt;
   var expt = stdlib.Math.pow;
   var abs = stdlib.Math.abs;
-  function real(x) {
-    x = (+x);
-    return x;
-  }
   function iteration(count, c_real, c_imag, z_real, z_imag) {
     count = (+count);
     c_real = (+c_real);
     c_imag = (+c_imag);
     z_real = (+z_real);
     z_imag = (+z_imag);
-    if ((count<=0)) {
+    if ((count<=0.)) {
       heap_view[0] = z_real;
       heap_view[1] = z_imag;
       return;
     } else {
-      return iteration((count-1), c_real, c_imag,
+      return iteration((count-1.), c_real, c_imag,
                        (((z_real*z_real)-(z_imag*z_imag))+c_real),
                        (((z_real*z_imag)+(z_imag*z_real))+c_imag));
     }
   }
   function __main__() {
-    iteration(10, .5, .7, 0, 0);
-    ans_real = heap_view[0];
-    ans_imag = heap_view[1];
-    return ((sqrt(((ans_real*ans_real)+(ans_imag*ans_imag)))<2)|0);
+    var ans_real = 0.;
+    var ans_imag = 0.;
+    iteration(10., .5, .7, 0., 0.);
+    ans_real = (+heap_view[0]);
+    ans_imag = (+heap_view[1]);
+    return ((sqrt(((ans_real*ans_real)+(ans_imag*ans_imag)))<2.)|0);
   }
   return __main__;
 }
