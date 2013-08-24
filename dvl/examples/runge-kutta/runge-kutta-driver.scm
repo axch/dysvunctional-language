@@ -37,19 +37,20 @@
           (loop (cons state result)
                 (func time-step))))))
 
-(define ((show-1d-ode thing-to-show) integration time-step total-time)
-  (gnuplot-alist (map (lambda (datum)
-                        (let ((time (car datum))
-                              (estimate (cadr datum)))
-                          (cons time (thing-to-show time estimate))))
-                      (integrate integration time-step total-time))
-                 '(commanding "with points, sin(x)")))
+(define ((relative-error truth) time-series)
+  (define (relative-error time estimate)
+    (if (>= (abs (truth time)) 1)
+        (/ (- (truth time) estimate) (truth time))
+        (- (truth time) estimate)))
+  (map (lambda (datum)
+         (let ((time (car datum))
+               (estimate (cadr datum)))
+           (cons time (relative-error time estimate))))
+       time-series))
 
-(define ((relative-error solution) time estimate)
-   (if (>= (abs (solution time)) 1)
-       (/ (- (solution time) estimate) (solution time))
-       (- (solution time) estimate)))
-
-(define (answer time estimate) estimate)
-
-(define show-1d (show-1d-ode answer))
+#|
+ (gnuplot-alist
+  ((relative-error sin)
+   (integrate euler 0.5 10))
+  '(commanding "with points"))
+|#
