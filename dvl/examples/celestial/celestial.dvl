@@ -120,5 +120,5 @@
 
 (lambda (downsample)
   (downsampled-stream
-   (step-stream rk4-again state-derivative initial-conditions)
+   (step-stream rk4 state-derivative initial-conditions)
    downsample))

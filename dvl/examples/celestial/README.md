@@ -31,7 +31,7 @@ A couple quotations from the code:
   state derivative at the initial conditions"
 
     ```scheme
-    (step-stream rk4-again state-derivative initial-conditions)
+    (step-stream rk4 state-derivative initial-conditions)
     ```
 
 Try writing this program like this in Fortran and see what happens!
