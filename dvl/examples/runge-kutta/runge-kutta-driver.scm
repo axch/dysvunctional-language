@@ -17,9 +17,40 @@
 ;;; along with DysVunctional Language.  If not, see <http://www.gnu.org/licenses/>.
 ;;; ----------------------------------------------------------------------
 
-;;; Load this after compiling runge-kutta.dvl with
-;;; (fol->floating-mit-scheme (compile-to-fol (dvl-source "examples/runge-kutta/integrations.dvl") visibly))
-;;; and feel free to draw some pictures.
+;;; To try this out
+;;; - load dvl with (load "load")
+;;; - compile integrations.dvl with
+;;;   (fol->floating-mit-scheme (compile-to-fol (dvl-source "examples/runge-kutta/integrations.dvl") visibly))
+;;; - load this file
+;;; - feel free to draw some pictures, such as the below:
+
+#|
+ ;; Naive Euler is not so good: its errors accumulate
+ (plot estimate "with points, exp(x)"
+  (integrate exp-euler 0.25 10))
+
+ ;; Runge-Kutta 4 is much better, even holding constant the number of
+ ;; function evaluations rather than the time step
+ (plot estimate "with points, exp(x)"
+  (integrate exp-rk4 1.0 10)) ; RK4 calls the function 4 times per step
+
+ ;; Here's what the relative error looks like (note scale).
+ (plot (relative-error exp) "with points"
+  (integrate exp-rk4 1.0 10))
+
+ ;; Same story with sin rather than exp; naive euler consistently
+ ;; overshoots.
+ (plot estimate "with points, sin(x)"
+  (integrate sin-euler 0.25 10))
+
+ (plot estimate "with points, sin(x)"
+  (integrate sin-rk4 1.0 10)) ; RK4 calls the function 4 times per step
+
+ (plot (relative-error sin) "with points"
+  (integrate sin-rk4 1.0 10))
+|#
+
+(load-relative-compiled "gnuplot")
 
 (define integrations (run-mit-scheme))
 
@@ -55,28 +86,3 @@
       (/ (- (truth time) estimate) (truth time))
       (- (truth time) estimate)))
 
-#|
- ;; Naive Euler is not so good: its errors accumulate
- (plot estimate "with points, exp(x)"
-  (integrate exp-euler 0.25 10))
-
- ;; Runge-Kutta 4 is much better, even holding constant the number of
- ;; function evaluations rather than the time step
- (plot estimate "with points, exp(x)"
-  (integrate exp-rk4 1.0 10)) ; RK4 calls the function 4 times per step
-
- ;; Here's what the relative error looks like (note scale).
- (plot (relative-error exp) "with points"
-  (integrate exp-rk4 1.0 10))
-
- ;; Same story with sin rather than exp; naive euler consistently
- ;; overshoots.
- (plot estimate "with points, sin(x)"
-  (integrate sin-euler 0.25 10))
-
- (plot estimate "with points, sin(x)"
-  (integrate sin-rk4 1.0 10)) ; RK4 calls the function 4 times per step
-
- (plot (relative-error sin) "with points"
-  (integrate sin-rk4 1.0 10))
-|#
