@@ -27,8 +27,10 @@ Instructions:
      "examples/mandelbrot/mandel.js")
     ```
 
-2.  Adjust the `__main__` function to accept two arguments and use them
-    in place of the .5 and .7, respectively.
+2.  Adjust the generated `__main__` function to accept two arguments
+    and use them in place of the .5 and .7, respectively.  (This is a
+    hack around a restriction of DVL's foreign interface that is
+    incomaptible with asm.js's.)
 3.  Open `mandel.html` in your favorite web browser.
 4.  Fix all the asm.js syntax errors (you will need to see the browser's
     Javascript console, but turn off the browser's debugger, because at
