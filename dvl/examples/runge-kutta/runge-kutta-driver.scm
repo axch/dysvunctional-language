@@ -18,13 +18,15 @@
 ;;; ----------------------------------------------------------------------
 
 ;;; Load this after compiling runge-kutta.dvl with
-;;; (fol->floating-mit-scheme (compile-to-fol (dvl-source "examples/runge-kutta/runge-kutta.dvl") visibly))
+;;; (fol->floating-mit-scheme (compile-to-fol (dvl-source "examples/runge-kutta/integrations.dvl") visibly))
 ;;; and feel free to draw some pictures.
 
 (define integrations (run-mit-scheme))
 
-(define euler (car integrations))
-(define rk4  (cadr integrations))
+(define exp-euler   (car integrations))
+(define exp-rk4    (cadr integrations))
+(define sin-euler (caddr integrations))
+(define sin-rk4  (cadddr integrations))
 
 (define (integrate integration time-step total-time)
   (let loop ((result '())
@@ -51,6 +53,6 @@
 #|
  (gnuplot-alist
   ((relative-error sin)
-   (integrate euler 0.5 10))
+   (integrate sin-euler 0.5 10))
   '(commanding "with points"))
 |#
