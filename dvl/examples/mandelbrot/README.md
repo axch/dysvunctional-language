@@ -16,8 +16,8 @@ same computation.
 
 Instructions:
 
-- Generate the Mandelbrot tester function from its DVL program
-  with
+1.  Generate the Mandelbrot tester function from its DVL program
+    with
 
     ```scheme
     (fol->asm.js
@@ -27,12 +27,12 @@ Instructions:
      "examples/mandelbrot/mandel.js")
     ```
 
-- Adjust the `__main__` function to accept two arguments and use them
-  in place of the .5 and .7, respectively.
-- Open `mandel.html` in your favorite web browser.
-- Fix all the asm.js syntax errors (you will need to see the browser's
-  Javascript console, but turn off the browser's debugger, because at
-  least in Firefox 23.0 the debugger switches asm.js off).
-- Then click "Go!".  If you see just a gray square, make sure you got
-  step 2 right (and reload the page).  If it's too slow, make sure you
-  got step 4 right (and reload the page).
+2.  Adjust the `__main__` function to accept two arguments and use them
+    in place of the .5 and .7, respectively.
+3.  Open `mandel.html` in your favorite web browser.
+4.  Fix all the asm.js syntax errors (you will need to see the browser's
+    Javascript console, but turn off the browser's debugger, because at
+    least in Firefox 23.0 the debugger switches asm.js off).
+5.  Then click "Go!".  If you see just a gray square, make sure you got
+    step 2 right (and reload the page).  If it's too slow, make sure you
+    got step 4 right (and reload the page).
