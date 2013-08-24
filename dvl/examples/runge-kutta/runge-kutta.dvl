@@ -17,7 +17,7 @@
 ;;; along with DysVunctional Language.  If not, see <http://www.gnu.org/licenses/>.
 ;;; ----------------------------------------------------------------------
 
-(define (((naive-euler state-deriv) step) state)
+(define (((manual-naive-euler state-deriv) step) state)
   (+ state (* step (state-deriv state))))
 
 (define (((manual-rk4 state-deriv) step) state)
@@ -53,12 +53,12 @@
 ;; 2) RK4 reduces to the simpson rule for quadrature when f(t,y)
 ;;    doesn't depend on y.
 
-(define naive-euler-again
+(define naive-euler
   (rk-by-tableau
    '(()
      (1))))
 
-(define rk4-again
+(define rk4
   (rk-by-tableau
    '(()
      (1/2)
