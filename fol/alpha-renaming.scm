@@ -132,3 +132,28 @@
 
 (define (unique-names? program)
   (equal? program (alpha-rename program)))
+
+(define (local-names program)
+  (define names '())
+  (define (bound! name)
+    (set! names (cons name names)))
+  (define (loop exp)
+    (cond ((lambda-form? exp)
+           (for-each bound! (cadr exp))
+           (loop (cddr exp)))
+          ((let-form? exp)
+           (loop (->lambda exp)))
+          ((let-values-form? exp)
+           (loop (->lambda exp)))
+          ((procedure-definition? exp)
+           ;; The procedure name is global; ignore it
+           (loop (definiens exp)))
+          ((type-definition? exp)
+           ;; Type definitions create only global names
+           'ok)
+          ((pair? exp)
+           (loop (car exp))
+           (loop (cdr exp)))
+          (else 'ok)))
+  (loop program)
+  (reverse names))

@@ -91,7 +91,8 @@
              ,@(map compile-expression operands))
            `(apply ,(js-identifier operator) ,(map compile-expression operands))))))
   (define (local-variable-declarations body)
-    '()) ; TODO
+    (map (lambda (var) (js-variable-declaration var 'real))
+         (map js-identifier (local-names body))))
   (define compile-definition
     (rule `(define ((? name) (?? formals))
              (argument-types (?? arg-types) (? return))
@@ -144,6 +145,9 @@
 (define (js-parameter-type-setter name type)
   `(assign ,name (unary + ,name))) ; Always "real" for now
 
+(define (js-variable-declaration name type)
+  `(var ,name 0.0)) ; Always "real" for now
+
 (define (js-operator? thing)
   (memq thing '(+ - * / = <= >= < >)))
 
@@ -184,6 +188,7 @@
   (define-algebraic-matcher std-import-form (tagged-list? 'std-import) cadr caddr)
   (define-algebraic-matcher view-heap-form (tagged-list? 'view-heap) cadr caddr)
   (define-algebraic-matcher function-def (tagged-list? 'function) cadr caddr cdddr)
+  (define-algebraic-matcher variable-declaration-form (tagged-list? 'var) cadr caddr)
   (define-algebraic-matcher assign-form (tagged-list? 'assign) cadr caddr)
   (define-algebraic-matcher if-stmt-form (tagged-list? 'if-stmt) cadr caddr cadddr)
   (define-algebraic-matcher return-void-form return-void?)
@@ -220,6 +225,8 @@
          (indent
           ,@(map loop body))
          "}" nl))
+      ((variable-declaration-form var exp)
+       `("var " ,(loop var) " = " ,(loop exp) ";" nl))
       ((assign-form var exp)
        `(,(loop var) " = " ,(loop exp) ";" nl))
       ((if-stmt-form pred cons alt)
