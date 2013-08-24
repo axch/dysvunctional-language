@@ -6,7 +6,7 @@ program to integrate the motions of the four Jovian planets around the
 Sun.  There isn't much here in the way of fancy numerical
 methods---just the Runge-Kutta family of integrators (RK4 by
 default)---but you should see how clear and modular this program is.
-A couple quotations from the code:
+A few quotations from the code:
 
 - "The forces are minus the gradient of the potential energy at the positions"
   (that gradient is computed by automatic differentiation of course,
@@ -25,6 +25,19 @@ A couple quotations from the code:
           (map (lambda (obj) 0) objects)
           (map velocity objects)
           (map2 / (forces objects) (map mass objects))))))
+    ```
+
+- "The fourth-order Runge-Kutta method is an integrator in the
+  Runge-Kutta family given by the following tableau of coefficients"
+
+    ```scheme
+    (define rk4
+      (coefficient-tableau->runge-kutta-integrator
+       '(()
+         (1/2)
+         (0   1/2)
+         (0   0   1)
+         (1/6 1/3 1/3 1/6))))
     ```
 
 - "We want the stream of samples of the integrator applied to the

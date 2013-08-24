@@ -28,7 +28,8 @@
     (+ state (* 1/6 (+ k1 (+ (* 2 k2) (+ (* 2 k3) k4)))))))
 
 ;; A tableau is a matrix of coefficients for the various steps
-(define ((((rk-by-tableau tableau) state-deriv) step) state)
+(define ((((coefficient-tableau->runge-kutta-integrator tableau)
+           state-deriv) step) state)
   (let loop ((state-deltas '())
              (derivatives '())
              (coeff-lists (map reverse tableau)))
@@ -54,12 +55,12 @@
 ;;    doesn't depend on y.
 
 (define naive-euler
-  (rk-by-tableau
+  (coefficient-tableau->runge-kutta-integrator
    '(()
      (1))))
 
 (define rk4
-  (rk-by-tableau
+  (coefficient-tableau->runge-kutta-integrator
    '(()
      (1/2)
      (0   1/2)
