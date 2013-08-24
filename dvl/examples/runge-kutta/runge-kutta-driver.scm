@@ -21,17 +21,17 @@
 ;;; (fol->floating-mit-scheme (compile-to-fol (dvl-source "examples/runge-kutta/runge-kutta.dvl") visibly))
 ;;; and feel free to draw some pictures.
 
-(define integrators (run-mit-scheme))
+(define integrations (run-mit-scheme))
 
-(define euler (car integrators))
-(define rk4  (cadr integrators))
+(define euler (car integrations))
+(define rk4  (cadr integrations))
 
-(define ((show-1d-ode thing-to-show) integrator time-step total-time)
+(define ((show-1d-ode thing-to-show) integration time-step total-time)
   (let loop ((result '())
-             (integrator integrator))
-    (let* ((state (car integrator))
+             (integration integration))
+    (let* ((state (car integration))
            (current-time (car state))
-           (func (cdr integrator)))
+           (func (cdr integration)))
       (if (>= current-time total-time)
           (gnuplot-alist (map (lambda (datum)
                                 (let ((time (car datum))
