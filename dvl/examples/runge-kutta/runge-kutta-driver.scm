@@ -34,25 +34,41 @@
     (let* ((state (car integration))
            (current-time (car state))
            (func (cdr integration)))
-      (if (>= current-time total-time)
+      (if (> current-time total-time)
           (reverse result)
           (loop (cons state result)
                 (func time-step))))))
 
-(define ((relative-error truth) time-series)
-  (define (relative-error time estimate)
-    (if (>= (abs (truth time)) 1)
-        (/ (- (truth time) estimate) (truth time))
-        (- (truth time) estimate)))
-  (map (lambda (datum)
-         (let ((time (car datum))
-               (estimate (cadr datum)))
-           (cons time (relative-error time estimate))))
-       time-series))
+(define (plot xxx command time-series)
+  (gnuplot-alist
+   (map (lambda (datum)
+          (let ((time (car datum))
+                (estimate (cadr datum)))
+            (cons time (xxx time estimate))))
+        time-series)
+   `(commanding ,command)))
 
-#|
- (gnuplot-alist
-  ((relative-error sin)
-   (integrate sin-euler 0.5 10))
-  '(commanding "with points"))
-|#
+(define (estimate time estimate) estimate)
+
+(define ((relative-error truth) time estimate)
+  (if (>= (abs (truth time)) 1)
+      (/ (- (truth time) estimate) (truth time))
+      (- (truth time) estimate)))
+
+(plot estimate "with points, exp(x)"
+ (integrate exp-euler 0.25 10))
+
+(plot estimate "with points, exp(x)"
+ (integrate exp-rk4 1.0 10)) ; RK4 calls the function 4 times per step
+
+(plot (relative-error exp) "with points"
+ (integrate exp-rk4 1.0 10))
+
+(plot estimate "with points, sin(x)"
+ (integrate sin-euler 0.25 10))
+
+(plot estimate "with points, sin(x)"
+ (integrate sin-rk4 1.0 10)) ; RK4 calls the function 4 times per step
+
+(plot (relative-error sin) "with points"
+ (integrate sin-rk4 1.0 10))
