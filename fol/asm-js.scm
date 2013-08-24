@@ -118,7 +118,7 @@
                           (abs  . "Math.abs")))
       (function real (x)
        ,(js-parameter-type-setter 'x real)
-       (return x))
+       (return (unary + x)))
       ,@(map compile-definition (filter procedure-definition? defns))
       (return __main__))))
 
