@@ -19,22 +19,21 @@
 
 ;;; To try this out
 ;;; - load dvl with (load "load")
-;;; - compile integrations.dvl with
-;;;   (fol->floating-mit-scheme (compile-to-fol (dvl-source "examples/runge-kutta/integrations.dvl") visibly))
 ;;; - load this file
 ;;; - feel free to draw some pictures, such as the below:
 
 #|
  ;; Naive Euler is not so good: its errors accumulate
+ ;; (see the red points diverge from the real answer, in green)
  (plot estimate "with points, exp(x)"
-  (integrate exp-euler 0.25 10))
+  (integrate exp-euler 0.25 10))  ; The numbers are time step and total time
 
  ;; Runge-Kutta 4 is much better, even holding constant the number of
  ;; function evaluations rather than the time step
  (plot estimate "with points, exp(x)"
   (integrate exp-rk4 1.0 10)) ; RK4 calls the function 4 times per step
 
- ;; Here's what the relative error looks like (note scale).
+ ;; Here's what RK4's relative error looks like (note scale).
  (plot (relative-error exp) "with points"
   (integrate exp-rk4 1.0 10))
 
@@ -51,8 +50,16 @@
 |#
 
 (load-relative-compiled "gnuplot")
+(self-relatively
+ (lambda ()
+   (fol->floating-mit-scheme
+    (compile-to-fol (dvl-source "integrations.dvl") visibly)
+    "integrations")))
 
-(define integrations (run-mit-scheme))
+(define integrations
+  (self-relatively
+   (lambda ()
+     (run-mit-scheme "integrations"))))
 
 (define exp-euler   (car integrations))
 (define exp-rk4    (cadr integrations))
