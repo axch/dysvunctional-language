@@ -35,7 +35,7 @@
   "examples/celestial/celestial")
 
 ;;; To compile from the command line
-;$ dvl compile examples/celestial/celestial.dvl optimizing twice
+;$ dvl compile examples/celestial/celestial.dvl visibly optimizing twice
 
 ;;; To run, do something like this:
 ; (go 1000 10. 100.)
