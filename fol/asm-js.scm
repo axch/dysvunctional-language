@@ -34,7 +34,11 @@
 (define (prepare-for-asm.js program)
   (printable->string
    (asm.js-syntax->printable
-    (fol->asm.js-syntax program))))
+    (fol->asm.js-syntax
+     ;; The "real" primitive does nothing at runtime, and Firefox 23.0
+     ;; mysteriously does not compile calls to it in the Javascript.
+     ((on-subexpressions (rule '(real (? x)) x))
+      program)))))
 
 (define (fol->asm.js-syntax program)
   (define (compile-statement exp #!optional type)
@@ -117,9 +121,6 @@
                           (sqrt . "Math.sqrt")
                           (expt . "Math.pow")
                           (abs  . "Math.abs")))
-      (function real (x)
-       ,(js-parameter-type-setter 'x real)
-       (return (unary + x)))
       ,@(map compile-definition (filter procedure-definition? defns))
       (return __main__))))
 
