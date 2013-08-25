@@ -45,6 +45,6 @@
   (c:+ (c:* z z) c))
 
 (define (mandelbrot? c)
-  (< (magnitude (iterate (real 100) (step c) c:0)) 2))
+  (< (magnitude (iterate (real 400) (step c) c:0)) 2))
 
 (mandelbrot? (cons (real 0.5) (real 0.7)))
