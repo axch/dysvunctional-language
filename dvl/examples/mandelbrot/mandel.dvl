@@ -47,4 +47,9 @@
 (define (mandelbrot? c)
   (< (magnitude (iterate (real 400) (step c) c:0)) 2))
 
+;; This entry point form hacks around a limitation of the DVL and FOL
+;; foreign interfaces that prevents me from exporting the
+;; `mandelbrot?` function directly (or even a two-real-argument
+;; version of it).  The constants 0.5 and 0.7 are significant.  See
+;; the comment in fol/asm-js.scm.  I apologize in advance.
 (mandelbrot? (cons (real 0.5) (real 0.7)))

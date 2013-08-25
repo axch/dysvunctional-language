@@ -34,11 +34,51 @@
 (define (prepare-for-asm.js program)
   (printable->string
    (asm.js-syntax->printable
-    (fol->asm.js-syntax
-     ;; The "real" primitive does nothing at runtime, and Firefox 23.0
-     ;; mysteriously does not compile calls to it in the Javascript.
-     ((on-subexpressions (rule '(real (? x)) x))
-      program)))))
+    (tweak-for-mandelbrot-example
+     (fol->asm.js-syntax
+      ;; The "real" primitive does nothing at runtime, and Firefox 23.0
+      ;; mysteriously does not compile calls to it in the Javascript.
+      ((on-subexpressions (rule '(real (? x)) x))
+       program))))))
+
+;;; I apologize for this unfortunate procedure.  As of this writing,
+;;; the only function values that either DVL for FOL can export to the
+;;; outside world must accept a single real number as an argument.
+;;; Therefore, the only way to export a function of two real arguments
+;;; (such as `mandelbrot?`, which needs the real and imaginary
+;;; component of the point it is to test) is to curry it.
+;;; Unfortunately, asm.js does not support higher-order procedures, so
+;;; there is no direct translation for such a currying.  Instead, the
+;;; mandel.dvl example opts for compiling an expression which
+;;; represents a typical use of the `mandelbrot?` function.  This
+;;; turns into a recognizable `__main__` procedure when converted to
+;;; asm syntax, which I can tweak mid-flight to produce the desired
+;;; effect.  This blemish will be removed when the DVL and FOL foreign
+;;; interfaces are up to it, but in the meantime it seems better than
+;;; asking people to edit the compiler's output by hand.
+(define tweak-for-mandelbrot-example
+  (rule '(module
+           (?? stuff)
+           (function __main__ ()
+             (var (? v1) 0.)
+             (var (? v2) 0.)
+             (statement (apply (? op1) ((? ct) .5 .7 0. 0.)))
+             (assign (? v1) (unary + (access heap_view 0)))
+             (assign (? v2) (unary + (access heap_view 1)))
+             (? return))
+           (? export))
+        `(module
+           ,@stuff
+           (function __main__ ("x" "y")
+             (assign "x" (unary + "x"))
+             (assign "y" (unary + "y"))
+             (var ,v1 0.)
+             (var ,v2 0.)
+             (statement (apply ,op1 (,ct "x" "y" 0. 0.)))
+             (assign ,v1 (unary + (access heap_view 0)))
+             (assign ,v2 (unary + (access heap_view 1)))
+             ,return)
+           ,export)))
 
 (define (fol->asm.js-syntax program)
   (define (compile-statement exp #!optional type)
