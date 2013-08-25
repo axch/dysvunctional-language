@@ -5,7 +5,7 @@ This example illustrates use of the [asm.js](http://asmjs.org/)
 backend for efficient client-side numerical computation.
 
 Caution: the asm.js backend hasn't been ironed out yet; at the moment,
-the output still needs to be manually post-edited.
+the output may still need to be manually post-edited sometimes.
 
 A Haskell program for the same job, from the [Computer Language Benchmarks
 Game](http://benchmarksgame.alioth.debian.org/u32/performance.php?test=mandelbrot),
