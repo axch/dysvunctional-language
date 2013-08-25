@@ -40,15 +40,14 @@ along with DysVunctional Language.  If not, see <http://www.gnu.org/licenses/>.
     </center>
     <p>Instructions:</p>
     <ol>
-      <li>Generate the Mandelbrot tester function from its DVL program
-      with <code>(fol->asm.js (fol-optimize (compile-to-fol
-      (dvl-source "examples/mandelbrot/mandel.dvl")))
-      "examples/mandelbrot/mandel.js")</code></li>
-      <li>adjust the <code>__main__</code> function to accept two
-      arguments and use them in place of the .5 and .7, respectively</li>
-      <li>reload this page</li>
-      <li>then click "Go!".  If you see just a gray square, make
-      sure you got step 2 right (and reload this page).</li></ol>
+      <li>Generate the Mandelbrot tester function from its DVL program with
+<pre><code>(fol->asm.js
+ (fol-optimize
+  (compile-to-fol
+   (dvl-source "examples/mandelbrot/mandel.dvl")))
+ "examples/mandelbrot/mandel.js")</code></pre></li>
+      <li>Reload this page.</li>
+      <li>Then click "Go!".</li></ol>
     <center>
       <div id="side">
         <button onclick="doit()">Go!</button><img id="spinner" src="spinner.gif"> <br />
