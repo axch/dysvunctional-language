@@ -36,10 +36,11 @@
    (asm.js-syntax->printable
     (tweak-for-mandelbrot-example
      (fol->asm.js-syntax
-      ;; The "real" primitive does nothing at runtime, and Firefox 23.0
-      ;; mysteriously does not compile calls to it in the Javascript.
-      ((on-subexpressions (rule '(real (? x)) x))
-       program))))))
+      (another-tweak-for-mandelbrot-example
+       ;; The "real" primitive does nothing at runtime, and Firefox 23.0
+       ;; mysteriously does not compile calls to it in the Javascript.
+       ((on-subexpressions (rule '(real (? x)) x))
+        program)))))))
 
 ;;; I apologize for this unfortunate procedure.  As of this writing,
 ;;; the only function values that either DVL for FOL can export to the
@@ -79,6 +80,21 @@
              (assign ,v2 (unary + (access heap_view 1)))
              ,return)
            ,export)))
+
+;;; I am less apologetic about this unfortunate procedure.  This is a
+;;; valid algebraic simplification, which would take some work to
+;;; incorporate nicely into the common subexpression eliminator
+;;; because my rule system is not set up to indirect through variable
+;;; references.  See comments around simplify-arithmetic and
+;;; simplify-access in cse.scm.  In the mandelbrot example, however,
+;;; this optimization is both exposed after reverse-anf, and produces
+;;; a 20% speedup in the generated code.
+(define another-tweak-for-mandelbrot-example
+  (term-rewriting
+   (rule '(+ (? x) (* -1 (? y)))
+         `(- ,x ,y))
+   (rule '(+ (? x) (* (? y) -1))
+         `(- ,x ,y))))
 
 (define (fol->asm.js-syntax program)
   ;; TODO This inferred-type-map code is copied from common-lisp.scm.

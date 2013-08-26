@@ -318,7 +318,7 @@
   ;;
   ;; TODO Do I want to notice that (+ 2 x) is the same as (+ x 2)?
   ;; TODO (* -1 (* -1 x)) -> x appears in celestial.dvl
-  ;; TODO (+ x (* -1 y)) -> (- x y) appears in celestial.dvl
+  ;; TODO (+ x (* -1 y)) -> (- x y) appears in celestial.dvl and mandel.dvl
   ;; TODO (/ (* x stuff) (* x other stuff)) should appear in celestial.dvl
   (rule-simplifier
    (list
@@ -338,6 +338,12 @@
 
 (define (symbolic-application operator arguments env)
   (define (simplify-access expr)
+    ;; TODO This whole procedure should be equivalent to a couple rules
+    ;; like (rule `(car (cons (? x) (? y))) x), except for the
+    ;; indirection through variable references.  Said indirection
+    ;; introduces the subtlety that variables appearing in an expression
+    ;; reached through indirection could be out of scope, in which case
+    ;; the substitution is invalid.
     (if (accessor? expr)
         (let ((accessee (cadr expr)))
           ;; Let's see what value this accessed object holds.  I think
