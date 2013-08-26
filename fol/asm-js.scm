@@ -90,31 +90,29 @@
   (define (lookup-inferred-type expr)
     (or (hash-table/get inferred-type-map expr #f)
         (error "Looking up unknown expression" expr)))
-  (define (compile-statement exp #!optional type)
-    (define (tail-position?)
-      (not (default-object? type)))
+  (define (compile-statement exp tail-position?)
     (define (compile-let-statement bindings body)
       `(,@(map compile-binding bindings)
-        ,@(compile-statement body type)))
+        ,@(compile-statement body tail-position?)))
     (define (compile-binding b)
       (let ((name (car b))
             (exp (cadr b)))
         `(assign ,(js-identifier name) ,(compile-expression exp))))
     (define (compile-let-values-statement names subexpr body)
-      `(,@(compile-statement subexpr) ; Not tail position
+      `(,@(compile-statement subexpr #f) ; Not tail position
         ,@(map js-heap-read
                (map js-identifier names)
                (iota (length names)))
-        ,@(compile-statement body type)))
+        ,@(compile-statement body tail-position?)))
     (define (compile-if-statement pred cons alt)
       `((if-stmt ,(compile-expression pred)
-                 ,(compile-statement cons type)
-                 ,(compile-statement alt type))))
+                 ,(compile-statement cons tail-position?)
+                 ,(compile-statement alt tail-position?))))
     (define (compile-values-statement subforms)
       `(,@(map js-heap-write
                (map compile-expression subforms)
                (iota (length subforms)))
-        ,@(if (tail-position?)
+        ,@(if tail-position?
               '((return))
               '())))
     (case* exp
@@ -122,11 +120,12 @@
       (let-values-form => compile-let-values-statement)
       (if-form => compile-if-statement)
       (values-form => compile-values-statement)
-      (_ (if (tail-position?)
-             (if (js-scalar-type? type)
-                 `((return ,(js-coerce (compile-expression exp) type)))
-                 `((statement ,(compile-expression exp))
-                   (return)))
+      (_ (if tail-position?
+             (let ((type (lookup-inferred-type exp)))
+               (if (js-scalar-type? type)
+                   `((return ,(js-coerce (compile-expression exp) type)))
+                   `((statement ,(compile-expression exp))
+                     (return))))
              `((statement ,(compile-expression exp)))))))
   (define (compile-expression exp)
     (case* exp
@@ -161,7 +160,7 @@
             ,@(map js-parameter-type-setter
                    (map js-identifier formals) arg-types)
             ,@(local-variable-declarations body)
-            ,@(compile-statement body return))))
+            ,@(compile-statement body #t)))) ; Tail position
   (define (std-import pair)
     (let ((name (car pair))
           (source (cdr pair)))
