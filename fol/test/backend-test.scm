@@ -122,11 +122,11 @@
     if ((n==0.)) {
       return (+1.);
     } else {
-      return (+(n*fact((n-1.))));
+      return (+(n*(+fact((n-1.)))));
     }
   }
   function __main__() {
-    return (+fact(4.));
+    return (+(+fact(4.)));
   }
   return __main__;
 }
@@ -157,18 +157,21 @@
       heap_view[1] = z_imag;
       return;
     } else {
-      return iteration((count-1.), c_real, c_imag,
-                       (((z_real*z_real)-(z_imag*z_imag))+c_real),
-                       (((z_real*z_imag)+(z_imag*z_real))+c_imag));
+      iteration((count-1.), c_real, c_imag,
+                (((z_real*z_real)-(z_imag*z_imag))+c_real),
+                (((z_real*z_imag)+(z_imag*z_real))+c_imag));
+      return;
     }
   }
-  function __main__() {
+  function __main__(x, y) {
+    x = (+x);
+    y = (+y);
     var ans_real = 0.;
     var ans_imag = 0.;
-    iteration(10., .5, .7, 0., 0.);
+    iteration(10., x, y, 0., 0.);
     ans_real = (+heap_view[0]);
     ans_imag = (+heap_view[1]);
-    return ((sqrt(((ans_real*ans_real)+(ans_imag*ans_imag)))<2.)|0);
+    return (((+sqrt(((ans_real*ans_real)+(ans_imag*ans_imag))))<2.)|0);
   }
   return __main__;
 }
