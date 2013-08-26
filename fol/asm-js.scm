@@ -114,7 +114,10 @@
       (if-form => compile-if-statement)
       (values-form => compile-values-statement)
       (_ (if (tail-position?)
-             `((return ,(js-coerce (compile-expression exp) type)))
+             (if (js-scalar-type? type)
+                 `((return ,(js-coerce (compile-expression exp) type)))
+                 `((statement ,(compile-expression exp))
+                   (return)))
              `((statement ,(compile-expression exp)))))))
   (define (compile-expression exp)
     (case* exp
@@ -177,6 +180,12 @@
 (define (js-heap-write expr index)
   `(assign (access heap_view ,index) ; TODO Understand shifting
            ,expr))
+
+(define (js-scalar-type? type)
+  ;; Is this a FOL type that I represent as a asm scalar?  (Other FOL
+  ;; types are represented by sets of asm values, possibly on the
+  ;; heap.)
+  (or (eq? type 'real) (eq? type 'bool)))
 
 (define (js-coerce exp type)
   (cond ((eq? type 'real)
