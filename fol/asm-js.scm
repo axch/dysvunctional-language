@@ -120,7 +120,7 @@
     (case* exp
       ((fol-var var) (js-identifier var))
       ((fol-const const)
-       (if (number? cost)
+       (if (number? const)
            ;; All numbers in the program are currently floating point.
            (exact->inexact const)
            const))
