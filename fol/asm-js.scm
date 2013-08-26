@@ -81,6 +81,15 @@
            ,export)))
 
 (define (fol->asm.js-syntax program)
+  ;; TODO This inferred-type-map code is copied from common-lisp.scm.
+  ;; Abstract.
+  (define inferred-type-map (make-eq-hash-table))
+  (for-each-fol-expression program
+   (lambda (expr type)
+     (hash-table/put! inferred-type-map expr type)))
+  (define (lookup-inferred-type expr)
+    (or (hash-table/get inferred-type-map expr #f)
+        (error "Looking up unknown expression" expr)))
   (define (compile-statement exp #!optional type)
     (define (tail-position?)
       (not (default-object? type)))
@@ -135,7 +144,9 @@
                   'binary)
              ,(js-operator operator)
              ,@(map compile-expression operands))
-           `(apply ,(js-identifier operator) ,(map compile-expression operands))))))
+           (js-coerce
+            `(apply ,(js-identifier operator) ,(map compile-expression operands))
+            (lookup-inferred-type exp))))))
   (define (local-variable-declarations body)
     (map (lambda (var)
            ;; TODO Using 'real here is wrong, but I would need
