@@ -119,8 +119,11 @@
   (define (compile-expression exp)
     (case* exp
       ((fol-var var) (js-identifier var))
-      ;; All numbers in the program are currently floating point.
-      ((fol-const const) (exact->inexact const))
+      ((fol-const const)
+       (if (number? cost)
+           ;; All numbers in the program are currently floating point.
+           (exact->inexact const)
+           const))
       ((lambda-form _ _) (error "Escaping procedures not supported for asm.js"))
       ((pair operator operands)
        (if (js-operator? operator)
@@ -131,7 +134,10 @@
              ,@(map compile-expression operands))
            `(apply ,(js-identifier operator) ,(map compile-expression operands))))))
   (define (local-variable-declarations body)
-    (map (lambda (var) (js-variable-declaration var 'real))
+    (map (lambda (var)
+           ;; TODO Using 'real here is wrong, but I would need
+           ;; local-variable type information to fix it.
+           (js-variable-declaration var 'real))
          (map js-identifier (local-names body))))
   (define compile-definition
     (rule `(define ((? name) (?? formals))
@@ -183,10 +189,16 @@
          exp)))
 
 (define (js-parameter-type-setter name type)
-  `(assign ,name (unary + ,name))) ; Always "real" for now
+  `(assign ,name ,(js-coerce name type)))
 
 (define (js-variable-declaration name type)
-  `(var ,name 0.0)) ; Always "real" for now
+  `(var ,name
+        ,(cond ((eq? type 'real)
+                0.0)
+               ((eq? type 'bool)
+                ;; Booleans in asm.js are integers
+                0)
+               (else (error "Cannot store type in asm.js variable" type)))))
 
 (define (js-operator? thing)
   (memq thing '(+ - * / = <= >= < >)))
