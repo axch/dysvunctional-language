@@ -131,10 +131,12 @@
     (case* exp
       ((fol-var var) (js-identifier var))
       ((fol-const const)
-       (if (number? const)
-           ;; All numbers in the program are currently floating point.
-           (exact->inexact const)
-           const))
+       (cond ((number? const)
+              ;; All numbers in the program are currently floating point.
+              (exact->inexact const))
+             ((eq? const #t) 1) ; asm represents booleans as ints
+             ((eq? const #f) 0) ; asm represents booleans as ints
+             (else const)))
       ((lambda-form _ _) (error "Escaping procedures not supported for asm.js"))
       ((pair operator operands)
        (if (js-operator? operator)
