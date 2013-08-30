@@ -41,7 +41,7 @@ use or slow to execute.
 @subtitle @value{UPDATED}
 @author Alexey Radul
 @page
-@center{@strong{Abstract}}
+@center @strong{Abstract}
 @quotation
 @abstract
 @end quotation
