@@ -22,6 +22,9 @@
 (declare (integrate-external "../support/pattern-case/pattern-case"))
 ;;;; Simplistic FOL to asm.js compiler
 
+;;; A url for verifying that the output is syntactically correct asm.js:
+;;; http://turtlescript.github.cscott.net/asmjs.html
+
 (define (fol->asm.js program #!optional base)
   (if (default-object? base)
       (set! base "jsozzle"))
