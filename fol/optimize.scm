@@ -223,10 +223,22 @@
   (destroys a-normal-form)
   (requires syntax-checked unique-names))
 
+(define %peephole-optimize
+  (term-rewriting
+   (rule '(+ (? x) (* -1 (? y)))
+         `(- ,x ,y))
+   (rule '(+ (? x) (* (? y) -1))
+         `(- ,x ,y))))
+
+(define-stage peephole-optimize
+  %peephole-optimize
+  (destroys no-common-subexpressions))
+
 ;;; Standard ordering
 
 (define fol-optimize
   (stage-pipeline
+   peephole-optimize
    reverse-anf
    eliminate-dead-types
    eliminate-interprocedural-dead-code
@@ -239,6 +251,7 @@
 
 (define loopy-fol-optimize
   (stage-pipeline
+   peephole-optimize
    reverse-anf
    (loop-while-shrinks
     (stage-pipeline

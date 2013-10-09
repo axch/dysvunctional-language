@@ -39,11 +39,10 @@
    (asm.js-syntax->printable
     (tweak-for-mandelbrot-example
      (fol->asm.js-syntax
-      (another-tweak-for-mandelbrot-example
-       ;; The "real" primitive does nothing at runtime, and Firefox 23.0
-       ;; mysteriously does not compile calls to it in the Javascript.
-       ((on-subexpressions (rule '(real (? x)) x))
-        program)))))))
+      ;; The "real" primitive does nothing at runtime, and Firefox 23.0
+      ;; mysteriously does not compile calls to it in the Javascript.
+      ((on-subexpressions (rule '(real (? x)) x))
+       program))))))
 
 ;;; I apologize for this unfortunate procedure.  As of this writing,
 ;;; the only function values that either DVL for FOL can export to the
