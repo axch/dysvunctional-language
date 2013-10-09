@@ -223,9 +223,20 @@
   (destroys a-normal-form)
   (requires syntax-checked unique-names))
 
+;;; I am mildly apologetic about this mildly unfortunate procedure.
+;;; The problem is that algebraic simplifications that trigger on
+;;; nested expressions are too complicated to add to the current
+;;; architecture of the common subexpression eliminator (see comments
+;;; around simplify-access in cse.scm).  Some instances, however,
+;;; become apparent after reverse-anf.  So this is here to
+;;; opportunistically pick up the ones that do.  In particular, the
+;;; Mandelbrot example gets a 20% speedup from this.  The reason this
+;;; arrangement is less than ideal is that doing it this way misses
+;;; ones that non-uniqueness of use leaves obscured, and also misses
+;;; any cascades with further CSE.
 (define %peephole-optimize
   (term-rewriting
-   (rule '(+ (? x) (* -1 (? y)))
+   (rule '(+ (? x) (* -1 (? y))) ; appears in celestial.dvl and mandel.dvl
          `(- ,x ,y))
    (rule '(+ (? x) (* (? y) -1))
          `(- ,x ,y))))
