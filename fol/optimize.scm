@@ -235,10 +235,11 @@
 ;;; ones that non-uniqueness of use leaves obscured, and also misses
 ;;; any cascades with further CSE.
 (define %peephole-optimize
-  (term-rewriting
-   (rule '(+ (? x) (* -1 (? y))) ; appears in celestial.dvl and mandel.dvl
-         `(- ,x ,y))
-   (rule '(+ (? x) (* (? y) -1))
+  (term-rewriting ; n.b. constants migrated to front by cse
+   ;; appears in celestial.dvl
+   (rule '(* -1 (* -1 x)) x)
+   ;; appears in celestial.dvl and mandel.dvl
+   (rule '(+ (? x) (* -1 (? y)))
          `(- ,x ,y))))
 
 (define-stage peephole-optimize

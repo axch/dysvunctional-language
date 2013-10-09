@@ -22,25 +22,25 @@
  cse
 
  (define-each-check
-   ;; Eliminate common (+ x 2)
+   ;; Eliminate common (+ 2 x)
    (equal?
     '(let ((x (real 5)))
-       (let ((y (+ x 2)))
+       (let ((y (+ 2 x)))
          (+ y y)))
     (intraprocedural-cse
      '(let ((x (real 5)))
-        (let ((y (+ x 2)))
-          (let ((z (+ x 2)))
+        (let ((y (+ 2 x)))
+          (let ((z (+ 2 x)))
             (+ y z))))))
 
-   ;; Eliminate common (+ x 2) in parallel let
+   ;; Eliminate common (+ 2 x) in parallel let
    (equal?
     '(let ((x (real 5)))
-       (let ((y (+ x 2)))
+       (let ((y (+ 2 x)))
          (+ y y)))
     (intraprocedural-cse
      '(let ((x (real 5)))
-        (let ((y (+ x 2)) (z (+ x 2)))
+        (let ((y (+ 2 x)) (z (+ 2 x)))
           (+ y z)))))
 
    ;; See through (+ x 0)
@@ -68,47 +68,47 @@
    ;; Leave non-common things be
    (equal?
     '(let ((x (real 5)))
-       (let ((y (+ x 3)))
+       (let ((y (+ 3 x)))
          y))
     (intraprocedural-cse
      '(let ((x (real 5)))
-        (let ((y (+ x 3)))
+        (let ((y (+ 3 x)))
           y))))
 
    ;; Respect variable scope
    (equal?
     '(let ((x (real 5)))
-       (let ((w (let ((y (+ x 3))) y)))
+       (let ((w (let ((y (+ 3 x))) y)))
          w))
     (%intraprocedural-cse
      '(let ((x (real 5)))
-        (let ((w (let ((y (+ x 3))) y)))
+        (let ((w (let ((y (+ 3 x))) y)))
           w))))
 
    ;; Continue respecting variable scope
    (equal?
     '(let ((x (real 5)))
-       (let ((w (let ((y (+ x 3))) y)))
-         (let ((z (+ x 3)))
+       (let ((w (let ((y (+ 3 x))) y)))
+         (let ((z (+ 3 x)))
            (+ w z))))
     (%intraprocedural-cse
      '(let ((x (real 5)))
-        (let ((w (let ((y (+ x 3))) y)))
-          (let ((z (+ x 3)))
+        (let ((w (let ((y (+ 3 x))) y)))
+          (let ((z (+ 3 x)))
             (+ w z))))))
 
    ;; But don't let variable scope interfere with finding other common
    ;; expressions
    (equal?
     '(let ((x (real 5)))
-       (let ((w (let ((y (+ x 3))) y)))
-         (let ((z (+ x 3)))
+       (let ((w (let ((y (+ 3 x))) y)))
+         (let ((z (+ 3 x)))
            (+ w (* z z)))))
     (%intraprocedural-cse
      '(let ((x (real 5)))
-        (let ((w (let ((y (+ x 3))) y)))
-          (let ((z (+ x 3)))
-            (let ((u (+ x 3)))
+        (let ((w (let ((y (+ 3 x))) y)))
+          (let ((z (+ 3 x)))
+            (let ((u (+ 3 x)))
               (+ w (* z u))))))))
 
    ;; This CSE is intraprocedural
@@ -133,16 +133,16 @@
        (let-values
            (((x+1 something)
              (if (> (real 2) 1)
-                 (values (+ x 1) (+ x 4))
-                 (values (+ x 1) (+ x 3)))))
+                 (values (+ 1 x) (+ 4 x))
+                 (values (+ 1 x) (+ 3 x)))))
          (* something (+ x+1 x+1))))
     (%intraprocedural-cse
      '(let ((x (real 3)))
         (let-values (((x+1 something)
                       (if (> (real 2) 1)
-                          (values (+ x 1) (+ x 4))
-                          (values (+ x 1) (+ x 3)))))
-          (let ((y (+ x 1)))
+                          (values (+ 1 x) (+ 4 x))
+                          (values (+ 1 x) (+ 3 x)))))
+          (let ((y (+ 1 x)))
             (* something (+ y x+1)))))))
 
    ;; Do not collapse procedures that have side effects
@@ -262,13 +262,25 @@
    ;; even from nice simplifications like (* foo 1) -> foo
    (equal?
     '(let ((foo (real 2)))
-       (let ((bar (+ foo 1)))
+       (let ((bar (+ 1 foo)))
+         (+ bar bar)))
+    (intraprocedural-cse
+     '(let ((foo (real 2)))
+        (let ((bar (+ 1 foo)))
+          (let ((x (* 1 foo)))
+            (+ bar (+ 1 x)))))))
+
+   ;; CSE should see though (and canonicalize) order of attaching
+   ;; constants
+   (equal?
+    '(let ((foo (real 2)))
+       (let ((bar (+ 1 foo)))
          (+ bar bar)))
     (intraprocedural-cse
      '(let ((foo (real 2)))
         (let ((bar (+ foo 1)))
           (let ((x (* foo 1)))
-            (+ bar (+ x 1)))))))
+            (+ bar (+ 1 x)))))))
 
    ;; Lambda expressions are not the same as their bodies
    (equal?

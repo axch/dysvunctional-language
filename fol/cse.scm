@@ -316,25 +316,29 @@
   ;;
   ;; For some warnings, see doc/simplification.txt
   ;;
-  ;; TODO Do I want to notice that (+ 2 x) is the same as (+ x 2)?
-  ;; TODO (* -1 (* -1 x)) -> x appears in celestial.dvl
-  ;; TODO (+ x (* -1 y)) -> (- x y) appears in celestial.dvl and mandel.dvl
   ;; TODO (/ (* x stuff) (* x other stuff)) should appear in celestial.dvl
-  (rule-simplifier
-   (list
-    (rule `(+ 0 (? thing)) thing)
-    (rule `(+ (? thing) 0) thing)
-    (rule `(- (? thing) 0) thing)
+  (let ((not-number? (lambda (x) (not (number? x)))))
+    (rule-simplifier
+     (list
+      ;; + and * commute even in floating point, and moving constants to
+      ;; the front simplifies other rules.  TODO Do I want a canonical
+      ;; order of operations for general expressions, to capture more
+      ;; commonality?
+      (rule `(+ (? thing ,not-number?) (? n ,number?))
+            `(+ ,n ,thing))
+      (rule `(* (? thing ,not-number?) (? n ,number?))
+            `(* ,n ,thing))
 
-    (rule `(* 1 (? thing)) thing)
-    (rule `(* (? thing) 1) thing)
-    (rule `(/ (? thing) 1) thing)
+      (rule `(+ 0 (? thing)) thing)
+      (rule `(- (? thing) 0) thing)
 
-    ;; Warning: these may replace a runtime NaN answer with 0.
-    (rule `(* 0 (? thing)) 0)
-    (rule `(* (? thing) 0) 0)
-    (rule `(/ 0 (? thing)) 0)
-    )))
+      (rule `(* 1 (? thing)) thing)
+      (rule `(/ (? thing) 1) thing)
+
+      ;; Warning: these may replace a runtime NaN answer with 0.
+      (rule `(* 0 (? thing)) 0)
+      (rule `(/ 0 (? thing)) 0)
+      ))))
 
 (define (symbolic-application operator arguments env)
   (define (simplify-access expr)

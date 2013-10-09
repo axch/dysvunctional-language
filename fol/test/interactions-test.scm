@@ -83,34 +83,34 @@
    ;; scope.
    (define program
      '(let ((x (real 5)))
-        (let ((w (let ((y (+ x 3))) y)))
-          ;; y = (+ x 3) goes out of scope
-          (let ((z (+ x 3)))
+        (let ((w (let ((y (+ 3 x))) y)))
+          ;; y = (+ 3 x) goes out of scope
+          (let ((z (+ 3 x)))
             (+ w z)))))
    (check (equal? program (%intraprocedural-cse program)))
    (check
     (equal?
      '(let ((x (real 5)))
-        (let ((y (+ x 3)))
+        (let ((y (+ 3 x)))
           (+ y y)))
      (%intraprocedural-cse (lift-lets program)))))
 
  (define-test (anf-then-cse)
    ;; ANF helps CSE because more subexpressions get names.
    (define program '(let ((x (real 4)))
-                      (+ (+ x 1) (+ x 1))))
+                      (+ (+ 1 x) (+ 1 x))))
    (check (equal? program (%intraprocedural-cse program)))
    (check
     (alpha-rename?
      '(let ((x (real 4)))
-        (let ((y (+ x 1))
-              (z (+ x 1)))
+        (let ((y (+ 1 x))
+              (z (+ 1 x)))
           (+ y y)))
      (%intraprocedural-cse (approximate-anf program))))
    (check
     (alpha-rename?
      '(let ((x (real 4)))
-        (let ((y (+ x 1)))              ; Gone
+        (let ((y (+ 1 x)))              ; Gone
           (+ y y)))
      (interprocedural-dead-code-elimination
       (%intraprocedural-cse (approximate-anf program))))))
