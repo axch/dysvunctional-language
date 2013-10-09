@@ -315,8 +315,6 @@
   ;; hold.
   ;;
   ;; For some warnings, see doc/simplification.txt
-  ;;
-  ;; TODO (/ (* x stuff) (* x other stuff)) should appear in celestial.dvl
   (let ((not-number? (lambda (x) (not (number? x)))))
     (rule-simplifier
      (list

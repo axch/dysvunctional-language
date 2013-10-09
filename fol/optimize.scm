@@ -240,7 +240,10 @@
    (rule '(* -1 (* -1 x)) x)
    ;; appears in celestial.dvl and mandel.dvl
    (rule '(+ (? x) (* -1 (? y)))
-         `(- ,x ,y))))
+         `(- ,x ,y))
+   ;; TODO (/ (* x stuff) (* x other stuff)) should appear in
+   ;; celestial.dvl but may be obscured
+   ))
 
 (define-stage peephole-optimize
   %peephole-optimize
