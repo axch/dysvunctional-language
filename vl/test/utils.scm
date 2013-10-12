@@ -68,7 +68,8 @@
     (if (present? 'type program)
         (let ((annotated-type (property-value 'type program)))
           (check (equal-type? annotated-type
-                              (check-program-types program)))))
+                              (check-program-types program)
+                              (type-map program)))))
     (if (present? 'a-normal-form program)
         (check (approximate-anf? program)))
     (if (present? 'lets-lifted program)

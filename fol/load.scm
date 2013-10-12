@@ -101,7 +101,6 @@
      fol->asm.js
 
      ;; Optimization
-     equal-type? ; TODO
      fol-optimize
      loopy-fol-optimize
 
@@ -147,6 +146,10 @@
      present? property-value
      name execution-function
      reads computes generates preserves destroys
+
+     ;; Testing helpers
+     equal-type? ; TODO
+     type-map ; TODO only used by compile-carefully
 
      ;; The entry point for the command line
      fol-main
