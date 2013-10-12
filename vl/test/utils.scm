@@ -31,6 +31,19 @@
 ;;;   the code generator emits syntactically correct and type correct FOL
 ;;;   FOL compilation preserves syntactic and type correctness stepwise
 
+(load-relative "../../testing/load" fol-environment)
+(load-relative-compiled "../../fol/test/utils" fol-environment)
+;; TODO This snippet is duplicated with fol/test/load.scm
+(let ((client-environment (the-environment)))
+  (for-each
+   (lambda (export)
+     (environment-define
+      client-environment export (environment-lookup fol-environment export)))
+   '(;; Testing adverbs
+     carefully
+     meticulously
+     )))
+
 (define (careful-macroexpand program)
   (abegin1
    (macroexpand program)
@@ -58,60 +71,6 @@
    (strip-argument-types
     (meticulous-generate program analysis answer))
    (check (equal? `(begin ,answer) it))))
-
-(define (carefully stage-data)
-  (define (check-annotations program)
-    (if (present? 'structures-as-vectors program)
-        (check (equal? program (structure-definitions->vectors program))))
-    (if (present? 'unique-names program)
-        (check (unique-names? program)))
-    (if (present? 'type program)
-        (let ((annotated-type (property-value 'type program)))
-          (check (equal-type?
-                  annotated-type
-                  (check-program-types program)
-                  ;; TODO Actually, I should use the type map from the
-                  ;; pre-transform program, because the transform may
-                  ;; remove but may not add type names.
-                  (type-map program)))))
-    (if (present? 'a-normal-form program)
-        (check (approximate-anf? program)))
-    (if (present? 'lets-lifted program)
-        (check (lets-lifted? program)))
-    (if (present? 'fully-inlined program)
-        (check (equal? program (inline program))))
-    (if (and (present? 'aggregates-replaced program)
-             (present? 'a-normal-form program))
-        (check (equal? program (scalar-replace-aggregates program))))
-    (if (present? 'dead-types-eliminated program)
-        (check (equal? program (eliminate-dead-types program))))
-    (if (and (present? 'no-common-subexpressions program)
-             (present? 'a-normal-form program)
-             (present? 'lets-lifted program))
-        (check (equal? program (intraprocedural-cse program))))
-    (if (present? 'no-intraprocedural-dead-variables program)
-        (check (equal? program
-                       (eliminate-intraprocedural-dead-code program))))
-    (if (present? 'no-interprocedural-dead-variables program)
-        (check (equal? program
-                       (eliminate-interprocedural-dead-code program))))
-    program)
-  (lambda (exec)
-    (lambda (program . extra)
-      ;; TODO Also check counterfactual invariants:
-      ;; - Inlining commutes with ANF up to removal of aliases.  Why
-      ;;   aliases?  Because inlining saves ANF work by naming the
-      ;;   expressions that are arguments to inlined procedures.
-      ;; - Inlining preserves ANF
-      ;; - Inlining commutes with SRA+ANF up to aliases.
-      (check-annotations (apply exec program extra)))))
-
-(define ((meticulously answer) stage-data)
-  (lambda (exec)
-    (lambda (program)
-      (abegin1
-       (((carefully stage-data) exec) program)
-       (check (equal? answer (fol-eval it)))))))
 
 (define (determined-answer program)
   (let* ((kernel (careful-macroexpand program))

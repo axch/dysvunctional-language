@@ -28,8 +28,8 @@
        thunk)
       (thunk)))
 
-(define (load-relative filename)
-  (self-relatively (lambda () (load filename))))
+(define (load-relative filename #!optional environment)
+  (self-relatively (lambda () (load filename environment))))
 
 (load-relative "../support/auto-compilation")
 (load-relative "../support/rules/load")

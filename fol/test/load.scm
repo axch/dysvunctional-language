@@ -22,7 +22,18 @@
 (for-each
  (lambda (file)
    (load-relative-compiled file fol-environment))
- '("fol-test"
+ '("utils"
+   "fol-test"
    "cse-test"
    "interactions-test"
    "backend-test"))
+
+(let ((client-environment (the-environment)))
+  (for-each
+   (lambda (export)
+     (environment-define
+      client-environment export (environment-lookup fol-environment export)))
+   '(;; Testing adverbs
+     carefully
+     meticulously
+     )))
