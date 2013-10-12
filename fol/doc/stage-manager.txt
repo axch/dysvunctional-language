@@ -95,15 +95,23 @@ stage, and the amount of time that stage took to run.  You can also
 which will print longer, more detailed progress reports for each
 stage.  The available adverbs are
 
-  visibly     print short progress reports
+  visibly      print short progress reports
 
-  volubly     print longer progress reports
+  volubly      print longer progress reports
 
-  carefully   check that annotations are correct between every stage
+  watching-memory   print reports about memory use
+
+  measuring-memory  print reports about data size [expensive]
+
+  type-safely  double-check types of intermediate states
+
+  dumping-intermediate  dump intermediate states to output for inspection
+
+  carefully    check that annotations are correct between every stage
 
   (meticulously answer)
-              like carefully, and also run the program between every
-              stage and check that it produces answer
+               like carefully, and also run the program between every
+               stage and check that it produces answer
 
 The latter two are intended for debugging and are only available
 if you load vl/test/load or dvl/test/load.

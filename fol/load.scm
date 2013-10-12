@@ -143,7 +143,7 @@
 
      ;; Stage manipulation TODO
      stage-pipeline visibly volubly measuring-memory watching-memory type-safely parse-stage
-     dumping-intermediate ; TODO Document this new adverb
+     dumping-intermediate
      present? property-value
      name execution-function
      reads computes generates preserves destroys

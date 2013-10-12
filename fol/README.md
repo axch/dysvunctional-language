@@ -146,6 +146,11 @@ took to complete.  The available adverbs are
   actually is.  Print the type of the entry point if so, and signal an
   error if not.
 
+- `dumping-intermediate`
+
+  Pretty-print each intermediate state to standard output.  Be
+  prepared for a lot of output from this.
+
 All the subsequent procedures in this section accept adverb arguments,
 except the ones that do trivial jobs, such as checking whether a
 particular property holds of the program or not (namely,
