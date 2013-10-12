@@ -124,8 +124,8 @@
        (eliminate-in-let bindings body live-out))
       ((let-values-form names subexp body)
        (eliminate-in-let-values names subexp body live-out))
-      ((lambda-form formals body)
-       (eliminate-in-lambda formals body live-out))
+      ((lambda-form formals type body)
+       (eliminate-in-lambda formals type body live-out))
       ;; If used post SRA, there may be constructions to build the
       ;; answer for the outside world, but there should be no
       ;; accesses.
@@ -187,9 +187,10 @@
                        sub-expr-needs
                        (var-set-difference body-needs names))))
             (values new-body body-needs)))))
-  (define (eliminate-in-lambda formals body live-out)
+  (define (eliminate-in-lambda formals type body live-out)
     (receive (new-body body-needs) (loop body #t) ; Nothing that escapes can be dead
       (values `(lambda ,formals
+                 ,@(if type `((type ,type)) '())
                  ,new-body)
               (var-set-difference body-needs formals))))
   ;; Given that I decided not to do proper elimination of dead
@@ -429,7 +430,7 @@
        (study-let bindings body live-out))
       ((let-values-form names subexpr body)
        (study-let-values names subexpr body live-out))
-      ((lambda-form formals body)
+      ((lambda-form formals type body)
        (study-lambda formals body live-out))
       ;; If used post SRA, there may be constructions to build the
       ;; answer for the outside world, but there should be no

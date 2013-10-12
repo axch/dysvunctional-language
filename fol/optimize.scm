@@ -157,7 +157,7 @@
   %scalar-replace-aggregates
   ;; TODO Does it require unique-names?  It may, if it deparallelizes
   ;; let-values (in its post-processor).
-  (requires syntax-checked a-normal-form)
+  (requires syntax-checked a-normal-form no-lambda-type-declarations)
   (generates aggregates-replaced)
   ;; Because of the reconstruction
   (sra-may-destroy aggregates-replaced)
@@ -196,7 +196,7 @@
   ;; for the same reason.
   (generates no-intraprocedural-dead-variables)
   ;; TODO Does it really require unique names?
-  (requires syntax-checked unique-names no-lambda-type-declarations)
+  (requires syntax-checked unique-names)
   ;; Because of inserting let-values around procedure calls
   (destroys lets-lifted)
   ;; By removing expressions
