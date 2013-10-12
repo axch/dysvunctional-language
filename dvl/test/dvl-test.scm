@@ -253,6 +253,7 @@
               (define (loop accum)
                 (argument-types real escaper-type-4)
                 (lambda (inc)
+                  (type escaper-type-4)
                   (let ((new-accum (+ accum inc)))
                     (cons new-accum (loop new-accum)))))
               (let ((start (real 0)))
