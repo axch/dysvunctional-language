@@ -268,7 +268,7 @@
     (let ((formal (cadr expr))
           (type-decl (if (null? (cdddr expr)) #f (caddr expr)))
           (body (if (null? (cdddr expr)) (caddr expr) (cadddr expr))))
-      (if type-decl ; TODO Allow declaring lambda types by name
+      (if type-decl ; TODO Constant fold all this after all lambdas are required to have type annotations
           (begin
             (if (or (not (list? type-decl)) (not (= 2 (length type-decl))))
                 (error "Malformed LAMBDA type declaration" type-decl))
