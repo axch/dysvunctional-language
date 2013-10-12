@@ -182,7 +182,7 @@
   ;; much better this way.
   (requires a-normal-form lets-lifted)
   (requires unique-names) ; Because it does some internal let-lifting
-  (requires syntax-checked no-lambda-type-declarations)
+  (requires syntax-checked)
   (generates no-common-subexpressions)
   ;; By leaving some dead aliases around
   (destroys no-intraprocedural-dead-variables
@@ -196,7 +196,7 @@
   ;; for the same reason.
   (generates no-intraprocedural-dead-variables)
   ;; TODO Does it really require unique names?
-  (requires syntax-checked unique-names)
+  (requires syntax-checked unique-names no-lambda-type-declarations)
   ;; Because of inserting let-values around procedure calls
   (destroys lets-lifted)
   ;; By removing expressions

@@ -204,7 +204,7 @@
       ((let-form bindings body) (cse-let bindings body env))
       ((let-values-form names exp body)
        (cse-let-values names exp body env))
-      ((lambda-form formals body) (cse-lambda formals body env))
+      ((lambda-form formals type body) (cse-lambda formals type body env))
       ((values-form subforms) (cse-values subforms env))
       ((pair operator operands) ; general application
        (cse-application operator operands env))))
@@ -273,11 +273,12 @@
                      ,new-body)
                   new-body)
               body-symbolic)))
-  (define (cse-lambda formals body env)
+  (define (cse-lambda formals type body env)
     (let*-values (((env dead-bindings) (augment-cse-env env formals (list unique-expression)))
                   ((new-body body-symbolic) (loop body env)))
       (degment-cse-env! env formals)
       (values `(lambda ,formals
+                 ,@(if type `((type ,type)) '())
                  ,new-body)
               ;; TODO With more work, I could try to collapse
               ;; identical exported functions, but why bother?
