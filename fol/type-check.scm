@@ -144,7 +144,7 @@
                 body
                 (augment-type-env! (empty-type-env) (cdr formals)
                                    (arg-types (lookup-type (car formals))))
-                lookup-type proc)))
+                lookup-type defined-type-map proc)))
           (if (not (equal-type? (last types) body-type defined-type-map))
               (error "Return type declaration doesn't match"
                      definition (last types) body-type))
@@ -152,7 +152,7 @@
     (define (check-entry-point-types expression)
       (check-expression-types
        expression (empty-type-env)
-       lookup-type proc))
+       lookup-type defined-type-map proc))
     (if (begin-form? program)
         (begin
           (check-unique-names
@@ -165,7 +165,7 @@
 
 (define for-each-fol-expression check-program-types)
 
-(define (check-expression-types expr env global-type #!optional proc)
+(define (check-expression-types expr env global-type defined-type-map #!optional proc)
   ;; A type environment maps every bound local name to its type.  The
   ;; global-type procedure returns the (function) type of any global
   ;; name passed to it.  CHECK-EXPRESSION-TYPES either returns the
