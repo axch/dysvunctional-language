@@ -155,8 +155,9 @@
           (append sub-exp-binds
             (append (values-singleton names new-sub-expr)
               body-binds))))))
-  (define (lift-lets-from-lambda formals body)
+  (define (lift-lets-from-lambda formals type body)
     (values `(lambda ,formals
+               ,@(if type '((type ,type)) '())
                ,(lift-lets-expression body))
             null))
   (define (lift-lets-from-application expr)

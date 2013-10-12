@@ -177,7 +177,7 @@
        (sra-let bindings body env))
       ((let-values-form names subexp body)
        (sra-let-values names subexp body env))
-      ((lambda-form formals body)
+      ((lambda-form formals type body)
        (sra-lambda formals body env))
       ((accessor _ _ _ :as expr) (sra-access expr env))
       ((construction ctor operands) (sra-construction ctor operands env))

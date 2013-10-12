@@ -199,7 +199,7 @@
   (define (compile-let-values names expr body)
     `(multiple-value-bind (,@names) ,(%compile-expression expr)
                           ,(%compile-expression body)))
-  (define (compile-lambda formals body)
+  (define (compile-lambda formals type body)
     `(function
       (lambda (,@formals)
         ;; TODO Support other external args than REAL, and maybe more than one

@@ -98,8 +98,10 @@
        ,(loop body)))
   (define (approximate-anf-let-values names exp body)
     `(let-values ((,names ,(loop exp))) ,(loop body)))
-  (define (approximate-anf-lambda formals body)
-    `(lambda ,formals ,(loop body)))
+  (define (approximate-anf-lambda formals type body)
+    (if type
+        `(lambda ,formals (type ,type) ,(loop body))
+        `(lambda ,formals ,(loop body))))
   (define (approximate-anf-definition formals type body)
     `(define ,formals ,type ,(loop body)))
   (define (approximate-anf-application expr)

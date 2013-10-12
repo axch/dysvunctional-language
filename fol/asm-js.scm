@@ -140,7 +140,7 @@
              ((eq? const #t) 1) ; asm represents booleans as ints
              ((eq? const #f) 0) ; asm represents booleans as ints
              (else const)))
-      ((lambda-form _ _) (error "Escaping procedures not supported for asm.js"))
+      ((lambda-form _ _ _) (error "Escaping procedures not supported for asm.js"))
       ((pair operator operands)
        (if (js-operator? operator)
            `(,(if (< (length operands) 2)
