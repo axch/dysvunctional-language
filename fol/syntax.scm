@@ -313,10 +313,19 @@
         `(define ,formals
            ,@body)))
 
+(define %remove-lambda-type-declarations
+  (on-subexpressions
+   (rule `(lambda (? formals)
+            (type (? something))
+            (?? body))
+         `(lambda ,formals
+            ,@body))))
+
 (define (strip-argument-types program)
-  (if (begin-form? program)
-      (map remove-defn-argument-types program)
-      program))
+  (%remove-lambda-type-declarations
+   (if (begin-form? program)
+       (map remove-defn-argument-types program)
+       program)))
 
 ;;; Reserved words
 

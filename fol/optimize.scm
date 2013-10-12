@@ -66,6 +66,7 @@
 ;; no-common-subexpressions (for testing only)
 ;; no-intraprocedural-dead-variables (for testing only)
 ;; no-interprocedural-dead-variables (for testing only)
+;; no-lambda-type-declarations (transitional while not all stages can deal with them)
 
 ;; The possible clause types are
 ;; preserves generates destroys
@@ -91,6 +92,10 @@
   ;; stage system looking here for that.
   )
 
+(define-stage remove-lambda-type-declarations
+  %remove-lambda-type-declarations
+  (generates no-lambda-type-declarations))
+
 (define-stage check-fol-types
   check-program-types
   (computes type)
@@ -99,7 +104,7 @@
 (define-stage alpha-rename
   %alpha-rename
   (generates unique-names)
-  (requires syntax-checked))
+  (requires syntax-checked no-lambda-type-declarations))
 
 (define-stage a-normal-form
   approximate-anf
@@ -107,7 +112,7 @@
   (destroys lets-lifted) ; Because of multiple argument procedures
   ;; By naming new things that may be common
   (destroys no-common-subexpressions)
-  (requires syntax-checked))
+  (requires syntax-checked no-lambda-type-declarations))
 
 (define-stage lift-lets
   %lift-lets
