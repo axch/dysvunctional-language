@@ -112,7 +112,7 @@
   (destroys lets-lifted) ; Because of multiple argument procedures
   ;; By naming new things that may be common
   (destroys no-common-subexpressions)
-  (requires syntax-checked no-lambda-type-declarations))
+  (requires syntax-checked))
 
 (define-stage lift-lets
   %lift-lets
@@ -139,7 +139,7 @@
   (destroys no-intraprocedural-dead-variables)
   ;; Because of specializing to different places
   (destroys no-interprocedural-dead-variables)
-  (requires syntax-checked no-lambda-type-declarations)
+  (requires syntax-checked)
   (generates fully-inlined))                  ; not really, but on current examples
 
 (define (sra-may-destroy property)
@@ -182,7 +182,7 @@
   ;; much better this way.
   (requires a-normal-form lets-lifted)
   (requires unique-names) ; Because it does some internal let-lifting
-  (requires syntax-checked)
+  (requires syntax-checked no-lambda-type-declarations)
   (generates no-common-subexpressions)
   ;; By leaving some dead aliases around
   (destroys no-intraprocedural-dead-variables
