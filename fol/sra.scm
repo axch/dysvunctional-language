@@ -370,7 +370,10 @@
 (define (atomic-type? shape)
   ;; In due course, SRA may choose to leave some non-primitive types
   ;; unexpanded.
-  (primitive-type? shape))
+  (or (primitive-type? shape)
+      (and *type-map*
+           (escaping-function-type?
+            (hash-table/get *type-map* shape #f)))))
 (define (sra-factors shape)
   (if (atomic-type? shape)
       (list shape)

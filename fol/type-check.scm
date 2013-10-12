@@ -536,6 +536,7 @@
 
 (define (primitive-type? type)
   (or (function-type? type)
+      (escaping-function-type? type)
       (memq type '(real bool gensym escaping-function))))
 
 (define (type-factors type)
