@@ -39,7 +39,7 @@
                     (hash-table/put! live-types type #t)
                     (set! queue (cons type queue)))))
                 (else
-                 (for-each live-type! (type-factors type)))))
+                 (for-each live-type! (type-references type)))))
         (define (a-live-type!)
           (if (null? queue)
               #f

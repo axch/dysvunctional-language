@@ -550,3 +550,24 @@
         ((and *type-map* (hash-table/get *type-map* type #f))
          (type-factors (hash-table/get *type-map* type #f)))
         (else (error "Weird type" type))))
+
+(define (type-references type)
+  (cond ((construction? type)
+         (cdr type))
+        ((values-form? type)
+         (cdr type))
+        ((structure-type? type)
+         (map cadr (cdr type)))
+        ((memq type '(real bool gensym escaping-function))
+         '())
+        ((function-type? type)
+         (append (function-type-args type) (list (function-type-return type))))
+        ((escaping-function-type? type)
+         (cdr type))
+        ((and *type-map* (hash-table/get *type-map* type #f))
+         (type-references (hash-table/get *type-map* type #f)))
+        (else (error "Weird type" type))))
+
+;;; Escaping function types
+
+(define escaping-function-type? (tagged-list? 'escaper))
