@@ -288,10 +288,10 @@
           (error "Malformed LAMBDA (formal name and type lists disagree)" expr))
       (let ((body-type (loop body (augment-type-env! env formal formal-types))))
         (degment-type-env! env formal)
-        (if (equal-type? (escaping-function-return-type canonical-type) body-type defined-type-map)
-            `(escaper ,@formal-types ,body-type)
+        (if (not (equal-type? (escaping-function-return-type canonical-type) body-type defined-type-map))
             (error "Return type declaration for LAMBDA doesn't match"
-                   expr (escaping-function-return-type canonical-type) body-type)))))
+                   expr (escaping-function-return-type canonical-type) body-type))
+        declared-type)))
   (define (check-cons-ref-types expr env)
     (if (not (= (length expr) 2))
         (error "Malformed pair access" expr))
