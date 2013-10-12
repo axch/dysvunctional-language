@@ -75,7 +75,7 @@
     (check-program-types
      '(begin
         (lambda (x y)
-          (type real real real)
+          (type (escaper real real real))
           (+ (+ x y) 1)))))
 
    ;; Recursive type definitions let me specify types for recursive
@@ -88,7 +88,7 @@
         (define (the-escaper)
           (argument-types foo)
           (lambda (x y)
-            (type real real (cons real foo))
+            (type foo)
             (cons (+ (+ x y) 1)
                   (the-escaper))))
         (the-escaper))))

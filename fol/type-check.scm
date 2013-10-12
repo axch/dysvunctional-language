@@ -270,15 +270,23 @@
           (body (if (null? (cdddr expr)) (caddr expr) (cadddr expr))))
       (if type-decl ; TODO Allow declaring lambda types by name
           (begin
-            (if (or (not (list? type-decl)) (null? type-decl))
+            (if (or (not (list? type-decl)) (not (= 2 (length type-decl))))
                 (error "Malformed LAMBDA type declaration" type-decl))
             (if (not (eq? 'type (car type-decl)))
-                (error "Malformed LAMBDA type declaration: no type keyword" type-decl))
-            (if (null? (cdr type-decl))
-                (error "Malformed LAMBDA type declaration: no return type" type-decl))))
+                (error "Malformed LAMBDA type declaration: no type keyword" type-decl))))
+      (define declared-type (and type-decl (cadr type-decl)))
+      (define canonical-type
+        (and declared-type
+             (if (fol-var? declared-type)
+                 (hash-table/get defined-type-map declared-type declared-type)
+                 declared-type)))
+      (if (fol-var? canonical-type)
+          (error "Declaring unknown type for LAMBDA" declared-type))
+      (if (and canonical-type (not (eq? 'escaper (car canonical-type))))
+          (error "Declaring LAMBDA to be other than an escaping function" declared-type))
       (define formal-types
-        (if type-decl
-            (except-last-pair (cdr type-decl))
+        (if canonical-type
+            (except-last-pair (cdr canonical-type))
             '(real)))
       (if (not (list? formal))
           (error "Malformed LAMBDA (formal not a list)" expr))
@@ -286,11 +294,11 @@
           (error "Malformed LAMBDA (formal name and type lists disagree)" expr))
       (let ((body-type (loop body (augment-type-env! env formal formal-types))))
         (degment-type-env! env formal)
-        (if type-decl
-            (if (equal-type? (last (cdr type-decl)) body-type defined-type-map)
+        (if canonical-type
+            (if (equal-type? (last canonical-type) body-type defined-type-map)
                 `(escaper ,@formal-types ,body-type)
                 (error "Return type declaration for LAMBDA doesn't match"
-                       expr (last (cdr type-decl)) body-type))
+                       expr (last canonical-type) body-type))
             'escaping-function))))
   (define (check-cons-ref-types expr env)
     (if (not (= (length expr) 2))
