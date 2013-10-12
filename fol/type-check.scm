@@ -263,7 +263,7 @@
                         env (caar bindings) (cdr binding-type)))
           (degment-type-env! env (caar bindings))))))
   (define (check-lambda-types expr env)
-    (if (not (<= 3 (length expr) 4))
+    (if (not (= 4 (length expr)))
         (error "Malformed LAMBDA (excess body forms?)" expr))
     (let ((formal (cadr expr))
           (type-decl (if (null? (cdddr expr)) #f (caddr expr)))

@@ -61,14 +61,6 @@
         (define-type foo (structure (bar real) (baz real)))
         (foo-bar (make-foo 1 2)))))
 
-   ;; Type declarations on escaping functions are optional
-   (equal?
-    'escaping-function
-    (check-program-types
-     '(begin
-        (define-type foo (escaper real real))
-        (lambda (x) (+ x 1)))))
-
    ;; Type declarations permit multi-argument functions to escape
    (equal?
     '(escaper real real real)
