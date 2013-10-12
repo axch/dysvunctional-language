@@ -55,13 +55,21 @@
   (hash-table/intern! *escaper-names* closure
    (lambda () (name->symbol (make-name 'escaping-operation)))))
 
+(define *escaper-type-names* (make-abstract-hash-table))
+
+(define (escaping-closure->scheme-type-name closure)
+  (hash-table/intern! *escaper-type-names* closure
+   (lambda () (name->symbol (make-name 'escaper-type)))))
+
 (define (clear-name-caches!)
   (set! *closure-names* (make-abstract-hash-table))
   (set! *call-site-names* (make-abstract-hash-table))
-  (set! *escaper-names* (make-abstract-hash-table)))
+  (set! *escaper-names* (make-abstract-hash-table))
+  (set! *escaper-type-names* (make-abstract-hash-table)))
 
 (define (initialize-name-caches!)
   (set! *closure-names* (make-abstract-hash-table))
   (set! *call-site-names* (make-abstract-hash-table))
   (set! *escaper-names* (make-abstract-hash-table))
+  (set! *escaper-type-names* (make-abstract-hash-table))
   (reset-fol-names!))

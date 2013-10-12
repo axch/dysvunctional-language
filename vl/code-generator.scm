@@ -291,6 +291,38 @@
              operator
              analysis))))))
 
+(define (escapers analysis)
+  (define (needs-escaper-definition? binding)
+    (and (apply-binding? binding)
+         (binding-escapes? binding)))
+  ((unique abstract-hash-table-type)
+   (filter needs-escaper-definition?
+           (analysis-bindings analysis))))
+
+(define ((escaper-type-definition analysis) binding)
+  (let* ((operator (binding-proc binding))
+         (type-name (escaping-closure->scheme-type-name operator)))
+    `(define-type ,type-name
+       ;; TODO Support for other incoming types besides real
+       (escaper real ,(shape->escaping-type-declaration
+                       (analysis-get operator abstract-real analysis))))))
+
+;; It is not an accident that this is similar to
+;; shape->type-declaration from abstract-values.scm
+(define (shape->escaping-type-declaration thing)
+  (cond ((some-real? thing) 'real)
+        ((some-boolean? thing) 'bool)
+        ((null? thing) '())
+        ((pair? thing)
+         `(cons ,(shape->escaping-type-declaration (car thing))
+                ,(shape->escaping-type-declaration (cdr thing))))
+        ((closure? thing) ; TODO primitives can escape too, no?
+         (escaping-closure->scheme-type-name thing))
+        (else (error "shape->escaping-type-declaration loses!" thing))))
+
+(define (escaper-type-definitions analysis)
+  (map (escaper-type-definition analysis) (escapers analysis)))
+
 (define ((escaper-definition analysis)
          binding)
   (let ((operator (binding-proc binding)))
@@ -307,13 +339,7 @@
               operator abstract-real 'the-closure 'external-formal)))))))
 
 (define (escaper-definitions analysis)
-  (define (needs-escaper-definition? binding)
-    (and (apply-binding? binding)
-         (binding-escapes? binding)))
-  (map (escaper-definition analysis)
-       ((unique abstract-hash-table-type)
-        (filter needs-escaper-definition?
-                (analysis-bindings analysis)))))
+  (map (escaper-definition analysis) (escapers analysis)))
 
 (define (prepare-to-escape val code)
   (if (not (needs-translation? val))
@@ -341,6 +367,7 @@
   (initialize-name-caches!)
   `(begin ,@(structure-definitions analysis)
           ,@(procedure-definitions analysis)
+          ,@(escaper-type-definitions analysis)
           ,@(escaper-definitions analysis)
           ,(compile-escaping
             (macroexpand program)
