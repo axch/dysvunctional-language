@@ -67,9 +67,13 @@
         (check (unique-names? program)))
     (if (present? 'type program)
         (let ((annotated-type (property-value 'type program)))
-          (check (equal-type? annotated-type
-                              (check-program-types program)
-                              (type-map program)))))
+          (check (equal-type?
+                  annotated-type
+                  (check-program-types program)
+                  ;; TODO Actually, I should use the type map from the
+                  ;; pre-transform program, because the transform may
+                  ;; remove but may not add type names.
+                  (type-map program)))))
     (if (present? 'a-normal-form program)
         (check (approximate-anf? program)))
     (if (present? 'lets-lifted program)
