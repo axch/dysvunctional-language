@@ -145,7 +145,7 @@
                 (augment-type-env! (empty-type-env) (cdr formals)
                                    (arg-types (lookup-type (car formals))))
                 lookup-type proc)))
-          (if (not (equal? (last types) body-type)) ;; TODO Indirect through defined type map
+          (if (not (equal-type? (last types) body-type defined-type-map))
               (error "Return type declaration doesn't match"
                      definition (last types) body-type))
           body-type)))

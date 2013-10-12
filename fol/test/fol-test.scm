@@ -61,6 +61,7 @@
         (define-type foo (structure (bar real) (baz real)))
         (foo-bar (make-foo 1 2)))))
 
+   ;; Type declarations on escaping functions are optional
    (equal?
     'escaping-function
     (check-program-types
@@ -68,6 +69,7 @@
         (define-type foo (escaper real real))
         (lambda (x) (+ x 1)))))
 
+   ;; Type declarations permit multi-argument functions to escape
    (equal?
     '(escaper real real real)
     (check-program-types
@@ -76,11 +78,10 @@
           (type real real real)
           (+ (+ x y) 1)))))
 
-   ;; TODO Something like this ought to work, but I need to indirect
-   ;; through the defined type map when comparing types for equality.
-   #;
+   ;; Recursive type definitions let me specify types for recursive
+   ;; data structures built from escaping functions.
    (equal?
-    '(escaper real real foo)
+    'foo
     (check-program-types
      '(begin
         (define-type foo (escaper real real (cons real foo)))
