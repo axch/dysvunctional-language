@@ -104,15 +104,8 @@
 ;; Wins with names, subexpression, and body.  Assumes one binding form
 (define-algebraic-matcher let-values-form let-values-form? caaadr cadaadr caddr)
 (define lambda-form? (tagged-list? 'lambda))
-(define (lambda-form-type form)
-  (if (= 3 (length form))
-      #f
-      (cadr (caddr form))))
-(define (lambda-form-body form)
-  (if (= 3 (length form))
-      (caddr form)
-      (cadddr form)))
-(define-algebraic-matcher lambda-form lambda-form? cadr lambda-form-type lambda-form-body)
+(define (lambda-form-type form) (cadr (caddr form)))
+(define-algebraic-matcher lambda-form lambda-form? cadr lambda-form-type cadddr)
 
 (define (binder-tag? thing)
   (or (eq? thing 'let)

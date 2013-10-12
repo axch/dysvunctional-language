@@ -277,9 +277,7 @@
     (let*-values (((env dead-bindings) (augment-cse-env env formals (list unique-expression)))
                   ((new-body body-symbolic) (loop body env)))
       (degment-cse-env! env formals)
-      (values `(lambda ,formals
-                 ,@(if type `((type ,type)) '())
-                 ,new-body)
+      (values `(lambda ,formals (type ,type) ,new-body)
               ;; TODO With more work, I could try to collapse
               ;; identical exported functions, but why bother?
               unique-expression)))

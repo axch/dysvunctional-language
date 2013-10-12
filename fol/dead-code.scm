@@ -189,9 +189,7 @@
             (values new-body body-needs)))))
   (define (eliminate-in-lambda formals type body live-out)
     (receive (new-body body-needs) (loop body #t) ; Nothing that escapes can be dead
-      (values `(lambda ,formals
-                 ,@(if type `((type ,type)) '())
-                 ,new-body)
+      (values `(lambda ,formals (type ,type) ,new-body)
               (var-set-difference body-needs formals))))
   ;; Given that I decided not to do proper elimination of dead
   ;; structure slots, I will say that if a structure is needed then

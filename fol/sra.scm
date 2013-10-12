@@ -230,7 +230,7 @@
     (receive (new-body body-shape)
       (loop body (augment-env env formals (list formals) (list 'real)))
       (values `(lambda ,formals
-                 ,@(if type `((type ,type)) '())
+                 (type ,type)
                  ,(reconstruct-pre-sra-shape new-body body-shape))
               #;(function-type 'real body-shape)
               'escaping-function)))

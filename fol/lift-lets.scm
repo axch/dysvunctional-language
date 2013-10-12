@@ -157,7 +157,7 @@
               body-binds))))))
   (define (lift-lets-from-lambda formals type body)
     (values `(lambda ,formals
-               ,@(if type `((type ,type)) '())
+               (type ,type)
                ,(lift-lets-expression body))
             null))
   (define (lift-lets-from-application expr)
