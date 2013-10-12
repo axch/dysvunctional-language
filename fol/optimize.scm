@@ -331,6 +331,13 @@
                      (property-value 'analysis program))))
            (print-fol-statistics program))))))
 
+(define (dumping-intermediate stage-data)
+  (lambda (exec)
+    (report-stage-progress exec (stage-data-name stage-data)
+     (lambda (program)
+       (newline)
+       (pp program)))))
+
 (define (measuring-memory stage-data)
   (lambda (exec)
     (lambda (program . extra)
