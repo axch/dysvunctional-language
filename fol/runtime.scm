@@ -33,7 +33,14 @@
 (define-syntax define-type
   (syntax-rules ()
     ((_ name (structure (field type) ...))
-     (define-structure name field ...))))
+     (define-structure name field ...))
+    ((_ name (escaper type ...)) ; Escaper types are annotations only
+     (begin))))
+
+(define-syntax type
+  (syntax-rules ()
+    ((_ stuff ...) ; type annotations are just annotations
+     (begin))))
 
 (define (real x)
   (if (real? x)
