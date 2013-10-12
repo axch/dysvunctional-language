@@ -61,7 +61,7 @@
                 (loop (a-live-type!)))))
         (tidy-begin
          (filter (lambda (item)
-                   (or (not (structure-definition? item)) ; TODO Return this to type definition when lambdas always have type annotations, or when the type map is saved across operations when compiling carefully
+                   (or (not (type-definition? item))
                        (hash-table/get live-types (cadr item) #f)))
                  program)))
       program))
