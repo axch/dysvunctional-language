@@ -286,7 +286,7 @@
           (error "Declaring LAMBDA to be other than an escaping function" declared-type))
       (define formal-types
         (if canonical-type
-            (except-last-pair (cdr canonical-type))
+            (escaping-function-arg-types canonical-type)
             '(real)))
       (if (not (list? formal))
           (error "Malformed LAMBDA (formal not a list)" expr))
@@ -295,10 +295,10 @@
       (let ((body-type (loop body (augment-type-env! env formal formal-types))))
         (degment-type-env! env formal)
         (if canonical-type
-            (if (equal-type? (last canonical-type) body-type defined-type-map)
+            (if (equal-type? (escaping-function-return-type canonical-type) body-type defined-type-map)
                 `(escaper ,@formal-types ,body-type)
                 (error "Return type declaration for LAMBDA doesn't match"
-                       expr (last canonical-type) body-type))
+                       expr (escaping-function-return-type canonical-type) body-type))
             'escaping-function))))
   (define (check-cons-ref-types expr env)
     (if (not (= (length expr) 2))
@@ -579,3 +579,7 @@
 ;;; Escaping function types
 
 (define escaping-function-type? (tagged-list? 'escaper))
+(define (escaping-function-arg-types type)
+  (except-last-pair (cdr type)))
+(define (escaping-function-return-type type)
+  (last type))
