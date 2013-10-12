@@ -494,14 +494,27 @@
           (error "Looking up unknown name" name)))
     lookup-type))
 
-(define (equal-type? type1 type2)
-  (cond ((and (function-type? type1) (function-type? type2))
-         (and (equal-type? (arg-types type1) (arg-types type2))
-              (equal-type? (return-type type1) (return-type type2))))
-        ((and (pair? type1) (pair? type2))
-         (and (equal-type? (car type1) (car type2))
-              (equal-type? (cdr type1) (cdr type2))))
-        (else (equal? type1 type2))))
+(define (equal-type? type1 type2 #!optional defined-type-map)
+  (define (lookup type-name)
+    (if (default-object? defined-type-map)
+        type-name
+        (hash-table/get defined-type-map type-name type-name)))
+  (let loop ((type1 type1) (type2 type2))
+    (cond ((and (function-type? type1) (function-type? type2))
+           (and (loop (arg-types type1) (arg-types type2))
+                (loop (return-type type1) (return-type type2))))
+          ((and (pair? type1) (pair? type2))
+           (and (loop (car type1) (car type2))
+                (loop (cdr type1) (cdr type2))))
+          ((and (fol-var? type1) (not (fol-var? type2)))
+           (if (not (equal? type1 (lookup type1)))
+               (loop (lookup type1) type2)
+               #f))
+          ((and (not (fol-var? type1)) (fol-var? type2))
+           (if (not (equal? type2 (lookup type2)))
+               (loop type1 (lookup type2))
+               #f))
+          (else (equal? type1 type2)))))
 
 ;;;; Types
 
