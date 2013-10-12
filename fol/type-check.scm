@@ -145,7 +145,7 @@
                 (augment-type-env! (empty-type-env) (cdr formals)
                                    (arg-types (lookup-type (car formals))))
                 lookup-type proc)))
-          (if (not (equal? (last types) body-type))
+          (if (not (equal? (last types) body-type)) ;; TODO Indirect through defined type map
               (error "Return type declaration doesn't match"
                      definition (last types) body-type))
           body-type)))
@@ -263,20 +263,33 @@
                         env (caar bindings) (cdr binding-type)))
           (degment-type-env! env (caar bindings))))))
   (define (check-lambda-types expr env)
-    (if (not (= 3 (length expr)))
+    (if (not (<= 3 (length expr) 4))
         (error "Malformed LAMBDA (excess body forms?)" expr))
     (let ((formal (cadr expr))
-          (body (caddr expr)))
+          (type-decl (if (null? (cdddr expr)) #f (caddr expr)))
+          (body (if (null? (cdddr expr)) (caddr expr) (cadddr expr))))
+      (if type-decl ; TODO Allow declaring lambda types by name
+          (begin
+            (if (or (not (list? type-decl)) (null? type-decl))
+                (error "Malformed LAMBDA type declaration" type-decl))
+            (if (not (eq? 'type (car type-decl)))
+                (error "Malformed LAMBDA type declaration: no type keyword" type-decl))
+            (if (null? (cdr type-decl))
+                (error "Malformed LAMBDA type declaration: no return type" type-decl))))
+      (define formal-types
+        (if type-decl
+            (except-last-pair (cdr type-decl))
+            '(real)))
       (if (not (list? formal))
           (error "Malformed LAMBDA (formal not a list)" expr))
-      (if (not (= 1 (length formal)))
-          (error "Malformed LAMBDA (multiple args not allowed)" expr))
-      (let ((body-type (loop body (augment-type-env! env formal (list 'real)))))
+      (if (not (= (length formal-types) (length formal)))
+          (error "Malformed LAMBDA (formal name and type lists disagree)" expr))
+      (let ((body-type (loop body (augment-type-env! env formal formal-types))))
         (degment-type-env! env formal)
-        ;; TODO Do I want to actually declare and check lambda expression types?
-        ;; TODO Extend to checking other foreign types
-        #;(function-type 'real body-type)
-        'escaping-function)))
+        (if type-decl
+            ;; TODO Check that the body-type matches the declaration
+            `(escaper ,@formal-types ,body-type)
+            'escaping-function))))
   (define (check-cons-ref-types expr env)
     (if (not (= (length expr) 2))
         (error "Malformed pair access" expr))

@@ -62,11 +62,35 @@
         (foo-bar (make-foo 1 2)))))
 
    (equal?
-    'real
+    'escaping-function
     (check-program-types
      '(begin
         (define-type foo (escaper real real))
-        1)))
+        (lambda (x) (+ x 1)))))
+
+   (equal?
+    '(escaper real real real)
+    (check-program-types
+     '(begin
+        (lambda (x y)
+          (type real real real)
+          (+ (+ x y) 1)))))
+
+   ;; TODO Something like this ought to work, but I need to indirect
+   ;; through the defined type map when comparing types for equality.
+   #;
+   (equal?
+    '(escaper real real foo)
+    (check-program-types
+     '(begin
+        (define-type foo (escaper real real (cons real foo)))
+        (define (the-escaper)
+          (argument-types foo)
+          (lambda (x y)
+            (type real real (cons real foo))
+            (cons (+ (+ x y) 1)
+                  (the-escaper))))
+        (the-escaper))))
 
    (lset= eq? '(c a) (feedback-vertex-set '((a b c d) (b a) (c d) (d c) (e a))))
 
