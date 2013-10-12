@@ -110,6 +110,13 @@
   (or (eq? thing 'let)
       (eq? thing 'let-values)))
 
+;; N.B. These interconverters of binding forms are no longer quite
+;; right, in light of lambda meaning "escaping function" in FOL.  To
+;; wit, the ->lambda rule does not insert a type declaration into the
+;; new lambda (how could it?) and ->let{-values} does not remove one.
+;; Currently, this is correct (if confusing) because these converters
+;; are only used to increase the uniformity of treatment of binders.
+;; Perhaps there is a nicer way to achieve the same effect.
 (define ->lambda
   (rule-list
    (list

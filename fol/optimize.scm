@@ -104,7 +104,7 @@
 (define-stage alpha-rename
   %alpha-rename
   (generates unique-names)
-  (requires syntax-checked no-lambda-type-declarations))
+  (requires syntax-checked))
 
 (define-stage a-normal-form
   approximate-anf
@@ -118,7 +118,7 @@
   %lift-lets
   (generates lets-lifted)
   ;; TODO Does it really preserve a-normal-form ?
-  (requires syntax-checked unique-names)
+  (requires syntax-checked unique-names no-lambda-type-declarations)
   (requires a-normal-form)   ; Just because I'm lazy
   ;; By splitting lets
   (destroys no-common-subexpressions))
@@ -139,7 +139,7 @@
   (destroys no-intraprocedural-dead-variables)
   ;; Because of specializing to different places
   (destroys no-interprocedural-dead-variables)
-  (requires syntax-checked)
+  (requires syntax-checked no-lambda-type-declarations)
   (generates fully-inlined))                  ; not really, but on current examples
 
 (define (sra-may-destroy property)
