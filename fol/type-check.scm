@@ -287,8 +287,10 @@
       (let ((body-type (loop body (augment-type-env! env formal formal-types))))
         (degment-type-env! env formal)
         (if type-decl
-            ;; TODO Check that the body-type matches the declaration
-            `(escaper ,@formal-types ,body-type)
+            (if (equal-type? (last (cdr type-decl)) body-type defined-type-map)
+                `(escaper ,@formal-types ,body-type)
+                (error "Return type declaration for LAMBDA doesn't match"
+                       expr (last (cdr type-decl)) body-type))
             'escaping-function))))
   (define (check-cons-ref-types expr env)
     (if (not (= (length expr) 2))
