@@ -232,8 +232,7 @@
       (values `(lambda ,formals
                  (type ,type)
                  ,(reconstruct-pre-sra-shape new-body body-shape))
-              #;(function-type 'real body-shape)
-              'escaping-function)))
+              type)))
   (define (sra-access expr env)
     (receive (new-cadr cadr-shape) (loop (cadr expr) env)
       (let ((index (access-index expr))

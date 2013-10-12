@@ -120,7 +120,9 @@
          'boolean)
         ((null? shape)
          'null)
-        ((eq? shape 'escaping-function)
+        ((escaping-function-type? shape)
+         ;; TODO Detect named escaping function types
+         ;; TODO Take advantage of type information about arguments and return type?
          'function)
         ((fol-var? shape)
          ;; Assume it's a user-defined struct
