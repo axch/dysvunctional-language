@@ -286,11 +286,13 @@
    (equal?
     '(let ((y (real 3)))
        (let ((z (lambda (formal)
+                  (type (escaper real real))
                   y)))
          z))
     (intraprocedural-cse
      '(let ((y (real 3)))
         (let ((z (lambda (formal)
+                  (type (escaper real real))
                    y)))
           z))))
 

@@ -178,10 +178,13 @@
           y))))
 
    (equal?
-    '(lambda (x) (+ x 1))
+    '(lambda (x)
+       (type (escaper real real))
+       (+ x 1))
     (%eliminate-intraprocedural-dead-code
      '(let ((x (real 3)))
         (lambda (x)
+          (type (escaper real real))
           (+ x 1)))))
 
    (equal? #f (definitions->program (program->definitions #f)))
@@ -266,10 +269,12 @@
    (equal?
     '(let ((x (real 3)))
        (lambda (foo)
+         (type (escaper real real))
          (+ foo x)))
     (reverse-anf
      '(let ((x (real 3)))
         (lambda (foo)
+          (type (escaper real real))
           (+ foo x)))))
 
    ;; Dead code elimination should not barf on unused procedures.
