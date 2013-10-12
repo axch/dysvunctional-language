@@ -2,17 +2,17 @@
 ;;; Copyright 2010-2011 National University of Ireland; 2012 Alexey Radul.
 ;;; ----------------------------------------------------------------------
 ;;; This file is part of DysVunctional Language.
-;;; 
+;;;
 ;;; DysVunctional Language is free software; you can redistribute it and/or modify
 ;;; it under the terms of the GNU Affero General Public License as
 ;;; published by the Free Software Foundation, either version 3 of the
 ;;;  License, or (at your option) any later version.
-;;; 
+;;;
 ;;; DysVunctional Language is distributed in the hope that it will be useful,
 ;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;; GNU General Public License for more details.
-;;; 
+;;;
 ;;; You should have received a copy of the GNU Affero General Public License
 ;;; along with DysVunctional Language.  If not, see <http://www.gnu.org/licenses/>.
 ;;; ----------------------------------------------------------------------
@@ -178,7 +178,7 @@
       ((let-values-form names subexp body)
        (sra-let-values names subexp body env))
       ((lambda-form formals type body)
-       (sra-lambda formals body env))
+       (sra-lambda formals type body env))
       ((accessor _ _ _ :as expr) (sra-access expr env))
       ((construction ctor operands) (sra-construction ctor operands env))
       ((pair operator operands) ;; general application
@@ -225,11 +225,12 @@
                    `(let-values ((,(apply append new-name-sets) ,new-exp))
                       ,new-body))
                   body-shape)))))
-  (define (sra-lambda formals body env)
-    ;; TODO Generalize to arg types other than real
+  (define (sra-lambda formals type body env)
+    ;; TODO Read arg types from type annotation to support other types than real
     (receive (new-body body-shape)
       (loop body (augment-env env formals (list formals) (list 'real)))
       (values `(lambda ,formals
+                 ,@(if type `((type ,type)) '())
                  ,(reconstruct-pre-sra-shape new-body body-shape))
               #;(function-type 'real body-shape)
               'escaping-function)))
