@@ -326,13 +326,15 @@
 (define ((escaper-definition analysis)
          binding)
   (let ((operator (binding-proc binding)))
-    (let ((name (escaping-closure->scheme-function-name operator)))
+    (let ((name (escaping-closure->scheme-function-name operator))
+          (type-name (escaping-closure->scheme-type-name operator)))
       `(define (,name the-closure)
          (argument-types
           ,(shape->type-declaration operator)
-          escaping-function)
+          ,type-name)
          (lambda (external-formal)
            ;; TODO Support for other incoming types besides real
+           (type ,type-name)
            ,(prepare-to-escape
              (analysis-get operator abstract-real analysis)
              (generate-closure-application
