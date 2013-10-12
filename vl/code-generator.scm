@@ -316,7 +316,7 @@
         ((pair? thing)
          `(cons ,(shape->escaping-type-declaration (car thing))
                 ,(shape->escaping-type-declaration (cdr thing))))
-        ((closure? thing) ; TODO primitives can escape too, no?
+        ((closure? thing)
          (escaping-closure->scheme-type-name thing))
         (else (error "shape->escaping-type-declaration loses!" thing))))
 
