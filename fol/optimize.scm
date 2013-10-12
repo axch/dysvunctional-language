@@ -118,7 +118,7 @@
   %lift-lets
   (generates lets-lifted)
   ;; TODO Does it really preserve a-normal-form ?
-  (requires syntax-checked unique-names no-lambda-type-declarations)
+  (requires syntax-checked unique-names)
   (requires a-normal-form)   ; Just because I'm lazy
   ;; By splitting lets
   (destroys no-common-subexpressions))
