@@ -248,12 +248,11 @@
        (check (equal? 7 (car ((cdr tail) 3))))))
    (check (alpha-rename?
            '(begin
-              ;; TODO Confirm that alpha renaming works for escaper types and rename this type sensibly
-              (define-type escaper-type-4 (escaper real (cons real escaper-type-4)))
+              (define-type stream (escaper real (cons real stream)))
               (define (loop accum)
-                (argument-types real escaper-type-4)
+                (argument-types real stream)
                 (lambda (inc)
-                  (type escaper-type-4)
+                  (type stream)
                   (let ((new-accum (+ accum inc)))
                     (cons new-accum (loop new-accum)))))
               (let ((start (real 0)))

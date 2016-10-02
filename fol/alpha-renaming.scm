@@ -104,9 +104,13 @@
           ;; Do I want to mess with the fact that the order of
           ;; definitions is semantically insignificant?
           ((and (begin-form? exp1) (begin-form? exp2))
-           (let* ((names1 (map definiendum (filter procedure-definition? exp1)))
-                  (names2 (map definiendum (filter procedure-definition? exp2)))
-                  (new-env (append (map cons names1 names2) env)))
+           (let* ((proc-names1 (map definiendum (filter procedure-definition? exp1)))
+                  (proc-names2 (map definiendum (filter procedure-definition? exp2)))
+                  (type-names1 (map cadr (filter type-definition? exp1)))
+                  (type-names2 (map cadr (filter type-definition? exp2)))
+                  (new-env (append (map cons proc-names1 proc-names2)
+                                   (map cons type-names1 type-names2)
+                                   env)))
              (apply boolean/and
               (map (lambda (form1 form2)
                      (loop form1 form2 new-env))
@@ -118,10 +122,8 @@
                  (name2 (definiendum exp2)))
              (and (loop name1 name2 env)
                   (loop (definiens exp1) (definiens exp2) env))))
-          ((and (type-definition? exp1) (type-definition? exp2))
-           ;; TODO Accept alpha renamings of types as well?
-           (equal? exp1 exp2))
           ((and (pair? exp1) (pair? exp2))
+           ;; This case handles type definitions correctly too, doesn't it?
            (and (loop (car exp1) (car exp2) env)
                 (loop (cdr exp1) (cdr exp2) env)))
           (else (equal? exp1 exp2)))))
